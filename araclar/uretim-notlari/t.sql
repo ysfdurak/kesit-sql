@@ -1,0 +1,12 @@
+set role authenticated; set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+insert into public.progress(user_id, data) values ('11111111-1111-1111-1111-111111111111','{"xp":50}');
+insert into public.progress(user_id, data) values ('11111111-1111-1111-1111-111111111111','{"xp":70}') on conflict (user_id) do update set data = excluded.data;
+select 'A kendi' as t, data->>'xp' from public.progress;
+do $$ begin insert into public.progress(user_id, data) values ('22222222-2222-2222-2222-222222222222','{}'); raise notice 'HATA: başkası adına yazılabildi'; exception when others then raise notice 'OK: başkası adına yazma engellendi (%)', sqlerrm; end $$;
+reset role; insert into public.progress(user_id, data) values ('22222222-2222-2222-2222-222222222222','{"xp":9}');
+set role authenticated; set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select 'A görebildiği satır' as t, count(*) from public.progress;
+update public.progress set data='{"xp":0}' where user_id='22222222-2222-2222-2222-222222222222';
+select public.delete_my_account();
+reset role; select 'silme sonrası kullanıcılar' as t, count(*) from auth.users; select 'silme sonrası ilerleme' as t, count(*), max(data->>'xp') from public.progress;
+set role anon; do $$ begin perform public.delete_my_account(); raise notice 'HATA anon çalıştırdı'; exception when others then raise notice 'OK: anon silemez (%)', sqlerrm; end $$;

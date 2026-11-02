@@ -1,0 +1,9 @@
+araclar/**/node_modules/
+araclar/denetim/base.sqlite
+araclar/denetim/base.hash
+araclar/denetim/cikti/
+araclar/denetim/qa/shots/
+araclar/denetim/*.png
+araclar/denetim/sql_audit*.json
+araclar/denetim/boxes*.json
+araclar/denetim/static.txt

@@ -1,0 +1,7 @@
+const c=require('./load.js');const initSqlJs=require('sql.js/dist/sql-asm.js');const DX=c.SQLP_DIALECT;
+(function hints(){ const dc=[], tc=[], all=[], dt=[]; for(const t of Object.keys(c.SQLP_COLMETA)) for(const [col,ty] of c.SQLP_COLMETA[t]){ all.push(col); if(/date/.test(ty)) dc.push(col); if(ty==='datetime') dt.push(col); if(/^text/.test(ty)) tc.push(col);} DX.setSchemaHints(dc,tc,all,dt); })();
+initSqlJs().then(SQL=>{const db=new SQL.Database(require('./base.js')(SQL,c));c.SQLP_REGISTER(db);DX.register(db);
+const T=[['oracle',"SELECT COUNT(*) FROM orders WHERE order_date >= DATE '2024-12-31' - 29"],['sqlite',"SELECT COUNT(*) FROM orders WHERE order_date >= date('2024-12-31','-29 days')"],['oracle',"SELECT DATE '2024-12-31' + 1 FROM dual"],['pg',"SELECT DATE '2024-03-01' - 1"],
+['pg','SELECT salary AS maas FROM employees GROUP BY salary ORDER BY salary DESC OFFSET 1 LIMIT 1'],['pg','SELECT salary FROM employees ORDER BY salary DESC LIMIT 1 OFFSET 1'],
+['mysql',"SELECT SUBSTRING_INDEX(email,'@',1) AS kullanici, SUBSTRING_INDEX(email,'@',-1) AS alan FROM customers WHERE email IS NOT NULL LIMIT 2"],['pg',"SELECT SUBSTRING_INDEX(email,'@',1) FROM customers LIMIT 1"]];
+for(const [d,q] of T){ const r=DX.runDialect(db,q,d,{env:{procs:{},funcs:{},tvfs:{},tran:0,nocount:false}}); const s=r.sets&&r.sets[r.sets.length-1]; console.log(d,'|',r.error?('HATA '+String(r.error).slice(0,90)):JSON.stringify(s&&s.values.slice(0,2))); }});

@@ -1,0 +1,16 @@
+const { chromium } = require('playwright'); const path=require('path'); const fs=require('fs');
+(async()=>{ const b=await chromium.launch(); const p=await b.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
+ await p.route('**/sql-asm.js', r=>r.fulfill({contentType:'text/javascript', body: fs.readFileSync(path.join(__dirname,'node_modules/sql.js/dist/sql-asm.js'))}));
+ await p.route('**fonts.g**', r=>r.abort());
+ await p.route('**/config.js', r=>r.fulfill({contentType:'text/javascript', body:"window.KESIT_CONFIG={author:{name:'Örnek'},goatcounter:'kesitsql',feedbackFormUrl:'https://forms.example/x?d={ders}',giscus:{}};"}));
+ let gcSrc=''; await p.route('**gc.zgo.at/count.js', r=>{ gcSrc=r.request().url(); r.fulfill({contentType:'text/javascript', body:"window.__gcAttr=document.currentScript&&document.currentScript.getAttribute('data-goatcounter'); window.__noload=window.goatcounter&&window.goatcounter.no_onload; window.goatcounter=Object.assign(window.goatcounter||{}, {count:function(v){(window.__gc=window.__gc||[]).push(v)}});"}); });
+ await p.goto('http://localhost:8765/index.html'); await p.waitForFunction(()=>document.querySelector('#sideStats .engine .dot.ok'),null,{timeout:180000}); await p.waitForTimeout(600);
+ await p.click('[data-k="yeni"]'); await p.waitForTimeout(800);
+ await p.evaluate(()=>{location.hash='patika-temel'}); await p.waitForTimeout(600);
+ await p.evaluate(()=>{location.hash='ders-tarih'}); await p.waitForTimeout(800); await p.click('[data-act="read-done"]').catch(()=>console.log('read-done yok')); await p.waitForTimeout(500);
+ await p.evaluate(()=>{location.hash='hakkinda'}); await p.waitForTimeout(600);
+ await p.click('main [data-act="feedback"]').catch(()=>{}); await p.waitForTimeout(300);
+ const r=await p.evaluate(()=>({gc:window.__gc, attr:window.__gcAttr, noload:window.__noload}));
+ console.log('script', gcSrc, '| endpoint', r.attr, '| no_onload', r.noload);
+ (r.gc||[]).forEach(v=>console.log(v.event?'OLAY ':'SAYFA', v.path, '|', v.title));
+ console.log('gizlilik metni', /GoatCounter ile çerezsiz/.test(await p.innerText('main')), 'errs', errs); await b.close(); })();

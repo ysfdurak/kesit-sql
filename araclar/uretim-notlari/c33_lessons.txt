@@ -1,0 +1,546 @@
+===== proje-temel Bitirme projesi (Temeller): Anadolu Market için ilk raporun A2 Bitirme Projeleri 
+ 
+<h2>Senaryo</h2>
+<p>Anadolu Market'in satış müdürü, yıl sonu toplantısı öncesinde senden kısa bir rapor istiyor. Henüz tabloları birleştirmeyi bilmen gerekmiyor: her soru tek bir tabloyla çözülür. Bu projede şimdiye kadar öğrendiklerini bir arada kullanacaksın.</p>
+<table>
+<tr><th>Soru</th><th>Kullanacağın konular</th></tr>
+<tr><td>1. Kanal performansı</td><td>WHERE ile tarih aralığı, GROUP BY, ORDER BY</td></tr>
+<tr><td>2. Elektronik kâr marjı</td><td>Hesaplanan sütun, ROUND, sıralama</td></tr>
+<tr><td>3. Kalabalık şehirler</td><td>GROUP BY, HAVING</td></tr>
+<tr><td>4. Yaş grupları</td><td>CASE, GROUP BY</td></tr>
+<tr><td>5. E-posta sağlayıcıları</td><td>LIKE, koşullu sayım</td></tr>
+<tr><td>6. Stok uyarısı</td><td>Çoklu koşul, NULL, sıralama ve ilk N satır</td></tr>
+</table>
+<h2>Kullanacağın tablolar</h2>
+<ul>
+<li><code>orders</code>: order_id, customer_id, order_date, status (delivered, shipped, cancelled, returned), channel (web, mobile, store)</li>
+<li><code>products</code>: product_id, name, category, price, cost, stock</li>
+<li><code>customers</code>: customer_id, first_name, last_name, gender, birth_year, city, email, signup_date, segment</li>
+</ul>
+<div class="tip"><b>Çalışma önerisi</b>Her soruda önce <code>SELECT *</code> ile ilgili satırlara bak, sonra sütunları ve koşulları ekle. Sonucu yorumlamayı da unutma: hangi kanal öne çıkıyor, hangi ürün en az kâr bırakıyor?</div>
+ 
+ [
+ {
+  "t": "sql",
+  "q": "<p><b>Kanal performansı.</b> 2024 yılında verilen siparişleri kanala göre say: <code>channel</code>, <code>siparis</code>. En çok siparişi olan kanal en üstte olsun.</p>",
+  "sol": "SELECT channel, COUNT(*) AS siparis FROM orders WHERE order_date >= '2024-01-01' AND order_date < '2025-01-01' GROUP BY channel ORDER BY siparis DESC;",
+  "ord": true,
+  "hint": "Yarı açık aralık: order_date >= '2024-01-01' AND order_date < '2025-01-01'."
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Elektronik kâr marjı.</b> Elektronik kategorisindeki ürünlerin adını, fiyatını, maliyetini ve kâr marjını yüzde olarak (1 basamak) getir: <code>name</code>, <code>price</code>, <code>cost</code>, <code>marj</code>. Marjı en düşük ürün en üstte olsun.</p>",
+  "sol": "SELECT name, price, cost, ROUND((price - cost) * 100.0 / price, 1) AS marj FROM products WHERE category = 'Elektronik' ORDER BY marj, name;",
+  "ord": true,
+  "hint": "Marj = (price - cost) * 100.0 / price. 100.0 yazmak tam sayı bölmesini önler."
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Kalabalık şehirler.</b> En az 8 müşterisi olan şehirleri ve müşteri sayılarını getir: <code>city</code>, <code>musteri</code>. Müşteri sayısına göre azalan sırala; eşitlikte şehir adına göre.</p>",
+  "sol": "SELECT city, COUNT(*) AS musteri FROM customers WHERE city IS NOT NULL GROUP BY city HAVING COUNT(*) >= 8 ORDER BY musteri DESC, city;",
+  "ord": true,
+  "hint": "Grup koşulu HAVING ile yazılır."
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Yaş grupları.</b> Müşterileri doğum yılına göre üç gruba ayır ve her gruptaki müşteri sayısını getir: 1995 ve sonrası <b>'Genç'</b>, 1980–1994 <b>'Orta'</b>, 1980 öncesi <b>'Olgun'</b>. Sütunlar: <code>yas_grubu</code>, <code>musteri</code>.</p>",
+  "sol": "SELECT CASE WHEN birth_year >= 1995 THEN 'Genç' WHEN birth_year >= 1980 THEN 'Orta' ELSE 'Olgun' END AS yas_grubu, COUNT(*) AS musteri FROM customers GROUP BY CASE WHEN birth_year >= 1995 THEN 'Genç' WHEN birth_year >= 1980 THEN 'Orta' ELSE 'Olgun' END;",
+  "hint": "CASE koşulları yukarıdan aşağı denenir; ilk doğru olan kazanır. GROUP BY içinde aynı CASE ifadesini tekrar yaz."
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>E-posta sağlayıcıları.</b> Tek satırda üç sayı getir: toplam müşteri (<code>toplam</code>), Gmail kullanan müşteri (<code>gmail</code>, adresi <code>@gmail.com</code> ile biten) ve Gmail kullananların oranı yüzde olarak (<code>oran</code>, 1 basamak).</p>",
+  "sol": "SELECT COUNT(*) AS toplam, SUM(CASE WHEN email LIKE '%@gmail.com' THEN 1 ELSE 0 END) AS gmail, ROUND(100.0 * SUM(CASE WHEN email LIKE '%@gmail.com' THEN 1 ELSE 0 END) / COUNT(*), 1) AS oran FROM customers;",
+  "hint": "Koşullu sayım: SUM(CASE WHEN email LIKE '%@gmail.com' THEN 1 ELSE 0 END)."
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Stok uyarısı.</b> Stoğu bilinmeyen (NULL) <b>ya da</b> 20'nin altında olan ürünlerden fiyatı en yüksek 5 tanesini getir: <code>name</code>, <code>category</code>, <code>price</code>, <code>stock</code>. Fiyata göre azalan sırala.</p>",
+  "sol": "SELECT name, category, price, stock FROM products WHERE stock IS NULL OR stock < 20 ORDER BY price DESC, product_id LIMIT 5;",
+  "ord": true,
+  "hint": "NULL bir karşılaştırmada yakalanmaz; stock IS NULL OR stock < 20 yaz. İlk 5 satır için programının yazımını kullan (LIMIT / TOP / FETCH FIRST)."
+ }
+]
+===== proje-hava Bitirme projesi (Kanat Havayolları): operasyon ve gelir raporu C1 Kanat Havayolları 
+ 
+<h2>Senaryo</h2>
+<p>Kanat Havayolları'nın yönetim kurulu Ocak toplantısında son dört ayı değerlendirecek. Operasyon direktörü dakiklik ve iptallerle, gelir müdürü sadakat üyelerinin gelirle ilgileniyor. Senden altı soruluk bir rapor isteniyor; her sorunun sonucu bir slayda dönüşecek.</p>
+<table>
+<tr><th>Soru</th><th>Kullanacağın beceriler</th></tr>
+<tr><td>1. Operasyon özeti</td><td>Koşullu sayım, dakika farkı, oranlar</td></tr>
+<tr><td>2. Sorunlu havalimanları</td><td>JOIN, GROUP BY, HAVING, sıralama</td></tr>
+<tr><td>3. Rötar nedenleri aylara göre</td><td>Pivot (koşullu toplama)</td></tr>
+<tr><td>4. Aylık üye geliri ve değişim</td><td>CTE, LAG</td></tr>
+<tr><td>5. En değerli üyeler</td><td>JOIN, toplama, sıralama</td></tr>
+<tr><td>6. Kış iptal riski</td><td>Rota düzeyinde oran, minimum hacim filtresi</td></tr>
+</table>
+<div class="tip"><b>Her sonucu bir cümleyle yorumla</b>“Aralık'ta ortalama gecikme 35 dakikaya çıktı ve en büyük pay hava koşullarında” gibi bir cümle, tablonun kendisinden daha çok iş görür. Raporu yazarken sayının arkasındaki nedeni ara.</div>
+ 
+ [
+ {
+  "t": "sql",
+  "q": "<p><b>Operasyon özeti.</b> Tek satırda: planlanan uçuş (<code>planlanan</code>), iptal oranı yüzde (<code>iptal_orani</code>, 2 basamak), zamanında kalkış oranı yüzde (<code>otp</code>, 1 basamak; yalnızca kalkan uçuşlar) ve ortalama kalkış gecikmesi dakika (<code>ort_gecikme</code>, 1 basamak).</p>",
+  "sol": "SELECT COUNT(*) AS planlanan, ROUND(100.0 * SUM(CASE WHEN f.status = 'cancelled' THEN 1 ELSE 0 END) / COUNT(*), 2) AS iptal_orani, ROUND(100.0 * SUM(CASE WHEN ROUND((julianday(f.actual_dep) - julianday(f.sched_dep)) * 1440) <= 15 THEN 1 ELSE 0 END) / COUNT(f.actual_dep), 1) AS otp, ROUND(AVG(ROUND((julianday(f.actual_dep) - julianday(f.sched_dep)) * 1440)), 1) AS ort_gecikme FROM hv_flights f;",
+  "hint": "OTP paydası COUNT(actual_dep) olmalı; AVG ise NULL gecikmeleri kendiliğinden atlar."
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Sorunlu havalimanları.</b> En az 150 kalkışı olan havalimanlarından ortalama kalkış gecikmesi en yüksek 3 tanesi (iptaller hariç): <code>airport_code</code>, <code>city</code>, <code>kalkis</code>, <code>ort_gecikme</code> (1 basamak). Gecikmeye göre azalan sırala.</p>",
+  "sol": "SELECT a.airport_code, a.city, COUNT(*) AS kalkis, ROUND(AVG(ROUND((julianday(f.actual_dep) - julianday(f.sched_dep)) * 1440)), 1) AS ort_gecikme FROM hv_flights f JOIN hv_routes r ON r.route_id = f.route_id JOIN hv_airports a ON a.airport_code = r.origin WHERE f.actual_dep IS NOT NULL GROUP BY a.airport_code, a.city HAVING COUNT(*) >= 150 ORDER BY ort_gecikme DESC, a.airport_code LIMIT 3;",
+  "ord": true
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Rötar nedenleri aylara göre.</b> Her ay için hava, teknik ve geç gelen uçak kaynaklı toplam rötar dakikalarını yan yana getir: <code>ay</code>, <code>hava</code>, <code>teknik</code>, <code>gec_gelen_ucak</code>. Aya göre sırala.</p>",
+  "sol": "SELECT strftime('%Y-%m', f.sched_dep) AS ay, SUM(CASE WHEN d.reason = 'hava' THEN d.minutes ELSE 0 END) AS hava, SUM(CASE WHEN d.reason = 'teknik' THEN d.minutes ELSE 0 END) AS teknik, SUM(CASE WHEN d.reason = 'gec_gelen_ucak' THEN d.minutes ELSE 0 END) AS gec_gelen_ucak FROM hv_delays d JOIN hv_flights f ON f.flight_id = d.flight_id GROUP BY strftime('%Y-%m', f.sched_dep) ORDER BY ay;",
+  "ord": true
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Aylık üye geliri.</b> Gerçekleşen (flown) rezervasyonların uçuş ayına göre toplam gelirini (tam sayı) ve bir önceki aya göre değişim yüzdesini (1 basamak; ilk ayda NULL) getir: <code>ay</code>, <code>gelir</code>, <code>degisim</code>. Aya göre sırala.</p>",
+  "sol": "WITH m AS (SELECT strftime('%Y-%m', f.sched_dep) AS ay, SUM(b.price) AS gelir FROM hv_bookings b JOIN hv_flights f ON f.flight_id = b.flight_id WHERE b.status = 'flown' GROUP BY strftime('%Y-%m', f.sched_dep)) SELECT ay, ROUND(gelir) AS gelir, ROUND(100.0 * (gelir - LAG(gelir) OVER (ORDER BY ay)) / LAG(gelir) OVER (ORDER BY ay), 1) AS degisim FROM m ORDER BY ay;",
+  "ord": true,
+  "hint": "Gelir uçuşun gerçekleştiği aya yazılır (rezervasyon tarihine değil)."
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>En değerli üyeler.</b> Gerçekleşen uçuşlardaki toplam harcamaya göre en değerli 5 üye: <code>full_name</code>, <code>tier</code>, <code>ucus</code>, <code>harcama</code> (tam sayı). Harcamaya göre azalan, eşitlikte ada göre sırala.</p>",
+  "sol": "SELECT p.full_name, p.tier, COUNT(*) AS ucus, ROUND(SUM(b.price)) AS harcama FROM hv_bookings b JOIN hv_passengers p ON p.passenger_id = b.passenger_id WHERE b.status = 'flown' GROUP BY p.passenger_id, p.full_name, p.tier ORDER BY harcama DESC, p.full_name LIMIT 5;",
+  "ord": true
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Kış iptal riski.</b> Kasım ve Aralık 2024'te en az 20 uçuşu olan rotalardan iptal oranı en yüksek 3 tanesi: <code>origin</code>, <code>dest</code>, <code>ucus</code>, <code>iptal</code>, <code>oran</code> (yüzde, 1 basamak). Orana göre azalan, eşitlikte origin ve dest'e göre sırala.</p>",
+  "sol": "SELECT r.origin, r.dest, COUNT(*) AS ucus, SUM(CASE WHEN f.status = 'cancelled' THEN 1 ELSE 0 END) AS iptal, ROUND(100.0 * SUM(CASE WHEN f.status = 'cancelled' THEN 1 ELSE 0 END) / COUNT(*), 1) AS oran FROM hv_flights f JOIN hv_routes r ON r.route_id = f.route_id WHERE f.sched_dep >= '2024-11-01' AND f.sched_dep < '2025-01-01' GROUP BY r.origin, r.dest HAVING COUNT(*) >= 20 ORDER BY oran DESC, r.origin, r.dest LIMIT 3;",
+  "ord": true
+ }
+]
+===== kamp-musteri Alıştırma Kampı 1: Müşteri verisi (10 soru) A2 Alıştırma Kampı 
+ 
+<h2>Bol pratik, tek tablo</h2>
+<p>Dil öğrenirken olduğu gibi SQL'de de akıcılık tekrarla gelir. Bu kampta yalnızca <code>customers</code> tablosuyla 10 soru çözeceksin. Her soru bir öncekinden biraz daha zor. Takıldığında ipucuna bak; çözdüğün sorular Tekrar sayfasında yeniden karşına çıkacak.</p>
+<div class="tip"><b>Tablo</b><code>customers</code>: customer_id, first_name, last_name, gender, birth_year, city, email, signup_date, segment. Veri Seti sayfasından inceleyebilirsin.</div>
+
+<h2>Nasıl çalışmalı?</h2>
+<ol>
+<li>Soruyu oku ve sonuçta hangi sütunların, kaç satırın bekleneceğini tahmin et.</li>
+<li>Önce <code>SELECT *</code> ile ilgili satırlara bak; sonra sütunları ve koşulları ekle.</li>
+<li><b>Kontrol et</b>'e basmadan önce <b>Sadece çalıştır</b> ile sonucu incele.</li>
+<li>İki denemede çözemezsen ipucuna bak; çözümü görmek XP'yi azaltır ama soruyu Tekrar listesine ekler.</li>
+</ol>
+<h2>Bu kampta en çok kullanacağın kalıplar</h2>
+<table><tr><th>İhtiyaç</th><th>Kalıp</th></tr><tr><td>Filtre</td><td><code>WHERE city = 'İzmir' AND gender = 'K'</code></td></tr><tr><td>Boş değer</td><td><code>WHERE city IS NULL</code></td></tr><tr><td>Desen</td><td><code>WHERE first_name LIKE 'E%'</code></td></tr><tr><td>Grup ve sayı</td><td><code>GROUP BY city HAVING COUNT(*) >= 5</code></td></tr><tr><td>Koşullu sayım</td><td><code>SUM(CASE WHEN segment = 'Premium' THEN 1 ELSE 0 END)</code></td></tr><tr><td>Metin parçası</td><td><code>SUBSTR(email, INSTR(email, '@') + 1)</code></td></tr></table>
+<div class="note"><b>Tablolar</b>Yalnızca <code>customers</code>. Sütunların açıklamaları ve örnek satırlar Veri Seti sayfasında.</div>
+ 
+ [
+ {
+  "t": "sql",
+  "q": "<p>İzmir'de yaşayan müşterilerin adını ve soyadını getir.</p>",
+  "sol": "SELECT first_name, last_name FROM customers WHERE city = 'İzmir';"
+ },
+ {
+  "t": "sql",
+  "q": "<p>1990 ve sonrasında doğan <b>kadın</b> (K) müşterilerin sayısını bul: <code>adet</code>.</p>",
+  "sol": "SELECT COUNT(*) AS adet FROM customers WHERE birth_year >= 1990 AND gender = 'K';"
+ },
+ {
+  "t": "sql",
+  "q": "<p>Adı <b>E</b> harfiyle başlayan müşterileri adına göre sıralı getir: <code>first_name</code>, <code>last_name</code>. Eşitlikte soyada göre.</p>",
+  "sol": "SELECT first_name, last_name FROM customers WHERE first_name LIKE 'E%' ORDER BY first_name, last_name;",
+  "ord": true
+ },
+ {
+  "t": "sql",
+  "q": "<p>Şehri boş olan müşterilerin <code>customer_id</code> ve <code>email</code> değerlerini getir.</p>",
+  "sol": "SELECT customer_id, email FROM customers WHERE city IS NULL;"
+ },
+ {
+  "t": "sql",
+  "q": "<p>Her şehirdeki müşteri sayısını, müşteri sayısına göre azalan (eşitlikte şehir adına göre) sırala; şehri boş olanları dışla: <code>city</code>, <code>musteri</code>.</p>",
+  "sol": "SELECT city, COUNT(*) AS musteri FROM customers WHERE city IS NOT NULL GROUP BY city ORDER BY musteri DESC, city;",
+  "ord": true
+ },
+ {
+  "t": "sql",
+  "q": "<p>Segment bazında müşterilerin ortalama doğum yılını tam sayıya yuvarla: <code>segment</code>, <code>ort_dogum</code>.</p>",
+  "sol": "SELECT segment, ROUND(AVG(birth_year), 0) AS ort_dogum FROM customers GROUP BY segment;"
+ },
+ {
+  "t": "sql",
+  "q": "<p>Her müşterinin tam adını (<code>ad_soyad</code>: ad + boşluk + soyad) ve e-posta alan adını (<code>@</code> sonrası, <code>alan</code>) getir; e-postası boş olanları dışla.</p>",
+  "sol": "SELECT first_name || ' ' || last_name AS ad_soyad, SUBSTR(email, INSTR(email, '@') + 1) AS alan FROM customers WHERE email IS NOT NULL;",
+  "hint": "INSTR (SQL Server'da CHARINDEX) ile @ işaretinin yerini bul, SUBSTR ile sonrasını al."
+ },
+ {
+  "t": "sql",
+  "q": "<p>2024'te kaydolan müşteri sayısını aylara göre getir: <code>ay</code> (YYYY-AA), <code>kayit</code>. Aya göre sırala.</p>",
+  "sol": "SELECT strftime('%Y-%m', signup_date) AS ay, COUNT(*) AS kayit FROM customers WHERE signup_date >= '2024-01-01' AND signup_date < '2025-01-01' GROUP BY strftime('%Y-%m', signup_date) ORDER BY ay;",
+  "ord": true
+ },
+ {
+  "t": "sql",
+  "q": "<p>En az 5 müşterisi olan şehirleri ve bu şehirlerdeki <b>Premium</b> müşteri sayısını getir: <code>city</code>, <code>musteri</code>, <code>premium</code>.</p>",
+  "sol": "SELECT city, COUNT(*) AS musteri, SUM(CASE WHEN segment = 'Premium' THEN 1 ELSE 0 END) AS premium FROM customers WHERE city IS NOT NULL GROUP BY city HAVING COUNT(*) >= 5;"
+ },
+ {
+  "t": "sql",
+  "q": "<p>Müşterileri yaş grubuna ayır (referans yıl 2024): 25 altı “genç”, 25–44 “orta”, 45 ve üstü “olgun”; doğum yılı boşsa “bilinmiyor”. Her grubun müşteri sayısı: <code>grup</code>, <code>musteri</code>.</p>",
+  "sol": "SELECT CASE WHEN birth_year IS NULL THEN 'bilinmiyor' WHEN 2024 - birth_year < 25 THEN 'genç' WHEN 2024 - birth_year < 45 THEN 'orta' ELSE 'olgun' END AS grup, COUNT(*) AS musteri FROM customers GROUP BY CASE WHEN birth_year IS NULL THEN 'bilinmiyor' WHEN 2024 - birth_year < 25 THEN 'genç' WHEN 2024 - birth_year < 45 THEN 'orta' ELSE 'olgun' END;"
+ }
+]
+===== kamp-eticaret Alıştırma Kampı 3: E-ticaret (10 soru) B1 Alıştırma Kampı 
+ 
+<h2>Anadolu Market'in satış verisi</h2>
+<p>Dört tablo birlikte: <code>customers</code>, <code>orders</code>, <code>order_items</code>, <code>products</code>. Sorular gerçek iş sorularına benziyor. Net tutar her yerde <b>adet × birim fiyat × (1 − indirim)</b>.</p>
+
+<h2>Nasıl çalışmalı?</h2>
+<ol>
+<li>Soruyu oku ve sonuçta hangi sütunların, kaç satırın bekleneceğini tahmin et.</li>
+<li>Önce <code>SELECT *</code> ile ilgili satırlara bak; sonra sütunları ve koşulları ekle.</li>
+<li><b>Kontrol et</b>'e basmadan önce <b>Sadece çalıştır</b> ile sonucu incele.</li>
+<li>İki denemede çözemezsen ipucuna bak; çözümü görmek XP'yi azaltır ama soruyu Tekrar listesine ekler.</li>
+</ol>
+<h2>Bu kampta en çok kullanacağın kalıplar</h2>
+<table><tr><th>İhtiyaç</th><th>Kalıp</th></tr><tr><td>Net tutar</td><td><code>SUM(oi.quantity * oi.unit_price * (1 - oi.discount))</code></td></tr><tr><td>Teslim edilenler</td><td><code>WHERE o.status = 'delivered'</code></td></tr><tr><td>Hiç satılmamış</td><td><code>LEFT JOIN order_items oi ... WHERE oi.product_id IS NULL</code></td></tr><tr><td>Sipariş sayısı şişmesin</td><td><code>COUNT(DISTINCT o.order_id)</code></td></tr><tr><td>Müşterinin ilk siparişi</td><td><code>ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date, order_id)</code></td></tr><tr><td>Önceki ay</td><td><code>LAG(ciro) OVER (ORDER BY ay)</code></td></tr></table>
+<div class="note"><b>Tablolar</b><code>customers</code>, <code>orders</code>, <code>order_items</code>, <code>products</code>. Sipariş satırları <code>order_items</code>'tadır; ciro her zaman satır düzeyinde hesaplanıp toplanır. Sütunların açıklamaları ve örnek satırlar Veri Seti sayfasında.</div>
+ 
+ [
+ {
+  "t": "sql",
+  "q": "<p>En çok satan (adet olarak) 5 ürün: <code>name</code>, <code>adet</code>. Adede göre azalan, eşitlikte ada göre sırala.</p>",
+  "sol": "SELECT p.name, SUM(oi.quantity) AS adet FROM order_items oi JOIN products p ON p.product_id = oi.product_id GROUP BY p.name ORDER BY adet DESC, p.name LIMIT 5;",
+  "ord": true
+ },
+ {
+  "t": "sql",
+  "q": "<p>Hiç satılmamış ürün var mı? <code>product_id</code>, <code>name</code>.</p>",
+  "sol": "SELECT p.product_id, p.name FROM products p WHERE NOT EXISTS (SELECT 1 FROM order_items oi WHERE oi.product_id = p.product_id);"
+ },
+ {
+  "t": "sql",
+  "q": "<p>Kategori bazında teslim edilen net ciro (tam sayı): <code>category</code>, <code>ciro</code>. Ciroya göre azalan.</p>",
+  "sol": "SELECT p.category, ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 0) AS ciro FROM orders o JOIN order_items oi ON oi.order_id = o.order_id JOIN products p ON p.product_id = oi.product_id WHERE o.status = 'delivered' GROUP BY p.category ORDER BY ciro DESC;",
+  "ord": true
+ },
+ {
+  "t": "sql",
+  "q": "<p>Her siparişin toplam net tutarı (2 basamak) ve satır sayısı; yalnızca 3'ten fazla satırı olan siparişler: <code>order_id</code>, <code>satir</code>, <code>tutar</code>.</p>",
+  "sol": "SELECT oi.order_id, COUNT(*) AS satir, ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 2) AS tutar FROM order_items oi GROUP BY oi.order_id HAVING COUNT(*) > 3;"
+ },
+ {
+  "t": "sql",
+  "q": "<p>Ortalama indirim oranı en yüksek 3 kategori (%, 2 basamak): <code>category</code>, <code>ort_indirim</code>.</p>",
+  "sol": "SELECT p.category, ROUND(AVG(oi.discount) * 100, 2) AS ort_indirim FROM order_items oi JOIN products p ON p.product_id = oi.product_id GROUP BY p.category ORDER BY ort_indirim DESC LIMIT 3;",
+  "ord": true
+ },
+ {
+  "t": "sql",
+  "q": "<p>Her müşterinin ilk sipariş tarihi ve ilk siparişinin kanalı: <code>customer_id</code>, <code>ilk_tarih</code>, <code>channel</code>. Aynı gün birden çok sipariş varsa küçük <code>order_id</code>'yi al.</p>",
+  "sol": "SELECT customer_id, order_date AS ilk_tarih, channel FROM (SELECT customer_id, order_date, channel, ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date, order_id) AS rn FROM orders) AS t WHERE rn = 1;"
+ },
+ {
+  "t": "sql",
+  "q": "<p>Ürünlerin satış anındaki ortalama birim fiyatı ile güncel fiyatı arasındaki fark yüzdesi (1 basamak): <code>name</code>, <code>guncel</code>, <code>ort_satis</code> (2 basamak), <code>fark_yuzde</code>.</p>",
+  "sol": "SELECT p.name, p.price AS guncel, ROUND(AVG(oi.unit_price), 2) AS ort_satis, ROUND(100.0 * (p.price - AVG(oi.unit_price)) / AVG(oi.unit_price), 1) AS fark_yuzde FROM products p JOIN order_items oi ON oi.product_id = p.product_id GROUP BY p.product_id, p.name, p.price;"
+ },
+ {
+  "t": "sql",
+  "q": "<p>Kanal ve segment kırılımında sipariş sayısı: <code>channel</code>, <code>segment</code>, <code>siparis</code>.</p>",
+  "sol": "SELECT o.channel, c.segment, COUNT(*) AS siparis FROM orders o JOIN customers c ON c.customer_id = o.customer_id GROUP BY o.channel, c.segment;"
+ },
+ {
+  "t": "sql",
+  "q": "<p>Hem <b>Kitap</b> hem <b>Elektronik</b> kategorisinden en az bir kez alışveriş yapmış müşteri sayısı: <code>musteri</code>.</p>",
+  "sol": "SELECT COUNT(*) AS musteri FROM (SELECT o.customer_id FROM orders o JOIN order_items oi ON oi.order_id = o.order_id JOIN products p ON p.product_id = oi.product_id WHERE p.category IN ('Kitap', 'Elektronik') GROUP BY o.customer_id HAVING COUNT(DISTINCT p.category) = 2) AS t;"
+ },
+ {
+  "t": "sql",
+  "q": "<p>Her ay (2024) için teslim edilen net ciro ve bir önceki aya göre değişim yüzdesi (1 basamak; ilk ayda NULL): <code>ay</code>, <code>ciro</code> (tam sayı), <code>degisim</code>.</p>",
+  "sol": "WITH a AS (SELECT strftime('%Y-%m', o.order_date) AS ay, SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) AS ciro FROM orders o JOIN order_items oi ON oi.order_id = o.order_id WHERE o.status = 'delivered' AND o.order_date >= '2024-01-01' AND o.order_date < '2025-01-01' GROUP BY strftime('%Y-%m', o.order_date)) SELECT ay, ROUND(ciro, 0) AS ciro, ROUND(100.0 * (ciro - LAG(ciro) OVER (ORDER BY ay)) / LAG(ciro) OVER (ORDER BY ay), 1) AS degisim FROM a ORDER BY ay;",
+  "ord": true
+ }
+]
+===== proje-analist Bitirme projesi (Veri Analisti): Anadolu Bank müşteri ve harcama analizi B2 Bitirme Projeleri 
+ 
+<h2>Senaryo</h2>
+<p>Anadolu Bank'ın pazarlama direktörü yeni yıl kampanyası için senden bir analiz istiyor: <i>“Hangi segment ne kadar harcıyor, ne zaman ve nerede? Maaşını bize yatıranlar daha mı çok harcıyor? Bize segment bazında tek sayfalık bir özet ver.”</i></p>
+<h2>Teslim edilecekler</h2>
+<ol>
+<li>Segment profili (müşteri, yaş, risk)</li>
+<li>Aylık harcama trendi ve büyüme</li>
+<li>Segmentlere göre en çok harcanan kategori</li>
+<li>Maaş müşterisi olanlarla olmayanların karşılaştırması</li>
+<li>Kanal tercihleri</li>
+<li>Segment bazında yönetici özeti</li>
+</ol>
+<div class="tip"><b>Çalışma yöntemi</b>Her adımda önce sonucun bir satırının neyi temsil edeceğini belirle (segment mi, müşteri mi, ay mı?). Ara hesapları CTE ile adlandır. Bitirdiğinde adımların sorgularını bir dosyada topla: bu senin portföy işin olur.</div>
+<p>Tablolar: <code>bank_customers</code>, <code>bank_accounts</code>, <code>bank_txns</code>. Kart harcamaları <code>txn_type = 'kart_harcama'</code>, tutarlar eksi işaretlidir.</p>
+ 
+ [
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 1.</b> Segment profili: her segment için müşteri sayısı, 2024 sonundaki ortalama yaş (doğum yılından, 1 basamak) ve ortalama risk puanı (2 basamak): <code>segment</code>, <code>musteri</code>, <code>ort_yas</code>, <code>ort_risk</code>.</p>",
+  "sol": "SELECT segment, COUNT(*) AS musteri, ROUND(AVG(2024 - CAST(SUBSTR(birth_date, 1, 4) AS INTEGER)), 1) AS ort_yas, ROUND(AVG(risk_score), 2) AS ort_risk FROM bank_customers GROUP BY segment;"
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 2.</b> Aylık kart harcaması (pozitif, tam sayı) ve önceki aya göre değişim (%, 1 basamak; ilk ayda NULL): <code>ay</code>, <code>harcama</code>, <code>degisim</code>. Aya göre sırala.</p>",
+  "sol": "WITH m AS (SELECT strftime('%Y-%m', txn_time) AS ay, SUM(-amount) AS h FROM bank_txns WHERE txn_type = 'kart_harcama' GROUP BY strftime('%Y-%m', txn_time)) SELECT ay, ROUND(h, 0) AS harcama, ROUND(100.0 * (h - LAG(h) OVER (ORDER BY ay)) / LAG(h) OVER (ORDER BY ay), 1) AS degisim FROM m ORDER BY ay;",
+  "ord": true
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 3.</b> Her segmentte en çok harcama yapılan işyeri kategorisi (eşitlikte alfabetik): <code>segment</code>, <code>merchant_category</code>, <code>harcama</code> (tam sayı).</p>",
+  "sol": "WITH h AS (SELECT c.segment, t.merchant_category, SUM(-t.amount) AS harcama FROM bank_txns t JOIN bank_accounts a ON a.account_id = t.account_id JOIN bank_customers c ON c.customer_id = a.customer_id WHERE t.txn_type = 'kart_harcama' GROUP BY c.segment, t.merchant_category), r AS (SELECT segment, merchant_category, harcama, ROW_NUMBER() OVER (PARTITION BY segment ORDER BY harcama DESC, merchant_category) AS rn FROM h) SELECT segment, merchant_category, ROUND(harcama, 0) AS harcama FROM r WHERE rn = 1;"
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 4.</b> Bireysel segmentte maaş müşterisi olanlar (en az bir <code>maas</code> hareketi) ile olmayanların müşteri sayısı ve müşteri başına ortalama yıllık kart harcaması (tam sayı; harcaması olmayan müşteri 0 sayılır): <code>grup</code> ('maaşlı' / 'maaşsız'), <code>musteri</code>, <code>ort_harcama</code>.</p>",
+  "sol": "WITH c AS (SELECT cu.customer_id, MAX(CASE WHEN t.txn_type = 'maas' THEN 1 ELSE 0 END) AS maasli, COALESCE(SUM(CASE WHEN t.txn_type = 'kart_harcama' THEN -t.amount END), 0) AS harcama FROM bank_customers cu LEFT JOIN bank_accounts a ON a.customer_id = cu.customer_id LEFT JOIN bank_txns t ON t.account_id = a.account_id WHERE cu.segment = 'Bireysel' GROUP BY cu.customer_id) SELECT CASE WHEN maasli = 1 THEN 'maaşlı' ELSE 'maaşsız' END AS grup, COUNT(*) AS musteri, ROUND(AVG(harcama), 0) AS ort_harcama FROM c GROUP BY CASE WHEN maasli = 1 THEN 'maaşlı' ELSE 'maaşsız' END;"
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 5.</b> Kart harcamalarında segment ve kanal kırılımında işlem payı: her segmentin işlemlerinin yüzde kaçı hangi kanaldan (%, 1 basamak): <code>segment</code>, <code>channel</code>, <code>pay</code>.</p>",
+  "sol": "WITH k AS (SELECT c.segment, t.channel, COUNT(*) AS adet FROM bank_txns t JOIN bank_accounts a ON a.account_id = t.account_id JOIN bank_customers c ON c.customer_id = a.customer_id WHERE t.txn_type = 'kart_harcama' GROUP BY c.segment, t.channel) SELECT segment, channel, ROUND(100.0 * adet / SUM(adet) OVER (PARTITION BY segment), 1) AS pay FROM k;"
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 6.</b> Yönetici özeti: segment başına müşteri sayısı, maaş müşterisi oranı (%, 1 basamak), müşteri başına yıllık kart harcaması (tam sayı) ve pazarlama izni veren müşteri oranı (%, 1 basamak): <code>segment</code>, <code>musteri</code>, <code>maas_orani</code>, <code>harcama_kisi</code>, <code>izin_orani</code>.</p>",
+  "sol": "WITH c AS (SELECT cu.customer_id, cu.segment, cu.kvkk_consent, MAX(CASE WHEN t.txn_type = 'maas' THEN 1 ELSE 0 END) AS maasli, COALESCE(SUM(CASE WHEN t.txn_type = 'kart_harcama' THEN -t.amount END), 0) AS harcama FROM bank_customers cu LEFT JOIN bank_accounts a ON a.customer_id = cu.customer_id LEFT JOIN bank_txns t ON t.account_id = a.account_id GROUP BY cu.customer_id, cu.segment, cu.kvkk_consent) SELECT segment, COUNT(*) AS musteri, ROUND(100.0 * SUM(maasli) / COUNT(*), 1) AS maas_orani, ROUND(AVG(harcama), 0) AS harcama_kisi, ROUND(100.0 * SUM(kvkk_consent) / COUNT(*), 1) AS izin_orani FROM c GROUP BY segment;"
+ }
+]
+===== proje-bi Bitirme projesi (İş Zekası): Anadolu Market yönetim KPI panosu için veri hazırlığı B2 Bitirme Projeleri 
+ 
+<h2>Senaryo</h2>
+<p>Genel müdür her ay başında tek ekranda şirketin nabzını görmek istiyor. Power BI / Looker Studio panosunu kuracak ekip, senden <b>hazır hesaplanmış</b> tablolar bekliyor; panoda karmaşık hesap yapılmayacak.</p>
+<h2>Tanımlar (KPI sözlüğü)</h2>
+<table>
+<tr><th>KPI</th><th>Tanım</th></tr>
+<tr><td>Net ciro</td><td>Teslim edilen siparişlerin Σ adet × birim fiyat × (1 − indirim)</td></tr>
+<tr><td>Sipariş</td><td>Tüm durumlardaki sipariş sayısı</td></tr>
+<tr><td>Aktif müşteri</td><td>O ay en az bir sipariş veren tekil müşteri</td></tr>
+<tr><td>Ortalama sepet</td><td>Net ciro ÷ teslim edilen sipariş sayısı</td></tr>
+<tr><td>İptal oranı</td><td>İptal edilen sipariş ÷ tüm siparişler</td></tr>
+</table>
+<div class="tip"><b>BI ekibine iyilik</b>Her tabloya açık sütun adları ver, oranları yüzde değil 0–1 arası ya da tutarlı biçimde ver ve tanımları dokümante et. Tanım farkı, panolardaki tartışmaların bir numaralı nedenidir.</div>
+ 
+ [
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 1.</b> 2024 için aylık KPI tablosu: <code>ay</code> (YYYY-AA), <code>siparis</code>, <code>aktif_musteri</code>, <code>net_ciro</code> (tam sayı), <code>ort_sepet</code> (tam sayı), <code>iptal_orani</code> (%, 1 basamak). Aya göre sırala.</p>",
+  "sol": "WITH s AS (SELECT strftime('%Y-%m', order_date) AS ay, COUNT(*) AS siparis, COUNT(DISTINCT customer_id) AS aktif, SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS iptal, SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) AS teslim FROM orders WHERE order_date >= '2024-01-01' AND order_date < '2025-01-01' GROUP BY strftime('%Y-%m', order_date)), c AS (SELECT strftime('%Y-%m', o.order_date) AS ay, SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) AS ciro FROM orders o JOIN order_items oi ON oi.order_id = o.order_id WHERE o.status = 'delivered' AND o.order_date >= '2024-01-01' AND o.order_date < '2025-01-01' GROUP BY strftime('%Y-%m', o.order_date)) SELECT s.ay, s.siparis, s.aktif AS aktif_musteri, ROUND(c.ciro, 0) AS net_ciro, ROUND(c.ciro / s.teslim, 0) AS ort_sepet, ROUND(100.0 * s.iptal / s.siparis, 1) AS iptal_orani FROM s JOIN c ON c.ay = s.ay ORDER BY s.ay;",
+  "ord": true,
+  "hint": "Sipariş düzeyindeki ölçüleri ve satır düzeyindeki ciroyu ayrı CTE'lerde hesaplayıp ay üzerinden birleştir."
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 2.</b> Kanal payı: 2024 teslim edilen net cironun kanallara dağılımı (%, 1 basamak): <code>channel</code>, <code>pay</code>.</p>",
+  "sol": "WITH k AS (SELECT o.channel, SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) AS ciro FROM orders o JOIN order_items oi ON oi.order_id = o.order_id WHERE o.status = 'delivered' AND o.order_date >= '2024-01-01' AND o.order_date < '2025-01-01' GROUP BY o.channel) SELECT channel, ROUND(100.0 * ciro / SUM(ciro) OVER (), 1) AS pay FROM k;"
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 3.</b> Yıllık karşılaştırma: her ay numarası (1–12) için 2023 ve 2024 net cirosu yan yana (tam sayı) ve değişim (%, 1 basamak): <code>ay</code>, <code>c2023</code>, <code>c2024</code>, <code>degisim</code>. Aya göre sırala.</p>",
+  "sol": "WITH m AS (SELECT CAST(strftime('%m', o.order_date) AS INTEGER) AS ay, SUM(CASE WHEN strftime('%Y', o.order_date) = '2023' THEN oi.quantity * oi.unit_price * (1 - oi.discount) ELSE 0 END) AS c2023, SUM(CASE WHEN strftime('%Y', o.order_date) = '2024' THEN oi.quantity * oi.unit_price * (1 - oi.discount) ELSE 0 END) AS c2024 FROM orders o JOIN order_items oi ON oi.order_id = o.order_id WHERE o.status = 'delivered' GROUP BY CAST(strftime('%m', o.order_date) AS INTEGER)) SELECT ay, ROUND(c2023, 0) AS c2023, ROUND(c2024, 0) AS c2024, ROUND(100.0 * (c2024 - c2023) / c2023, 1) AS degisim FROM m ORDER BY ay;",
+  "ord": true
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 4.</b> 2024 son çeyreğinde (Ekim–Aralık) net ciroya göre ilk 5 ürün ve kategorileri (tam sayı): <code>name</code>, <code>category</code>, <code>ciro</code>. Ciroya göre azalan.</p>",
+  "sol": "SELECT p.name, p.category, ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 0) AS ciro FROM orders o JOIN order_items oi ON oi.order_id = o.order_id JOIN products p ON p.product_id = oi.product_id WHERE o.status = 'delivered' AND o.order_date >= '2024-10-01' AND o.order_date < '2025-01-01' GROUP BY p.product_id, p.name, p.category ORDER BY ciro DESC LIMIT 5;",
+  "ord": true
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 5.</b> Pano için görünüm: yukarıdaki aylık KPI hesabını <code>v_aylik_kpi</code> adında bir görünüm olarak tanımla (yalnızca <code>ay</code>, <code>siparis</code>, <code>net_ciro</code> sütunları, 2024) ve görünümden net cirosu en yüksek 3 ayı getir: <code>ay</code>, <code>net_ciro</code>.</p>",
+  "sol": "CREATE VIEW v_aylik_kpi AS SELECT strftime('%Y-%m', o.order_date) AS ay, COUNT(DISTINCT o.order_id) AS siparis, ROUND(SUM(CASE WHEN o.status = 'delivered' THEN oi.quantity * oi.unit_price * (1 - oi.discount) ELSE 0 END), 0) AS net_ciro FROM orders o JOIN order_items oi ON oi.order_id = o.order_id WHERE o.order_date >= '2024-01-01' AND o.order_date < '2025-01-01' GROUP BY strftime('%Y-%m', o.order_date); SELECT ay, net_ciro FROM v_aylik_kpi ORDER BY net_ciro DESC LIMIT 3;",
+  "ord": true,
+  "dl": [
+   "tsql",
+   "pg",
+   "mysql",
+   "oracle",
+   "sqlite"
+  ]
+ }
+]
+===== proje-bilimci Bitirme projesi (Veri Bilimi): şüpheli işlem tespiti ve müşteri özellik tablosu C1 Bitirme Projeleri 
+ 
+<h2>Senaryo</h2>
+<p>Anadolu Bank'ın risk ekibi dolandırıcılık modeli kurmadan önce veriyi tanımak istiyor. İki şey bekleniyor: kural ve istatistikle şüpheli işlemlerin işaretlenmesi, ve her müşteri için bir satırlık <b>özellik tablosu</b> (feature table).</p>
+<h2>Yöntem</h2>
+<ul>
+<li><b>z-skoru</b>: (değer − ortalama) ÷ standart sapma. Hesap bazında hesaplanırsa “bu müşteri için olağandışı” işlemi bulur.</li>
+<li><b>Kurallar</b>: gece saatleri, yeni kanal, çok yüksek tutar gibi işaretler birleştirilerek basit bir skor oluşturulur.</li>
+<li><b>Sızıntı yok</b>: Özellik tablosu, tahmin anından önceki veriden üretilmelidir (burada referans tarih 2024-12-01; Aralık verisi etiket için ayrılır).</li>
+</ul>
+<p>Standart sapma bu uygulamada <code>STDDEV</code> (SQL Server'da <code>STDEV</code>) ile hesaplanabilir; taşınabilir yol <code>SQRT(AVG(x*x) - AVG(x)*AVG(x))</code>.</p>
+ 
+ [
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 1.</b> Kart harcamalarında genel dağılım: işlem sayısı, ortalama tutar, en büyük tutar ve %99. yüzdelik sınırına yakın bir eşik olarak “ortalama + 3 × standart sapma” (hepsi pozitif, 2 basamak): <code>adet</code>, <code>ort</code>, <code>en_buyuk</code>, <code>esik</code>.</p>",
+  "sol": "SELECT COUNT(*) AS adet, ROUND(AVG(-amount), 2) AS ort, ROUND(MAX(-amount), 2) AS en_buyuk, ROUND(AVG(-amount) + 3 * SQRT(AVG(amount * amount) - AVG(amount) * AVG(amount)), 2) AS esik FROM bank_txns WHERE txn_type = 'kart_harcama';"
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 2.</b> Hesap bazında z-skoru 4'ten büyük kart harcamaları (en az 10 harcaması olan hesaplarda): <code>txn_id</code>, <code>account_id</code>, <code>tutar</code> (pozitif), <code>z</code> (2 basamak). z'ye göre azalan.</p>",
+  "sol": "WITH s AS (SELECT txn_id, account_id, -amount AS tutar, AVG(-amount) OVER (PARTITION BY account_id) AS ort, SQRT(AVG(amount * amount) OVER (PARTITION BY account_id) - AVG(amount) OVER (PARTITION BY account_id) * AVG(amount) OVER (PARTITION BY account_id)) AS sd, COUNT(*) OVER (PARTITION BY account_id) AS n FROM bank_txns WHERE txn_type = 'kart_harcama') SELECT txn_id, account_id, tutar, ROUND((tutar - ort) / sd, 2) AS z FROM s WHERE n >= 10 AND sd > 0 AND (tutar - ort) / sd > 4 ORDER BY z DESC;",
+  "ord": true
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 3.</b> Kural tabanlı skor: her kart harcaması için skor = (tutar > 20.000 ise 2) + (saat 00–05 ise 2) + (kanal internet ise 1). Skoru 4 ve üstü olan işlemlerin sayısı: <code>supheli</code>.</p>",
+  "sol": "SELECT COUNT(*) AS supheli FROM (SELECT (CASE WHEN -amount > 20000 THEN 2 ELSE 0 END) + (CASE WHEN CAST(strftime('%H', txn_time) AS INTEGER) < 6 THEN 2 ELSE 0 END) + (CASE WHEN channel = 'internet' THEN 1 ELSE 0 END) AS skor FROM bank_txns WHERE txn_type = 'kart_harcama') AS t WHERE skor >= 4;"
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 4.</b> Özellik tablosu (referans 2024-12-01, yalnızca öncesindeki hareketler): her müşteri için <code>customer_id</code>, <code>islem</code> (kart harcaması adedi), <code>harcama</code> (toplam, pozitif, tam sayı), <code>kategori_cesit</code> (farklı işyeri kategorisi), <code>gece_orani</code> (00–05 arası harcama oranı, 3 basamak), <code>son_gun</code> (son harcamadan referansa gün). Yalnızca harcaması olan müşteriler.</p>",
+  "sol": "SELECT a.customer_id, COUNT(*) AS islem, ROUND(SUM(-t.amount), 0) AS harcama, COUNT(DISTINCT t.merchant_category) AS kategori_cesit, ROUND(1.0 * SUM(CASE WHEN CAST(strftime('%H', t.txn_time) AS INTEGER) < 6 THEN 1 ELSE 0 END) / COUNT(*), 3) AS gece_orani, CAST(julianday('2024-12-01') - julianday(MAX(date(t.txn_time))) AS INTEGER) AS son_gun FROM bank_txns t JOIN bank_accounts a ON a.account_id = t.account_id WHERE t.txn_type = 'kart_harcama' AND t.txn_time < '2024-12-01' GROUP BY a.customer_id;"
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 5.</b> Etiket: Aralık 2024'te hiç kart harcaması olmayan müşteriler “pasif” (1), diğerleri 0. Kasım sonuna kadar harcaması olan müşteriler için etiket dağılımı: <code>pasif</code>, <code>musteri</code>.</p>",
+  "sol": "WITH once AS (SELECT DISTINCT a.customer_id FROM bank_txns t JOIN bank_accounts a ON a.account_id = t.account_id WHERE t.txn_type = 'kart_harcama' AND t.txn_time < '2024-12-01'), aralik AS (SELECT DISTINCT a.customer_id FROM bank_txns t JOIN bank_accounts a ON a.account_id = t.account_id WHERE t.txn_type = 'kart_harcama' AND t.txn_time >= '2024-12-01') SELECT CASE WHEN ar.customer_id IS NULL THEN 1 ELSE 0 END AS pasif, COUNT(*) AS musteri FROM once o LEFT JOIN aralik ar ON ar.customer_id = o.customer_id GROUP BY CASE WHEN ar.customer_id IS NULL THEN 1 ELSE 0 END;"
+ },
+ {
+  "t": "mc",
+  "q": "<p>Özellik tablosunu 2024-12-01 öncesi veriden, etiketi Aralık verisinden üretmemizin nedeni?</p>",
+  "o": [
+   "Daha az veri okunduğu için sorguyu hızlandırmak ve maliyeti düşürmek",
+   "Hedef bilgisinin özelliklere sızmasını (leakage) önlemek",
+   "Model eğitimi için daha az satır elde etmek",
+   "Aralık ayındaki kur farkı etkisini dışarıda tutmak"
+  ],
+  "a": 1,
+  "why": "Model gerçek kullanımda yalnızca geçmişi bilecek. Özellikler kesim tarihinden (2024-12-01) önceki veriden, etiket sonraki dönemden üretilirse eğitim bu durumu taklit eder ve hedef bilgisi özelliklere sızmaz."
+ }
+]
+===== proje-muhendis Bitirme projesi (Veri Mühendisi): ham kayıttan temiz boyut tablosuna ve veri testlerine C1 Bitirme Projeleri 
+ 
+<h2>Senaryo</h2>
+<p>Pazarlama formlarından gelen <code>raw_signups</code> verisi kirli: büyük/küçük harf karışık, tekrar eden satırlar, iki farklı tarih biçimi. Ayrıca fiyat güncellemeleri ayrı bir dosyadan geliyor. Senden temiz tablolar ve bunları koruyan testler isteniyor.</p>
+<h2>Katmanlar</h2>
+<ol>
+<li><b>staging</b>: ham verinin tip ve biçim olarak standartlaştırılmış kopyası</li>
+<li><b>temiz</b>: tekilleştirilmiş, iş kurallarına uygun tablo</li>
+<li><b>mart</b>: raporlamaya hazır özet</li>
+<li><b>test</b>: her katmanın doğruluğunu denetleyen sorgular</li>
+</ol>
+<div class="note"><b>Not</b>Her adım boş bir veritabanında ayrı denetlendiği için, önceki adımın tablosu gerekiyorsa adımın içinde yeniden oluşturulur. Gerçek projede bu adımlar bir dbt modeli veya saklı yordam zinciri olur.</div>
+ 
+ [
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 1.</b> Staging: <code>stg_signups</code> tablosunu <code>raw_signups</code>'tan oluştur: <code>id</code>, kırpılmış ve baş harfleri olduğu gibi bırakılmış ad (<code>full_name</code> = TRIM), küçük harfli ve kırpılmış e-posta (<code>email</code>), kırpılıp büyük harfe çevrilmiş ve İ→I dönüştürülmüş şehir (<code>city</code>, boş metin NULL olsun), YYYY-AA-GG biçimli tarih (<code>signup_date</code>). Sonra satır sayısını ve şehri ISTANBUL olan satır sayısını getir: <code>satir</code>, <code>istanbul</code>.</p>",
+  "sol": "CREATE TABLE stg_signups AS SELECT id, TRIM(full_name) AS full_name, LOWER(TRIM(email)) AS email, NULLIF(REPLACE(UPPER(TRIM(city)), 'İ', 'I'), '') AS city, CASE WHEN signup_date LIKE '__.__.____' THEN SUBSTR(signup_date, 7, 4) || '-' || SUBSTR(signup_date, 4, 2) || '-' || SUBSTR(signup_date, 1, 2) ELSE signup_date END AS signup_date FROM raw_signups; SELECT COUNT(*) AS satir, SUM(CASE WHEN city = 'ISTANBUL' THEN 1 ELSE 0 END) AS istanbul FROM stg_signups;",
+  "dl": [
+   "tsql",
+   "pg",
+   "mysql",
+   "oracle",
+   "sqlite"
+  ]
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 2.</b> Tekilleştirme: aynı <code>id</code> için tek satır kalacak şekilde temiz kayıtları getir (ROW_NUMBER ile, e-postaya göre alfabetik ilk satır): <code>id</code>, <code>email</code>, <code>signup_date</code> (YYYY-AA-GG). id'ye göre sırala.</p>",
+  "sol": "WITH s AS (SELECT id, LOWER(TRIM(email)) AS email, CASE WHEN signup_date LIKE '__.__.____' THEN SUBSTR(signup_date, 7, 4) || '-' || SUBSTR(signup_date, 4, 2) || '-' || SUBSTR(signup_date, 1, 2) ELSE signup_date END AS signup_date FROM raw_signups), r AS (SELECT id, email, signup_date, ROW_NUMBER() OVER (PARTITION BY id ORDER BY email) AS rn FROM s) SELECT id, email, signup_date FROM r WHERE rn = 1 ORDER BY id;",
+  "ord": true
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 3.</b> Mart: aylık yeni kayıt sayısı (tekilleştirilmiş kayıtlar üzerinden): <code>ay</code> (YYYY-AA), <code>kayit</code>. Aya göre sırala.</p>",
+  "sol": "WITH s AS (SELECT DISTINCT id, CASE WHEN signup_date LIKE '__.__.____' THEN SUBSTR(signup_date, 7, 4) || '-' || SUBSTR(signup_date, 4, 2) || '-' || SUBSTR(signup_date, 1, 2) ELSE signup_date END AS d FROM raw_signups) SELECT SUBSTR(d, 1, 7) AS ay, COUNT(*) AS kayit FROM s GROUP BY SUBSTR(d, 1, 7) ORDER BY ay;",
+  "ord": true
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 4.</b> Artımlı yükleme: <code>price_updates</code>'teki her ürünün <b>son</b> fiyatını <code>products</code> tablosuna uygula, ardından fiyatı değişen ürünlerin sayısını getir (değişiklik, güncelleme tablosunda yer almak demek): <code>guncellenen</code>.</p>",
+  "sol": "UPDATE products SET price = (SELECT u.new_price FROM price_updates u WHERE u.product_id = products.product_id ORDER BY u.updated_at DESC LIMIT 1) WHERE product_id IN (SELECT product_id FROM price_updates); SELECT COUNT(*) AS guncellenen FROM products p WHERE EXISTS (SELECT 1 FROM price_updates u WHERE u.product_id = p.product_id);",
+  "check": "SELECT product_id, price FROM products ORDER BY product_id"
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 5.</b> Veri testleri raporu: <code>raw_signups</code> için üç test ve hata sayıları — <code>email_bos</code> (e-postası boş), <code>tarih_gecersiz</code> (iki biçime de uymayan tarih), <code>tekrar_id</code> (birden fazla satırı olan id sayısı). Sütunlar: <code>test</code>, <code>hata</code>.</p>",
+  "sol": "SELECT 'email_bos' AS test, COUNT(*) AS hata FROM raw_signups WHERE email IS NULL OR TRIM(email) = '' UNION ALL SELECT 'tarih_gecersiz', COUNT(*) FROM raw_signups WHERE NOT (signup_date LIKE '____-__-__' OR signup_date LIKE '__.__.____') UNION ALL SELECT 'tekrar_id', COUNT(*) FROM (SELECT id FROM raw_signups GROUP BY id HAVING COUNT(*) > 1) AS t;"
+ }
+]
+===== proje-dba Bitirme projesi (DBA): yavaş raporu hızlandır ve veritabanını güvenceye al C1 Bitirme Projeleri 
+ 
+<h2>Senaryo</h2>
+<p>Anadolu Bank'ın gün sonu raporu yavaşladı ve denetçiler, analistlerin ham hesap tablolarına doğrudan eriştiğini fark etti. Görevin: raporu hızlandırmak ve raporlama için güvenli bir katman kurmak.</p>
+<h2>Yavaş rapor</h2>
+<pre class="code">SELECT date(txn_time) AS gun, txn_type, COUNT(*) AS adet, ROUND(SUM(amount), 0) AS toplam
+FROM bank_txns
+WHERE strftime('%Y-%m', txn_time) = '2024-12'
+GROUP BY date(txn_time), txn_type
+ORDER BY gun, txn_type;</pre>
+<p>Sorunlar: tarih sütunu fonksiyon içinde (SARGable değil), <code>txn_time</code> üzerinde indeks yok.</p>
+<div class="note"><b>Programlar</b>İndeks adımları BigQuery dışındaki tüm programlarda yapılabilir; BigQuery'de karşılığı bölümleme ve kümelemedir.</div>
+ 
+ [
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 1.</b> Raporu SARGable yaz: aynı sonucu, <code>txn_time</code>'ı fonksiyona sokmadan Aralık 2024 aralığıyla filtreleyerek üret: <code>gun</code>, <code>txn_type</code>, <code>adet</code>, <code>toplam</code>. Gün ve türe göre sırala.</p>",
+  "sol": "SELECT date(txn_time) AS gun, txn_type, COUNT(*) AS adet, ROUND(SUM(amount), 0) AS toplam FROM bank_txns WHERE txn_time >= '2024-12-01' AND txn_time < '2025-01-01' GROUP BY date(txn_time), txn_type ORDER BY gun, txn_type;",
+  "ord": true
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 2.</b> <code>bank_txns</code> üzerinde rapora uygun bir indeks oluştur (<code>ix_txn_time</code>, txn_time sütunu) ve veritabanındaki <code>bank_txns</code> indekslerinin adlarını alfabetik listele (SQLite: <code>sqlite_master</code>): <code>name</code>.</p>",
+  "sol": "CREATE INDEX ix_txn_time ON bank_txns (txn_time); SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'bank_txns' AND name NOT LIKE 'sqlite_%' ORDER BY name;",
+  "ord": true,
+  "base": "sqlite",
+  "dl": [
+   "sqlite"
+  ]
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 3.</b> Rapor katmanı: analistler için ham tablolar yerine <code>v_gunluk_ozet</code> görünümü oluştur (gün, işlem türü, adet, toplam; tüm 2024) ve görünümden 2024-12-31 gününün satırlarını getir: <code>gun</code>, <code>txn_type</code>, <code>adet</code>, <code>toplam</code>.</p>",
+  "sol": "CREATE VIEW v_gunluk_ozet AS SELECT date(txn_time) AS gun, txn_type, COUNT(*) AS adet, ROUND(SUM(amount), 0) AS toplam FROM bank_txns GROUP BY date(txn_time), txn_type; SELECT gun, txn_type, adet, toplam FROM v_gunluk_ozet WHERE gun = '2024-12-31';",
+  "dl": [
+   "tsql",
+   "pg",
+   "mysql",
+   "oracle",
+   "sqlite"
+  ]
+ },
+ {
+  "t": "sql",
+  "q": "<p><b>Adım 4.</b> Kişisel veri koruması: analist görünümü <code>v_musteri_analiz</code> oluştur — müşteri numarası, ad soyadın yalnızca baş harfi + '***', şehir, segment, doğum yılı (tarihin ilk 4 karakteri) — ve görünümden şehir başına müşteri sayısını getir: <code>city</code>, <code>musteri</code>.</p>",
+  "sol": "CREATE VIEW v_musteri_analiz AS SELECT customer_id, SUBSTR(full_name, 1, 1) || '***' AS ad, city, segment, SUBSTR(birth_date, 1, 4) AS dogum_yili FROM bank_customers; SELECT city, COUNT(*) AS musteri FROM v_musteri_analiz GROUP BY city;",
+  "dl": [
+   "tsql",
+   "pg",
+   "mysql",
+   "oracle",
+   "sqlite"
+  ]
+ },
+ {
+  "t": "mc",
+  "q": "<p>Analistlerin ham <code>bank_customers</code> tablosuna erişimini kaldırıp yalnızca <code>v_musteri_analiz</code> görünümüne SELECT yetkisi vermek hangi ilkeye örnektir?</p>",
+  "o": [
+   "Normalizasyon ve tekrar eden verinin azaltılması",
+   "En az yetki ve veri minimizasyonu",
+   "Yatay ölçekleme ve okuma yükünün dağıtılması",
+   "Denormalizasyon ve raporlama performansı"
+  ],
+  "a": 1,
+  "why": "Analistlere yalnızca ihtiyaç duydukları sütunları (maskelenmiş ya da özetlenmiş olarak) içeren görünüme erişim vermek, en az yetki ilkesinin ve KVKK'daki veri minimizasyonu ilkesinin uygulamasıdır."
+ },
+ {
+  "t": "mc",
+  "q": "<p>Rapor her gece çalışıyor ve gün içinde OLTP yükünü artırıyorsa, DBA'nın düşünebileceği yapısal çözüm hangisidir?</p>",
+  "o": [
+   "Rapor tablolarındaki tüm indeksleri silip yazmayı hızlandırmak",
+   "Raporu okunabilir ikincil replikaya veya veri ambarına taşımak",
+   "Bölümlenmiş tabloları tek tabloda birleştirip taramayı kolaylaştırmak",
+   "Gece yedeklemesini kapatıp rapora daha fazla kaynak bırakmak"
+  ],
+  "a": 1,
+  "why": "Raporlama yükünü canlı (OLTP) sistemden ayırmak, işlem kullanıcılarının etkilenmemesini sağlar. Okunabilir ikincil replika ya da ayrı bir veri ambarı bu ayrımı yapar."
+ }
+]

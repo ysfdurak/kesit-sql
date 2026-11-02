@@ -1,0 +1,128 @@
+stok-alarmi rows=2 | Hediye Kartı 500 TL/0 ; Spor Ayakkabı/9
+test no effect (bilinçli olabilir) sehir-sampiyonu 0 Şehri boş çok sayıda müşteri
+sehir-sampiyonu rows=1 | İstanbul/28
+satilmayanlar rows=2 | 30/Koşu Bandı ; 40/Gurme Lokum Kutusu
+kategori-payi rows=7 | Elektronik/27 ; Ev & Yaşam/19.1
+test no effect (bilinçli olabilir) cok-yillik 0 Aynı yıl içinde çok sipariş
+cok-yillik rows=1 | 24
+test no effect (bilinçli olabilir) ilk-kanal 0 Aynı gün iki sipariş
+ilk-kanal rows=3 | web/56 ; mobile/56
+maas-bandi rows=7 | Finans/3/1 ; Hukuk/0/0
+aylik-yildiz rows=12 | 2024-01/Bakır Cezve/7 ; 2024-02/Şampuan/10
+ikinci-buyuk rows=1 | 64
+ekip-maliyeti rows=3 | Selim/26/1711000 ; Selin/4/269000
+aktif-turler rows=3 | vadesiz/479 ; kredi_karti/197
+test no effect (bilinçli olabilir) duzenli-maas 0 Kasım maaşları iki parça
+duzenli-maas rows=1 | 231
+test no effect (bilinçli olabilir) riskli-sube 0 Küçük ama çok riskli şube
+riskli-sube rows=1 | Alsancak Şubesi/41/6.37
+gece-atm rows=1 | 240
+harcama-sicramasi rows=203 | 100004/7230/18243 ; 100005/5572/12180
+yogun-meydan rows=3 | IST/2284 ; ESB/556
+zamaninda rows=5 | 20/85/48.2 ; 39/70/48.6
+gecikme-nedeni rows=5 | gec_gelen_ucak/26420/36.6 ; hava/21570/29.9
+mil-krali rows=5 | 242/Ebru Özdemir/29322 ; 842/İlker Özkan/28088
+yer-suresi rows=1 | 528
+aktarma rows=1 | 3
+kapasite rows=5 | A320neo/5/900 ; A321neo/3/660
+tam-dolu rows=9 | 24/20 ; 23/16
+sepet-boyu rows=1 | 1.78
+kanal-pivot rows=3 | 2022/21/32/11 ; 2023/118/142/49
+segment-degeri rows=3 | Premium/33/12958 ; Kurumsal/32/8805
+ardisik-ay rows=1 | 27
+iade-orani rows=3 | Kitap/337/8 ; Ev & Yaşam/209/7.7
+test no effect (bilinçli olabilir) urun-cesidi 0 İki vadeli hesabı olanlar
+urun-cesidi rows=1 | 39
+fatura-gunu rows=3 | 23/527 ; 10/524
+test no effect (bilinçli olabilir) maas-sonrasi 0 Maaştan hemen önce çekim
+maas-sonrasi rows=1 | 9
+sube-sehir rows=8 | İstanbul/4/2005 ; Ankara/2/2006
+test no effect (bilinçli olabilir) gidis-donus 0 Tek yönlü yeni rotalar
+gidis-donus rows=22 | ADA/IST ; ADB/ESB
+sinif-geliri rows=3 | Eko/4042305/46.7 ; EkoFlex/2423750/28
+gecikme-zinciri rows=3 | TC-KMA/62 ; TC-KBC/56
+kurye-yildiz rows=1 | Serdar Yalın/71
+bos-kurye rows=1 | 0
+sepet-esigi rows=1 | 7
+hizli-restoran rows=3 | Yeşil Tabak/8.5 ; Büyük Isırık/9.7
+test no effect (bilinçli olabilir) davet-degeri 0 Siparişsiz yeni davetliler
+davet-degeri rows=3 | Arda Polat/3/25 ; Ilgın Demir/4/23
+aksam-payi rows=3 | Kebap/50.4 ; Vegan/50.2
+test no effect (bilinçli olabilir) es-zamanli 0 Uç uca eklenen teslimatlar
+es-zamanli rows=3 | 47/18 ; 18/13
+sadakat-dususu rows=1 | 28
+ik-ayrilan rows=3 | Çağrı Merkezi/36 ; Mağaza Operasyonları/31
+ik-ilk-yil rows=1 | 17.1
+ik-bant-alti rows=11 | Mağaza Operasyonları/53 ; Yazılım Geliştirme/43
+ik-genis-ekip rows=3 | Rıza Karabulut/89 ; Ayşe Kılıç/72
+ik-huni rows=6 | kariyer sitesi/5652/17.9/29.5 ; referans/1446/40/24.2
+test no effect (bilinçli olabilir) ik-dolum-suresi 0 İptal edilen talepler tarihli
+ik-dolum-suresi rows=3 | Veri ve Analitik/52.4 ; BT Altyapı/48.4
+bk-baslangic rows=5 | Alsancak Çarşı/4257 ; Alsancak Meydan/4157
+test no effect (bilinçli olabilir) bk-kayip 0 Aynı bisiklet iki kez kayıp
+bk-kayip rows=1 | 9
+test no effect (bilinçli olabilir) bk-elektrik 1 Ayın son gecesi
+bk-elektrik rows=1 | 24.9
+bk-sadik rows=1 | 4259
+bk-net rows=3 | Bayraklı Kordon/616 ; Alsancak Meydan 2/612
+bk-cakisan rows=2 | abone/52/50 ; tek seferlik/27/26
+pred t01 143 | 150 | 12 | 149
+pred t02 115 | 122 | 28 | 150
+pred t03 924 | 150 | 910 | 136
+pred t04 0 | 1 | 7 | 6
+pred t05 38538 | 9623 | 75000 | 10000
+pred t06 3 | 4 | 1 | 14
+pred t07 7 | 40 | 13 | 5
+pred t08 58 | 74 | 136 | 859
+pred t09 13 | 157 | 12 | 7
+pred t10 780 | 807 | 781 | 51
+pred t11 1620 | 659 | 910 | 712
+pred t12 35 | 28 | 7 | 115
+pred t13 165 | 15999 | 79 | 3299
+pred t14 712 | 910 | 198 | 4
+pred t15 135 | 136 | 712 | 129
+pred t16 13 | 12 | 143 | 150
+pred t17 2199 | 1306 | 6618 | 7003
+pred t18 107879 | 108195 | 116517 | 8322
+pred t19 34.84 | 34.75 | 53.24 | 40.49
+pred t20 8504 | 1407 | 2199 | 11358
+pz b01 6
+pz b02 6
+pz b03 27
+pz b04 7
+pz b05 3
+pz b06 14
+pz b07 7
+pz b08 12
+pz b09 31
+pz b10 3
+pz b11 141
+pz b12 12
+pz b13 12
+pz b14 1
+pz b15 5
+det kayip-kargo tsql 4471 | Kaan Aydemir | 100 | 65 | 06 ZT 4410 | Tolga Sarp
+det kayip-kargo pg 4471 | Kaan Aydemir | 100 | 65 | 06 ZT 4410 | Tolga Sarp
+det kayip-kargo mysql 4471 | Kaan Aydemir | 100 | 65 | 06 ZT 4410 | Tolga Sarp
+det kayip-kargo oracle 4471 | Kaan Aydemir | 100 | 65 | 06 ZT 4410 | Tolga Sarp
+det kayip-kargo bq 4471 | Kaan Aydemir | 100 | 65 | 06 ZT 4410 | Tolga Sarp
+det kayip-kargo sqlite 4471 | Kaan Aydemir | 100 | 65 | 06 ZT 4410 | Tolga Sarp
+det hayalet-havale tsql 5021 | 3 | D-7731 | Cenk Bulut | Antalya | 185.44.12.7
+det hayalet-havale pg 5021 | 3 | D-7731 | Cenk Bulut | Antalya | 185.44.12.7
+det hayalet-havale mysql 5021 | 3 | D-7731 | Cenk Bulut | Antalya | 185.44.12.7
+det hayalet-havale oracle 5021 | 3 | D-7731 | Cenk Bulut | Antalya | 185.44.12.7
+det hayalet-havale bq 5021 | 3 | D-7731 | Cenk Bulut | Antalya | 185.44.12.7
+det hayalet-havale sqlite 5021 | 3 | D-7731 | Cenk Bulut | Antalya | 185.44.12.7
+det sahte-iade tsql Köşe Dönercisi | Serdar Yalın | 9 | Bora Keskin | 3 | 10065
+det sahte-iade pg Köşe Dönercisi | Serdar Yalın | 9 | Bora Keskin | 3 | 10065
+det sahte-iade mysql Köşe Dönercisi | Serdar Yalın | 9 | Bora Keskin | 3 | 10065
+det sahte-iade oracle Köşe Dönercisi | Serdar Yalın | 9 | Bora Keskin | 3 | 10065
+det sahte-iade bq Köşe Dönercisi | Serdar Yalın | 9 | Bora Keskin | 3 | 10065
+det sahte-iade sqlite Köşe Dönercisi | Serdar Yalın | 9 | Bora Keskin | 3 | 10065
+det giden-yetenek tsql Veri ve Analitik | rakip firma | Rıza Karabulut | 2.38 | 6 | Gülşen Ateş
+det giden-yetenek pg Veri ve Analitik | rakip firma | Rıza Karabulut | 2.38 | 6 | Gülşen Ateş
+det giden-yetenek mysql Veri ve Analitik | rakip firma | Rıza Karabulut | 2.38 | 6 | Gülşen Ateş
+det giden-yetenek oracle Veri ve Analitik | rakip firma | Rıza Karabulut | 2.38 | 6 | Gülşen Ateş
+det giden-yetenek bq Veri ve Analitik | rakip firma | Rıza Karabulut | 2.38 | 6 | Gülşen Ateş
+det giden-yetenek sqlite Veri ve Analitik | rakip firma | Rıza Karabulut | 2.38 | 6 | Gülşen Ateş
+PROBLEMS 0

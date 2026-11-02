@@ -1,0 +1,32 @@
+const {open,go,txt}=require('./lib');
+(async()=>{
+ const {browser,page,errs}=await open();
+ await go(page,'pratik'); await page.waitForTimeout(400);
+ const cnt=async(l)=>console.log(l, await page.evaluate(()=>({items:document.querySelectorAll('#prList .pritem').length, heads:[...document.querySelectorAll('#prList .lvl-head')].map(h=>h.innerText.replace(/\n/g,' ')).join(' | '), empty:(document.querySelector('#prList .empty')||{}).innerText})));
+ await cnt('init');
+ await page.selectOption('#prT','joi'); await page.waitForTimeout(300); await cnt('JOIN');
+ await page.click('[data-prd="3"]'); await page.waitForTimeout(300); await cnt('JOIN ★★★');
+ await page.click('[data-prd="0"]'); await page.selectOption('#prT',''); await page.waitForTimeout(200);
+ await page.fill('#prQ','kohort'); await page.waitForTimeout(500); await cnt('q=kohort');
+ await page.fill('#prQ','LEFT JOIN'); await page.waitForTimeout(500); await cnt('q=LEFT JOIN');
+ await page.fill('#prQ','medyan'); await page.waitForTimeout(500); await cnt('q=medyan');
+ await page.fill('#prQ','ıstanbul'); await page.waitForTimeout(500); await cnt('q=ıstanbul');
+ await page.fill('#prQ','İSTANBUL'); await page.waitForTimeout(500); await cnt('q=İSTANBUL');
+ await page.fill('#prQ','istanbul'); await page.waitForTimeout(500); await cnt('q=istanbul');
+ await page.fill('#prQ','zzzqq'); await page.waitForTimeout(500); await cnt('q=zzzqq');
+ await page.fill('#prQ',''); await page.waitForTimeout(400);
+ await page.click('[data-prl="ileri"]'); await page.waitForTimeout(300); await cnt('lvl ileri click'); console.log(page.url());
+ await page.click('[data-prs="done"]'); await page.waitForTimeout(300); await cnt('done');
+ await page.click('[data-prs=""]');
+ // open first task
+ await go(page,'pratik'); await page.waitForTimeout(300); await cnt('after reload (filters persisted?)');
+ await page.click('[data-prs=""]'); await page.click('[data-prl="temel"]'); await page.waitForTimeout(300);
+ await page.click('[data-pr="t001"]'); await page.waitForTimeout(500);
+ console.log(page.url()); await page.shot('d_pr_t001');
+ console.log((await txt(page,'main')).slice(0,700).replace(/\n/g,' / '));
+ await page.fill('#sqlEditor','SELECT name, category, price FROM products'); await page.click('[data-act=submit]'); await page.waitForTimeout(500);
+ const fb=async()=>page.evaluate(()=>[...document.querySelectorAll('.work > div')].map(d=>d.innerText.slice(0,160)).filter(t=>/Doğru|Henüz|değil|Hata/.test(t)).join('|').replace(/\n/g,' '));
+ console.log('t001:',await fb());
+ console.log('pager:', (await txt(page,'.pager')).replace(/\n/g,' | '));
+ console.log(errs); await browser.close();
+})();

@@ -1,0 +1,25 @@
+calistirilan 8992 oge 1758 { orderByVarOrdYok: 17, ordAmaOrderByYok: 4 }
+{}
+(node:6021) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 exit listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+orderByVarOrdYok metin-birlestir#1  
+orderByVarOrdYok metin-birlestir#2  
+orderByVarOrdYok metin-birlestir#3  
+ordAmaOrderByYok dml#6  
+ordAmaOrderByYok dml#7  
+orderByVarOrdYok hv-analitik#9  
+ordAmaOrderByYok upsert#5  
+ordAmaOrderByYok transaction#6  
+orderByVarOrdYok ts-metin#3  
+orderByVarOrdYok ts-liste#2  
+orderByVarOrdYok ts-liste#3  
+orderByVarOrdYok pg-ozel#3  
+orderByVarOrdYok mysql-ozel#2  
+orderByVarOrdYok de-dedup#1  
+orderByVarOrdYok bq-dizi#2  
+orderByVarOrdYok lab-tsql#8  
+orderByVarOrdYok o197  
+orderByVarOrdYok o203  
+orderByVarOrdYok o205  
+orderByVarOrdYok o206  
+orderByVarOrdYok i211  

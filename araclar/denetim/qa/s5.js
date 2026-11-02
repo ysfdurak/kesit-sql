@@ -1,0 +1,27 @@
+const {open,go,txt,buttons}=require('./lib');
+(async()=>{
+ const {browser,page,errs}=await open();
+ await go(page);
+ await page.click('text=Hiç bilmiyorum');
+ await page.waitForTimeout(400);
+ await page.click('.pager [data-step="1"]'); await page.waitForTimeout(300);
+ await page.click('[data-act=submit]'); await page.waitForTimeout(400);
+ await page.click('.pager >> text=Sonraki alıştırma'); await page.waitForTimeout(400);
+ await page.click('[data-act=sol]'); await page.waitForTimeout(300);
+ await page.click('text=Editöre kopyala'); await page.waitForTimeout(300);
+ console.log('ed:',await page.inputValue('#sqlEditor'));
+ await page.click('[data-act=submit]'); await page.waitForTimeout(500);
+ console.log('fb:', await txt(page,'.work .fb, .work [class*=fb]'));
+ console.log('XP side:', await txt(page,'#sideStats'));
+ console.log('pager', await txt(page,'.pager'));
+ await page.click('.pager >> text=Sonraki alıştırma'); await page.waitForTimeout(400);
+ console.log('EX3:', await txt(page,'.brief .q'), '| ed:', await page.inputValue('#sqlEditor'));
+ await page.fill('#sqlEditor',"SELECT name, price FROM products WHERE price > 1000");
+ await page.keyboard.press('Control+Enter'); await page.waitForTimeout(500);
+ await page.shot('07ex3');
+ console.log('fb3:', (await page.evaluate(()=>[...document.querySelectorAll('.work > div')].map(d=>d.className+': '+d.innerText.slice(0,200)).join('\n'))));
+ console.log('pager', await txt(page,'.pager'));
+ console.log(await page.evaluate(()=>document.querySelector('.pager').outerHTML));
+ console.log(errs);
+ await browser.close();
+})();

@@ -1,0 +1,34 @@
+const {open,go,txt,buttons}=require('./lib');
+(async()=>{
+ const {browser,page,errs}=await open();
+ await go(page);
+ await page.click('text=Hiç bilmiyorum');
+ await page.waitForTimeout(500);
+ await page.click('.pager [data-step="1"]');
+ await page.waitForTimeout(500);
+ await page.click('[data-act=submit]');
+ await page.waitForTimeout(700);
+ await page.shot('04ex1submit');
+ const fb=async()=> (await page.evaluate(()=>{const w=document.querySelector('.work'); return w? w.innerText.split('\n').filter(x=>x.trim()).slice(-25).join(' | '):''}));
+ console.log('EX1 after submit:', await fb());
+ console.log('pager:', await txt(page,'.pager'));
+ console.log(await page.evaluate(()=>document.querySelector('.pager').outerHTML)); await page.click('.pager >> text=Sonraki alıştırma');
+ await page.waitForTimeout(600);
+ console.log('EX2 brief:', await txt(page,'.brief .q'));
+ console.log('editor:', await page.inputValue('#sqlEditor'));
+ // wrong
+ await page.fill('#sqlEditor','SELECT * FROM customers;');
+ await page.click('[data-act=submit]'); await page.waitForTimeout(600);
+ console.log('EX2 wrong:', await fb());
+ await page.shot('05ex2wrong');
+ await page.click('[data-act=hint]'); await page.waitForTimeout(300);
+ console.log('HINT:', await txt(page,'#hintBox'));
+ await page.click('[data-act=hint]').catch(e=>console.log('hint2 err')); await page.waitForTimeout(300);
+ console.log('HINT2:', await txt(page,'#hintBox'));
+ await page.click('[data-act=sol]'); await page.waitForTimeout(300);
+ console.log('SOL:', await txt(page,'#solBox'));
+ await page.shot('06ex2sol');
+ console.log(await buttons(page));
+ console.log(errs);
+ await browser.close();
+})();

@@ -1,0 +1,42 @@
+const {open,go,txt,buttons}=require('./lib');
+const mobile=process.argv[2]==='m'; const tag=mobile?'m_':'d_';
+(async()=>{
+ const {browser,page,errs}=await open({mobile});
+ const ow=async(l)=>{const w=await page.ow(); if(w>(mobile?390:1280)) console.log('OVERFLOW',l,w);};
+ await go(page); await ow('home');
+ await page.shot(tag+'r1_home');
+ await page.click('text=Hiç bilmiyorum'); await page.waitForTimeout(400); await ow('lesson');
+ await page.shot(tag+'r1_lesson');
+ await page.click('.pager [data-step="1"]'); await page.waitForTimeout(300); await ow('ex1');
+ await page.shot(tag+'r1_ex1');
+ await page.click('[data-act=submit]'); await page.waitForTimeout(400); await ow('ex1 sub');
+ await page.click('.pager >> text=Sonraki alıştırma'); await page.waitForTimeout(400);
+ await page.fill('#sqlEditor','SELECT name, category FROM products');
+ await page.click('[data-act=submit]'); await page.waitForTimeout(400);
+ await page.click('.pager >> text=Sonraki alıştırma'); await page.waitForTimeout(400);
+ await page.fill('#sqlEditor',"select price, name from products where price>1000 order by price");
+ await page.click('[data-act=submit]'); await page.waitForTimeout(500);
+ console.log('ex3 col order swap fb:', await page.evaluate(()=>[...document.querySelectorAll('.work > div')].map(d=>d.innerText.slice(0,120)).filter(t=>/Doğru|Henüz|değil/.test(t)).join('|')));
+ await page.fill('#sqlEditor',"select name, price from products where price>1000 order by price desc"); await page.click('[data-act=submit]'); await page.waitForTimeout(500);
+ console.log('ex3 order-by-added fb:', await page.evaluate(()=>[...document.querySelectorAll('.work > div')].map(d=>d.innerText.slice(0,120)).filter(t=>/Doğru|Henüz|değil/.test(t)).join('|')));
+ await page.shot(tag+'r1_ex3done');
+ console.log('side:', (await txt(page,'#sideStats')).replace(/\n/g,' '));
+ const toast=await page.evaluate(()=>[...document.querySelectorAll('.toast,[class*=toast]')].map(t=>t.innerText).join('|')); console.log('toast:',toast);
+ await page.click('.pager .btn.pri'); await page.waitForTimeout(500);
+ console.log('URL',page.url()); await ow('lesson2');
+ console.log('L2 head:', (await txt(page,'main')).slice(0,400).replace(/\n/g,' / '));
+ await page.shot(tag+'r1_lesson2');
+ // home
+ if(mobile){ console.log('tabbar:', await page.evaluate(()=>[...document.querySelectorAll('nav, .tabbar, [class*=tab]')].filter(e=>e.offsetParent&&getComputedStyle(e).position==='fixed').map(e=>e.className+':'+e.innerText.replace(/\n/g,' ')).join(' || '))); }
+ await page.evaluate(()=>location.hash=''); await page.waitForTimeout(500); await ow('home2');
+ await page.shot(tag+'r1_home2');
+ console.log('HOME2:', (await txt(page,'main')).slice(0,900).replace(/\n/g,' / '));
+ await page.evaluate(()=>location.hash='paths'); await page.waitForTimeout(500); await ow('paths');
+ await page.shotFull(tag+'r1_paths');
+ console.log('PATHS:', (await txt(page,'main')).slice(0,3000).replace(/\n/g,' / '));
+ await page.evaluate(()=>location.hash='patika-temel'); await page.waitForTimeout(500); await ow('patika-temel');
+ await page.shotFull(tag+'r1_patika');
+ console.log('PATIKA:', (await txt(page,'main')).slice(0,2500).replace(/\n/g,' / '));
+ console.log(errs);
+ await browser.close();
+})();
