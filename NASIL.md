@@ -9,10 +9,13 @@ Bu dal (`kaynak`), yayındaki sitenin (`main` dalı) bütün dosyalarını ve bu
 | `index.html` | Uygulama: arayüz, yönlendirme, ilerleme kaydı. Betikleri sırayla yükler. |
 | `db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js` | Veri setleri: e-ticaret ve banka, havayolu, yemek teslimatı, İK, bisiklet paylaşımı. |
 | `dialect.js` | SQL Server, PostgreSQL, MySQL, Oracle ve BigQuery yazımını SQLite'a çeviren katman. |
-| `c1.js` … `c34.js`, `cx.js` | Dersler, patikalar, pratik görevleri, sınavlar. Sonra yüklenen dosya öncekileri yerinde değiştirebilir. |
-| `arena-data.js` | Oyun alanı: meydan okumalar, dedektif vakaları, tahmin, bulmaca. |
-| `belge.js`, `hesap.js` | Tamamlama belgesi; isteğe bağlı hesap modülü (portföy sürümünde kapalı). |
-| `config.js` | Yayın ayarları: yazar, site adresi, Giscus, GoatCounter, geri bildirim formu. |
+| `c1.js` … `c35.js`, `cx.js` | Dersler, öğrenme yolları, pratik görevleri, sınavlar. Sonra yüklenen dosya öncekileri yerinde değiştirebilir. `c35.js` son düzeltme katmanıdır: yol sırası, seviye testi, yöntem kuralları, yeni dersler. |
+| `ipuclari.js` | Alıştırma ipuçları. `araclar/denetim/ipucu_uret.js` üretir; elle yazılanlar `araclar/denetim/ipucu_elle.json` içinde. |
+| `bilinen-sinirlar.js` | Veri setleri sayfasındaki “Bilerek bırakılanlar ve bilinen sınırlamalar” metinleri. |
+| `arena-data.js` | SQL Arena: meydan okumalar, dedektif vakaları, tahmin, bulmaca. |
+| `belge.js` | Tamamlama belgesi. |
+| `config.js` | Yayın ayarları: yazar, adresler, Giscus, GoatCounter, geri bildirim formu. |
+| `sw.js` | Service worker. Önbellek sürümü `CACHE` sabitinde; sürüm değişince eski `kesit-sql-*` önbellekleri silinir. |
 | `base-<özet>.b64.txt` | Önceden kurulmuş veritabanı (gzip + base64). Veri dosyalarından üretilir, elle düzenlenmez. |
 | `vendor/` | sql.js (asm sürümü) ve yazı tipleri. Siteye gömülüdür. |
 | `araclar/denetim/` | Veritabanı üretimi ve otomatik denetimler (Node). |
@@ -28,7 +31,7 @@ Bu dal (`kaynak`), yayındaki sitenin (`main` dalı) bütün dosyalarını ve bu
 
 ```bash
 cd araclar/denetim
-npm install                        # sql.js
+npm install                        # sql.js ve @electric-sql/pglite
 npm install --no-save playwright   # yalnızca tarayıcı testleri için
 npx playwright install chromium
 ```
@@ -81,8 +84,8 @@ node shots.js ../../ekran
 ```bash
 node run.js
 ```
-- Her dersin her SQL alıştırmasını, izin verilen her SQL programında çalıştırır.
-- Örnek çözümün hatasız çalıştığını ve beklenen sonucu verdiğini denetler.
+- Her dersin her SQL alıştırmasını, izin verilen her SQL türünde çalıştırır.
+- Örnek çözümün hatasız çalıştığını, beklenen sonucu verdiğini ve görevin yöntem kurallarını (`must`, `mustNot`) geçtiğini denetler.
 - Sonucu `sql_audit.json` dosyasına yazar.
 - Son temiz sonuç: `calistirilan 8992`, hata yok.
 - Altındaki `orderByVarOrdYok` ve `ordAmaOrderByYok` satırları sıralama uyarısıdır, hata değildir (`sonuclar/run.txt`).
@@ -98,9 +101,9 @@ PROG=1 node run.js               # ilerlemeyi yazdır
 ```bash
 node boxes.js            # FILTER ile daraltılabilir
 ```
-Konu anlatımlarındaki çalıştırılabilir örnekleri bütün programlarda çalıştırır. Son temiz sonuç: `kutu 518 calistirma 2412 hata 0`.
+Konu anlatımlarındaki çalıştırılabilir örnekleri bütün SQL türlerinde çalıştırır. Son temiz sonuç: `kutu 518 calistirma 2412 hata 0`.
 
-### 3. Oyun alanı
+### 3. SQL Arena
 ```bash
 node arena.js            # SETS (küme adları, virgülle) ve IDS (kimlik düzenli ifadesi) ile daraltılabilir
 ```
@@ -110,11 +113,32 @@ Meydan okumaları, dedektif vakalarını, tahmin ve bulmacaları denetler. Son t
 ```bash
 node static.js
 ```
-- Yinelenen kimlik ve başlıkları, patika sırasını, şıkların dağılımını denetler.
+- Yinelenen kimlik ve başlıkları, öğrenme yolu sırasını, şıkların dağılımını denetler.
 - Çıktı uyarı listesidir.
 - Son durumda bilinen ve kabul edilmiş uyarılar: `hicbirPatikadaDegil: 1`, `patikaSeviyeGeriDonus: 11`, `ayniCozumluPratik: 8`, `sinavAyniSecenek: 1`. Bu sayılar artarsa bak. Ayrıntılı liste `static.txt` dosyasına yazılır (son hali: `sonuclar/static.txt`).
 
-### 5. Tarayıcı testleri
+### 5. Gerçek PostgreSQL denetimi
+```bash
+node pg_denetim.mjs              # FILTER='^ik-' ile daraltılır
+```
+- Ders alıştırmalarını, pratik görevlerini ve Arena çözümlerini `DX.forward` çıktısıyla PGlite (WASM) üstünde çalıştırır, taklit motorun sonucuyla karşılaştırır. `bk_*` tabloları ve DML/DDL dahildir.
+- Her çözüm dış bir işlem içinde çalışıp geri alınır. Kendi `BEGIN`/`COMMIT` komutları kayıt noktasına çevrilir, veri kalıcı değişmez.
+- İlk çalıştırmada veritabanını kurar ve `pg_taban.tgz` olarak saklar (`base.sqlite` yenilenince kendini yeniler). Tam tur yaklaşık 3 dakika.
+- 45 saniyeyi aşan sorgu `zamanasimi` diye yazılır. Tüm sonuç `pg_audit.json` dosyasındadır.
+- Gerekçesi yazılı farklar `pg_bilinen.json` dosyasındadır. Temiz sonuç: `BILINMEYEN 0` ve `gereksiz bilinen kayit 0`.
+- Yapısal denetimi SQLite kataloğuna bakan DDL görevlerinde (pragma_table_info) yalnız DDL'in çalıştığı sınanır.
+- Tarih türü ile yapılan sıralamalar ve yerel ayara bağlı `UPPER`/`LOWER` farkı karşılaştırmada i/İ/ı/I harfleri eşit sayılarak ele alınır.
+
+SQL Server, MySQL, Oracle ve BigQuery için bu denetimin karşılığı yoktur; bu türler yalnız taklit katmanında sınanır.
+
+### 6. İpucu kapsamı
+```bash
+node ipucu_uret.js               # ipuclari.js dosyasını yeniden yazar, "uretilen N elle M" yazar
+node ipucu_uret.js --ornek 40    # üretilen ipuçlarından örnek gösterir
+```
+Bütün SQL alıştırmaları ve pratik görevlerinde ipucu olmalı. Elle yazılan her ipucu `ipucu_elle.json` içinde (`ders#sira` ya da `P:kimlik`) ve üretilenin önüne geçer. İçerik değişince yeniden çalıştır.
+
+### 7. Tarayıcı testleri
 Önce kökü 8765 portunda sun:
 ```bash
 python3 -m http.server 8765 --directory ../..
@@ -127,20 +151,21 @@ node fr.js           # ilk kullanım akışı ("Hiç bilmiyorum" → ilk ders �
 node cert_test.js    # tamamlama belgesi. Görselleri $KESIT_CIKTI/belge/ klasörüne yazar
 node pf_test.js      # Hakkında sayfası ve config.js alanları
 node gc_test.js      # GoatCounter: kod doluyken sayaç yükleniyor ve olaylar gönderiliyor
-node sweep.js        # oyun alanının bütün öğelerini tarayıcıda açar
+node sweep.js        # SQL Arena'nın bütün öğelerini tarayıcıda açar
 node mobsweep.js ders-ik-ucret,data   # verilen sayfaları mobilde açar
 node final_check.js  # Hakkında sayfasının ekran görüntüsü
 ```
 - `smoke8.js` başka bir adresi `URL=https://... node smoke8.js` ile dener.
+- `smoke8.js`, `URL=` ile; `pub_test.js`, `icons.js` ve `shots.js`, `KESIT_BASE=http://localhost:PORT` ile başka porta yönlendirilir.
 - `pub_test.js` ve `final_check.js` gerçek `config.js` ile çalışır.
 - Diğer testler `config.js` dosyasını kendi deneme değerleriyle değiştirerek çalışır.
 
-### 6. Kullanıcı akışı testleri (qa/)
+### 8. Kullanıcı akışı testleri (qa/)
 Bu testler 8811 portunu kullanır:
 ```bash
 python3 -m http.server 8811 --directory ../..
 cd qa
-node sweep3.js pg          # bütün pratik görevleri seçilen programda (tsql, pg, mysql, oracle, bq, sqlite)
+node sweep3.js pg          # bütün pratik görevleri seçilen SQL türünde (tsql, pg, mysql, oracle, bq, sqlite)
 node lsweep2.js pg         # dersleri baştan sona çözerek ilerleme
 node a11y.js               # ana sayfalardaki tıklanabilir öğelerin taraması
 ```
@@ -148,21 +173,28 @@ node a11y.js               # ana sayfalardaki tıklanabilir öğelerin taraması
 
 ### Önerilen sıra (bir değişiklikten sonra)
 1. Veri değiştiyse `node make_base.js`.
-2. `node run.js`, `node boxes.js`, `node arena.js` ve `node static.js`. Birbirinden bağımsızdırlar; aynı anda da çalışabilirler. Üçü aynı anda çalıştırıldığında, sınırlı sunucu kaynağı olan bir makinede, tam takım yaklaşık 25 dakika sürdü. Geliştirirken `FILTER` ile yalnızca değişen dersleri denetle.
-3. Sunucuyu aç; `node smoke8.js` ve `node pub_test.js`.
+2. İçerik değiştiyse `node ipucu_uret.js`.
+3. `node run.js`, `node boxes.js`, `node arena.js`, `node static.js` ve `node pg_denetim.mjs`. Birbirinden bağımsızdırlar; aynı anda da çalışabilirler. Üçü aynı anda çalıştırıldığında, sınırlı sunucu kaynağı olan bir makinede, tam takım yaklaşık 25 dakika sürdü. Geliştirirken `FILTER` ile yalnızca değişen dersleri denetle.
+4. Sunucuyu aç; `node smoke8.js` ve `node pub_test.js`.
 
 ### Tek seferlik betikler
-`t1`–`t7`, `err*`, `dx*`, `probe*`, `dump*`, `smoke`–`smoke7`, `*_c30`–`*_c33`, `acct_test`, `mocksb`, `fix_test` ve benzerleri belirli bir hatayı ya da içerik partisini incelemek için yazıldı. Örnek olarak tutuluyorlar; eski bir duruma göre yazılmış olabilirler.
+`t1`–`t7`, `err*`, `dx*`, `probe*`, `dump*`, `smoke`–`smoke7`, `*_c30`–`*_c33`, `fix_test` ve benzerleri belirli bir hatayı ya da içerik partisini incelemek için yazıldı. Örnek olarak tutuluyorlar; eski bir duruma göre yazılmış olabilirler.
 
 ## Yayına alma
-Site `main` dalından sunulur. Bu dalda değişikliği yapıp testleri geçirdikten sonra yalnızca site dosyalarını `main` dalına taşı. `araclar/` ve `NASIL.md` `main` dalına gitmez:
+Site `main` dalından sunulur. `main` dalına **yalnız aşağıdaki dosyalar** gider; `araclar/` ve `NASIL.md` gitmez.
+
+Site dosyaları (tam liste): `index.html`, `db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js`, `dialect.js`, `c1.js` … `c35.js`, `cx.js`, `ipuclari.js`, `arena-data.js`, `config.js`, `bilinen-sinirlar.js`, `belge.js`, `sw.js`, `base-<özet>.b64.txt`, `manifest.webmanifest`, `favicon.svg`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, `og.png`, `vendor/`, `ekran/`, `README.md`, `LICENSE`, `LICENSE-ICERIK.md`, `.nojekyll`.
+
+Eski sürümden kaldırılacaklar: `hesap.js`, `hesap-secenegi/`, `YAYIN.md`.
+
 ```bash
 git checkout main
-git checkout kaynak -- index.html c34.js config.js base-*.b64.txt   # değişen site dosyaları
-git rm --cached base-<eski-özet>.b64.txt   # veritabanı yenilendiyse eskisini kaldır
+git checkout kaynak -- index.html db.js hv.js lk.js ik.js bk.js dialect.js c[0-9]*.js cx.js ipuclari.js arena-data.js config.js bilinen-sinirlar.js belge.js sw.js manifest.webmanifest favicon.svg apple-touch-icon.png icon-192.png icon-512.png icon-512-maskable.png og.png vendor ekran README.md LICENSE LICENSE-ICERIK.md .nojekyll base-*.b64.txt
+git rm -r --ignore-unmatch hesap.js hesap-secenegi YAYIN.md
+git rm --cached --ignore-unmatch base-<eski-özet>.b64.txt   # veritabanı yenilendiyse eskisini kaldır
 git commit -m "..." && git push origin main
 git checkout kaynak
 ```
 GitHub Pages bir iki dakika içinde güncellenir.
 
-`sw.js` ağ öncelikli çalışır; ziyaretçiler yeni sürümü bir sonraki açılışta alır. Önbellek sürümünü değiştirmen gerekmez.
+`sw.js` ağ öncelikli çalışır; ziyaretçiler yeni sürümü bir sonraki açılışta alır. Önbellek biçimini değiştirirsen `CACHE` sabitinin sürümünü artır; eski önbellek etkinleşmede silinir. Yeni `base-*.b64.txt` alınınca eskisi önbellekten çıkar.

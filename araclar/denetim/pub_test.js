@@ -1,7 +1,8 @@
+const KESIT_BASE=process.env.KESIT_BASE||KESIT_BASE;
 const { chromium } = require('playwright'); const fs=require('fs');
 (async()=>{ const b=await chromium.launch(); const p=await b.newPage({viewport:{width:1280,height:900}}); const ext=[]; const errs=[];
- p.on('request',r=>{ const u=r.url(); if(!u.startsWith('http://localhost:8765')) ext.push(u); }); p.on('pageerror',e=>errs.push(e.message)); p.on('console',m=>{ if(m.type()==='error') errs.push('c:'+m.text()); });
- const t=Date.now(); await p.goto('http://localhost:8765/index.html'); await p.waitForFunction(()=>document.querySelector('#sideStats .engine .dot.ok'),null,{timeout:180000}); console.log('motor ms', Date.now()-t);
+ p.on('request',r=>{ const u=r.url(); if(!u.startsWith(KESIT_BASE)) ext.push(u); }); p.on('pageerror',e=>errs.push(e.message)); p.on('console',m=>{ if(m.type()==='error') errs.push('c:'+m.text()); });
+ const t=Date.now(); await p.goto(KESIT_BASE+'/index.html'); await p.waitForFunction(()=>document.querySelector('#sideStats .engine .dot.ok'),null,{timeout:180000}); console.log('motor ms', Date.now()-t);
  await p.waitForTimeout(1500);
  console.log('lang', await p.evaluate(()=>document.documentElement.lang), '| yazı tipi yüklü', await p.evaluate(()=>document.fonts.check('800 20px "Bricolage Grotesque"') && [...document.fonts].filter(f=>f.status==='loaded').map(f=>f.family+' '+f.weight).join(', ')));
  console.log('sw', await p.evaluate(async()=>{ const r=await navigator.serviceWorker.getRegistration(); return r?r.active?'aktif':'kayıtlı':'yok'; }));
