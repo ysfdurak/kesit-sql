@@ -28,6 +28,9 @@
 ## Geri bildirim
 Her dersin başlığının yanında geri bildirim bağlantısı, konu anlatımının altında yorum alanı var. Genel fikirler için bu deponun **Discussions** sekmesini kullanabilirsin.
 
+## Kardeş projeler
+Aynı mantıkla hazırlanmış diğer eğitimler: **[Kesit Power BI](https://ysfdurak.github.io/kesit-powerbi/)** ve **[Kesit Python](https://ysfdurak.github.io/kesit-python/)**.
+
 ## Sorumluluk notu
 Ücretsiz, ticari olmayan bir eğitim ve portföy projesidir; içerik “olduğu gibi” sunulur. Veri setlerindeki tüm şirketler, kişiler ve kayıtlar hayalidir. Sertifika denemeleri ilgili kurumların resmî sınavları değildir.
 
