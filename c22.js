@@ -448,7 +448,7 @@ P.push({ id: 'sert-mssql', name: 'Microsoft SQL Sertifika Hazırlık', short: 'M
     { t: 'Azure SQL', d: 'Dağıtım seçenekleri ve DP-300 konuları', l: ['azure-sql', 'dp300-yonetim'] }
   ],
   beyond: ['Sınavlar: T-SQL Kodlama Laboratuvarı', 'Sınavlar: T-SQL Sorgulama ve DP-300 denemeleri', 'Azure portalında uygulamalı çalışma (ücretsiz deneme hesabı)', 'Resmi Microsoft Learn öğrenme yolları'] });
-P.push({ id: 'sert-bulut', name: 'Bulut Veri Sertifikaları Hazırlık', short: 'BLT', color: '#0891B2',
+P.push({ id: 'sert-bulut', name: 'Bulut Veri Sertifikaları Hazırlık', short: 'BLT', color: '#0E7490',
   desc: 'Google Data Analytics / BigQuery, Databricks ve Snowflake sınavları için ayrı hazırlık öğrenme yolu.',
   long: 'Bulut veri platformlarının sertifikalarına hazırlananlar için. Önce analiz sürecini ve BigQuery yazımını laboratuvarla çalışırsın, sonra bulut veri ambarlarının ortak kavramlarına (depolama ve işlem ayrımı, bölümleme, maliyet, yarı yapısal veri) ve Databricks ile Snowflake\'e özgü konulara geçersin. Her sınav için ayrı çoktan seçmeli deneme ve BigQuery kodlama laboratuvarı vardır.',
   skills: ['Analiz süreci', 'BigQuery sözdizimi', 'Diziler ve UNNEST', 'Maliyet ve bölümleme', 'Lakehouse ve Delta', 'Snowflake mimarisi', 'Yarı yapısal veri'],

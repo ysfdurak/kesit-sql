@@ -172,7 +172,7 @@ LIMIT 5;</pre>
 const at = L.findIndex(l => l.id === 'performans-lab');
 L.splice(at < 0 ? L.length : at + 1, 0, ...lessons);
 const P = window.SQLP_PATHS;
-P.push({ id: 'buyuk-veri', name: 'Büyük Veriyle Çalışmak', short: 'BV', color: '#0D9488',
+P.push({ id: 'buyuk-veri', name: 'Büyük Veriyle Çalışmak', short: 'BV', color: '#0F766E',
   desc: '116.000 satırlık bisiklet paylaşım verisiyle profil çıkarma, sorgu planı ve indeks, zaman desenleri ve işletme analitiği.',
   long: 'Şimdiye kadarki tabloların çok üstünde bir tabloyla çalışırsın: Pedal İzmir\'in üç aylık yolculukları. Büyük tabloyu tanımayı, örneklemeyi, sorgu planını okumayı, indeksin etkisini ölçmeyi ve indeksi bozan yazımlardan kaçınmayı öğrenirsin. Ardından zaman ve hava durumu desenleri, istasyon dengesi, veri kalitesi ve ücret analizleriyle gerçek bir işletme sorusuna cevap verirsin.',
   skills: ['Veri profili', 'Tekrarlanabilir örnekleme', 'EXPLAIN QUERY PLAN', 'İndeks ve sargable koşul', 'Normalize karşılaştırma', 'Net akış', 'Veri kalitesi'],

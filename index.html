@@ -16,7 +16,7 @@
 .door{display:flex;flex-direction:column;gap:6px;text-align:left;padding:18px;border:1px solid var(--line);border-radius:14px;background:var(--surface);cursor:pointer;font:inherit;color:inherit;transition:border-color .15s, transform .15s}
 .door:hover{border-color:var(--accent);transform:translateY(-1px)}
 .door b{font-size:1.1rem}.door small{color:var(--muted);line-height:1.45}
-.door-ic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font-weight:700;font-size:.9rem}
+.door-ic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:.9rem}
 .opts .unsure{border-style:dashed}
 .optlist summary{cursor:pointer;padding:12px 14px;font-weight:600}
 @media (max-width:720px){.doors{grid-template-columns:1fr}}
@@ -35,10 +35,12 @@
    Kimlik: Likya Yolu işaret boyası (kırmızı-beyaz şerit); seviyeler Temel → Orta → İleri tırmanış. */
 :root{
   --bg:#EEF1F4; --surface:#FFFFFF; --surface-2:#F6F8FA; --ink:#141C27; --muted:#5A6576; --line:#D8DEE6;
-  --accent:#D3352C; --accent-soft:#FBE7E5; --accent-ink:#FFFFFF;
-  --ok:#17855A; --ok-soft:#E1F3EA; --warn:#A86A12; --warn-soft:#FBF0DD; --err:#C0392B; --err-soft:#FBE6E3;
-  --code-bg:#121A24; --code-ink:#DCE4EE; --code-kw:#FF8A7A; --code-fn:#8FC8FF; --code-str:#B8E07A; --code-num:#F5C26B; --code-com:#6F7E92; --code-var:#E2A8FF; --code-line:#223042; --code-tab:#1A2431;
-  --l1:#2F9A5A; --l2:#0F8A7E; --l3:#3866D1; --l4:#7A4FD0; --l5:#B8418F; --l6:#D3352C; --lv-ink:#fff;
+  --accent:#C62F27; --accent-soft:#FBE7E5; --accent-ink:#FFFFFF;
+  --ok:#17855A; --ok-ink:#fff; --ok-soft:#E1F3EA; --warn:#A86A12; --warn-soft:#FBF0DD; --err:#C0392B; --err-soft:#FBE6E3;
+  --code-bg:#121A24; --code-ink:#DCE4EE; --code-kw:#FF8A7A; --code-fn:#8FC8FF; --code-str:#B8E07A; --code-num:#F5C26B; --code-com:#7F8DA1; --code-var:#E2A8FF; --code-line:#223042; --code-tab:#1A2431;
+  --l1:#1F7F47; --l2:#0B7A70; --l3:#3866D1; --l4:#7A4FD0; --l5:#B8418F; --l6:#D3352C; --lv-ink:#fff;
+  /* Yol simgeleri iki temada da aynı renk, üstünde beyaz yazı (4,5:1 üzeri) */
+  --p2:#0B7A70; --p3:#3866D1; --p4:#7A4FD0; --p5:#B8418F; --p6:#D3352C;
   --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --f-body:"IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
   --f-mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
@@ -46,15 +48,15 @@
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0D131A; --surface:#141C26; --surface-2:#18212D; --ink:#E6ECF3; --muted:#93A0B3; --line:#263242;
-  --accent:#F05A4F; --accent-soft:#3A1D1D; --accent-ink:#FFFFFF;
-  --ok:#45C08A; --ok-soft:#14302A; --warn:#E3A84B; --warn-soft:#352A16; --err:#FF7B6E; --err-soft:#3A1F1E;
+  --accent:#F05A4F; --accent-soft:#3A1D1D; --accent-ink:#1A0B0A;
+  --ok:#45C08A; --ok-ink:#0B1220; --ok-soft:#14302A; --warn:#E3A84B; --warn-soft:#352A16; --err:#FF7B6E; --err-soft:#3A1F1E;
   --code-bg:#0A1017; --code-line:#1E2A38; --code-tab:#111923;
   --l1:#4CC27E; --l2:#3CC4B4; --l3:#6E93F0; --l4:#A585F0; --l5:#E06BB6; --l6:#F05A4F; --lv-ink:#0B1220;
   --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark }}
 :root[data-theme="dark"]{
   --bg:#0D131A; --surface:#141C26; --surface-2:#18212D; --ink:#E6ECF3; --muted:#93A0B3; --line:#263242;
-  --accent:#F05A4F; --accent-soft:#3A1D1D; --accent-ink:#FFFFFF;
-  --ok:#45C08A; --ok-soft:#14302A; --warn:#E3A84B; --warn-soft:#352A16; --err:#FF7B6E; --err-soft:#3A1F1E;
+  --accent:#F05A4F; --accent-soft:#3A1D1D; --accent-ink:#1A0B0A;
+  --ok:#45C08A; --ok-ink:#0B1220; --ok-soft:#14302A; --warn:#E3A84B; --warn-soft:#352A16; --err:#FF7B6E; --err-soft:#3A1F1E;
   --code-bg:#0A1017; --code-line:#1E2A38; --code-tab:#111923;
   --l1:#4CC27E; --l2:#3CC4B4; --l3:#6E93F0; --l4:#A585F0; --l5:#E06BB6; --l6:#F05A4F; --lv-ink:#0B1220;
   --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark }
@@ -193,7 +195,7 @@ button.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink);
 .litem b{font-weight:600; display:block}
 .litem small{color:var(--muted); display:block; font-size:.82rem; line-height:1.4}
 .check{width:22px; height:22px; border-radius:50%; border:2px solid var(--line); display:grid; place-items:center}
-.check.done{border:0; background:var(--ok); color:#fff}
+.check.done{border:0; background:var(--ok); color:var(--ok-ink)}
 .check.part{border-color:var(--ok)}
 .check svg{width:13px; height:13px}
 .lvl-block{display:flex; flex-direction:column; gap:10px}
@@ -406,7 +408,7 @@ button.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink);
 .heat i.fut{visibility:hidden}
 .badges{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px}
 .badge{padding:12px; border:1px solid var(--line); border-radius:var(--r); background:var(--surface); display:flex; flex-direction:column; gap:4px; align-items:flex-start}
-.badge .bi{width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-weight:800; font-family:var(--f-display); color:#fff; background:var(--accent)}
+.badge .bi{width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-weight:800; font-family:var(--f-display); color:var(--accent-ink); background:var(--accent)}
 .badge b{font-size:.9rem}
 .badge small{color:var(--muted); font-size:.76rem; line-height:1.35}
 .badge.off{opacity:.55}
@@ -477,7 +479,7 @@ button.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink);
 .ar-flt button[aria-pressed=true]{background:var(--ink); color:var(--surface); border-color:var(--ink)}
 .ar-list .litem{grid-template-columns:24px minmax(0,1fr) auto auto; cursor:pointer}
 .ar-st{width:20px; height:20px; border-radius:50%; border:2px solid var(--line); display:grid; place-items:center; font-size:.7rem}
-.ar-st.ok{background:var(--ok); border-color:var(--ok); color:#fff}
+.ar-st.ok{background:var(--ok); border-color:var(--ok); color:var(--ok-ink)}
 .ar-tags{display:flex; gap:6px; flex-wrap:wrap; margin-top:3px} .ar-tags span{font-size:.72rem; color:var(--muted)}
 .d1{color:var(--ok)!important; border-color:color-mix(in srgb,var(--ok) 45%,transparent)!important}
 .d2{color:var(--warn)!important; border-color:color-mix(in srgb,var(--warn) 45%,transparent)!important}
@@ -926,10 +928,13 @@ function viewPath(id){
     if(p.beyond) h+='<div class="panel beyond"><b>SQL dışında öğrenmen gerekenler</b><span class="muted" style="display:block;font-size:.86rem;margin-top:2px">Bu uygulamanın kapsamı dışında kalan ama bu rolde beklenen beceriler. Yolu bitirirken bunlara da zaman ayırmanı öneririz.</span><ul>'+p.beyond.map(b=>'<li>'+esc(b)+'</li>').join('')+'</ul></div>';
     h+='</section>';
   }
-  /* Sıra yolun kendi sırasıdır; seviye değiştikçe yeni başlık açılır */
-  const groups=[]; ls.forEach(l=>{ let G=groups[groups.length-1]; if(!G||G.name!==l.L){ G={name:l.L,items:[]}; groups.push(G); } G.items.push(l); });
-  groups.forEach(G=>{ h+='<section class="lvl-block"><div class="lvl-head">'+lvBadge(G.name)+'<h2>'+lvName(G.name)+'</h2><span class="muted" style="font-size:.88rem">'+G.items.length+' ders</span></div><div class="panel lessons">'+G.items.map(l=>lessonRow(l,p.id)).join('')+'</div></section>'; });
-  if(p.opt&&p.opt.length){ const os=p.opt.map(x=>LMAP[x]).filter(Boolean); h+='<section class="lvl-block"><div class="lvl-head"><span class="lv">+</span><h2>İsteğe bağlı derinleşme</h2><span class="muted" style="font-size:.88rem">'+os.length+' ders · ilerlemeye sayılmaz</span></div><p class="muted" style="margin:0 0 8px;max-width:70ch">Çekirdek dersleri bitirmek için bunlara gerek yok. Merak ettiğin ya da işinde karşına çıkan konuya buradan dön.</p><details class="panel lessons optlist"><summary>Dersleri göster</summary>'+os.map(l=>lessonRow(l,p.id)).join('')+'</details></section>'; }
+  /* Sıra yolun kendi sırasıdır, değişmez. Liste üç ardışık bölüme kesilir; kesim yerleri en çok dersi kendi seviyesinin
+     bölümünde tutacak biçimde seçilir. Araya giren ders kendi bölümünde kalır, satırındaki rozet seviyesini gösterir; aynı başlık iki kez çıkmaz. */
+  const lvIds=LEVELS.map(x=>x.id), groups=(()=>{ const n=ls.length, pre=lvIds.map(id=>{ const a=[0]; ls.forEach((l,i)=>a[i+1]=a[i]+(l.L===id?1:0)); return a; }); let best=-1,c1=0,c2=0;
+    for(let i=0;i<=n;i++) for(let j=i;j<=n;j++){ const sc=pre[0][i]+pre[1][j]-pre[1][i]+pre[2][n]-pre[2][j]; if(sc>best){ best=sc; c1=i; c2=j; } }
+    return [[0,c1],[c1,c2],[c2,n]].map(([a,b],k)=>({name:lvIds[k],items:ls.slice(a,b)})).filter(G=>G.items.length); })();
+  groups.forEach(G=>{ h+='<section class="lvl-block"><div class="lvl-head"><h2>'+lvName(G.name)+'</h2><span class="muted" style="font-size:.88rem">'+G.items.length+' ders</span></div><div class="panel lessons">'+G.items.map(l=>lessonRow(l,p.id)).join('')+'</div></section>'; });
+  if(p.opt&&p.opt.length){ const os=p.opt.map(x=>LMAP[x]).filter(Boolean); h+='<section class="lvl-block"><div class="lvl-head"><h2>İsteğe bağlı derinleşme</h2><span class="muted" style="font-size:.88rem">'+os.length+' ders · ilerlemeye sayılmaz</span></div><p class="muted" style="margin:0 0 8px;max-width:70ch">Çekirdek dersleri bitirmek için bunlara gerek yok. Merak ettiğin ya da işinde karşına çıkan konuya buradan dön.</p><details class="panel lessons optlist"><summary>Dersleri göster</summary>'+os.map(l=>lessonRow(l,p.id)).join('')+'</details></section>'; }
   return h+'</div>';
 }
 
@@ -951,7 +956,7 @@ function currList(){
     if(currFilter.lv!=='all' && currFilter.lv!==L.id) return;
     const mods=coreOfLevel(L.id).map(m=>({n:m.n, items:m.items.filter(on)})).filter(m=>m.items.length);
     if(!mods.length) return;
-    h+='<section class="lvl-block" style="margin-bottom:28px"><div class="lvl-head">'+lvBadge(L.id)+'<h2>'+L.name+'</h2><span class="muted" style="font-size:.88rem">'+L.desc+'</span></div><div class="panel lessons">'+mods.map(m=>'<div class="mod-head">'+esc(m.n)+'</div>'+m.items.map(l=>lessonRow(l)).join('')).join('')+'</div></section>';
+    h+='<section class="lvl-block" style="margin-bottom:28px"><div class="lvl-head"><h2>'+L.name+'</h2><span class="muted" style="font-size:.88rem">'+L.desc+'</span></div><div class="panel lessons">'+mods.map(m=>'<div class="mod-head">'+esc(m.n)+'</div>'+m.items.map(l=>lessonRow(l)).join('')).join('')+'</div></section>';
   });
   const ex=LESSONS.filter(l=>isExtraLesson(l)&&on(l)&&(currFilter.lv==='all'||currFilter.lv===l.L));
   if(ex.length){ const mods=[]; ex.forEach(l=>{ let m=mods.find(x=>x.n===l.mod); if(!m){ m={n:l.mod,items:[]}; mods.push(m); } m.items.push(l); }); h+='<section class="lvl-block" style="margin-bottom:28px"><div class="lvl-head"><h2>Rol ve veri seti dersleri</h2><span class="muted" style="font-size:.88rem">Çekirdek dersleri varsayar; öğrenme yolları bunları doğru sıraya koyar.</span></div><div class="panel lessons">'+mods.map(m=>'<div class="mod-head">'+esc(m.n)+'</div>'+m.items.map(l=>lessonRow(l)).join('')).join('')+'</div></section>'; }
@@ -1731,7 +1736,7 @@ function prListHTML(){
   const ls=prList(); if(!ls.length) return '<div class="panel empty">Bu filtrelere uyan görev yok.</div>';
   let h='';
   LEVELS.forEach(L=>{ const items=ls.filter(p=>p.L===L.id); if(!items.length) return;
-    h+='<section class="lvl-block" style="margin-bottom:22px"><div class="lvl-head">'+lvBadge(L.id)+'<h2>'+L.name+'</h2><span class="muted" style="font-size:.85rem">'+items.length+' görev · '+items.filter(prDone).length+' çözüldü</span></div><div class="panel lessons">'+items.map(p=>'<button class="litem pritem" data-pr="'+p.id+'"><span class="check '+(prDone(p)?'done':'')+'">'+(prDone(p)?ICON.tick:'')+'</span><span style="min-width:0"><b>'+esc(p.title)+'</b><small>'+esc(plain(p.q)).slice(0,120)+'</small></span><span class="row" style="gap:6px;flex-wrap:nowrap"><span class="chip">'+esc(PRT[p.t]||p.t)+'</span>'+(p.dl&&p.dl.length===1?'<span class="chip">'+esc(DNAME[p.dl[0]])+'</span>':'')+stars(p.d)+'</span></button>').join('')+'</div></section>'; });
+    h+='<section class="lvl-block" style="margin-bottom:22px"><div class="lvl-head"><h2>'+L.name+'</h2><span class="muted" style="font-size:.85rem">'+items.length+' görev · '+items.filter(prDone).length+' çözüldü</span></div><div class="panel lessons">'+items.map(p=>'<button class="litem pritem" data-pr="'+p.id+'"><span class="check '+(prDone(p)?'done':'')+'">'+(prDone(p)?ICON.tick:'')+'</span><span style="min-width:0"><b>'+esc(p.title)+'</b><small>'+esc(plain(p.q)).slice(0,120)+'</small></span><span class="row" style="gap:6px;flex-wrap:nowrap"><span class="chip">'+esc(PRT[p.t]||p.t)+'</span>'+(p.dl&&p.dl.length===1?'<span class="chip">'+esc(DNAME[p.dl[0]])+'</span>':'')+stars(p.d)+'</span></button>').join('')+'</div></section>'; });
   return h;
 }
 function viewPratikSoru(){

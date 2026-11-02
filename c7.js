@@ -635,7 +635,7 @@ const BEYOND = {
   backend: ['Bir programlama dili (C#, Java, Python, Node.js)', 'Bir ORM aracı', 'REST API tasarımı', 'Test ve CI/CD'],
   uzman: ['Kendi projelerinde gerçek ölçekte performans deneyimi', 'Veritabanı iç yapısı üzerine kitaplar ve belgeler']
 };
-P.push({ id: 'bi', name: 'İş Zekâsı ve Raporlama Uzmanı', short: 'BI', color: '#C27A12',
+P.push({ id: 'bi', name: 'İş Zekâsı ve Raporlama Uzmanı', short: 'BI', color: '#A16207',
   desc: 'Power BI / Tableau için doğru veri: KPI, dönem karşılaştırmaları, paylar, takvim ve yıldız şema.',
   long: 'Raporları ve gösterge panellerini besleyen rol. Temel SQL\'in üzerine metrik tanımlamayı, YTD ve geçen yıl karşılaştırmalarını, pay ve endeks hesaplarını, takvim tablosu ve yıldız şemayla BI aracına doğru veri hazırlamayı öğrenirsin.',
   skills: ['KPI tanımlama', 'Pay ve endeks', 'YTD / YoY', 'Takvim tablosu', 'Yıldız şema', 'View tasarımı', 'ROLLUP', 'Pivot'],
