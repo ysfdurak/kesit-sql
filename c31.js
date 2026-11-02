@@ -88,7 +88,7 @@ d AS (
   SELECT w.temp_c AS t, w.rain_mm AS r, 1.0 * COALESCE(s.yolculuk, 0) AS y
   FROM bk_weather w
   LEFT JOIN saatlik s ON s.saat = w.obs_hour
-  WHERE w.obs_hour LIKE '% 17:00:00'
+  WHERE strftime('%H', w.obs_hour) = '17'
 )
 SELECT COUNT(*) AS gun,
        ROUND((AVG(t * y) - AVG(t) * AVG(y)) /

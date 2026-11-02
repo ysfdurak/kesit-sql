@@ -9,7 +9,7 @@ const { chromium } = require('playwright'); const path=require('path'); const fs
  await p.click('[data-k="yeni"]'); await p.waitForTimeout(1200); await p.screenshot({path:'fr_'+tag+'_lesson.png'});
  console.log(tag,'hash',await p.evaluate(()=>location.hash), 'title', (await p.innerText('main h1')).slice(0,40));
  await p.click('.steps button:nth-child(2)'); await p.waitForTimeout(800);
- await p.click('[data-act="check"]').catch(e=>console.log('nocheck')); await p.waitForTimeout(1500);
+ await p.click('[data-act="submit"]').catch(e=>console.log('nocheck')); await p.waitForTimeout(1500);
  console.log(tag,'fb', (await p.innerText('#fb').catch(()=>'')).slice(0,80).replace(/\n/g,' '));
  await p.screenshot({path:'fr_'+tag+'_ex1.png'});
  await p.evaluate(()=>{location.hash='patika-temel'}); await p.waitForTimeout(900); await p.screenshot({path:'fr_'+tag+'_path.png', fullPage: tag==='d'});

@@ -19,7 +19,7 @@ const { chromium } = require('playwright'); const path=require('path'); const fs
  console.log('DET4', await p.innerText('.sec-head .chip'));
  await nav('oyun-ch-bk-cakisan'); await p.waitForTimeout(3000); console.log('CH sample', (await p.innerText('#arSample')).slice(0,80).replace(/\n/g,' '));
  await nav('pratik'); const m=await p.innerText('main'); console.log('PRATIK', /İK verisi/.test(m), /Bisiklet verisi/.test(m));
- await nav('yollar'); console.log('PATHS', /Büyük Veriyle Çalışmak/.test(await p.innerText('main')), /İK Analitiği/.test(await p.innerText('main')));
+ await nav('paths'); console.log('PATHS', /Büyük Veriyle Çalışmak/.test(await p.innerText('main')), /İK Analitiği/.test(await p.innerText('main')));
  await p.setViewportSize({width:390,height:844});
  for(const h of ['data','ders-bv-plan','ders-ik-ucret','oyun-dedektif-giden-yetenek','oyun-ch-ik-huni']){ await nav(h); if(h==='data'){await p.click('[data-dset="ik"]'); await p.waitForTimeout(800);} console.log('mobile',h, await p.evaluate(()=>document.documentElement.scrollWidth)); }
  await p.screenshot({path:'mob_det4.png'});
