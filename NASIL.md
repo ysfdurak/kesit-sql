@@ -15,7 +15,7 @@ Bu dal (`kaynak`), yayındaki sitenin (`main` dalı) bütün dosyalarını ve bu
 | `arena-data.js` | SQL Arena: meydan okumalar, dedektif vakaları, tahmin, bulmaca. |
 | `belge.js` | Tamamlama belgesi. |
 | `config.js` | Yayın ayarları: yazar, adresler, Giscus, GoatCounter, geri bildirim formu. |
-| `sw.js` | Service worker. Önbellek sürümü `CACHE` sabitinde; sürüm değişince eski `kesit-sql-*` önbellekleri silinir. |
+| `sw.js` | Service worker. Kurulumda çekirdek dosyaları önbelleğe alır (betikler `index.html`'den, yazı tipleri `fonts.css`'ten okunur; veritabanı adı `BASE` sabitinde, `make_base.js` günceller). Önbellek sürümü `CACHE` sabitinde; sürüm değişince eski `kesit-sql-*` önbellekleri silinir. |
 | `base-<özet>.b64.txt` | Önceden kurulmuş veritabanı (gzip + base64). Veri dosyalarından üretilir, elle düzenlenmez. |
 | `vendor/` | sql.js (asm sürümü) ve yazı tipleri. Siteye gömülüdür. |
 | `araclar/denetim/` | Veritabanı üretimi ve otomatik denetimler (Node). |

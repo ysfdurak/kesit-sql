@@ -21,7 +21,7 @@
 ## Nasıl çalışıyor?
 - Sunucu yok: SQLite, [sql.js](https://github.com/sql-js/sql.js) ile tarayıcıda çalışıyor. Diğer beş SQL türünün yazımı bir çeviri katmanıyla SQLite'ta taklit ediliyor; yazım kuralları, sık hata mesajları ve belirli davranış farkları denetleniyor.
 - İlerleme yalnızca kullanıcının tarayıcısında saklanıyor; Profil sayfasından dosyaya kaydedilip başka cihazda yüklenebiliyor. Kişisel veri toplanmıyor.
-- Dış bağımlılık yok: SQL motoru ve yazı tipleri sitenin içinde. Site bir kez açıldıktan sonra açılan içerik internet yokken de çalışıyor.
+- Dış bağımlılık yok: SQL motoru ve yazı tipleri sitenin içinde. Site bir kez açıldıktan sonra internet yokken de çalışıyor.
 - Bir öğrenme yolunu bitirenler tamamlama belgesi oluşturabiliyor. Belge tarayıcıda üretilir, doğrulanabilir değildir ve resmî bir sertifika yerine geçmez.
 
 ## Nasıl doğrulandı?
