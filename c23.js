@@ -179,7 +179,7 @@ X('dml', [
     { check: 'SELECT courier_id, full_name, city, vehicle, hired_date, rating FROM lk_couriers WHERE courier_id >= 60 ORDER BY courier_id', ord: true }),
   sq('Pizza restoranlarının komisyonunu 2 puan artır.', "UPDATE lk_restaurants SET commission_pct = commission_pct + 2 WHERE cuisine = 'Pizza';",
     { check: 'SELECT cuisine, SUM(commission_pct) AS k FROM lk_restaurants GROUP BY cuisine ORDER BY cuisine', ord: true }),
-  sq('Aktif olmayan restoranların menü ürünlerini sil.', 'DELETE FROM lk_menu_items WHERE restaurant_id IN (SELECT restaurant_id FROM lk_restaurants WHERE is_active = 0);',
+  sq('Ankara\'daki restoranların menü ürünlerini sil.', "DELETE FROM lk_menu_items WHERE restaurant_id IN (SELECT restaurant_id FROM lk_restaurants WHERE city = 'Ankara');",
     { check: 'SELECT COUNT(*) AS urun, COUNT(DISTINCT restaurant_id) AS restoran FROM lk_menu_items' }),
   sq('Tek ifadeyle: teslim edilmiş ama bahşişi 0 olan Aralık siparişlerine 5 TL bahşiş yaz (kampanya).', "UPDATE lk_orders SET tip = 5 WHERE status = 'teslim' AND tip = 0 AND placed_at >= '2024-12-01';",
     { check: 'SELECT SUM(tip) AS toplam, SUM(CASE WHEN tip = 5 THEN 1 ELSE 0 END) AS bes FROM lk_orders' })

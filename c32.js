@@ -131,7 +131,7 @@ X('ts-izolasyon', [
     TS({ check: 'SELECT product_id, stock FROM products WHERE product_id = 7', why: 'UPDLOCK okunan satırı güncelleme kilidiyle tutar; aynı anda çalışan ikinci işlem aynı stoğu okuyup ikinci kez satamaz. Ayrıca U kilitleri birbirine uyumsuz olduğundan klasik “ikisi de okuyup ikisi de yazmak isterken” oluşan deadlock da önlenir.' })),
   sq('Hata ve deadlock (1205) için kalıp: <code>BEGIN TRY</code> içinde işlemi başlat, 7 numaralı ürünün stoğunu 0 yap, ardından <code>THROW 51205, N\'deneme hatası\', 1;</code> ile hata fırlat. <code>CATCH</code> bloğunda işlem açıksa geri al ve <code>ERROR_NUMBER()</code> değerini <code>hata</code> olarak döndür.',
     "BEGIN TRY\n  BEGIN TRAN;\n  UPDATE dbo.products SET stock = 0 WHERE product_id = 7;\n  THROW 51205, N'deneme hatası', 1;\n  COMMIT;\nEND TRY\nBEGIN CATCH\n  IF @@TRANCOUNT > 0 ROLLBACK;\n  SELECT ERROR_NUMBER() AS hata;\nEND CATCH;",
-    TS({ check: 'SELECT product_id, stock FROM products WHERE product_id = 7' }))
+    TS({ check: 'SELECT product_id, stock FROM products WHERE product_id = 7', must: [{ re: '\\bUPDATE\\b', msg: 'Görev gereği önce stoğu UPDATE ile değiştirmen gerekiyor.' }, { re: '\\bTHROW\\b', msg: 'Görev gereği THROW ile hata fırlatman gerekiyor.' }, { re: '\\bROLLBACK\\b', msg: 'CATCH bloğunda işlemi ROLLBACK ile geri alman gerekiyor.' }, { re: '\\bERROR_NUMBER\\b', msg: 'CATCH bloğunda ERROR_NUMBER() değerini döndürmen gerekiyor.' }] }))
 ]);
 
 X('plsql', [

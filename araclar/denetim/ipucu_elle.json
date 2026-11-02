@@ -238,7 +238,7 @@
 "dml#3": "Yeni değer eskisine bağlı: <code>salary = salary + ...</code>.",
 "dml#5": "Sütun listesini yaz; boş puan için <code>NULL</code>.",
 "dml#6": "Komisyon eski değer artı iki; mutfak koşulu <code>WHERE</code>'de.",
-"dml#7": "Silinecek ürünler restoran numarasına göre: <code>IN (SELECT ...)</code> ile aktif olmayanları bul.",
+"dml#7": "Silinecek ürünler restoran numarasına göre: <code>IN (SELECT ...)</code> ile Ankara'dakileri bul.",
 "dml#8": "Üç koşul <code>AND</code> ile; Aralık için tarih sınırı.",
 "ddl-create#1": "Üç sütun. Satır içi kısıtlar: <code>PRIMARY KEY</code>, <code>REFERENCES</code> ve <code>CHECK</code>.",
 "ddl-create#2": "Sorgudan tablo: <code>CREATE TABLE ... AS SELECT</code>; SQL Server'da <code>SELECT ... INTO</code>.",

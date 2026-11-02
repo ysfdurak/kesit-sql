@@ -7,8 +7,8 @@ const exAllowed=e=>e.dl||(exBase(e)==='sqlite'?DIDS:[exBase(e)]);
 function exText(src,e,d,v){ if(!src) return ''; if(v&&v[d]) return v[d]; const b=exBase(e); if(b===d) return src; if(b==='sqlite') return DX.forward(src,d); return null; }
 function norm(v){ if(v===null||v===undefined) return '∅'; if(typeof v==='number') return String(Math.round(v*100)/100); if(typeof v==='string'){ const t=v.trim(); if(t!==''&&/^-?\d+(\.\d+)?$/.test(t)) return String(Math.round(+t*100)/100); return v;} return String(v); }
 function same(u,s,ord){ if(!u&&!s) return true; if(!u||!s) return false; if(u.columns.length!==s.columns.length||u.values.length!==s.values.length) return false; const A=u.values.map(r=>r.map(norm).join('␟')),B=s.values.map(r=>r.map(norm).join('␟')); if(ord) return A.every((x,i)=>x===B[i]) || [...A].sort().join('\n')===[...B].sort().join('\n'); return [...A].sort().join('\n')===[...B].sort().join('\n'); }
-// index.html'deki mustFail ile aynı mantık: çözüm metni yöntem kurallarını geçmeli
-function mustFail(e,code,d){ const bare=DX.tokenize(code).filter(t=>t.k!=='com'&&t.k!=='s').map(t=>t.v).join(''); if(e.must) for(const m of e.must){ if(m.d&&!m.d.includes(d)) continue; if(!new RegExp(m.re,'i').test(bare)) return m.msg; } if(e.mustNot) for(const m of e.mustNot){ if(m.d&&!m.d.includes(d)) continue; if(new RegExp(m.re,'i').test(bare)) return m.msg; } return ''; }
+// Arayüzle aynı yöntem kuralı: tek kaynak dialect.js
+const mustFail=DX.mustFail;
 initSqlJs().then(SQL=>{
   const BASE=require("./base.js")(SQL,c);
   const fresh=()=>{ const db=new SQL.Database(BASE); c.SQLP_REGISTER(db); DX.register(db); return db; };
@@ -19,9 +19,13 @@ initSqlJs().then(SQL=>{
   c.SQLP_LESSONS.forEach(l=>(l.ex||[]).forEach((e,i)=>{ if(!ok(l.id,e)) return; if(e.t!=='mc') items.push({src:'ders',id:l.id+'#'+(i+1),lv:l.lv,e}); }));
   c.SQLP_PRACTICE.forEach(p=>!ok(p.id,p)||items.push({src:'pratik',id:p.id,lv:p.L,e:p}));
   const out=[]; let n=0;
+  // sw.js'teki veritabanı dosyası adı gerçekten olmalı (ilk ziyarette önbelleğe alınır)
+  { const R=require('./yol.js').ROOT+'', m=fs.readFileSync(R+'sw.js','utf8').match(/const BASE = '([^']+)'/); if(!m||!fs.existsSync(R+m[1])) out.push({id:'sw.js',src:'site',kind:'swTabanYok',err:m&&m[1]}); }
   for(const it of items){ const e=it.e; const T0=Date.now(); process.on('exit',()=>{}); if(process.env.PROG) process.stderr.write('> '+it.id+'\n'); if(!e.sol){ out.push({...it,kind:'cozumYok'}); continue; }
     const b=exBase(e); const ref=runOne(e.sol,b,e); n++; { const mf=mustFail(e,e.sol,b); if(mf) out.push({id:it.id,src:it.src,kind:'yontemKurali',d:b,err:mf}); }
     if(ref.error){ out.push({id:it.id,src:it.src,kind:'cozumHata',d:b,err:ref.error}); continue; }
+    // check'li görevde çözüm tablonun durumunu değiştirmiyorsa ve yöntem kuralı yoksa her cevap "Doğru" sayılır
+    if(e.check && !(e.must&&e.must.length)){ const db0=fresh(); let once=null,hata=false; try{ once=db0.exec(e.check).pop()||null; }catch(er){ hata=true; } db0.close(); if(!hata&&same(once,ref.set,false)) out.push({id:it.id,src:it.src,kind:'checkDegismiyor',d:b}); }
     if(!ref.set && !e.check && !e.nr) out.push({id:it.id,src:it.src,kind:'sonucYok',d:b});
     else if(ref.set && ref.set.values.length===0) out.push({id:it.id,src:it.src,kind:'bosSonuc',d:b});
     if(e.ord && !/ORDER\s+BY/i.test(e.sol)) out.push({id:it.id,src:it.src,kind:'ordAmaOrderByYok'});

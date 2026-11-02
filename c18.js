@@ -412,9 +412,9 @@ WHERE origin = 'ADB' AND dest = 'FRA';</pre>
 <div class="warn"><b>Önce SELECT, sonra UPDATE</b>Bir UPDATE veya DELETE'i çalıştırmadan önce aynı WHERE koşuluyla SELECT çalıştırıp kaç satırın etkileneceğini gör. Bu derste her alıştırma veritabanının temiz bir kopyasında çalışır.</div>
 `,
   ex: [
-    sq('10 numaralı rezervasyonu iptal et: durumunu <b>\'cancelled\'</b> yap ve koltuğunu boşalt (NULL).',
-      "UPDATE hv_bookings SET status = 'cancelled', seat = NULL WHERE booking_id = 10;",
-      { check: 'SELECT booking_id, status, seat FROM hv_bookings WHERE booking_id IN (9, 10, 11) ORDER BY booking_id', hint: 'İki sütunu tek SET içinde virgülle güncelle.' }),
+    sq('11 numaralı rezervasyon hatalı girilmiş, iptal et: durumunu <b>\'cancelled\'</b> yap ve koltuğunu boşalt (NULL).',
+      "UPDATE hv_bookings SET status = 'cancelled', seat = NULL WHERE booking_id = 11;",
+      { check: 'SELECT booking_id, status, seat FROM hv_bookings WHERE booking_id IN (10, 11, 12) ORDER BY booking_id', hint: 'İki sütunu tek SET içinde virgülle güncelle.' }),
     sq('3000 numaralı uçuşu iptal et ve bu uçuştaki tüm rezervasyonları da iptal et; iki değişikliği tek bir işlem (transaction) içinde yap. Uçuşta durum \'cancelled\', gerçek zamanlar NULL, pax 0; rezervasyonlarda durum \'cancelled\', koltuk NULL olsun.',
       "BEGIN; UPDATE hv_flights SET status = 'cancelled', actual_dep = NULL, actual_arr = NULL, pax = 0 WHERE flight_id = 3000; UPDATE hv_bookings SET status = 'cancelled', seat = NULL WHERE flight_id = 3000; COMMIT;",
       { dl: ['sqlite', 'pg', 'mysql', 'tsql', 'oracle'], check: "SELECT (SELECT status || '|' || COALESCE(pax, -1) FROM hv_flights WHERE flight_id = 3000) AS ucus, (SELECT COUNT(*) FROM hv_bookings WHERE flight_id = 3000 AND status <> 'cancelled') AS kalan, (SELECT COUNT(*) FROM hv_bookings WHERE flight_id = 3000 AND seat IS NOT NULL) AS koltuklu",
@@ -426,8 +426,8 @@ WHERE origin = 'ADB' AND dest = 'FRA';</pre>
     sq('Ek hizmet satışları için <code>hv_ek_hizmet</code> tablosunu oluştur: <code>hizmet_id</code> birincil anahtar, <code>booking_id</code> hv_bookings\'e yabancı anahtar, <code>tur</code> yalnızca \'bagaj\', \'koltuk\' veya \'yemek\' olabilir (CHECK), <code>ucret</code> negatif olamaz (CHECK). İki satır ekle: (1, 5, \'bagaj\', 450) ve (2, 5, \'yemek\', 180).',
       "CREATE TABLE hv_ek_hizmet (hizmet_id INTEGER PRIMARY KEY, booking_id INTEGER REFERENCES hv_bookings(booking_id), tur VARCHAR(10) CHECK (tur IN ('bagaj', 'koltuk', 'yemek')), ucret DECIMAL(10, 2) CHECK (ucret >= 0)); INSERT INTO hv_ek_hizmet VALUES (1, 5, 'bagaj', 450); INSERT INTO hv_ek_hizmet VALUES (2, 5, 'yemek', 180);",
       { dl: ['tsql', 'pg', 'mysql', 'oracle', 'sqlite'], check: 'SELECT hizmet_id, booking_id, tur, ucret FROM hv_ek_hizmet ORDER BY hizmet_id', hint: "CHECK (tur IN ('bagaj', 'koltuk', 'yemek')) ve CHECK (ucret >= 0)." }),
-    sq('Seviye yükseltme: gerçekleşen (flown) uçuş sayısı <b>15 veya daha fazla</b> olan <b>Silver</b> üyeleri <b>Gold</b> yap.',
-      "UPDATE hv_passengers SET tier = 'Gold' WHERE tier = 'Silver' AND passenger_id IN (SELECT passenger_id FROM hv_bookings WHERE status = 'flown' GROUP BY passenger_id HAVING COUNT(*) >= 15);",
+    sq('Seviye yükseltme: gerçekleşen (flown) uçuş sayısı <b>10 veya daha fazla</b> olan <b>Silver</b> üyeleri <b>Gold</b> yap.',
+      "UPDATE hv_passengers SET tier = 'Gold' WHERE tier = 'Silver' AND passenger_id IN (SELECT passenger_id FROM hv_bookings WHERE status = 'flown' GROUP BY passenger_id HAVING COUNT(*) >= 10);",
       { check: 'SELECT tier, COUNT(*) AS uye FROM hv_passengers GROUP BY tier ORDER BY tier', hint: 'Önce aynı alt sorguyu SELECT olarak çalıştırıp kaç üyenin etkileneceğini gör.' }),
     mc('<p>Uçuş iptali ile rezervasyon iptalini aynı işlem içinde yapmazsan en kötü durumda ne olur?</p>', ['Hiçbir şey; iki UPDATE her zaman birlikte başarılı olur', 'İlk UPDATE başarılı olup ikincisi hata verirse uçuş iptal görünür ama yolcuların rezervasyonları aktif kalır', 'İkinci UPDATE ilkini otomatik olarak geri alır', 'Veritabanı iki UPDATE\'i birleştirip tek satır günceller'], 1,
       'İşlem (transaction) “ya hep ya hiç” garantisi verir: ikinci adım başarısız olursa ROLLBACK ile ilk adım da geri alınır ve veri tutarlı kalır.')

@@ -2942,7 +2942,18 @@ root.CODE = function (src, v, o) {
   o = o || {}; const enc = x => String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   return '<pre class="code"' + (v ? ' data-v="' + enc(JSON.stringify(v)) + '"' : '') + (o.base ? ' data-base="' + o.base + '"' : '') + (o.nr ? ' data-nr="' + o.nr.join(' ') + '"' : '') + (o.norun ? ' data-norun' : '') + (o.diff ? ' data-diff="' + o.diff.join(' ') + '"' : '') + (o.na ? ' data-na="' + o.na.join(' ') + '"' : '') + (o.err ? ' data-err' : '') + '>' + enc(src) + '</pre>';
 };
-root.SQLP_DIALECT = { DIALECTS, DNAME, tokenize, forward, reverse, lint, runDialect, register, splitSemis, execOne, friendly,
+/* Yöntem kuralları: görev bir yöntem istiyorsa sonuç tek başına yetmez. Yorum ve metin sabitleri kuralları etkilemez.
+   Arayüz (index.html) ve denetim (araclar/denetim/run.js) bu tek işlevi kullanır. */
+function mustFail(e, code, d) {
+  const bareOf = s => tokenize(s).filter(t => t.k !== 'com' && t.k !== 's').map(t => t.v).join('');
+  const bare = bareOf(code);
+  if (e.must) for (const m of e.must) { if (m.d && !m.d.includes(d)) continue; if (!new RegExp(m.re, 'i').test(bare)) return m.msg; }
+  if (e.mustNot) for (const m of e.mustNot) { if (m.d && !m.d.includes(d)) continue; if (new RegExp(m.re, 'i').test(bare)) return m.msg; }
+  /* Çözüm tablodan okuyorsa (FROM metin sabitinde değil, kodda) cevap da okumalı. Dinamik SQL'de FROM metnin içindedir, kural uygulanmaz. */
+  if (!e.check && e.sol && /\bFROM\b/i.test(bareOf(e.sol)) && !/\bFROM\b/i.test(bare)) return 'Bu görevde sonucu tablodan hesaplaman gerekiyor; sabit değer yazmak sayılmaz.';
+  return '';
+}
+root.SQLP_DIALECT = { DIALECTS, DNAME, mustFail, tokenize, forward, reverse, lint, runDialect, register, splitSemis, execOne, friendly,
   convert, isProcedural, forwardCanon,
   setSchemaHints(dateCols, textCols, allCols, dtCols) { (dtCols || []).forEach(c => DT_COLS.add(c)); dateCols.forEach(c => DATE_COLS.add(c)); textCols.forEach(c => TEXT_COLS.add(c)); (allCols || []).forEach(c => ALL_COLS.add(String(c).toLowerCase())); } };
 // T-SQL yolunda da önce denetim uygula

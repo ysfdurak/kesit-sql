@@ -893,7 +893,7 @@ END CATCH;`)}
 `,
   ex: [
     ex({ q: '<p><code>CAST(\'abc\' AS INT)</code> çalıştıran bir TRY bloğu yaz; CATCH bloğunda hata numarasını <code>hata_no</code> adıyla döndür.</p>', sol: "BEGIN TRY\n    SELECT CAST('abc' AS INT);\nEND TRY\nBEGIN CATCH\n    SELECT ERROR_NUMBER() AS hata_no;\nEND CATCH;" }),
-    ex({ q: '<p>Bir işlem içinde Hukuk departmanını (<code>dept_id = 7</code>) sil, ardından <b>bilerek</b> <code>THROW 50010, N\'İptal\', 1;</code> ile hata fırlat. CATCH bloğunda işlemi geri al. Sonuçta departman tablosu değişmemiş olmalı.</p>', sol: "BEGIN TRY\n    BEGIN TRANSACTION;\n    DELETE FROM departments WHERE dept_id = 7;\n    THROW 50010, N'İptal', 1;\n    COMMIT TRANSACTION;\nEND TRY\nBEGIN CATCH\n    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;\nEND CATCH;", check: 'SELECT * FROM departments ORDER BY dept_id' })
+    ex({ q: '<p>Bir işlem içinde Hukuk departmanını (<code>dept_id = 7</code>) sil, ardından <b>bilerek</b> <code>THROW 50010, N\'İptal\', 1;</code> ile hata fırlat. CATCH bloğunda işlemi geri al. Sonuçta departman tablosu değişmemiş olmalı.</p>', sol: "BEGIN TRY\n    BEGIN TRANSACTION;\n    DELETE FROM departments WHERE dept_id = 7;\n    THROW 50010, N'İptal', 1;\n    COMMIT TRANSACTION;\nEND TRY\nBEGIN CATCH\n    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;\nEND CATCH;", check: 'SELECT * FROM departments ORDER BY dept_id', must: [{ re: '\\bDELETE\\b', msg: 'Görev gereği önce departmanı DELETE ile silmen gerekiyor.' }, { re: '\\bTHROW\\b', msg: 'Görev gereği THROW ile hata fırlatman gerekiyor.' }, { re: '\\bROLLBACK\\b', msg: 'CATCH bloğunda işlemi ROLLBACK ile geri alman gerekiyor.' }] })
   ]
 });
 
@@ -967,7 +967,7 @@ EXEC sp_executesql
 <div class="warn"><b>SQL injection</b>Kullanıcı girdisini metne ekleyerek dinamik SQL üretmek (<code>'... WHERE city = ''' + @girdi + ''''</code>) saldırıya açıktır. Değerler için daima <code>sp_executesql</code> parametrelerini, adlar için <code>QUOTENAME</code> ve izin verilen değerler listesini kullan. <code>EXEC(@sql)</code> parametre desteklemez; plan önbelleğini de verimsiz kullanır.</div>
 `,
   ex: [
-    ex({ q: '<p><code>sp_executesql</code> ile, şehir parametresi (<code>@sehir NVARCHAR(50)</code>) alan dinamik bir sorgu çalıştır: o şehirdeki müşteri sayısını <code>musteri</code> adıyla döndürsün. Bursa için çalıştır.</p>', sol: "DECLARE @sql NVARCHAR(MAX) = N'SELECT COUNT(*) AS musteri FROM customers WHERE city = @sehir;';\nEXEC sp_executesql @sql, N'@sehir NVARCHAR(50)', @sehir = N'Bursa';" })
+    ex({ q: '<p><code>sp_executesql</code> ile, şehir parametresi (<code>@sehir NVARCHAR(50)</code>) alan dinamik bir sorgu çalıştır: o şehirdeki müşteri sayısını <code>musteri</code> adıyla döndürsün. Bursa için çalıştır.</p>', sol: "DECLARE @sql NVARCHAR(MAX) = N'SELECT COUNT(*) AS musteri FROM customers WHERE city = @sehir;';\nEXEC sp_executesql @sql, N'@sehir NVARCHAR(50)', @sehir = N'Bursa';", must: [{ re: '\\bsp_executesql\\b', msg: 'Bu görevde sorguyu sp_executesql ile dinamik çalıştırman gerekiyor.' }] })
   ]
 });
 
@@ -1197,7 +1197,7 @@ ins('analist', 'veritabani', ['veri-seti']); ins('analist', 'sorgu-sirasi', ['st
 ins('bilimci', 'veritabani', ['veri-seti']); ins('bilimci', 'correlated', ['sik-hatalar']); ins('bilimci', 'json', ['mulakat-1', 'mulakat-2']);
 ins('muhendis', 'veritabani', ['veri-seti']); ins('muhendis', 'correlated', ['sik-hatalar']); ins('muhendis', 'trigger', ['ts-merge', 'ts-proc', 'ts-hata']);
 ins('uzman', 'lehceler', ['pg-ozel', 'mysql-ozel', 'oracle-ozel']); ins('uzman', 'ileri-desenler', ['rollup', 'mulakat-1', 'mulakat-2']);
-window.SQLP_PATHS.splice(1, 0, { id: 'tsql', name: 'SQL Server (T-SQL) Uzmanı', short: 'T-SQL', color: 'var(--l5)',
+window.SQLP_PATHS.splice(1, 0, { id: 'tsql', name: 'SQL Server (T-SQL) Uzmanı', short: 'T-SQL', color: 'var(--p5)',
   desc: 'Kurumsal dünyanın SQL\'i: TOP, değişkenler, TRY/CATCH, saklı yordamlar, MERGE, PIVOT, APPLY ve indeksler.',
   long: 'Microsoft SQL Server ve Azure SQL ile çalışacaklar için. Temel SQL\'i SQL Server yazımıyla öğrenir, ardından T-SQL\'in programlama özelliklerine (değişkenler, akış kontrolü, hata yönetimi), saklı yordamlara, fonksiyonlara, trigger\'lara ve SQL Server\'a özgü performans konularına geçersin. Bu öğrenme yolunda varsayılan SQL türü SQL Server yapmanı öneririz.',
   skills: ['TOP / OFFSET-FETCH', 'T-SQL fonksiyonları', 'DECLARE / IF / WHILE', 'Geçici tablolar', 'PIVOT / APPLY', 'MERGE', 'Saklı yordam', 'TRY / CATCH', 'İndeks tasarımı'],

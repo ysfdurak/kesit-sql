@@ -307,10 +307,10 @@ add('ts-trigger',
 add('ts-dinamik',
   ts('Tablo adını değişkenden alan dinamik bir sorgu yaz: <code>@tablo SYSNAME = N\'products\'</code>; sorgu metnini <code>QUOTENAME</code> ile güvenli oluştur ve <code>sp_executesql</code> ile tablonun satır sayısını <code>satir</code> adıyla döndür.',
     "DECLARE @tablo SYSNAME = N'products'; DECLARE @sql NVARCHAR(MAX) = N'SELECT COUNT(*) AS satir FROM ' + QUOTENAME(@tablo) + N';'; EXEC sp_executesql @sql;",
-    { hint: 'Tablo ve sütun adları parametre olamaz; QUOTENAME adı köşeli paranteze alıp kaçırır.' }),
+    { hint: 'Tablo ve sütun adları parametre olamaz; QUOTENAME adı köşeli paranteze alıp kaçırır.', must: [{ re: '\\bsp_executesql\\b', msg: 'Bu görevde sorguyu sp_executesql ile dinamik çalıştırman gerekiyor.' }, { re: '\\bQUOTENAME\\b', msg: 'Bu görevde sütun ya da tablo adını QUOTENAME ile metne eklemen gerekiyor.' }] }),
   ts('İki parametreli dinamik sorgu: <code>@kat NVARCHAR(50)</code> ve <code>@min DECIMAL(12,2)</code> parametreleriyle, kategorisi @kat olan ve fiyatı @min ve üzerinde olan ürünleri sayan sorguyu sp_executesql ile çalıştır (Elektronik, 1000): <code>adet</code>.',
     "DECLARE @sql NVARCHAR(MAX) = N'SELECT COUNT(*) AS adet FROM products WHERE category = @kat AND price >= @min;'; EXEC sp_executesql @sql, N'@kat NVARCHAR(50), @min DECIMAL(12, 2)', @kat = N'Elektronik', @min = 1000;",
-    { hint: "Parametre tanımları tek bir metinde virgülle yazılır: N'@kat NVARCHAR(50), @min DECIMAL(12, 2)'." }));
+    { hint: "Parametre tanımları tek bir metinde virgülle yazılır: N'@kat NVARCHAR(50), @min DECIMAL(12, 2)'.", must: [{ re: '\\bsp_executesql\\b', msg: 'Bu görevde sorguyu sp_executesql ile dinamik çalıştırman gerekiyor.' }] }));
 
 add('ts-index',
   ts('Yalnızca iptal edilen siparişleri kapsayan, <code>order_date</code> üzerinde <code>ix_orders_iptal</code> adlı <b>filtreli</b> bir nonclustered indeks oluştur.',

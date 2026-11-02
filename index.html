@@ -1087,14 +1087,7 @@ function compare(u,s,ordered){
   return {ok:false, why:'Satır ve sütun sayısı doğru ama değerler farklı. Hesaplamaları, sütun sırasını ve filtreleri kontrol et.'};
 }
 function errHTML(r){ return '<div class="msg err"><b>'+esc(DNAME[r.d]||'')+' hata verdi</b><span class="vend">'+esc(r.error)+'</span>'+(r.hint?esc(r.hint):'')+(r.d&&r.d!=='sqlite'?'<button class="linkbtn" data-act="report">Bu sorgu gerçek '+esc(DNAME[r.d])+' sunucusunda çalışıyorsa bildir</button>':'')+'</div>'; }
-/* Yöntem kuralları: görev bir yöntem istiyorsa sonuç tek başına yetmez. Yorum ve metin sabitleri kuralı etkilemez. */
-function mustFail(e, code, d){
-  const bare=DX.tokenize(code).filter(t=>t.k!=='com'&&t.k!=='s').map(t=>t.v).join('');
-  if(e.must) for(const m of e.must){ if(m.d&&!m.d.includes(d)) continue; if(!new RegExp(m.re,'i').test(bare)) return m.msg; }
-  if(e.mustNot) for(const m of e.mustNot){ if(m.d&&!m.d.includes(d)) continue; if(new RegExp(m.re,'i').test(bare)) return m.msg; }
-  if(!e.check && e.sol && /\bFROM\b/i.test(e.sol) && !/\bFROM\b/i.test(bare)) return 'Bu görevde sonucu tablodan hesaplaman gerekiyor; sabit değer yazmak sayılmaz.';
-  return '';
-}
+const mustFail = DX.mustFail; /* Yöntem kuralları dialect.js içinde; denetim de aynısını kullanır. */
 function submitEx(){
   if(!engineReady()||!LS) return;
   const {l,e,k,d}=LS; const code=ED.get(); if(!code.trim()) return;
