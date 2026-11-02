@@ -14,6 +14,9 @@ window.KESIT_CONFIG = {
   },
   /* Hakkında → "Nasıl yapıldı". Boş bırakırsan bölüm görünmez. */
   story: 'Süreç yalınlaştırma ve operasyon geliştirme işinde en sık gördüğüm israflardan biri, ekiplerin basit bir veri sorusu için başkasını beklemesi. SQL bu bekleyişi ortadan kaldıran en güçlü araçlardan biri; ama Türkçe, kurulum gerektirmeyen ve yaparak öğreten bir kaynak bulmak zor. Kesit SQL\'i bu boşluğu doldurmak için tasarladım. Ürün sahibi gibi çalıştım: hedef kitleyi, seviye yapısını, 18 kariyer patikasını ve İK analitiği, bisiklet paylaşımı gibi gerçekçi veri setlerini ben kurguladım; kodu ve içeriği yapay zekâ (Claude) ile geliştirdim. Kaliteyi otomatik denetimler ve bağımsız kullanıcı testleriyle sağladım: her alıştırma altı SQL programında test edildi, bulunan hatalar düzeltilip her sürüm yeniden denetlendi. Sürekli iyileştirme bu projede de işin merkezinde.',
+  /* Kardeş uygulamalar: Hakkında sayfasında görünür. */
+  pbiUrl: 'https://ysfdurak.github.io/kesit-powerbi/',
+  pythonUrl: 'https://ysfdurak.github.io/kesit-python/',
   license: '',           // boşsa: içerik CC BY-NC 4.0, kod MIT
 
   /* Geri bildirim formu (Google Forms ya da Tally). Adreste {ders} yazan yere ders adı otomatik gelir.
