@@ -431,7 +431,7 @@ X('ik-baglilik', [
     { ord: true, hint: 'Dalga koşulunu LEFT JOIN\'in ON kısmına yaz; WHERE\'e yazarsan katılmayanlar kaybolur.' }),
   sq('Bölüme göre 2024-Q4 eNPS (payda: soruyu yanıtlayanlar; 1 basamak); anonimlik için en az 10 yanıtı olan bölümler: <code>name</code>, <code>yanit</code>, <code>enps</code>. eNPS\'e göre artan, eşitlikte ad.',
     `SELECT d.name, COUNT(s.enps) AS yanit, ROUND(100.0 * (SUM(CASE WHEN s.enps >= 9 THEN 1 ELSE 0 END) - SUM(CASE WHEN s.enps <= 6 THEN 1 ELSE 0 END)) / COUNT(s.enps), 1) AS enps FROM ik_survey s JOIN ik_employees e ON e.emp_id = s.emp_id ${DEPT} WHERE s.wave = '2024-Q4' GROUP BY d.dept_id, d.name HAVING COUNT(s.enps) >= 10 ORDER BY enps, d.name;`,
-    { ord: true, hint: 'Eleştirmen 0–6 (<= 6), destekçi 9–10. HAVING COUNT(s.enps) >= 10.' })
+    { ord: true, hint: 'Eleştirmen 0–6 (&lt;= 6), destekçi 9–10. HAVING COUNT(s.enps) >= 10.' })
 ]);
 
 more('ik-proje', D('Bulguyu sınamak: önce–sonra, karşılaştırma grubu ve alternatif açıklamalar', `
@@ -512,7 +512,7 @@ ORDER BY s.name, h.dilim;`)}
 <div class="note"><b>Basitleştirme</b>Buradaki akış hesabı başlangıçta istasyonda kaç bisiklet olduğunu ve gece yapılan taşımaları bilmez; yalnızca kullanıcı hareketini ölçer. Gerçek sistemlerde istasyonların dakikalık doluluk kayıtları (dock status) ayrıca tutulur.</div>
 `));
 X('bv-istasyon', [
-  sq('Doluluk baskısı: her istasyon için üç aylık (92 gün) net akışın günlük ortalaması (1 basamak) ve bunun kapasiteye oranı (2 basamak); en negatif 5 istasyon: <code>name</code>, <code>capacity</code>, <code>gunluk_net</code>, <code>baski</code>. Baskıya göre artan, eşitlikte ad. (Sorguyu <2 sn\'de tut: çıkış ve girişleri ayrı CTE\'lerde say.)',
+  sq('Doluluk baskısı: her istasyon için üç aylık (92 gün) net akışın günlük ortalaması (1 basamak) ve bunun kapasiteye oranı (2 basamak); en negatif 5 istasyon: <code>name</code>, <code>capacity</code>, <code>gunluk_net</code>, <code>baski</code>. Baskıya göre artan, eşitlikte ad. (Sorguyu &lt;2 sn\'de tut: çıkış ve girişleri ayrı CTE\'lerde say.)',
     'WITH c AS (SELECT start_station AS st, COUNT(*) AS n FROM bk_trips GROUP BY start_station), g AS (SELECT end_station AS st, COUNT(*) AS n FROM bk_trips WHERE end_station IS NOT NULL GROUP BY end_station) SELECT s.name, s.capacity, ROUND((COALESCE(g.n, 0) - COALESCE(c.n, 0)) / 92.0, 1) AS gunluk_net, ROUND((COALESCE(g.n, 0) - COALESCE(c.n, 0)) / 92.0 / s.capacity, 2) AS baski FROM bk_stations s LEFT JOIN c ON c.st = s.station_id LEFT JOIN g ON g.st = s.station_id ORDER BY baski, s.name LIMIT 5;',
     { ord: true, hint: 'Net akışı derste olduğu gibi iki CTE ile hesapla; sonra 92\'ye ve kapasiteye böl.' }),
   sq('Sabah zirvesi: 07:00–09:59 arasında başlayan yolculuklarda net akışı (gelen − giden) en negatif 5 istasyon: <code>name</code>, <code>net</code>. Net akışa göre artan, eşitlikte ad.',

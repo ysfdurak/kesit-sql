@@ -66,7 +66,7 @@ X('null', [
   sq('Yorum yazılmış değerlendirmelerin sayısı ve toplam değerlendirme sayısı: <code>yorumlu</code>, <code>toplam</code>.', 'SELECT COUNT(comment) AS yorumlu, COUNT(*) AS toplam FROM lk_ratings;'),
   sq('İlçesi bilinmeyen Lezzet Kurye müşterilerinin adı ve şehri: <code>full_name</code>, <code>city</code>.', 'SELECT full_name, city FROM lk_customers WHERE district IS NULL;'),
   sq('Kanat Havayolları\'nda gerçek kalkış saati boş olan uçuşların durumlarına göre sayısı: <code>status</code>, <code>adet</code>.', 'SELECT status, COUNT(*) AS adet FROM hv_flights WHERE actual_dep IS NULL GROUP BY status;'),
-  mc('<p><code>SELECT COUNT(*) FROM lk_customers WHERE district &lt;&gt; \'Kadıköy\';</code> ilçesi boş müşterileri sayar mı?</p>', ['Evet, boş ilçe Kadıköy olmadığı için sayılır', 'Hayır, NULL ile karşılaştırma bilinmeyen döner ve satır elenir', 'Hata verir', 'Yalnızca SQLite\'ta sayar'], 1, 'NULL ile <> karşılaştırması UNKNOWN verir. Boşları da istiyorsan OR district IS NULL ekle.')
+  mc('<p><code>SELECT COUNT(*) FROM lk_customers WHERE district &lt;&gt; \'Kadıköy\';</code> ilçesi boş müşterileri sayar mı?</p>', ['Evet, boş ilçe Kadıköy olmadığı için sayılır', 'Hayır, NULL ile karşılaştırma bilinmeyen döner ve satır elenir', 'Hata verir', 'Yalnızca SQLite\'ta sayar'], 1, 'NULL ile &lt;> karşılaştırması UNKNOWN verir. Boşları da istiyorsan OR district IS NULL ekle.')
 ]);
 X('order-limit', [
   sq('En pahalı 5 menü ürünü (eşitlikte ada göre): <code>name</code>, <code>price</code>.', 'SELECT name, price FROM lk_menu_items ORDER BY price DESC, name LIMIT 5;', O),

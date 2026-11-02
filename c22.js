@@ -66,7 +66,7 @@ ${C("SELECT dept_id, LISTAGG(first_name, ', ') WITHIN GROUP (ORDER BY first_name
       'SELECT first_name, salary FROM employees WHERE salary > ALL (SELECT salary FROM employees WHERE dept_id = 2) AND (dept_id <> 2 OR dept_id IS NULL) ORDER BY salary DESC;', { ord: true }),
     oq('2024 yılı için ay numarası (TO_CHAR ile iki haneli) ve o ayın sipariş sayısı; tarih filtresinde DATE sabiti kullan: <code>ay</code>, <code>siparis</code>. Aya göre sırala.',
       "SELECT TO_CHAR(order_date, 'MM') AS ay, COUNT(*) AS siparis FROM orders WHERE order_date >= DATE '2024-01-01' AND order_date < DATE '2025-01-01' GROUP BY TO_CHAR(order_date, 'MM') ORDER BY ay;", { ord: true }),
-    mc('<p><code>SELECT first_name FROM employees WHERE ROWNUM = 2;</code> ne döndürür?</p>', ['Tablodaki ikinci satırı döndürür', 'Hiçbir satır döndürmez', 'Hata verir; ROWNUM yalnızca < ve <= ile kullanılır', 'İlk iki satırı rastgele sırayla döndürür'], 1,
+    mc('<p><code>SELECT first_name FROM employees WHERE ROWNUM = 2;</code> ne döndürür?</p>', ['Tablodaki ikinci satırı döndürür', 'Hiçbir satır döndürmez', 'Hata verir; ROWNUM yalnızca &lt; ve &lt;= ile kullanılır', 'İlk iki satırı rastgele sırayla döndürür'], 1,
       'ROWNUM, WHERE koşulunu geçen satırlara sırayla verilir. İlk aday satır 1 numarayı alır ve “= 2” koşulunu geçemez; sonraki satır yine 1 olur. Böylece hiçbir satır 2 numaraya ulaşamaz.')
   ]
 };

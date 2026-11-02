@@ -51,7 +51,7 @@ LIMIT 5;</pre>
       'SELECT tail_no, model, seats FROM hv_aircraft WHERE seats > 200 ORDER BY seats DESC, tail_no;', { ord: true }),
     sq('<b>KN101</b> seferinin Aralık 2024\'teki uçuşlarını planlanan kalkış zamanı ve durumuyla getir: <code>sched_dep</code>, <code>status</code>. Kalkışa göre sırala.',
       "SELECT sched_dep, status FROM hv_flights WHERE flight_no = 'KN101' AND sched_dep >= '2024-12-01' AND sched_dep < '2025-01-01' ORDER BY sched_dep;",
-      { ord: true, hint: "Saatli sütunda ay filtresi: sched_dep >= '2024-12-01' AND sched_dep < '2025-01-01'." }),
+      { ord: true, hint: "Saatli sütunda ay filtresi: sched_dep >= '2024-12-01' AND sched_dep &lt; '2025-01-01'." }),
     sq('İptal edilen uçuşlardan en erken planlanmış 10 tanesini getir: <code>flight_id</code>, <code>flight_no</code>, <code>sched_dep</code>.',
       "SELECT flight_id, flight_no, sched_dep FROM hv_flights WHERE status = 'cancelled' ORDER BY sched_dep, flight_id LIMIT 10;", { ord: true }),
     sq('İzmir\'de yaşayan <b>Gold</b> veya <b>Elite</b> üyeleri getir: <code>full_name</code>, <code>tier</code>. Ada göre sırala.',
@@ -155,7 +155,7 @@ WHERE f.actual_dep IS NOT NULL;</pre>
       "WITH g AS (SELECT b.price, julianday(date(f.sched_dep)) - julianday(date(b.booked_at)) AS gun FROM hv_bookings b JOIN hv_flights f ON f.flight_id = b.flight_id) SELECT CASE WHEN gun < 7 THEN 'Son hafta' WHEN gun < 30 THEN 'Son ay' ELSE 'Erken' END AS grup, COUNT(*) AS rezervasyon, ROUND(AVG(price)) AS ort_ucret FROM g GROUP BY CASE WHEN gun < 7 THEN 'Son hafta' WHEN gun < 30 THEN 'Son ay' ELSE 'Erken' END;",
       { hint: 'Önce iki zamanı da tarihe (güne) çevir, sonra gün farkını al. Bir CTE içinde hesaplayıp dışarıda CASE ile grupla.', why: 'Son dakika biletleri belirgin biçimde pahalı: havayolları talep yaklaştıkça fiyatı yükseltir.' }),
     mc('<p><code>WHERE sched_dep BETWEEN \'2024-12-01\' AND \'2024-12-31\'</code> filtresi Aralık uçuşlarının hangisini kaçırır?</p>', ['1 Aralık 00:00\'daki uçuşları', '31 Aralık\'ta 00:00\'dan sonra planlanan tüm uçuşları', 'Yalnızca iptal edilen uçuşları', 'Hiçbirini; BETWEEN iki ucu da kapsar'], 1,
-      "'2024-12-31' değeri 31 Aralık 00:00 anlamına gelir; o günün sonraki saatleri bu değerden büyüktür. Doğrusu yarı açık aralıktır: >= '2024-12-01' AND < '2025-01-01'.")
+      "'2024-12-31' değeri 31 Aralık 00:00 anlamına gelir; o günün sonraki saatleri bu değerden büyüktür. Doğrusu yarı açık aralıktır: >= '2024-12-01' AND &lt; '2025-01-01'.")
   ]
 },
 /* ---------------------------------------------------------------- 4 */
@@ -240,7 +240,7 @@ LIMIT 5;</pre>
       'SELECT r.route_id, k.city AS kalkis, v.city AS varis, r.distance_km FROM hv_routes r JOIN hv_airports k ON k.airport_code = r.origin JOIN hv_airports v ON v.airport_code = r.dest ORDER BY r.distance_km DESC, r.route_id LIMIT 5;', { ord: true }),
     sq('Aynı şehirde birden fazla havalimanı olan şehirleri, havalimanı çiftleriyle getir (her çift bir kez): <code>city</code>, <code>a</code>, <code>b</code>.',
       'SELECT x.city, x.airport_code AS a, y.airport_code AS b FROM hv_airports x JOIN hv_airports y ON y.city = x.city AND x.airport_code < y.airport_code;',
-      { hint: 'Tabloyu kendisiyle şehir üzerinden birleştir; aynı çifti iki kez görmemek için x.kod < y.kod.' }),
+      { hint: 'Tabloyu kendisiyle şehir üzerinden birleştir; aynı çifti iki kez görmemek için x.kod &lt; y.kod.' }),
     sq('<b>Dönüş rotası olmayan</b> rotaları bul (A → B var ama B → A yok): <code>route_id</code>, <code>origin</code>, <code>dest</code>.',
       'SELECT r.route_id, r.origin, r.dest FROM hv_routes r LEFT JOIN hv_routes d ON d.origin = r.dest AND d.dest = r.origin WHERE d.route_id IS NULL;',
       { hint: 'Rota tablosunu kendisiyle ters yönde LEFT JOIN yap: d.origin = r.dest AND d.dest = r.origin.' }),

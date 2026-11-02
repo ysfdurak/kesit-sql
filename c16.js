@@ -326,7 +326,7 @@ add('ts-plan',
     { hint: "Baştaki sabit kısımla LIKE N'Kot%' indeks aralığı olarak kullanılabilir." }),
   ts('Aşağıdaki sorguyu sütunu fonksiyona sokmadan yeniden yaz: <code>SELECT COUNT(*) AS adet FROM products WHERE ISNULL(stock, 0) &lt; 20;</code>',
     'SELECT COUNT(*) AS adet FROM products WHERE stock < 20 OR stock IS NULL;',
-    { hint: 'ISNULL(stock, 0) < 20, “stok 20\'den az ya da bilinmiyor” demektir.' }));
+    { hint: 'ISNULL(stock, 0) &lt; 20, “stok 20\'den az ya da bilinmiyor” demektir.' }));
 })();
 
 /* ======================= Diğer teknik derslere alıştırmalar ======================= */
@@ -351,7 +351,7 @@ add('veri-tipleri',
 add('collation',
   sq('<code>raw_signups</code> şehirlerini <code>UPPER(TRIM(city))</code> ile standartlaştırıp grupla ve her anahtar için kayıt sayısını getir (boş ve NULL hariç): <code>anahtar</code>, <code>kayit</code>. Anahtara göre sırala. Sonuçta “İSTANBUL” ile “ISTANBUL”un neden ayrı kaldığına dikkat et.',
     "SELECT UPPER(TRIM(city)) AS anahtar, COUNT(*) AS kayit FROM raw_signups WHERE LENGTH(TRIM(city)) > 0 GROUP BY UPPER(TRIM(city)) ORDER BY anahtar;",
-    { ord: true, hint: 'Boş metni ayıklamak için TRIM(city) <> \'\' yerine LENGTH(TRIM(city)) > 0 yaz; Oracle boş metni NULL saydığı için ilki tüm satırları eler. Varsayılan (Türkçe olmayan) harmanlamada küçük “i” büyük “I” olur, “İ” ise “İ” kalır. Bu yüzden istanbul ve İstanbul aynı anahtara düşmez.', why: 'Türkçe metinlerde UPPER/LOWER tek başına yetmez; Türkçe harmanlama ya da TRANSLATE ile karakter eşleme gerekir.' }));
+    { ord: true, hint: 'Boş metni ayıklamak için TRIM(city) &lt;> \'\' yerine LENGTH(TRIM(city)) > 0 yaz; Oracle boş metni NULL saydığı için ilki tüm satırları eler. Varsayılan (Türkçe olmayan) harmanlamada küçük “i” büyük “I” olur, “İ” ise “İ” kalır. Bu yüzden istanbul ve İstanbul aynı anahtara düşmez.', why: 'Türkçe metinlerde UPPER/LOWER tek başına yetmez; Türkçe harmanlama ya da TRANSLATE ile karakter eşleme gerekir.' }));
 
 add('er-modelleme',
   sq('Bire-çok ilişkinin “sıfır” tarafını kontrol et: hiç siparişi olmayan müşterilerin sayısını getir: <code>siparissiz</code>.',
@@ -419,7 +419,7 @@ add('cografi',
     { ord: true, start: SEHIR, hint: 'Mesafeyi alt sorguda hesapla; takma ad WHERE içinde doğrudan kullanılamaz.' }),
   sq('Başlangıç kodundaki şehirler arasında birbirine <b>en yakın</b> iki şehri bul: <code>a</code>, <code>b</code>, <code>km</code> (tam sayı). Her çifti bir kez say (a &lt; b).',
     one(SEHIR) + ' SELECT x.ad AS a, y.ad AS b, ROUND(6371 * 2 * ASIN(SQRT(POWER(SIN((y.enlem - x.enlem) * 0.0174532925 / 2), 2) + COS(x.enlem * 0.0174532925) * COS(y.enlem * 0.0174532925) * POWER(SIN((y.boylam - x.boylam) * 0.0174532925 / 2), 2))), 0) AS km FROM sehir x JOIN sehir y ON x.ad < y.ad ORDER BY km LIMIT 1;',
-    { start: SEHIR, hint: 'Şehir listesini kendisiyle birleştir (x.ad < y.ad) ve Haversine formülünü iki noktanın koordinatlarıyla yaz.' }));
+    { start: SEHIR, hint: 'Şehir listesini kendisiyle birleştir (x.ad &lt; y.ad) ve Haversine formülünü iki noktanın koordinatlarıyla yaz.' }));
 
 add('dwh',
   sq('Tarih boyutu (dimension) hazırla: 2024 Aralık ayında sipariş verilen günlerden tekrarsız bir liste üret: <code>tarih</code>, <code>yil</code>, <code>ay</code>, <code>gun</code>. Tarihe göre sırala.',

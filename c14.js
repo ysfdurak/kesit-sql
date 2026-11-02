@@ -112,10 +112,10 @@ WHERE city <> 'İstanbul' OR city IS NULL;</pre>
     mc('<p><code>SELECT COUNT(*) FROM t WHERE x &lt;&gt; 5</code> sorgusunda <code>x</code> değeri NULL olan satırlar ne olur?</p>', ['Sayılır, çünkü NULL 5 değildir', 'Sayılmaz, çünkü karşılaştırmanın sonucu “bilinmiyor”dur', 'Sorgu hata verir', 'Yalnızca SQL Server\'da sayılır'], 1, 'NULL ile yapılan her karşılaştırmanın sonucu “bilinmiyor”dur; WHERE yalnızca “doğru” olan satırları geçirir.'),
     sq('<code>raw_signups</code> tablosunda şehri tam olarak <b>\'İstanbul\'</b> olmayan kayıtların sayısını, şehri NULL olanlar <b>dahil</b> olacak şekilde getir. Tek değer: <code>adet</code>.',
       "SELECT COUNT(*) AS adet FROM raw_signups WHERE city <> 'İstanbul' OR city IS NULL;",
-      { hint: '<> tek başına NULL satırları kaçırır; OR city IS NULL ekle ya da SQL türünün NULL güvenli karşılaştırmasını kullan.', why: 'Sonuca şehri boş ve NULL olan kayıtlar da girdi.' }),
+      { hint: '&lt;> tek başına NULL satırları kaçırır; OR city IS NULL ekle ya da SQL türünün NULL güvenli karşılaştırmasını kullan.', why: 'Sonuca şehri boş ve NULL olan kayıtlar da girdi.' }),
     sq('Departmanı <b>1 olmayan</b> çalışanları getir; departmanı hiç olmayan (NULL) çalışan da listede olsun: <code>emp_id</code>, <code>first_name</code>, <code>dept_id</code>.',
       'SELECT emp_id, first_name, dept_id FROM employees WHERE dept_id IS DISTINCT FROM 1;',
-      { solv: { mysql: 'SELECT emp_id, first_name, dept_id FROM employees WHERE NOT (dept_id <=> 1);', oracle: 'SELECT emp_id, first_name, dept_id FROM employees WHERE DECODE(dept_id, 1, 0, 1) = 1;' }, hint: 'IS DISTINCT FROM 1 (MySQL: NOT (dept_id <=> 1), Oracle: DECODE) ya da dept_id <> 1 OR dept_id IS NULL.', why: 'Genel Müdür\'ün departmanı NULL olduğu için <> 1 onu kaçırırdı.' }),
+      { solv: { mysql: 'SELECT emp_id, first_name, dept_id FROM employees WHERE NOT (dept_id <=> 1);', oracle: 'SELECT emp_id, first_name, dept_id FROM employees WHERE DECODE(dept_id, 1, 0, 1) = 1;' }, hint: 'IS DISTINCT FROM 1 (MySQL: NOT (dept_id &lt;=> 1), Oracle: DECODE) ya da dept_id &lt;> 1 OR dept_id IS NULL.', why: 'Genel Müdür\'ün departmanı NULL olduğu için &lt;> 1 onu kaçırırdı.' }),
     sq('<code>price_updates</code> tablosundaki her güncellemeyi ürünün mevcut fiyatıyla karşılaştır ve fiyatı <b>gerçekten değiştiren</b> güncellemeleri say. Tek değer: <code>degisen</code>.',
       'SELECT COUNT(*) AS degisen FROM price_updates u JOIN products p ON p.product_id = u.product_id WHERE u.new_price IS DISTINCT FROM p.price;',
       { solv: { mysql: 'SELECT COUNT(*) AS degisen FROM price_updates u JOIN products p ON p.product_id = u.product_id WHERE NOT (u.new_price <=> p.price);', oracle: 'SELECT COUNT(*) AS degisen FROM price_updates u JOIN products p ON p.product_id = u.product_id WHERE DECODE(u.new_price, p.price, 0, 1) = 1;' }, hint: 'Sütunlar NULL olmasa da “değişti mi?” sorusunu NULL güvenli yazmak iyi bir alışkanlıktır.' })
@@ -261,7 +261,7 @@ ORDER BY customer_id, order_date DESC;</pre>
         oracle: 'SELECT d.name, s.calisan, s.ort_maas FROM departments d OUTER APPLY (SELECT COUNT(*) AS calisan, ROUND(AVG(e.salary)) AS ort_maas FROM employees e WHERE e.dept_id = d.dept_id) s;',
         tsql: 'SELECT d.name, s.calisan, s.ort_maas FROM departments d OUTER APPLY (SELECT COUNT(*) AS calisan, ROUND(AVG(e.salary), 0) AS ort_maas FROM employees e WHERE e.dept_id = d.dept_id) AS s;' },
         hint: 'Toplama yapan alt sorgu her zaman bir satır döndürür; çalışanı olmayan departmanda COUNT(*) 0, AVG NULL olur.' }),
-    mc('<p>“Her müşterinin son 3 siparişi” sorgusunu BigQuery\'de yazman gerekiyor. Hangi yöntem kullanılır?</p>', ['CROSS APPLY', 'LEFT JOIN LATERAL ... ON TRUE', 'ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date DESC) ile numaralandırıp rn <= 3 filtrelemek', 'SELECT listesinde ilişkili alt sorgu'], 2, 'BigQuery FROM içinde ilişkili alt sorguyu desteklemez; pencere fonksiyonu her SQL türünde çalışan yoldur (BigQuery\'de QUALIFY ile daha da kısa yazılır).')
+    mc('<p>“Her müşterinin son 3 siparişi” sorgusunu BigQuery\'de yazman gerekiyor. Hangi yöntem kullanılır?</p>', ['CROSS APPLY', 'LEFT JOIN LATERAL ... ON TRUE', 'ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date DESC) ile numaralandırıp rn &lt;= 3 filtrelemek', 'SELECT listesinde ilişkili alt sorgu'], 2, 'BigQuery FROM içinde ilişkili alt sorguyu desteklemez; pencere fonksiyonu her SQL türünde çalışan yoldur (BigQuery\'de QUALIFY ile daha da kısa yazılır).')
   ]
 }]);
 
@@ -293,7 +293,7 @@ after('stil', [{
   ex: [
     sq('<b>Kanal performansı.</b> 2024 yılında verilen siparişleri kanala göre say: <code>channel</code>, <code>siparis</code>. En çok siparişi olan kanal en üstte olsun.',
       "SELECT channel, COUNT(*) AS siparis FROM orders WHERE order_date >= '2024-01-01' AND order_date < '2025-01-01' GROUP BY channel ORDER BY siparis DESC;",
-      { ord: true, hint: "Yarı açık aralık: order_date >= '2024-01-01' AND order_date < '2025-01-01'." }),
+      { ord: true, hint: "Yarı açık aralık: order_date >= '2024-01-01' AND order_date &lt; '2025-01-01'." }),
     sq('<b>Elektronik kâr marjı.</b> Elektronik kategorisindeki ürünlerin adını, fiyatını, maliyetini ve kâr marjını yüzde olarak (1 basamak) getir: <code>name</code>, <code>price</code>, <code>cost</code>, <code>marj</code>. Marjı en düşük ürün en üstte olsun.',
       "SELECT name, price, cost, ROUND((price - cost) * 100.0 / price, 1) AS marj FROM products WHERE category = 'Elektronik' ORDER BY marj, name;",
       { ord: true, hint: 'Marj = (price - cost) * 100.0 / price. 100.0 yazmak tam sayı bölmesini önler.' }),
@@ -308,7 +308,7 @@ after('stil', [{
       { hint: "Koşullu sayım: SUM(CASE WHEN email LIKE '%@gmail.com' THEN 1 ELSE 0 END)." }),
     sq('<b>Stok uyarısı.</b> Stoğu bilinmeyen (NULL) <b>ya da</b> 20\'nin altında olan ürünlerden fiyatı en yüksek 5 tanesini getir: <code>name</code>, <code>category</code>, <code>price</code>, <code>stock</code>. Fiyata göre azalan sırala.',
       'SELECT name, category, price, stock FROM products WHERE stock IS NULL OR stock < 20 ORDER BY price DESC, product_id LIMIT 5;',
-      { ord: true, hint: 'NULL bir karşılaştırmada yakalanmaz; stock IS NULL OR stock < 20 yaz. İlk 5 satır için SQL türünün yazımını kullan (LIMIT / TOP / FETCH FIRST).' })
+      { ord: true, hint: 'NULL bir karşılaştırmada yakalanmaz; stock IS NULL OR stock &lt; 20 yaz. İlk 5 satır için SQL türünün yazımını kullan (LIMIT / TOP / FETCH FIRST).' })
   ]
 }]);
 
@@ -326,7 +326,7 @@ add('coalesce',
 add('non-equi',
   sq('Her ürünü fiyat aralığına göre etiketle ve her aralıktaki ürün sayısını getir. Aralıkları CTE ile tanımla: 0–250 <b>\'Ekonomik\'</b>, 250–1000 <b>\'Orta\'</b>, 1000 ve üzeri <b>\'Premium\'</b> (alt sınır dahil, üst hariç). Sütunlar: <code>aralik</code>, <code>urun</code>.',
     "WITH a AS (SELECT 0 AS alt, 250 AS ust, 'Ekonomik' AS aralik UNION ALL SELECT 250, 1000, 'Orta' UNION ALL SELECT 1000, 100000000, 'Premium') SELECT a.aralik, COUNT(*) AS urun FROM products p JOIN a ON p.price >= a.alt AND p.price < a.ust GROUP BY a.aralik;",
-    { hint: 'JOIN a ON p.price >= a.alt AND p.price < a.ust' }));
+    { hint: 'JOIN a ON p.price >= a.alt AND p.price &lt; a.ust' }));
 
 add('set-ops',
   sq('Hem <b>web</b> hem de <b>store</b> kanalından en az bir sipariş vermiş müşterilerin numaralarını INTERSECT ile bul: <code>customer_id</code>.',
@@ -469,7 +469,7 @@ add('ds-zaman',
 add('de-kalite',
   sq('Bir iş kuralı testi yaz. Kural: “Her ürünün fiyatı maliyetinin en az 1,5 katı olmalı; fiyat ve maliyet sıfırdan büyük olmalı.” Kuralı <b>ihlal eden</b> ürünleri getir (test geçseydi sorgu sıfır satır döndürürdü): <code>product_id</code>, <code>name</code>, <code>price</code>, <code>cost</code>.',
     'SELECT product_id, name, price, cost FROM products WHERE price < cost * 1.5 OR price <= 0 OR cost <= 0;',
-    { hint: 'Kuralın tersini WHERE ile yaz: price < cost * 1.5 OR price <= 0 OR cost <= 0.', why: 'Bu ürünler kuralı ihlal ediyor. Gerçek bir veri hattında bu test başarısız olur ve ekip uyarılır.' }));
+    { hint: 'Kuralın tersini WHERE ile yaz: price &lt; cost * 1.5 OR price &lt;= 0 OR cost &lt;= 0.', why: 'Bu ürünler kuralı ihlal ediyor. Gerçek bir veri hattında bu test başarısız olur ve ekip uyarılır.' }));
 /* Oracle boş metni NULL saklar; bu yüzden tam tekrar sayısı SQL türünden bağımsız bir kontrolle ölçülür */
 { const e = (LM('de-dedup') || { ex: [] }).ex[1]; if (e && e.check) e.check = 'SELECT COUNT(DISTINCT id) AS kimlik, COUNT(*) - (SELECT COUNT(*) FROM (SELECT DISTINCT id, full_name, email, city, signup_date FROM raw_signups) x) AS fazla FROM raw_signups'; }
 
