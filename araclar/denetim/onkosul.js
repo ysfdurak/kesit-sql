@@ -1,0 +1,8 @@
+// Önkoşul taraması: her öğrenme yolunda, alıştırma çözümünün kullandığı yapı o yapıyı anlatan dersten önce geliyor mu?
+// "İleri görev" (e.adv) işaretli alıştırmalar sayılmaz. Çalıştırma: node onkosul.js
+const c=require('./load.js'); const M=Object.fromEntries(c.SQLP_LESSONS.map(l=>[l.id,l]));
+const strip=s=>String(s||'').replace(/--.*$/gm,' ').replace(/'[^']*'/g,"''");
+const C=[['JOIN',/\bJOIN\b/i,['inner-join','hv-join']],['LEFT JOIN',/\bLEFT\s+(OUTER\s+)?JOIN\b/i,['left-join']],['GROUP BY',/\bGROUP\s+BY\b/i,['group-by','hv-ozet']],['HAVING',/\bHAVING\b/i,['having']],['CASE',/\bCASE\s+WHEN\b/i,['case']],['OVER',/\bOVER\s*\(/i,['window-intro','hv-pencere']],['CTE',/^\s*WITH\s+\w+\s+AS\s*\(/im,['cte','hv-alt']],['ROWS',/\b(ROWS|RANGE)\s+(BETWEEN|UNBOUNDED|\d)/i,['frames','pencere-cerceve']],['LAG/LEAD',/\b(LAG|LEAD)\s*\(/i,['lag-lead','hv-pencere']],['RANK',/\b(ROW_NUMBER|DENSE_RANK|RANK)\s*\(/i,['ranking','window-intro','hv-pencere']],['alt sorgu',/\(\s*SELECT\b/i,['subquery','hv-alt']],['EXISTS',/\bEXISTS\s*\(/i,['correlated','exists-anyall','subquery','hv-alt']],['UNION',/\bUNION\b/i,['set-ops']]];
+let top=0; for(const p of c.SQLP_PATHS){ const idx={}; p.lessons.forEach((x,i)=>idx[x]=i); const out={}; p.lessons.forEach((id,i)=>{ const l=M[id]; if(!l) return; const sols=(l.ex||[]).filter(e=>!e.adv).map(e=>strip(e.sol)).join('\n'); for(const [n,re,te] of C){ if(te.includes(id)) continue; const ti=Math.min(...te.map(t=>idx[t]===undefined?1e9:idx[t])); if(re.test(sols)&&i<ti){ (out[n]=out[n]||[]).push(id+'#'+(i+1)); } } });
+  const k=Object.keys(out); const n=k.reduce((a,x)=>a+out[x].length,0); top+=n; console.log(p.id.padEnd(14),n, k.map(x=>x+': '+out[x].slice(0,4).join(' ')).join(' | ')); }
+console.log('toplam',top);

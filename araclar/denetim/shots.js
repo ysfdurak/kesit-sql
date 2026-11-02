@@ -1,4 +1,4 @@
-const KESIT_BASE=process.env.KESIT_BASE||KESIT_BASE;
+const KESIT_BASE=process.env.KESIT_BASE||'http://localhost:8765';
 const { chromium } = require('playwright'); const path=require('path'); const fs=require('fs');
 const OUT=process.argv[2];
 (async()=>{ const b=await chromium.launch(); const p=await b.newPage({viewport:{width:1280,height:800}, deviceScaleFactor:1});

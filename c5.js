@@ -13,7 +13,7 @@ after('veritabani', [{
   sum: 'Tablolara, satır sayılarına ve ilişkilere ilk bakış.',
   body: `
 <h2>Önce veriye bak</h2>
-<p>İyi bir analist sorgu yazmadan önce veriyi tanır: Hangi tablolar var, kaç satır var, hangi sütunlar boş, tablolar birbirine nasıl bağlı? <b>Veri Seti</b> sayfasında tüm tabloların ilişki şemasını, sütunlarını ve verinin kendisini görebilirsin. Burada aynı keşfi SQL ile yapalım.</p>
+<p>İyi bir analist sorgu yazmadan önce veriyi tanır: Hangi tablolar var, kaç satır var, hangi sütunlar boş, tablolar birbirine nasıl bağlı? <b>Veri setleri</b> sayfasında tüm tabloların ilişki şemasını, sütunlarını ve verinin kendisini görebilirsin. Burada aynı keşfi SQL ile yapalım.</p>
 <h3>Her tabloda kaç satır var?</h3>
 <pre class="code">SELECT 'customers' AS tablo, COUNT(*) AS satir FROM customers
 UNION ALL SELECT 'orders', COUNT(*) FROM orders

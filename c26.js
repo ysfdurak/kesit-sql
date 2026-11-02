@@ -1,7 +1,7 @@
 /* Kesit SQL içerik 26: ikinci kontrol turunda bulunan eksikler
    - çekirdek derslerde en az 5 SQL alıştırması
    - hiç SQL alıştırması olmayan uygulanabilir derslere alıştırma
-   - kalan kısa anlatımlara “Derinleş” bölümü, Veri Seti dersine altı veri seti
+   - kalan kısa anlatımlara “Derinleş” bölümü, Veri setleri dersine altı veri seti
    - küçük kalan alıştırma bankası konularına yeni görevler */
 (function () {
 const L = window.SQLP_LESSONS; const LM = id => L.find(l => l.id === id);

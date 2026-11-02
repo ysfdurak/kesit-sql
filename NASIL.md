@@ -115,7 +115,13 @@ node static.js
 ```
 - Yinelenen kimlik ve başlıkları, öğrenme yolu sırasını, şıkların dağılımını denetler.
 - Çıktı uyarı listesidir.
-- Son durumda bilinen ve kabul edilmiş uyarılar: `hicbirPatikadaDegil: 1`, `patikaSeviyeGeriDonus: 11`, `ayniCozumluPratik: 8`, `sinavAyniSecenek: 1`. Bu sayılar artarsa bak. Ayrıntılı liste `static.txt` dosyasına yazılır (son hali: `sonuclar/static.txt`).
+- Son durumda bilinen ve kabul edilmiş uyarılar: `hicbirPatikadaDegil: 1`, `patikaSeviyeGeriDonus: 12`, `ayniCozumluPratik: 8`, `sinavAyniSecenek: 1`. Bu sayılar artarsa bak. Ayrıntılı liste `static.txt` dosyasına yazılır (son hali: `sonuclar/static.txt`).
+
+### 4b. Önkoşul taraması
+```bash
+node onkosul.js
+```
+Her öğrenme yolunda çözümü, anlatılmamış yapı isteyen dersleri listeler. Rol yollarında beklenen: `temel`, `analist`, `bilimci`, `muhendis`, `bi`, `backend` 0; `tsql` ve `dba` 1 (`ts-giris` giriş dersi). Konu ve sertifika yolları temelleri bildiğini varsayar. İleri görev işaretli alıştırmalar sayılmaz.
 
 ### 5. Gerçek PostgreSQL denetimi
 ```bash

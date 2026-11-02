@@ -31,7 +31,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="vendor/fonts.css">
 <style>
-/* Düzen: solda patika (navigasyon + SQL türü seçimi), sağda çalışma alanı; telefonda alt sekme çubuğu.
+/* Düzen: solda menü (gezinme + SQL türü seçimi), sağda çalışma alanı; telefonda alt sekme çubuğu.
    Kimlik: Likya Yolu işaret boyası (kırmızı-beyaz şerit); seviyeler Temel → Orta → İleri tırmanış. */
 :root{
   --bg:#EEF1F4; --surface:#FFFFFF; --surface-2:#F6F8FA; --ink:#141C27; --muted:#5A6576; --line:#D8DEE6;
@@ -117,6 +117,8 @@ p code, li code, td code, .q code{background:var(--surface-2); border:1px solid 
 .adv-note{font-size:.85rem; color:var(--muted); border-left:3px solid var(--warn); padding:6px 10px; background:var(--warn-soft); border-radius:0 8px 8px 0}
 .steps button.adv{border-style:dashed}
 #main:focus{outline:none}
+.legal-foot{max-width:1100px; margin:28px auto 8px; padding:0 20px 8px; font-size:.75rem; color:var(--muted)}
+@media (max-width:860px){.legal-foot{padding-bottom:72px}}
 .side-stats{margin-top:auto; border-top:1px solid var(--line); padding:14px 8px 0; display:grid; grid-template-columns:1fr 1fr; gap:10px}
 .stat b{display:block; font-family:var(--f-display); font-size:1.3rem; font-variant-numeric:tabular-nums}
 .stat span{font-size:.75rem; color:var(--muted)}
@@ -659,7 +661,7 @@ const lastSet = r => r && r.sets && r.sets.length ? r.sets[r.sets.length-1] : nu
 
 /* ---------- Yardımcılar ---------- */
 const $ = (s,el=document)=>el.querySelector(s);
-const num = n => Number(n).toLocaleString('tr-TR');
+const num = n => isNaN(n) ? String(n) : Number(n).toLocaleString('tr-TR');
 const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const KW = new Set(('SELECT FROM WHERE AND OR NOT IN IS NULL AS ON JOIN INNER LEFT RIGHT FULL OUTER CROSS NATURAL USING GROUP BY ORDER HAVING LIMIT OFFSET DISTINCT UNION ALL INTERSECT EXCEPT MINUS CASE WHEN THEN ELSE END WITH RECURSIVE OVER PARTITION ROWS RANGE GROUPS BETWEEN PRECEDING FOLLOWING UNBOUNDED CURRENT ROW INSERT INTO VALUES UPDATE SET DELETE CREATE TABLE VIEW INDEX TRIGGER DROP ALTER ADD COLUMN RENAME TO PRIMARY KEY FOREIGN REFERENCES UNIQUE CHECK DEFAULT BEGIN COMMIT ROLLBACK TRANSACTION TRAN EXISTS LIKE ILIKE GLOB ASC DESC CAST INTEGER INT TEXT REAL NUMERIC BLOB VARCHAR NVARCHAR VARCHAR2 CHAR DATE DATETIME DATETIME2 TIMESTAMP DECIMAL NUMBER FLOAT BIT BOOLEAN IF REPLACE CONFLICT DO NOTHING RETURNING EXPLAIN QUERY PLAN FILTER WINDOW TEMP TEMPORARY AFTER BEFORE INSTEAD OF FOR EACH SAVEPOINT RELEASE GRANT REVOKE VACUUM ANALYZE PRAGMA ESCAPE COLLATE NOCASE TRUE FALSE CASCADE RESTRICT AUTOINCREMENT NULLS FIRST LAST MATERIALIZED SOME ANY TOP TIES PERCENT FETCH NEXT ONLY MERGE MATCHED TARGET SOURCE OUTPUT DECLARE PRINT WHILE BREAK CONTINUE RETURN RETURNS EXEC EXECUTE PROCEDURE PROC FUNCTION TRY CATCH THROW RAISERROR GO PIVOT UNPIVOT APPLY LATERAL ROLLUP CUBE GROUPING SETS INCLUDE CLUSTERED NONCLUSTERED IDENTITY NOLOCK INTERVAL DUAL ROWNUM CONNECT PRIOR START LEVEL WITHIN SEPARATOR DUPLICATE IGNORE DIV SCHEMABINDING NOCOUNT XACT_ABORT ISOLATION READ COMMITTED UNCOMMITTED SNAPSHOT SERIALIZABLE REPEATABLE OUT OR').split(' '));
 function hl(src){
@@ -815,6 +817,7 @@ function render(){
   else if(v==='projeler') main.innerHTML=viewProjeler();
   else if(v==='belgeler') main.innerHTML=viewBelgeler();
   else if(v==='hatalar') main.innerHTML=viewHatalar();
+  main.insertAdjacentHTML('beforeend','<footer class="legal-foot">Kesit SQL ücretsiz bir eğitim projesidir. Veri setleri hayalidir, sertifika denemeleri resmî sınav değildir. Kod MIT, içerik CC BY-NC 4.0. <button class="linkbtn" data-go="hakkinda" style="margin:0;display:inline;padding:0">Hakkında</button></footer>');
   enhance(main);
   if(v==='lesson') mountLesson();
   if(v==='pratiksoru') mountPratik();
@@ -970,7 +973,7 @@ function previewHTML(t, n){
   const cols=COLMETA[t].map(c=>c[0]);
   const r=pgFreshForSchema().exec('SELECT '+cols.map(c=>'"'+c+'"').join(', ')+' FROM '+t+' LIMIT '+(n||6))[0];
   const cnt=pgFreshForSchema().exec('SELECT COUNT(*) FROM '+t)[0].values[0][0];
-  let h='<div class="preview"><div class="cap"><b style="font-family:var(--f-mono);color:var(--ink)">'+t+'</b> · '+cnt+' satır · ilk '+(n||6)+' satır · '+esc(window.SQLP_SCHEMA_NOTES[t]||'')+'</div><table><thead><tr>'+COLMETA[t].map(c=>'<th title="'+esc(c[2])+'">'+c[0]+(c[3]==='pk'?' <span class="pk">PK</span>':c[3]?' <span class="fk">FK</span>':'')+'</th>').join('')+'</tr></thead><tbody>';
+  let h='<div class="preview"><div class="cap"><b style="font-family:var(--f-mono);color:var(--ink)">'+t+'</b> · '+num(cnt)+' satır · ilk '+(n||6)+' satır · '+esc(window.SQLP_SCHEMA_NOTES[t]||'')+'</div><table><thead><tr>'+COLMETA[t].map(c=>'<th title="'+esc(c[2])+'">'+c[0]+(c[3]==='pk'?' <span class="pk">PK</span>':c[3]?' <span class="fk">FK</span>':'')+'</th>').join('')+'</tr></thead><tbody>';
   (r?r.values:[]).forEach(row=>{ h+='<tr>'+row.map(v=>'<td>'+(v===null?'<i class="muted">NULL</i>':esc(v))+'</td>').join('')+'</tr>'; });
   return h+'</tbody></table></div>';
 }
@@ -1124,7 +1127,7 @@ function afterSolve(l){
 /* ---------- Sonuç gösterimi ---------- */
 function setTable(set, label){
   const max=200, rows=set.values.slice(0,max);
-  let h='<div class="rset"><div class="result-meta"><span class="num">'+(label?label+' · ':'')+set.values.length+' satır · '+set.columns.length+' sütun</span></div><div class="rtable"><table><thead><tr>'+set.columns.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr></thead><tbody>';
+  let h='<div class="rset"><div class="result-meta"><span class="num">'+(label?label+' · ':'')+num(set.values.length)+' satır · '+set.columns.length+' sütun</span></div><div class="rtable"><table><thead><tr>'+set.columns.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr></thead><tbody>';
   rows.forEach(row=>{ h+='<tr>'+row.map(v=> v===null?'<td class="null">NULL</td>': typeof v==='number'?'<td class="numc">'+(Number.isInteger(v)?v:Math.round(v*10000)/10000)+'</td>':'<td title="'+esc(v)+'">'+esc(v)+'</td>').join('')+'</tr>'; });
   if(!rows.length) h+='<tr><td class="null" colspan="'+set.columns.length+'">(satır yok)</td></tr>';
   h+='</tbody></table></div>'; if(set.values.length>max) h+='<div class="empty" style="padding:8px">İlk '+max+' satır gösteriliyor.</div>';
@@ -1658,7 +1661,7 @@ function schemaHTML(db, d){
     if(meta) cols=meta.map(c=>[c[0], window.SQLP_TYPE(c[1], d), c[3]]);
     else { const c=db.exec("SELECT name,type,pk FROM pragma_table_info('"+n.replace(/'/g,"''")+"')"); cols=c[0]?c[0].values.map(([cn,ty,pk])=>[cn,ty,pk?'pk':'']):[]; }
     const shown = /^tmp_/.test(n) ? '#'+n.slice(4) : /^tv_/.test(n) ? '@'+n.slice(3) : n;
-    h+='<details><summary>'+esc(shown)+'<span>'+cnt+' satır</span></summary>'+(window.SQLP_SCHEMA_NOTES[n]?'<p>'+esc(window.SQLP_SCHEMA_NOTES[n])+'</p>':'')+'<ul>'+cols.map(([cn,ty,k])=>'<li><span>'+esc(cn)+(k==='pk'?' <span class="pk">PK</span>':k?' <span class="fk">FK</span>':'')+'</span><i>'+esc(ty||'')+'</i></li>').join('')+'</ul></details>'; });
+    h+='<details><summary>'+esc(shown)+'<span>'+num(cnt)+' satır</span></summary>'+(window.SQLP_SCHEMA_NOTES[n]?'<p>'+esc(window.SQLP_SCHEMA_NOTES[n])+'</p>':'')+'<ul>'+cols.map(([cn,ty,k])=>'<li><span>'+esc(cn)+(k==='pk'?' <span class="pk">PK</span>':k?' <span class="fk">FK</span>':'')+'</span><i>'+esc(ty||'')+'</i></li>').join('')+'</ul></details>'; });
   return h+'</div>';
 }
 
@@ -1706,7 +1709,7 @@ function paintDataTable(){
   const t=DS.table, host=$('#dsTable'); if(!host) return; const db=pgFreshForSchema(); const meta=COLMETA[t]; const d=P.dialect; const per=25;
   const cnt=db.exec('SELECT COUNT(*) FROM '+t)[0].values[0][0]; const pages=Math.max(1,Math.ceil(cnt/per)); DS.page=Math.min(DS.page,pages-1);
   const data=db.exec('SELECT * FROM '+t+' LIMIT '+per+' OFFSET '+(DS.page*per))[0];
-  let h='<section class="panel"><div class="result-meta"><span><b style="color:var(--ink);font-family:var(--f-mono);font-size:.95rem">'+t+'</b> · '+cnt+' satır · '+meta.length+' sütun</span><span>'+esc(window.SQLP_SCHEMA_NOTES[t]||'')+'</span></div><div class="coltable"><table><thead><tr><th>Sütun</th><th>'+esc(DNAME[d])+' tipi</th><th>Anahtar</th><th>Açıklama</th></tr></thead><tbody>'+meta.map(c=>'<tr><td>'+c[0]+'</td><td>'+esc(window.SQLP_TYPE(c[1],d))+'</td><td>'+(c[3]==='pk'?'<span class="pk">PK</span>':c[3]?'<span class="fk">FK → '+esc(c[3].slice(3))+'</span>':'')+'</td><td>'+esc(c[2])+'</td></tr>').join('')+'</tbody></table></div>';
+  let h='<section class="panel"><div class="result-meta"><span><b style="color:var(--ink);font-family:var(--f-mono);font-size:.95rem">'+t+'</b> · '+num(cnt)+' satır · '+meta.length+' sütun</span><span>'+esc(window.SQLP_SCHEMA_NOTES[t]||'')+'</span></div><div class="coltable"><table><thead><tr><th>Sütun</th><th>'+esc(DNAME[d])+' tipi</th><th>Anahtar</th><th>Açıklama</th></tr></thead><tbody>'+meta.map(c=>'<tr><td>'+c[0]+'</td><td>'+esc(window.SQLP_TYPE(c[1],d))+'</td><td>'+(c[3]==='pk'?'<span class="pk">PK</span>':c[3]?'<span class="fk">FK → '+esc(c[3].slice(3))+'</span>':'')+'</td><td>'+esc(c[2])+'</td></tr>').join('')+'</tbody></table></div>';
   h+='<div class="row" style="padding:10px 12px;border-top:1px solid var(--line);gap:8px"><button class="btn sm" data-act="ds-ddl">'+(DS.ddl?'CREATE TABLE ifadesini gizle':'CREATE TABLE ifadesini göster ('+esc(DNAME[d])+')')+'</button><button class="btn sm" data-act="ds-play">Oyun alanında sorgula</button></div>'+(DS.ddl?'<div style="padding:0 12px 12px"><div class="codebox" style="margin:0"><pre>'+hl(ddlFor(t,d))+'</pre></div></div>':'')+'</section>';
   h+='<section class="panel result">'+setTable(data||{columns:meta.map(c=>c[0]),values:[]}, 'Veri, sayfa '+(DS.page+1)+' / '+pages)+'<div class="pager2"><button class="btn sm" data-act="ds-prev" '+(DS.page?'':'disabled')+'>Önceki</button><span class="num">'+(DS.page*per+1)+'–'+Math.min(cnt,(DS.page+1)*per)+' / '+cnt+'</span><button class="btn sm" data-act="ds-next" '+(DS.page<pages-1?'':'disabled')+'>Sonraki</button></div></section>';
   host.innerHTML=h;

@@ -361,7 +361,7 @@ ORDER BY b.ay;</pre>
   ]
 }, {
   id: 'bi-hazirlik', lv: 'B2', mod: BI, min: 14,
-  title: 'BI aracına veri hazırlamak: tanecik, görünüm ve boyutlar',
+  title: 'BI aracına veri hazırlamak: grain (tanecik), görünüm ve boyutlar',
   sum: 'Power BI / Tableau için olgu (fact) görünümü ve boyut tabloları.',
   body: `
 <h2>Raporu kim çizer, veriyi kim hazırlar?</h2>
@@ -401,7 +401,7 @@ GROUP BY channel;</pre>
 </table>
 `,
   ex: [
-    { t: 'sql', q: '<p>BI aracı için sipariş satırı tanecikli bir görünüm oluştur: <code>v_satis_satir</code>. Sütunlar: <code>order_id</code>, <code>order_date</code>, <code>channel</code>, <code>status</code>, <code>category</code>, <code>urun</code> (ürün adı), <code>quantity</code>, <code>net_tutar</code> (adet × birim fiyat × (1 − indirim), 2 basamak).</p>', sol: `CREATE VIEW v_satis_satir AS SELECT o.order_id, o.order_date, o.channel, o.status, p.category, p.name AS urun, oi.quantity, ROUND(${NET}, 2) AS net_tutar FROM order_items oi JOIN orders o ON o.order_id = oi.order_id JOIN products p ON p.product_id = oi.product_id;`, check: "SELECT COUNT(*) AS satir, ROUND(SUM(net_tutar), 2) AS toplam, COUNT(DISTINCT category) AS kategori, SUM(CASE WHEN urun IS NULL THEN 1 ELSE 0 END) AS adsiz FROM v_satis_satir;", hint: 'CREATE VIEW ad AS SELECT ... üç tabloyu birleştiren bir sorgu.' },
+    { t: 'sql', q: '<p>BI aracı için sipariş satırı düzeyinde bir görünüm oluştur: <code>v_satis_satir</code>. Sütunlar: <code>order_id</code>, <code>order_date</code>, <code>channel</code>, <code>status</code>, <code>category</code>, <code>urun</code> (ürün adı), <code>quantity</code>, <code>net_tutar</code> (adet × birim fiyat × (1 − indirim), 2 basamak).</p>', sol: `CREATE VIEW v_satis_satir AS SELECT o.order_id, o.order_date, o.channel, o.status, p.category, p.name AS urun, oi.quantity, ROUND(${NET}, 2) AS net_tutar FROM order_items oi JOIN orders o ON o.order_id = oi.order_id JOIN products p ON p.product_id = oi.product_id;`, check: "SELECT COUNT(*) AS satir, ROUND(SUM(net_tutar), 2) AS toplam, COUNT(DISTINCT category) AS kategori, SUM(CASE WHEN urun IS NULL THEN 1 ELSE 0 END) AS adsiz FROM v_satis_satir;", hint: 'CREATE VIEW ad AS SELECT ... üç tabloyu birleştiren bir sorgu.' },
     { t: 'sql', q: '<p>Müşteri boyutu hazırla: her müşteri için <code>customer_id</code>, <code>ad_soyad</code> (ad + boşluk + soyad), <code>sehir</code> (boşsa “Bilinmiyor”), <code>segment</code>, <code>ilk_siparis</code> (ilk sipariş tarihi) ve <code>siparis_sayisi</code>. Hiç siparişi olmayan müşteriler de listede olmalı.</p>', sol: "SELECT c.customer_id, c.first_name || ' ' || c.last_name AS ad_soyad, COALESCE(c.city, 'Bilinmiyor') AS sehir, c.segment, MIN(o.order_date) AS ilk_siparis, COUNT(o.order_id) AS siparis_sayisi FROM customers c LEFT JOIN orders o ON o.customer_id = c.customer_id GROUP BY c.customer_id, c.first_name, c.last_name, c.city, c.segment;", hint: 'Siparişi olmayanlar için LEFT JOIN ve COUNT(o.order_id).' },
     mc('<p>BI modeline “iptal oranı” bilgisini nasıl vermek en doğrudur?</p>', ['Her satıra hesaplanmış oran sütunu eklemek', 'İptal sayısını ve toplam sipariş sayısını ayrı ölçüler olarak verip oranı raporda hesaplatmak', 'Oranı metin olarak yazmak', 'Oranı yalnızca toplam satırına yazmak'], 1, 'Oranlar toplanamaz veya ortalaması alınamaz; filtre değiştikçe pay ve paydanın yeniden toplanıp bölünmesi gerekir.')
   ]

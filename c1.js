@@ -68,7 +68,7 @@
 <tr><td><code>employees</code>, <code>departments</code></td><td>Çalışanlar ve departmanlar</td></tr>
 <tr><td><code>web_events</code>, <code>ab_test</code></td><td>Web sitesi olayları ve A/B testi (analitik dersleri için)</td></tr>
 </table>
-<p>Tüm tabloları, sütunlarını ve verinin kendisini <b>Veri Seti</b> sayfasında inceleyebilirsin. Bir tablonun tamamını görmek için aşağıdaki sorguyu çalıştır. Kod kutularındaki <b>Çalıştır</b> düğmesi sorguyu gerçek veritabanında çalıştırır.</p>
+<p>Tüm tabloları, sütunlarını ve verinin kendisini <b>Veri setleri</b> sayfasında inceleyebilirsin. Bir tablonun tamamını görmek için aşağıdaki sorguyu çalıştır. Kod kutularındaki <b>Çalıştır</b> düğmesi sorguyu gerçek veritabanında çalıştırır.</p>
 <div class="tip"><b>Hangi SQL türü kullanıyorsun?</b>SQL bir standarttır ama SQL Server, PostgreSQL, MySQL, Oracle, BigQuery ve SQLite onu biraz farklı yazar. Menüden <b>varsayılan SQL türünü</b> seç; tüm kodlar o SQL türünün yazımıyla gösterilir. Bir kod kutusunun üstündeki sekmelerle, varsayılanı değiştirmeden aynı sorgunun başka bir SQL türündeki yazılışını ve çıktısını görebilirsin.</div>
 <pre class="code">SELECT * FROM departments;</pre>
 <div class="tip"><b>SQL komut grupları</b>SQL komutları dört aileye ayrılır: <b>DQL</b> (sorgulama: SELECT), <b>DML</b> (veri değiştirme: INSERT, UPDATE, DELETE), <b>DDL</b> (yapı tanımlama: CREATE, ALTER, DROP), <b>DCL/TCL</b> (yetki ve işlem: GRANT, COMMIT, ROLLBACK). Önce DQL ile başlıyoruz.</div>

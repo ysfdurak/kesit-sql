@@ -1,4 +1,4 @@
-const KESIT_BASE=process.env.KESIT_BASE||KESIT_BASE;
+const KESIT_BASE=process.env.KESIT_BASE||'http://localhost:8765';
 const { chromium } = require('playwright'); const fs=require('fs');
 const D=require('./yol.js').ROOT+''; const svg=fs.readFileSync(D+'favicon.svg','utf8');
 const font="@font-face{font-family:'BG';src:url(vendor/fonts/bricolage-grotesque-latin-wght-normal.woff2) format('woff2');font-weight:200 800}@font-face{font-family:'BG';src:url(vendor/fonts/bricolage-grotesque-latin-ext-wght-normal.woff2) format('woff2');font-weight:200 800;unicode-range:U+0100-02BA}@font-face{font-family:'PX';src:url(vendor/fonts/ibm-plex-sans-latin-400-normal.woff2)}@font-face{font-family:'PX';src:url(vendor/fonts/ibm-plex-sans-latin-ext-400-normal.woff2);unicode-range:U+0100-02BA}";

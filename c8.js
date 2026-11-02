@@ -47,7 +47,7 @@ const aiLessons = [{
 <table>
 <tr><th>Parça</th><th>Örnek</th></tr>
 <tr><td><b>SQL türü</b></td><td>“SQL Server 2022 için T-SQL yaz.”</td></tr>
-<tr><td><b>Şema</b></td><td>İlgili tabloların CREATE TABLE ifadeleri veya sütun listesi (Veri Seti sayfasından kopyalayabilirsin).</td></tr>
+<tr><td><b>Şema</b></td><td>İlgili tabloların CREATE TABLE ifadeleri veya sütun listesi (Veri setleri sayfasından kopyalayabilirsin).</td></tr>
 <tr><td><b>İş kuralları</b></td><td>“Net ciro = adet × birim fiyat × (1 − indirim). Yalnızca teslim edilen siparişler sayılır.”</td></tr>
 <tr><td><b>Soru</b></td><td>“2024'te kanal bazında aylık net ciroyu bul.”</td></tr>
 <tr><td><b>Çıktı biçimi</b></td><td>“Sütunlar: ay (YYYY-AA), channel, ciro. Aya göre sırala. Açıklama yazma, yalnızca SQL.”</td></tr>
@@ -440,7 +440,7 @@ after('iliskiler', [{
 </ul>
 <h2>Anahtar seçimi</h2>
 <p><b>Doğal anahtar</b> iş dünyasından gelir (TC kimlik, vergi no); <b>vekil anahtar</b> (surrogate) anlamsız bir sayıdır (<code>customer_id</code>). Doğal anahtarlar değişebildiği ve kişisel veri içerebildiği için çoğu tasarımda vekil anahtar + doğal anahtar üzerinde tekil kısıt tercih edilir.</p>
-<div class="tip"><b>Veri Seti sayfası</b>Bu uygulamanın Veri Seti sayfasındaki şema, Anadolu Market'in ER diyagramıdır. Bir tabloya tıklayıp anahtarlarını incele.</div>
+<div class="tip"><b>Veri setleri sayfası</b>Bu uygulamanın Veri setleri sayfasındaki şema, Anadolu Market'in ER diyagramıdır. Bir tabloya tıklayıp anahtarlarını incele.</div>
 `,
   ex: [
     mc('<p>Bir öğrencinin birden çok derse, bir dersin birden çok öğrenciye sahip olduğu ilişki nasıl tablolanır?</p>', ['Öğrenci tablosuna ders_id sütunu eklenir', 'Ders tablosuna ogrenci_id sütunu eklenir', 'ogrenci_ders gibi bir ara tablo (ogrenci_id, ders_id) oluşturulur', 'Tek tabloda virgülle yazılır'], 2),
@@ -694,7 +694,7 @@ L.push({
   body: `
 <h2>Bol pratik, tek tablo</h2>
 <p>Dil öğrenirken olduğu gibi SQL'de de akıcılık tekrarla gelir. Bu kampta yalnızca <code>customers</code> tablosuyla 10 soru çözeceksin. Her soru bir öncekinden biraz daha zor. Takıldığında ipucuna bak; çözdüğün sorular Tekrar sayfasında yeniden karşına çıkacak.</p>
-<div class="tip"><b>Tablo</b><code>customers</code>: customer_id, first_name, last_name, gender, birth_year, city, email, signup_date, segment. Veri Seti sayfasından inceleyebilirsin.</div>
+<div class="tip"><b>Tablo</b><code>customers</code>: customer_id, first_name, last_name, gender, birth_year, city, email, signup_date, segment. Veri setleri sayfasından inceleyebilirsin.</div>
 `,
   ex: [
     s('İzmir\'de yaşayan müşterilerin adını ve soyadını getir.', "SELECT first_name, last_name FROM customers WHERE city = 'İzmir';"),

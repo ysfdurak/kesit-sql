@@ -1,4 +1,4 @@
-const KESIT_BASE=process.env.KESIT_BASE||KESIT_BASE;
+const KESIT_BASE=process.env.KESIT_BASE||'http://localhost:8765';
 const { chromium } = require('playwright'); const fs=require('fs');
 (async()=>{ const b=await chromium.launch(); const p=await b.newPage({viewport:{width:1280,height:900}}); const ext=[]; const errs=[];
  p.on('request',r=>{ const u=r.url(); if(!u.startsWith(KESIT_BASE)) ext.push(u); }); p.on('pageerror',e=>errs.push(e.message)); p.on('console',m=>{ if(m.type()==='error') errs.push('c:'+m.text()); });

@@ -42,7 +42,7 @@ FROM hv_flights
 WHERE actual_dep IS NULL
 ORDER BY sched_dep
 LIMIT 5;</pre>
-<div class="tip"><b>Önce veriye bak</b>Bir tabloyu ilk kez sorgularken <code>SELECT * ... LIMIT 10</code> ile birkaç satırı incele ve <b>Veri Seti</b> sayfasındaki ilişki şemasına göz at. Hangi sütunun hangi tabloya bağlandığını bilmek sonraki derslerin yarısıdır.</div>
+<div class="tip"><b>Önce veriye bak</b>Bir tabloyu ilk kez sorgularken <code>SELECT * ... LIMIT 10</code> ile birkaç satırı incele ve <b>Veri setleri</b> sayfasındaki ilişki şemasına göz at. Hangi sütunun hangi tabloya bağlandığını bilmek sonraki derslerin yarısıdır.</div>
 `,
   ex: [
     sq('Yurt dışındaki havalimanlarını (<code>country</code> Türkiye olmayanlar) kodu, şehri ve ülkesiyle getir: <code>airport_code</code>, <code>city</code>, <code>country</code>. Ülkeye, eşitlikte koda göre sırala.',

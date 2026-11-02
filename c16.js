@@ -113,7 +113,7 @@ const KAMP = (tablolar, kaliplar) => `
 </ol>
 <h2>Bu kampta en çok kullanacağın kalıplar</h2>
 <table><tr><th>İhtiyaç</th><th>Kalıp</th></tr>${kaliplar.map(k => '<tr><td>' + k[0] + '</td><td><code>' + k[1] + '</code></td></tr>').join('')}</table>
-<div class="note"><b>Tablolar</b>${tablolar} Sütunların açıklamaları ve örnek satırlar Veri Seti sayfasında.</div>
+<div class="note"><b>Tablolar</b>${tablolar} Sütunların açıklamaları ve örnek satırlar Veri setleri sayfasında.</div>
 `;
 more('kamp-musteri', KAMP('Yalnızca <code>customers</code>.', [
   ['Filtre', "WHERE city = 'İzmir' AND gender = 'K'"],
