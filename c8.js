@@ -42,7 +42,7 @@ const aiLessons = [{
   sum: 'Doğal dilden SQL, iyi bir istem (prompt) yazmak ve gizlilik.',
   body: `
 <h2>Yapay zekâ SQL yazabilir mi?</h2>
-<p>Büyük dil modelleri (ChatGPT, Claude, Gemini, Copilot…) iyi tarif edilmiş bir soruyu çoğu zaman doğru SQL'e çevirir. Artık veritabanı araçlarının çoğunda bu özellik hazır geliyor: SSMS ve VS Code'da Copilot, BigQuery'de Gemini, Databricks Assistant, Snowflake Copilot. Ama yapay zekâ <b>senin veritabanını tanımaz</b>: tablo adlarını, iş kurallarını ve “ciro”dan ne kastettiğini sen anlatmazsan tahmin eder. Bu uygulamada da <b>SQL Arena</b>'ndaki <b>Yapay zekâya sor</b> panelinden Türkçe soru yazıp seçili SQL türünde SQL ürettirebilirsin (claude.ai içinde açıldığında çalışır).</p>
+<p>Büyük dil modelleri (ChatGPT, Claude, Gemini, Copilot…) iyi tarif edilmiş bir soruyu çoğu zaman doğru SQL'e çevirir. Artık veritabanı araçlarının çoğunda bu özellik hazır geliyor: SSMS ve VS Code'da Copilot, BigQuery'de Gemini, Databricks Assistant, Snowflake Copilot. Ama yapay zekâ <b>senin veritabanını tanımaz</b>: tablo adlarını, iş kurallarını ve “ciro”dan ne kastettiğini sen anlatmazsan tahmin eder.</p>
 <h2>İyi bir istemin beş parçası</h2>
 <table>
 <tr><th>Parça</th><th>Örnek</th></tr>
@@ -775,7 +775,7 @@ compAdd('uzman', C('Programlama dilleri', 'PL/SQL ve PL/pgSQL', ['plsql', 'plpgs
 const COMP_T = PA.temel && PA.temel.comp; if (COMP_T) COMP_T.push(C('Bol pratik', 'Alıştırma kampları ve veri modelleme', ['kamp-musteri', 'kamp-ik', 'kamp-eticaret', 'er-modelleme']));
 P.push({ id: 'yz', name: 'Yapay Zekâ Destekli SQL', short: 'YZ', color: '#6D28D9',
   desc: 'YZ ile sorgu yazmak, doğrulamak, vektör arama, SQL ile makine öğrenmesi ve güvenli asistanlar.',
-  long: 'Yapay zekâ araçlarını SQL işinde verimli ve güvenli kullanmak isteyenler için. Önce sağlam bir sorgu temeli kurar, sonra YZ\'ye doğru soruyu sormayı, ürettiği sorgulardaki sessiz hataları yakalamayı, embedding ve vektör aramayı, BigQuery ML gibi SQL içi modelleri ve doğal dilden SQL asistanlarının güvenliğini öğrenirsin. SQL Arena\'daki “Yapay zekâya sor” paneliyle pratik yapabilirsin.',
+  long: 'Yapay zekâ araçlarını SQL işinde verimli ve güvenli kullanmak isteyenler için. Önce sağlam bir sorgu temeli kurar, sonra YZ\'ye doğru soruyu sormayı, ürettiği sorgulardaki sessiz hataları yakalamayı, embedding ve vektör aramayı, BigQuery ML gibi SQL içi modelleri ve doğal dilden SQL asistanlarının güvenliğini öğrenirsin.',
   skills: ['Prompt yazma', 'YZ çıktısını doğrulama', 'Vektör arama', 'BigQuery ML', 'Semantik katman', 'Güvenli asistan'],
   lessons: ['veri-seti', 'select', 'where', 'null', 'order-limit', 'aggregate', 'group-by', 'having', 'case', 'kosullu', 'inner-join', 'left-join', 'coklu-join', 'subquery', 'correlated', 'sik-hatalar', 'cte', 'window-intro', 'ranking', 'ai-giris', 'ai-dogrulama', 'view', 'bi-hazirlik', 'guvenlik', 'ai-guvenli', 'ai-vektor', 'bq-giris', 'ds-feature', 'ai-ml', 'json'],
   comp: [C('Sorgu temeli', 'YZ çıktısını değerlendirebilecek kadar sağlam SQL', ['select', 'where', 'group-by', 'inner-join', 'left-join', 'subquery', 'cte', 'window-intro']), C('YZ ile sorgu yazmak', 'İstem yazma, şema ve iş kuralı verme', ['ai-giris', 'kosullu']), C('Doğrulama', 'Sessiz hataları yakalamak, sağlama yapmak', ['ai-dogrulama', 'sik-hatalar', 'null', 'coklu-join']), C('Veritabanında YZ', 'Embedding, vektör arama, SQL ile ML', ['ai-vektor', 'ai-ml', 'ds-feature', 'bq-giris']), C('Güvenli asistanlar', 'Semantik katman, yetki, prompt enjeksiyonu', ['ai-guvenli', 'view', 'bi-hazirlik', 'guvenlik'])],
