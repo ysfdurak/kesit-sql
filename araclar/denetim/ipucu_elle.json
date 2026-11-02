@@ -252,5 +252,13 @@
 "kamp-eticaret#6": "Ürün ve satırları bağla, ürün başına <code>AVG(unit_price)</code> hesapla; yüzde formülünü aynı ortalamayla yaz.",
 "kamp-eticaret#7": "Müşteri ile bağla; iki sütuna göre grupla.",
 "kamp-eticaret#8": "Müşteri başına grupla; iki kategoriyi de gördüğünü <code>HAVING COUNT(DISTINCT category) = 2</code> ile doğrula. Dışta say.",
-"kamp-eticaret#9": "Aylık ciro CTE'si; dışta <code>LAG(ciro)</code> ile yüzde değişim. İlk ay kendiliğinden NULL kalır."
+"kamp-eticaret#9": "Aylık ciro CTE'si; dışta <code>LAG(ciro)</code> ile yüzde değişim. İlk ay kendiliğinden NULL kalır.",
+"ts-degisken#2": "Tablo değişkeni tanımla, <code>WHILE</code> döngüsüyle satırları ekle, sayacı artırmayı unutma, sonda tablodan oku.",
+"ts-dinamik#0": "Sorgu metnini <code>NVARCHAR(MAX)</code> değişkende kur; <code>sp_executesql</code> ile parametreyi ayrı geçir, metne ekleme.",
+"ts-guvenlik#6": "Satır içi tablo değerli fonksiyon: <code>RETURNS TABLE AS RETURN (SELECT ...)</code>. Parametre filtreye girer.",
+"sozdizimi#5": "Sütun adları arasına virgül koy; virgülsüz yazınca ikinci ad ilkinin takma adı olur.",
+"alter-drop#0": "<code>ALTER TABLE ... ADD COLUMN</code>; varsayılan değeri <code>DEFAULT</code> ile ver.",
+"ts-giris#2": "Metin sabitinde Türkçe karakter için önüne <code>N</code> koy; koşul <code>WHERE</code>'de.",
+"index#4": "Katalog tablosu <code>sqlite_master</code>: tür <code>index</code> olanlar ve tablo adı. Otomatik indeksleri ad deseniyle dışla.",
+"an-eda#1": "Boş sayısı: <code>COUNT(*) - COUNT(sütun)</code>. Her sütun için aynı kalıp, tek satırda."
 }

@@ -155,7 +155,7 @@ function schemaIdx() {
 const colOf = x => { const m = String(x).trim().match(/^(?:"?\w+"?\.)?"?(\w+)"?$/); return m ? m[1].toLowerCase() : null; };
 const isDateCol = x => { const c = colOf(x); return !!c && schemaIdx().date.has(c); };
 const isBoolCol = x => { const c = colOf(x); return !!c && schemaIdx().bool.has(c); };
-function toTextDate(x, d) { return { pg: `CAST(${x} AS TEXT)`, tsql: `CONVERT(VARCHAR(19), ${x}, 120)`, oracle: `TO_CHAR(${x}, 'YYYY-MM-DD')`, bq: `CAST(${x} AS STRING)` }[d] || x; }
+function toTextDate(x, d) { return { pg: `CAST(${x} AS TEXT)`, tsql: `CAST(${x} AS VARCHAR(19))`, oracle: `TO_CHAR(${x}, 'YYYY-MM-DD')`, bq: `CAST(${x} AS STRING)` }[d] || x; }
 /* Üst düzeyde karşılaştırma içeren ifade mi? (SUM(a = b) gibi; yalnız SQLite ve MySQL kabul eder) */
 function hasTopCond(toks) {
   let dd = 0, cs = 0;
@@ -1084,7 +1084,7 @@ function revCall(N, a, A, d, ctx) {
     case 'STR_TO_DATE': return `to_date_(${a[0]})`;
     case 'ADD_MONTHS': return `dateadd_('month', ${a[1]}, ${a[0]})`;
     case 'MONTHS_BETWEEN': return `months_between_(${a[0]}, ${a[1]})`;
-    case 'DATE_ADD': case 'ADDDATE': case 'DATE_SUB': case 'SUBDATE': {
+    case 'DATE_ADD': case 'ADDDATE': case 'DATE_SUB': case 'SUBDATE': case 'DATETIME_ADD': case 'DATETIME_SUB': case 'TIMESTAMP_ADD': case 'TIMESTAMP_SUB': {
       const toks = A[1] || []; if (isW(toks[0], 'INTERVAL')) { const n = txt(toks.slice(1, toks.length - 1)).trim(); const u = toks[toks.length - 1].u; return `dateadd_('${part(u)}', ${N.includes('SUB') ? '-' : ''}(${revInner(n, d, ctx)}), ${a[0]})`; }
       return `dateadd_('day', ${N.includes('SUB') ? '-' : ''}(${a[1]}), ${a[0]})`;
     }
@@ -1411,9 +1411,9 @@ function revInfoSchema(sql) {
   const SYSV = "(SELECT name FROM sqlite_master WHERE type = 'view')";
   return sql.replace(/\bINFORMATION_SCHEMA\s*\.\s*TABLES\b/gi, TBL).replace(/\bINFORMATION_SCHEMA\s*\.\s*COLUMNS\b/gi, COL)
     .replace(/\bsys\s*\.\s*tables\b/gi, SYST).replace(/\bsys\s*\.\s*columns\b/gi, SYSC).replace(/\bsys\s*\.\s*indexes\b/gi, SYSI).replace(/\bsys\s*\.\s*views\b/gi, SYSV)
-    .replace(/\buser_tables\b/gi, "(SELECT upper(name) AS TABLE_NAME FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%')")
-    .replace(/\buser_tab_columns\b/gi, "(SELECT upper(m.name) AS TABLE_NAME, upper(p.name) AS COLUMN_NAME, p.cid + 1 AS COLUMN_ID, CASE WHEN upper(p.type) LIKE '%INT%' THEN 'NUMBER' WHEN upper(p.type) IN ('REAL','FLOAT','DOUBLE') OR upper(p.type) LIKE 'DEC%' OR upper(p.type) LIKE 'NUM%' THEN 'NUMBER' WHEN upper(p.type) LIKE '%DATE%' THEN 'DATE' ELSE 'VARCHAR2' END AS DATA_TYPE, CASE p.\"notnull\" WHEN 1 THEN 'N' ELSE 'Y' END AS NULLABLE FROM sqlite_master m, pragma_table_info(m.name) p WHERE m.type = 'table' AND m.name NOT LIKE 'sqlite_%')")
-    .replace(/\ball_tables\b/gi, "(SELECT 'ANADOLU' AS OWNER, upper(name) AS TABLE_NAME FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%')");
+    .replace(/\buser_tables\b/gi, "(SELECT ascii_upper_(name) AS TABLE_NAME FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%')")
+    .replace(/\buser_tab_columns\b/gi, "(SELECT ascii_upper_(m.name) AS TABLE_NAME, ascii_upper_(p.name) AS COLUMN_NAME, p.cid + 1 AS COLUMN_ID, CASE WHEN ascii_upper_(p.type) LIKE '%INT%' THEN 'NUMBER' WHEN ascii_upper_(p.type) IN ('REAL','FLOAT','DOUBLE') OR ascii_upper_(p.type) LIKE 'DEC%' OR ascii_upper_(p.type) LIKE 'NUM%' THEN 'NUMBER' WHEN ascii_upper_(p.type) LIKE '%DATE%' THEN 'DATE' ELSE 'VARCHAR2' END AS DATA_TYPE, CASE p.\"notnull\" WHEN 1 THEN 'N' ELSE 'Y' END AS NULLABLE FROM sqlite_master m, pragma_table_info(m.name) p WHERE m.type = 'table' AND m.name NOT LIKE 'sqlite_%')")
+    .replace(/\ball_tables\b/gi, "(SELECT 'ANADOLU' AS OWNER, ascii_upper_(name) AS TABLE_NAME FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%')");
 }
 
 /* GROUP BY ROLLUP / CUBE / GROUPING SETS / WITH ROLLUP taklitsi */
@@ -2085,6 +2085,8 @@ function splitSemis(sql) { const T = tokenize(sql); const parts = []; let cur = 
 let lastFnError = null;
 function execOne(db, sql) {
   lastFnError = null;
+  /* JS fonksiyonları indeks ifadesinde kullanılamaz; UPPER/LOWER indeksleri düz sütun indeksi olarak kurulur (sonucu etkilemez) */
+  if (/^\s*CREATE\s+(UNIQUE\s+)?INDEX\b/i.test(sql)) sql = sql.replace(/\b(UPPER|LOWER)\s*\(\s*([\w."]+)\s*\)/gi, '$2');
   let st;
   try { st = db.prepare(sql); } catch (e) { if (lastFnError) throw new DErr(lastFnError); throw e; }
   try {
@@ -2563,7 +2565,7 @@ function tsqlRun(db, sql, opt) {
       if (!r || !r.values.length) { R.messages.push(`The object '${t}' does not have any indexes, or you do not have permissions.`); return; }
       R.sets.push(r); return;
     }
-    if (name === 'sp_tables') { R.sets.push(execOne(db, "SELECT 'anadolu' AS TABLE_QUALIFIER, 'dbo' AS TABLE_OWNER, name AS TABLE_NAME, upper(type) AS TABLE_TYPE FROM sqlite_master WHERE type IN ('table','view') AND name NOT LIKE 'sqlite_%' ORDER BY name")); return; }
+    if (name === 'sp_tables') { R.sets.push(execOne(db, "SELECT 'anadolu' AS TABLE_QUALIFIER, 'dbo' AS TABLE_OWNER, name AS TABLE_NAME, ascii_upper_(type) AS TABLE_TYPE FROM sqlite_master WHERE type IN ('table','view') AND name NOT LIKE 'sqlite_%' ORDER BY name")); return; }
     const pr = env.procs[name];
     if (!pr) throw new DErr(`Msg 2812, Level 16: Could not find stored procedure '${S[ne].v}'.`, 'Prosedürü önce CREATE PROCEDURE ile aynı çalıştırmada oluştur.');
     const sc2 = { vars: {}, tables: Object.assign({}, sc.tables), rowcount: 0 };
@@ -2829,6 +2831,7 @@ function register(db) {
   const F = (name, fn, variadic) => { if (variadic) Object.defineProperty(fn, 'length', { value: -1 }); db.create_function(name, fn); };
   /* SQLite'ın UPPER ve LOWER'ı yalnız ASCII dönüştürür; Türkçe metinler bozulmasın diye yerine yazılır. E-posta içeren metinlerde i/I İngilizce kurala göre çevrilir. */
   F('upper', s => trUpper(s)); F('lower', s => trLower(s));
+  F('ascii_upper_', s => s === null || s === undefined ? null : String(s).toUpperCase());
   F('dateadd_', (pt, n, v) => dateadd(part(pt), n, v));
   F('substring_index_', (str, delim, cnt) => { if (str === null || delim === null || cnt === null) return null; str = String(str); delim = String(delim); const n = Math.trunc(Number(cnt)); if (!delim || !n) return ''; const parts = str.split(delim); return n > 0 ? parts.slice(0, n).join(delim) : parts.slice(n).join(delim); });
   F('datediff_', (pt, a, b) => datediff(part(pt), a, b));

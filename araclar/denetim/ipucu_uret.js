@@ -29,6 +29,8 @@ function hintFor(e){
     const steps=[];
     if(has('BEGIN')||has('START')) steps.push('değişiklikleri '+code('BEGIN')+' ile başlayan bir işleme al');
     if(has('SAVEPOINT')) steps.push('ara noktayı '+code('SAVEPOINT')+' ile işaretle');
+    const fromQuery=has('CREATE')&&(has('VIEW')||(has('TABLE')&&has('AS')))&&has('SELECT')&&!has('FUNCTION','PROCEDURE');
+    if(fromQuery){ const q=sol.replace(/^[\s\S]*?\bAS\b(?=\s*(SELECT|WITH)\b)/i,''); const iHint=q!==sol&&q.trim()?hintFor({sol:q,q:e.q,ord:e.ord}):''; return (has('VIEW')?'Sorguyu '+code('CREATE VIEW ... AS')+' içine al':'Tabloyu '+code('CREATE TABLE ... AS')+' ile sorgudan oluştur')+'.'+(iHint?' Sorgu için: '+iHint:''); }
     if(has('CREATE')&&has('TABLE')){ if(has('AS')&&has('SELECT')) steps.push('tabloyu bir '+code('SELECT')+' sonucundan oluştur'); else { const k=[]; if(has('PRIMARY'))k.push('birincil anahtar'); if(has('REFERENCES','FOREIGN'))k.push('yabancı anahtar'); if(has('CHECK'))k.push('CHECK'); if(has('UNIQUE'))k.push('UNIQUE'); if(has('DEFAULT'))k.push('DEFAULT'); steps.push('sütunları ve tiplerini tek tek yaz'+(k.length?'; '+liste(k)+' kısıtlarını unutma':'')); } }
     if(has('CREATE')&&has('VIEW')) steps.push('sorguyu '+code('CREATE VIEW ... AS')+' içine al');
     if(has('CREATE')&&has('INDEX')) steps.push('indeks sütun sırasını sorgunun filtresine göre seç');
@@ -76,7 +78,7 @@ function hintFor(e){
     else s.push(code(f+'(...) OVER')+' ile satırları koruyarak hesapla'+(/\b(ROWS|RANGE)\b/i.test(text)?'; çerçeveyi '+code('ROWS BETWEEN')+' ile belirt':'')); }
   /* filtre, grup: mantıksal sıra WHERE → GROUP BY → HAVING */
   const cok=/\bLEFT\s+JOIN\b/i.test(text)&&/\bIS\s+NULL\b/i.test(text);
-  if(has('LIKE','ILIKE')) s.push('Desen için '+code('LIKE')+' ve '+code('%'));
+  if(has('LIKE','ILIKE')) s.push('Desen için '+code(has('ILIKE')?'ILIKE':'LIKE')+' ve '+code('%'));
   else if(has('BETWEEN')) s.push('Aralık için '+code('BETWEEN')+' (iki uç dahil)');
   else if(/\bIN\s*\(\s*'/i.test(sol)||/\bIN\s*\(\s*\d/.test(sol)) s.push('Değer listesi için '+code('IN'));
   else if(/\bIS\s+(NOT\s+)?NULL\b/i.test(text)&&!cok) s.push('Boşluk kontrolü için '+code('IS NULL')+' ya da '+code('IS NOT NULL')+'; '+code('= NULL')+' çalışmaz');
