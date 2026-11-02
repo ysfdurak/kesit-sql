@@ -305,6 +305,8 @@ CREATE INDEX ix_bank_txns_account ON bank_txns (account_id);
       const by = bi(1950, 2005), bm = bi(1, 12), bd = bi(1, 28);
       bc.push([i, f + ' ' + l, g, by + '-' + pad(bm) + '-' + pad(bd), branches[br - 1][2], seg, br, dstr(addDays(new Date(Date.UTC(2012, 0, 1)), bi(0, 4700))), bi(1, 10), B() < .85 ? 1 : 0]);
     }
+    /* Hesap açılışında (müşteri olma tarihi, en erken hesap) 18 yaşını doldurmayan müşterilerin doğum yılı öne alınır; ay ve gün aynı, 18 ile 25 yaş arası dağılır */
+    bc.forEach(c => { const by = +c[3].slice(0, 4), md = c[3].slice(4); const y18 = String(by + 18) + md; if (y18 > c[7]) { const son = +c[7].slice(0, 4) - 18 - (md > c[7].slice(4) ? 1 : 0); c[3] = String(son - c[0] % 8) + md; } });
     sql += ins('bank_customers', ['customer_id','full_name','gender','birth_date','city','segment','branch_id','joined_date','risk_score','kvkk_consent'], bc);
     const acc = []; let aid = 100001;
     for (const c of bc) {

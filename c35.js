@@ -16,7 +16,6 @@ window.SQLP_TYPEMAP.rate = { tsql: 'DECIMAL(10,4)', pg: 'NUMERIC(10,4)', mysql: 
 /* LIKE harf duyarlılığı motordan motora değişir: sonucu değişmeyen bir terim */
 { const e = EX('in-between-like', 6); e.q = '<p>Adında <b>Pizza</b> geçen menü ürünlerini getir: <code>name</code>, <code>price</code>.</p>'; e.sol = "SELECT name, price FROM lk_menu_items WHERE name LIKE '%Pizza%';"; }
 /* Eşit sched_dep satırları: sıra belirsiz kalmasın */
-SUB(EX('lag-lead', 5), 'sol', 'ORDER BY f.sched_dep)', 'ORDER BY f.sched_dep, f.flight_id)');
 { const p = PR('k204'); SUB(p, 'sol', 'SELECT f.tail_no, f.sched_dep,', 'SELECT f.tail_no, f.flight_id, f.sched_dep,'); SUB(p, 'sol', 'ORDER BY sched_dep)', 'ORDER BY sched_dep, flight_id)'); }
 /* Özyinelemeli CTE: iki kolun tipi aynı olmalı */
 SUB(PR('i158'), 'sol', 'first_name AS zincir', 'CAST(first_name AS TEXT) AS zincir');

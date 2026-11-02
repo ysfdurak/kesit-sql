@@ -1,4 +1,4 @@
 toplam 1533 { ayni: 1526, pgHata: 2, fark: 5 }
 bilinen fark 7 gereksiz bilinen kayit 0 
 BILINMEYEN 0
-sure 233s
+sure 153s

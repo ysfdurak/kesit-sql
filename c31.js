@@ -252,16 +252,20 @@ FROM lk_ratings WHERE food_score NOT BETWEEN 1 AND 5 OR courier_score NOT BETWEE
 UNION ALL
 SELECT 'tutarlılık', 'sipariş, müşteri kaydından önce', COUNT(*)
 FROM lk_orders o JOIN lk_customers c ON c.customer_id = o.customer_id
-WHERE o.placed_at < c.signup_date
+WHERE substr(o.placed_at, 1, 10) < c.signup_date
+UNION ALL
+SELECT 'tutarlılık', 'davetli, davet edenden önce kayıtlı', COUNT(*)
+FROM lk_customers c JOIN lk_customers d ON d.customer_id = c.referred_by
+WHERE c.signup_date < d.signup_date
 UNION ALL
 SELECT 'güncellik', 'son siparişten bu yana gün (rapor günü 2025-01-03)',
        julianday('2025-01-03') - julianday(MAX(date(placed_at)))
 FROM lk_orders;`)}
-<p>Karnede iki gerçek bulgu var: 1.209 müşterinin 74'ünde ilçe boş (tamlık %93,9) ve 15 sipariş, sahibinin kayıt tarihinden <b>önce</b> verilmiş görünüyor. İkincisi tipik bir tutarlılık sorunudur: ya kayıt tarihi sonradan güncelleniyor ya da misafir siparişler sonradan bir hesaba bağlanıyor. Kaynağı bilen ekiple konuşmadan “düzeltme”.</p>
+<p>Karnede iki gerçek bulgu var: 1.209 müşterinin 74'ünde ilçe boş (tamlık %93,9) ve davetli 294 müşterinin 136'sı onu davet edenden <b>önce</b> kaydolmuş görünüyor. İkincisi tipik bir tutarlılık sorunudur: ya kayıt tarihi sonradan güncelleniyor ya da davet bilgisi başka bir akıştan geliyor. Kaynağı bilen ekiple konuşmadan “düzeltme”. Sipariş ile kayıt tarihi testi ise 0 döner: temiz çıkan test de bilgidir, her yükte yine çalışmalıdır.</p>
 <div class="tip"><b>Eşik ve önem derecesi</b>Her testin bir eşiği olsun: tekillik ihlali sıfır tolerans (hattı durdur), tamlıkta %95 altı uyarı gibi. dbt'de <code>severity: warn</code> / <code>error</code> ve <code>warn_if</code>, <code>error_if</code> ayarları bunu sağlar.</div>
 <p><b>Sık hata:</b> testleri yalnızca yeni tabloya yazmak. En değerli testler, kaynaklar arasındaki ilişkileri (sipariş–müşteri, değerlendirme–sipariş) kontrol eden tutarlılık testleridir; çünkü tek tabloya bakan testler bu çelişkileri hiç görmez.</p>`));
 X('de-kalite', [
-  sq('Tutarlılık testi: Lezzet Kurye\'de müşterinin kayıt tarihinden (<code>signup_date</code>) <b>önce</b> verilmiş sipariş sayısı ve bu siparişlerin ait olduğu farklı müşteri sayısı: <code>adet</code>, <code>musteri</code>.', 'SELECT COUNT(*) AS adet, COUNT(DISTINCT o.customer_id) AS musteri FROM lk_orders o JOIN lk_customers c ON c.customer_id = o.customer_id WHERE o.placed_at < c.signup_date;'),
+  sq('Tutarlılık testi: Lezzet Kurye\'de kayıt tarihi (<code>signup_date</code>), kendisini davet eden müşterinin kayıt tarihinden <b>önce</b> olan müşteri sayısı ve bu davetleri yapan farklı müşteri sayısı: <code>adet</code>, <code>davet_eden</code>.', 'SELECT COUNT(*) AS adet, COUNT(DISTINCT c.referred_by) AS davet_eden FROM lk_customers c JOIN lk_customers d ON d.customer_id = c.referred_by WHERE c.signup_date < d.signup_date;'),
   sq('Tamlık oranı: Lezzet Kurye müşterilerinde şehir bazında ilçe (<code>district</code>) doluluk oranı (%, 1 basamak): <code>city</code>, <code>musteri</code>, <code>tamlik</code>. Orana göre artan, eşitlikte şehre göre sırala.', 'SELECT city, COUNT(*) AS musteri, ROUND(100.0 * COUNT(district) / COUNT(*), 1) AS tamlik FROM lk_customers GROUP BY city ORDER BY tamlik, city;', Object.assign({ hint: 'COUNT(sütun) yalnızca dolu değerleri sayar; COUNT(*) tüm satırları.' }, O))
 ]);
 

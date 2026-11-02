@@ -204,3 +204,13 @@ git checkout kaynak
 GitHub Pages bir iki dakika içinde güncellenir.
 
 `sw.js` ağ öncelikli çalışır; ziyaretçiler yeni sürümü bir sonraki açılışta alır. Önbellek biçimini değiştirirsen `CACHE` sabitinin sürümünü artır; eski önbellek etkinleşmede silinir. Yeni `base-*.b64.txt` alınınca eskisi önbellekten çıkar.
+
+## Ortak veri setleri
+Ilgaz Bank, Kanat Havayolları, Lezzet Kurye, Pusula İK ve Pedal İzmir üç uygulamada satır satır aynıdır. Kaynak bu depodaki üreteçlerdir (`db.js` içindeki banka bölümü, `hv.js`, `lk.js`, `ik.js`, `bk.js`); diğer iki depo bunlardan türer:
+1. Burada üreteci değiştir, `node make_base.js`.
+2. Kesit Power BI: dosyayı `scratchpad/sqlsrc/` içine kopyala, `scratchpad/ds` içinde `node seed.js <sqlsrc yolu>`, `python3 mk.py`, SQLite kopyalarını `kur.sh`'taki gibi üret, `node build/vdpack.js`, `.b64.txt` kopyalarını yenile.
+3. Kesit Python: değişen CSV'leri Power BI `ds/csv` klasöründen BOM'suz kopyala, `data/manifest.json` içinde satır ve bayt sayılarını güncelle (`name` alanlarına dokunma).
+
+Üreteçte mevcut rastgele üreteci (`R`, `B`) tüketen çağrıların sırasını değiştirme: diğer bütün veriler kayar. Düzeltmeleri rastgele sayı tüketmeyen son işlem olarak ya da ayrı üreteçle ekle (`lk.js` yorum metinleri `RY` ile seçilir).
+
+Veride bilerek bırakılanlar ve bilinen sınırlamalar `bilinen-sinirlar.js` içindedir; metin üç uygulamada aynıdır, sayılar değişirse üçünü birden güncelle.

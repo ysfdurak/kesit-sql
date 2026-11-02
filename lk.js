@@ -110,7 +110,7 @@ CREATE TABLE lk_ratings (
     CUIS[cu].forEach(([n, cat, p, veg]) => { if (R() < 0.12 && cat !== 'Ana yemek') return; mid++; const price = Math.round(p * mult / 5) * 5; menu.push([mid, rid, n, cat, price, veg]); RMENU[rid].push([mid, price, cat]); });
     RINFO[rid] = { city, prep: bi(8, 22), pop: cu === 'Döner' || cu === 'Pizza' || cu === 'Burger' ? 3 : cu === 'Kebap' || cu === 'Ev Yemekleri' ? 2 : 1, cancel: rid === 17 ? 0.16 : 0.04 };
   }));
-  sql += ins('lk_restaurants', ['restaurant_id', 'name', 'cuisine', 'city', 'district', 'opened_date', 'commission_pct', 'is_active'], rest);
+  sql += '/*LK_RESTORAN*/';
   sql += ins('lk_menu_items', ['item_id', 'restaurant_id', 'name', 'category', 'price', 'is_vegetarian'], menu);
 
   /* Kişiler */
@@ -129,7 +129,7 @@ CREATE TABLE lk_ratings (
   const RING_HOST = 214; cust[RING_HOST - 1][1] = 'Bora Keskin'; cust[RING_HOST - 1][2] = 'İstanbul'; cust[RING_HOST - 1][3] = 'Kadıköy'; CC[RING_HOST] = 'İstanbul';
   const RING = [];
   for (let j = 0; j < 9; j++) { const id = 1201 + j; cust.push([id, person(), 'İstanbul', 'Kadıköy', `2024-11-${pad(4 + j * 2)}`, RING_HOST, 0]); CC[id] = 'İstanbul'; RING.push(id); }
-  sql += ins('lk_customers', ['customer_id', 'full_name', 'city', 'district', 'signup_date', 'referred_by', 'is_premium'], cust);
+  sql += '/*LK_MUSTERI*/';
 
   const cour = []; const CR = { 'İstanbul': [], 'Ankara': [], 'İzmir': [] }; const SPEED = {};
   for (let i = 1; i <= 60; i++) {
@@ -143,6 +143,52 @@ CREATE TABLE lk_ratings (
   const orders = [], lines = [], rat = []; let oid = 0;
   const RCITY = { 'İstanbul': [], 'Ankara': [], 'İzmir': [] }; rest.forEach(r => { for (let k = 0; k < RINFO[r[0]].pop; k++) RCITY[r[3]].push(r[0]); });
   const start = Date.UTC(2024, 9, 1), days = 92;
+  /* Yorum havuzu: yaklaşık 300 hayali, gerçek kişi ve işletme adı içermeyen müşteri yorumu.
+     Duygu grubu > konu: y yemek, k kurye ve teslimat, s sipariş ve paket, f fiyat ve porsiyon, g genel. */
+  const YORUM = {
+    cokiyi: {
+      y: ['Tavuğu yumuşacıktı', 'Pilavı çok güzeldi', 'Çok lezzetliydi', 'Harika, sıcacık geldi', 'Efsane lezzet', 'Bayıldım, elinize sağlık', 'Mükemmeldi, tekrar sipariş vereceğim', 'Tam ev yemeği tadında', 'Sosu harikaydı', 'Etler lokum gibiydi', 'Hamuru çıtır çıtırdı', 'Tadı damağımda kaldı', 'Uzun zamandır yediğim en iyisi', 'Her şey taptazeydi', 'Çocuklar da çok sevdi', 'Mis gibi kokuyordu', 'Tatlısı ayrı güzeldi', 'Baharat dengesi tam kararında', 'cok guzeldi eline saglik', 'bayildim gercekten', 'Kızartmalar bile çıtır kalmıştı', 'Çorbası şifa gibi geldi', 'Ofiste herkes beğendi', 'Sıcak sıcak yedik, harikaydı', 'Bu lezzet için yine beklerim', 'Şefin eline sağlık', 'Yemek gerçekten özenle hazırlanmış'],
+      k: ['Kurye çok kibardı, sağ olsun', 'Kurye güler yüzlüydü', 'Kurye çok nazikti', 'Kuryeye teşekkürler, çok kibardı', 'Işık hızında geldi', '20 dakikada kapıdaydı', 'Söylenen saatten önce geldi', 'Yağmura rağmen zamanında getirdi', 'Kurye arayıp adresi teyit etti, süper', 'Kapıya kadar güler yüzle getirdi', 'Çok hızlı teslimat, teşekkürler', 'hizli ve sicak geldi super', 'Teslimat kusursuzdu', 'Kurye çok ilgiliydi, paketi özenle verdi', 'Kurye hem hızlı hem kibardı'],
+      s: ['Paketleme çok özenliydi, hiç dökülmemiş', 'Not düştüğüm her şeye dikkat etmişler', 'Yanına küçük ikram koymuşlar, çok hoş', 'Ambalaj çok temizdi, yemek sıcacıktı', 'Peçete, çatal her şey tamdı', 'Soslar ayrı paketlenmiş, çok iyi düşünülmüş'],
+      f: ['Porsiyon gayet doyurucuydu', 'İki kişi doyduk, harika', 'Fiyatına göre çok iyi', 'Kampanyayla çok uygun oldu', 'Bu fiyata bu lezzet şaşırttı', 'Porsiyon da lezzet de on numara'],
+      g: ['Tam puan', 'Kesinlikle yine', '10 üzerinden 10', 'Gayet başarılı', 'Beğendik', 'Harika', 'Süper', 'Mükemmel', '5 yıldızı hak ediyor', 'Her zamanki gibi başarılı', 'Favori restoranım oldu', 'Teşekkürler, ellerinize sağlık', 'Kesinlikle tavsiye ederim', 'Hiçbir şikayetim yok', 'tesekkurler harikaydi', 'Beklentimin üstündeydi', 'Yine yanıltmadı', 'Müdavimi oldum artık', 'Bu kadar iyisini beklemiyordum', 'İşinizi çok iyi yapıyorsunuz', 'Arkadaşlarıma da önerdim', 'Bir daha kesinlikle buradan']
+    },
+    iyi: {
+      y: ['Güzeldi', 'Lezzetliydi', 'Tadı güzeldi', 'Sıcak geldi, güzeldi', 'Sade ama lezzetli', 'Güzel bir öğündü', 'Akşam yemeği için iyi oldu', 'Öğle arası için ideal', 'Malzemesi kaliteli gibi', 'Sosu tam kıvamındaydı', 'guzeldi', 'lezzetli bi yemekti'],
+      k: ['Zamanında geldi', 'Kurye kibardı', 'Hızlı geldi', 'Sorunsuz teslim edildi', 'Kurye adresi kolay buldu', 'Söylenen sürede geldi', 'Kurye de gayet iyiydi', 'hizli geldi tesekkurler'],
+      s: ['Paket düzgündü', 'Temiz ve düzgündü', 'Sipariş eksiksiz geldi', 'Sipariş notuma uymuşlar', 'Ambalaj sağlamdı'],
+      f: ['Porsiyon yeterliydi', 'Fiyatı makul', 'Doyurucuydu', 'Fiyat performans iyi', 'Hesaplıydı'],
+      g: ['Gayet iyiydi', 'Fena değildi, beğendim', 'Memnun kaldım', 'İyiydi, teşekkürler', 'Beklediğim gibiydi', 'Başarılı', 'Yine sipariş verebilirim', 'Tavsiye edilir', 'iyiydi tesekkurler', 'Güzel, sorun yok', 'Memnunum', 'Olmuş, eline sağlık', 'Tekrar denerim']
+    },
+    karisik: {
+      y: ['Köftesi iyi, ekmeği kötü', 'Tadı iyi ama çok yağlıydı', 'Hızlı geldi ama tuzu fazlaydı', 'Lezzetli ama biraz soğumuştu', 'Yemek sıcaktı ama sos eksikti', 'Patatesler yumuşamış, gerisi iyi', 'Eti güzeldi, pilavı kuruydu', 'Tatlı güzel, ana yemek vasat', 'Çok acıydı ama güzeldi', 'Ekmek bayat gibiydi, gerisi tamam', 'Salata tazeydi ama et kuru', 'Porsiyon iyi ama tuzsuzdu', 'Kurye iyiydi ama yemek ortalamaydı', 'hizli geldi ama biraz soguktu', 'Soğan fazla kaçmış ama lezzetli', 'Sosu güzel, hamuru biraz kalındı'],
+      k: ['Epey bekledim ama sıcak geldi', 'Biraz geç geldi ama lezzetli', 'Yemek güzeldi, kurye biraz geç kaldı', 'Geciktiler ama kurye çok özür diledi', '40 dk gecikti ama sıcaktı', 'Kurye aradı, adresi buldu, sadece biraz bekledik', 'lezzetli ama gec geldi', 'Epey geç kaldı, yemek idare eder', 'Yağmur yüzünden geciktiyse anlarım, lezzet iyiydi', 'Biraz bekledim ama değdi', 'Kurye kibar ama yolu bulamadı, biraz geç oldu'],
+      s: ['Lezzet iyi, paketleme zayıf', 'İçecek unutulmuş, yemek yine de güzeldi', 'Güzel ama çatal konmamış', 'Tadı fena değil, kutusu ezilmişti', 'Sos kapağı açılmış ama yemek güzeldi', 'Ayran eksikti, aradım hemen çözdüler', 'Not düştüğüm şey olmamış ama lezzet iyi'],
+      f: ['Tadı iyi ama porsiyon küçük', 'Güzel ama fiyatı biraz yüksek', 'Lezzetli, fiyatı pahalı ama olsun', 'Porsiyon yeterli, lezzet orta'],
+      g: ['Önceki sefer daha iyiydi ama fena değil', 'İyiydi ama daha iyisi olabilirdi', 'Kötü değil ama beklentim daha yüksekti', 'Bazı şeyler iyi, bazıları değil', 'Genel olarak iyi, küçük eksikleri var', 'Fena değil ama her seferinde farklı çıkıyor']
+    },
+    orta: {
+      y: ['Tadı bana göre değildi', 'Sıcak geldi, lezzeti orta', 'Biraz tuzsuzdu', 'Biraz yağlıydı', 'Çok özel bir tadı yok', 'Sosu azdı', 'Sade kalmış', 'Standart bir yemek', 'Alışılmış lezzet', 'Daha iyisini yemiştim', 'Menüdeki fotoğraf kadar değil', 'Eskisi gibi değil', 'Yenir yani', 'ortalama bir yemek', 'Sıcaklığı idare ederdi'],
+      k: ['Kurye normaldi, yemek de normal', 'Hızı normal, lezzeti normal', 'Teslimat ortalamaydı', 'Ne erken ne geç geldi'],
+      s: ['Paket idare eder', 'Sipariş tamdı, başka da bir şey yok', 'Ambalaj sıradan'],
+      f: ['Porsiyon küçüktü', 'Karnımızı doyurdu o kadar', 'Fiyatına göre normal', 'Kampanya olmasa almam', 'Porsiyon biraz az', 'Aç kalınca yenir'],
+      g: ['Ortalama', 'Fena değil', 'Normal', 'İdare eder', 'Eh işte', 'Vasat', 'Ne iyi ne kötü', 'Beklediğim kadar değil', 'Bir kere denenir', 'Sıradan', 'Bir daha alır mıyım bilmiyorum', 'fena degil', 'idare eder', 'Yorum yapacak bir şey yok']
+    },
+    kotu: {
+      y: ['Yağından yenmiyordu', 'Tavuğu lastik gibiydi', 'Soğuk geldi', 'Yemek soğumuştu', 'Çok tuzluydu', 'Aşırı yağlıydı', 'Patatesler soğuk ve yumuşaktı', 'Biraz bayat gibiydi', 'Pişmemiş gibiydi', 'yemek soguktu', 'Tadı eskisi gibi değil, düşmüş', 'Hamuru çiğdi', 'Et çok kuruydu', 'Salata solmuştu', 'Soğuk pizza kimse sevmez', 'Tadı tuhaftı', 'Menüdeki gibi değildi'],
+      k: ['Yarım saattir kapıdayım dediler, gelen yok', 'Çok geç geldi', 'Kurye geç kaldı', '1 saat bekledim', 'Kurye adresi bulamadı, 3 kere aradı', 'cok gec geldi', 'gecikti', '60 dk sürdü, söylenen 30 dk idi', 'Yine geç kaldı', 'Kurye biraz kabaydı', 'Kapıya gelmeden aradı, aşağı inmemi istedi', 'Uygulamada görünen saat tutmadı', 'Beklettiler, üstelik soğuktu', 'Kurye paketi dik tutmamış'],
+      s: ['Eksik ürün vardı', 'İçecek eksik geldi', 'Yanlış sos gelmiş', 'Paket ezilmişti', 'Sos dökülmüştü', 'Not düştüm dikkate alınmadı', 'Ekstra istedim gelmedi', 'Çatal kaşık konmamış', 'Çorba dökülmüş şekilde geldi', 'Patates unutulmuş', 'Telefonu açmadılar'],
+      f: ['Porsiyon çok küçük, doymadık', 'Fiyatı hak etmiyor', 'Bu kadar para vermeye değmez', 'Porsiyon küçüldükçe küçülmüş', 'Çok pahalı kalıyor'],
+      g: ['Beklediğime değmedi', 'Beğenmedim', 'Memnun değilim', 'Daha önce böyle değildi', 'begenmedim', 'Hayal kırıklığı']
+    },
+    berbat: {
+      y: ['Yemek dökülmüştü', 'Buz gibi geldi', 'Yenecek gibi değildi', 'Çöpe attım', 'Yemekten saç çıktı', 'Bozulmuş gibi kokuyordu', 'Midem bozuldu', 'Çiğ tavuk geldi, çok tehlikeli', 'Yanmıştı resmen', '90 dk bekledim, buz gibi geldi', 'Tadı ekşimişti', 'Kokusu bile kötüydü'],
+      k: ['Kurye çok kaba davrandı', 'Kurye yemeği kapıya bırakıp gitti, haber vermedi', '2 saat sonra geldi, iptal etmeliydim', 'Kurye yanlış adrese bırakmış', 'Sipariş hiç gelmeyecek sandım, 3 kez aradım', 'Geldiğinde akşam bitmişti, rezalet gecikme'],
+      s: ['Sipariş yanlış geldi', 'Başkasının siparişini getirdiler', 'Paket açılmış gibiydi', 'Yarısı eksik geldi', 'Tamamen başka bir ürün geldi', 'Kutu ıslanmış, her yer yağ', 'Menüde yazan hiçbir şey yoktu içinde', 'İade istiyorum', 'Para iadesi hâlâ yapılmadı', 'Müşteri hizmetleri de ilgilenmedi'],
+      f: ['Paramın karşılığını alamadım', 'Zamanımı ve paramı boşa harcadım'],
+      g: ['Hiç memnun kalmadım', 'Berbat', 'Rezalet', 'REZALET', 'Bir daha asla', 'Hiç tavsiye etmem', 'Çok kötü', 'berbat otesi', 'rezalet bi hizmet', 'bir daha asla siparis vermem', 'Şikayet edeceğim', 'En kötü deneyimim']
+    }
+  };
   const comments = { 5: ['Harika, sıcacık geldi', 'Çok lezzetliydi', 'Kurye çok nazikti', null, null], 4: ['Güzeldi', 'Biraz geç geldi ama lezzetli', null, null], 3: ['Ortalama', 'Porsiyon küçüktü', null], 2: ['Soğuk geldi', 'Eksik ürün vardı', 'Çok geç geldi'], 1: ['Sipariş yanlış geldi', 'Hiç memnun kalmadım', 'Yemek dökülmüştü'] };
   const mk = (c, r, placed, opt) => {
     oid++; const info = RINFO[r]; const city = rest[r - 1][3];
@@ -183,6 +229,30 @@ CREATE TABLE lk_ratings (
   /* Kurye 47'nin olağan işleri */
   events.forEach(e => { if (CC[e[1]] === 'İstanbul' && !e[3].courier && R() < 0.02) e[3].courier = 47; });
   events.sort((a, b) => a[0] - b[0]).forEach(e => mk(e[1], e[2], e[0], e[3]));
+  /* Tarih tutarlılığı: ilk siparişten sonra görünen restoran açılışı ve müşteri kaydı, ilk siparişin öncesine alınır (rastgele sayı tüketmez) */
+  const gunOnce = (t, g) => ds(new Date(Date.UTC(+t.slice(0, 4), +t.slice(5, 7) - 1, +t.slice(8, 10)) - g * 86400000));
+  const ilkR = {}, ilkC = {}; orders.forEach(o => { if (!ilkR[o[2]] || o[4] < ilkR[o[2]]) ilkR[o[2]] = o[4]; if (!ilkC[o[1]] || o[4] < ilkC[o[1]]) ilkC[o[1]] = o[4]; });
+  rest.forEach(x => { const f = ilkR[x[0]]; if (x[5] && f && f.slice(0, 10) < x[5]) x[5] = gunOnce(f, 30 + x[0]); });
+  cust.forEach(x => { const f = ilkC[x[0]]; if (f && f.slice(0, 10) < x[4]) x[4] = gunOnce(f, 1 + x[0] % 7); });
+  sql = sql.replace('/*LK_RESTORAN*/', () => ins('lk_restaurants', ['restaurant_id', 'name', 'cuisine', 'city', 'district', 'opened_date', 'commission_pct', 'is_active'], rest));
+  sql = sql.replace('/*LK_MUSTERI*/', () => ins('lk_customers', ['customer_id', 'full_name', 'city', 'district', 'signup_date', 'referred_by', 'is_premium'], cust));
+  /* Yorum metinleri: hangi puanda yorum olduğu aynı kaldı, metinler ayrı üreteçten gelir (diğer veriler değişmez).
+     Puanla ilişki gürültülüdür: puana göre duygu dağılımı, yemek ya da kurye puanı düşükse o konu, geç teslimde gecikme yorumları öne çıkar. */
+  const RY = rng(20241102);
+  const DUYGU = { 5: [['cokiyi', 66], ['iyi', 24], ['karisik', 7], ['orta', 2], ['kotu', 1]], 4: [['cokiyi', 28], ['iyi', 42], ['karisik', 20], ['orta', 8], ['kotu', 2]], 3: [['cokiyi', 4], ['iyi', 14], ['karisik', 30], ['orta', 32], ['kotu', 18], ['berbat', 2]], 2: [['iyi', 3], ['karisik', 15], ['orta', 12], ['kotu', 45], ['berbat', 25]], 1: [['karisik', 3], ['orta', 2], ['kotu', 30], ['berbat', 65]] };
+  const GEC = /geç|gec|bekle|\bdk\b|saat|soğu|sogu|buz/i, HIZLI = /hızlı|hizli|hızında|20 dakikada|zamanında|önce geldi|söylenen sürede/i;
+  const secYorum = (r, o) => {
+    const orn = (r[1] + r[2]) / 2, late = o[6] && (new Date(o[6].replace(' ', 'T') + 'Z') - new Date(o[4].replace(' ', 'T') + 'Z')) / 60000 > 55, iade = o[7] === 'iade';
+    let v = RY() * 100, d = 'orta'; for (const [k, w] of DUYGU[Math.max(1, Math.min(5, Math.round(orn)))]) { v -= w; if (v < 0) { d = k; break; } }
+    const adaylar = []; let top = 0;
+    Object.keys(YORUM[d]).forEach(tp => YORUM[d][tp].forEach((m, i) => {
+      let w = 1 / Math.pow(i + 3, 0.6);
+      if (r[1] < r[2] - 1 && tp === 'y') w *= 3; if (r[2] < r[1] - 1 && tp === 'k') w *= 3; if (iade && tp === 's') w *= 5;
+      if (GEC.test(m)) w *= late ? 4 : 0.3; if (late && HIZLI.test(m)) w *= 0.05;
+      adaylar.push([m, w]); top += w; }));
+    let u = RY() * top; for (const a of adaylar) { u -= a[1]; if (u < 0) return a[0]; } return adaylar[0][0];
+  };
+  rat.forEach(r => { if (r[3] !== null) r[3] = secYorum(r, orders[r[0] - 1]); });
   /* Kurye puanı: verilen kurye puanlarının ortalaması (kurye 47 ve hiç puanı olmayanlar NULL) */
   const csum = {}; const OM = {}; orders.forEach(o => OM[o[0]] = o);
   rat.forEach(r => { const o = OM[r[0]]; if (o[3]) { (csum[o[3]] = csum[o[3]] || []).push(r[2]); } });
@@ -201,7 +271,7 @@ CREATE TABLE lk_ratings (
     lk_couriers: 'Kuryeler; rating müşterilerin verdiği kurye puanlarının ortalaması (puanı olmayanlarda boş)',
     lk_orders: 'Siparişler (Ekim–Aralık 2024); status teslim / iptal / iade. İptalde courier_id veya picked_at boş olabilir. Tutar = satırlar − discount + delivery_fee; tip kuryeye gider',
     lk_order_lines: 'Sipariş satırları; unit_price sipariş anındaki fiyat',
-    lk_ratings: 'Sipariş değerlendirmeleri (1–5); comment çoğunlukla boş'
+    lk_ratings: 'Sipariş değerlendirmeleri (1–5); comment serbest metin, her değerlendirmede yok (yaklaşık %40 boş), yazım hataları olabilir'
   });
   root.SQLP_TYPEMAP = root.SQLP_TYPEMAP || {};
   Object.assign(root.SQLP_COLMETA = root.SQLP_COLMETA || {}, {
@@ -211,6 +281,6 @@ CREATE TABLE lk_ratings (
     lk_couriers: [['courier_id', 'int', 'Kurye numarası', 'pk'], ['full_name', 'text(60)', 'Ad soyad'], ['city', 'text(30)', 'Çalıştığı şehir'], ['vehicle', 'text(20)', 'motosiklet / bisiklet / araba'], ['hired_date', 'date', 'İşe başlama tarihi'], ['rating', 'dec', 'Ortalama kurye puanı (boş olabilir)']],
     lk_orders: [['order_id', 'int', 'Sipariş numarası', 'pk'], ['customer_id', 'int', 'Müşteri', 'fk:lk_customers.customer_id'], ['restaurant_id', 'int', 'Restoran', 'fk:lk_restaurants.restaurant_id'], ['courier_id', 'int', 'Kurye (iptalde boş olabilir)', 'fk:lk_couriers.courier_id'], ['placed_at', 'datetime', 'Sipariş zamanı'], ['picked_at', 'datetime', 'Kuryenin restorandan aldığı an'], ['delivered_at', 'datetime', 'Teslim anı'], ['status', 'text(10)', 'teslim / iptal / iade'], ['payment', 'text(10)', 'kart / nakit / cüzdan'], ['delivery_fee', 'money', 'Teslimat ücreti (400 TL üzeri 0)'], ['discount', 'money', 'İndirim (TL)'], ['tip', 'money', 'Kuryeye bahşiş (TL)']],
     lk_order_lines: [['order_id', 'int', 'Sipariş', 'fk:lk_orders.order_id'], ['item_id', 'int', 'Ürün', 'fk:lk_menu_items.item_id'], ['qty', 'int', 'Adet'], ['unit_price', 'money', 'Sipariş anındaki birim fiyat']],
-    lk_ratings: [['order_id', 'int', 'Sipariş', 'pk'], ['food_score', 'int', 'Yemek puanı (1–5)'], ['courier_score', 'int', 'Kurye puanı (1–5)'], ['comment', 'text(200)', 'Yorum (çoğunlukla boş)']]
+    lk_ratings: [['order_id', 'int', 'Sipariş', 'pk'], ['food_score', 'int', 'Yemek puanı (1–5)'], ['courier_score', 'int', 'Kurye puanı (1–5)'], ['comment', 'text(200)', 'Serbest metin yorum (yaklaşık %40 boş)']]
   });
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -476,6 +476,7 @@ X('ik-proje', [
 
 more('bv-istasyon', D('Yeniden dağıtım ve istasyon doluluk baskısı', `
 <p>Paylaşımlı bisiklet sistemlerinin en pahalı operasyonel kalemi <b>yeniden dağıtım</b>dır (rebalancing). Kamyonetler dolu istasyonlardan bisiklet alıp boş istasyonlara taşır. Kullanıcı için iki kötü an vardır: istasyonda bisiklet bulamamak ve bisikleti bırakacak yer bulamamak. İkisi de gelir kaybı ve şikâyet demektir.</p>
+<div class="note"><b>Veri notu</b>Pedal İzmir'de bisiklet konumu izlenmez: yolculukların %98,5'i bisikletin son bıraktığı istasyondan başlamaz. Net akış sorgusu yöntemi öğretir; bu veriden gerçek bir dengeleme kararı çıkmaz (Veri setleri → Bilinen sınırlamalar).</div>
 <h3>Ham net akış yetmez: kapasiteye böl</h3>
 <p>Üç ayda −700 net akış, 30 yuvalı bir istasyon için yönetilebilir olabilir, 15 yuvalı bir istasyon için ise her gün boşalmak demektir. Karşılaştırılabilir ölçü <b>doluluk baskısı</b>dır: <b>günlük ortalama net akış ÷ kapasite</b>. Alsancak Çarşı (15 yuva) günde ortalama 7,7 bisiklet kaybediyor; baskısı −0,51. Yani her gün kapasitesinin yarısı kadar bisiklet getirilmesi gerekiyor.</p>
 <h3>Günün saatine göre akış</h3>
@@ -670,6 +671,7 @@ more('hv-analitik', D('Rötar nedenleri: kim kontrol ediyor, nasıl yayılıyor?
 <tr><td><b>Zincir (reactionary)</b></td><td><code>gec_gelen_ucak</code></td><td>Önceki uçuşun gecikmesi; planlama ve dönüş süresi</td></tr>
 </table>
 <p>Zincir gecikmesi kendi başına bir neden değildir, önceki uçuşun gecikmesinin <b>yayılmasıdır</b>. Kanat'ta toplam rötar dakikasının %36,6'sı bu gruptan geliyor. Bu yüzden günün ilk uçuşlarını korumak (sabah ilk dalganın zamanında çıkması) ve uçuşlar arasına yeterli dönüş süresi (turnaround) koymak, en etkili iyileştirme alanlarıdır.</p>
+<div class="note"><b>Veri notu</b>Bu genel bir havacılık gerçeğidir. Kanat'ta uçak ataması rastgele olduğu için yayılımı uçak bazında ölçen sorgular yöntemi gösterir, sonuç gerçek filo davranışı değildir (Veri setleri → Bilinen sınırlamalar).</div>
 <h3>Yayılımı veride görmek</h3>
 <p>Her uçağın günü sabah zamanında başlar, gecikmeler gün içinde birikir. Bunu görmek için uçuşları uçak ve gün içinde sıralayıp <b>günün ilk uçuşunu</b> ayırmak yeterli. Kalkış ve varış OTP'sini aylık olarak yan yana koymak da faydalıdır:</p>
 ${C(`SELECT strftime('%Y-%m', sched_dep) AS ay,

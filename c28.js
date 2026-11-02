@@ -126,7 +126,9 @@ FROM h LEFT JOIN y ON y.hava = h.hava;</pre>
   sum: 'İstasyon bazında giren–çıkan farkıyla yeniden dağıtım ihtiyacı, en yoğun güzergâhlar, doluluk baskısı ve veri kalitesi kontrolleri (kapanmamış yolculuk, aynı anda iki yolculukta görünen bisiklet).',
   body: `
 <h2>Net akış</h2>
-<p>Bir istasyondan çıkan bisiklet sayısı gelen sayısından fazlaysa istasyon boşalır; tersi doluysa yer kalmaz. İşletme ekibi her gece kamyonetle bisikletleri yeniden dağıtır. Hangi istasyonların kronik olarak boşaldığını <b>net akış = gelen − giden</b> ile bulursun. Bunu iki ayrı toplamın birleşimiyle yazmak, büyük tabloyu OR koşuluyla birleştirmekten çok daha hızlıdır:</p>
+<p>Bir istasyondan çıkan bisiklet sayısı gelen sayısından fazlaysa istasyon boşalır; tersi doluysa yer kalmaz. İşletme ekibi her gece kamyonetle bisikletleri yeniden dağıtır. Hangi istasyonların kronik olarak boşaldığını <b>net akış = gelen − giden</b> ile bulursun.</p>
+<div class="note"><b>Veri notu</b>Pedal İzmir'de bisiklet konumu izlenmez: yolculukların %98,5'i bisikletin son bıraktığı istasyondan başlamaz. Net akış sorgusu yöntemi öğretir; bu veriden gerçek bir dengeleme kararı çıkmaz (Veri setleri → Bilinen sınırlamalar).</div>
+<p>Net akışı iki ayrı toplamın birleşimiyle yazmak, büyük tabloyu OR koşuluyla birleştirmekten çok daha hızlıdır:</p>
 <pre class="code">WITH cikis AS (SELECT start_station AS st, COUNT(*) AS n FROM bk_trips GROUP BY start_station),
      giris AS (SELECT end_station AS st, COUNT(*) AS n FROM bk_trips WHERE end_station IS NOT NULL GROUP BY end_station)
 SELECT s.name, COALESCE(g.n, 0) - COALESCE(c.n, 0) AS net
