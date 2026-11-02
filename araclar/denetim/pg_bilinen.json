@@ -1,0 +1,9 @@
+{
+  "metin-benzerlik#1": "SOUNDEX PostgreSQL'de fuzzystrmatch uzantısı ister; PGlite'ta yüklü değil. Sorgu uzantı kurulu sunucuda geçerlidir.",
+  "collation#3": "Görevin konusu UPPER'ın yerele bağlı sonucu. PGlite yereli 'istanbul' için ISTANBUL, uygulamanın Türkçe kuralı İSTANBUL verir; iki durumda da ISTANBUL ile İSTANBUL ayrı kalır.",
+  "bv-istasyon#1": "Son basamak: REAL toplama ile NUMERIC yuvarlama farkı (0,1).",
+  "an-kpi#1": "Son basamak: REAL toplama ile NUMERIC yuvarlama farkı (0,1).",
+  "ai-ml#0": "Son basamak: REAL toplama ile NUMERIC yuvarlama farkı (0,01).",
+  "P:y101": "Son basamak: REAL ortalama ile NUMERIC yuvarlama farkı (0,01).",
+  "proje-bilimci#1": "PGlite pencere tamponunda iç hata veriyor (value overflows numeric format / compressed pglz data is corrupt). Sorgunun parçaları ayrı ayrı çalışıyor; bu çözüm gerçek motorda doğrulanamadı."
+}

@@ -7,3 +7,11 @@ araclar/denetim/*.png
 araclar/denetim/sql_audit*.json
 araclar/denetim/boxes*.json
 araclar/denetim/static.txt
+
+araclar/denetim/pg_audit.json
+
+araclar/denetim/pg_taban.tgz
+
+araclar/denetim/pg_parca.jsonl
+
+araclar/denetim/pg_cur.txt

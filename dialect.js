@@ -141,6 +141,38 @@ const TSQL_FMT = { '%Y': d => `YEAR(${d})`, '%m': d => `FORMAT(${d}, 'MM')`, '%d
 const PG_FMT = { '%Y': d => `EXTRACT(YEAR FROM ${d})`, '%m': d => `TO_CHAR(${d}, 'MM')`, '%d': d => `TO_CHAR(${d}, 'DD')`, '%Y-%m': d => `TO_CHAR(${d}, 'YYYY-MM')`, '%Y-%m-%d': d => `CAST(${d} AS DATE)`, '%w': d => `EXTRACT(DOW FROM ${d})`, '%H': d => `EXTRACT(HOUR FROM ${d})`, '%W': d => `EXTRACT(WEEK FROM ${d})` };
 const MY_FMT = { '%Y': d => `YEAR(${d})`, '%w': d => `(DAYOFWEEK(${d}) - 1)`, '%H': d => `HOUR(${d})` };
 const ORA_FMT = { '%Y': d => `EXTRACT(YEAR FROM ${d})`, '%m': d => `TO_CHAR(${d}, 'MM')`, '%d': d => `TO_CHAR(${d}, 'DD')`, '%Y-%m': d => `TO_CHAR(${d}, 'YYYY-MM')`, '%Y-%m-%d': d => `TRUNC(${d})`, '%w': d => `(TO_CHAR(${d}, 'D') - 1)`, '%H': d => `EXTRACT(HOUR FROM CAST(${d} AS TIMESTAMP))`, '%W': d => `TO_CHAR(${d}, 'WW')` };
+/* Şema tabanlı yardımcılar: sütun türleri COLMETA'dan gelir (içerik dosyaları dialect.js'ten sonra yüklenir, bu yüzden tembel okunur) */
+let SCHEMA_IDX = null;
+function schemaIdx() {
+  const M = root.SQLP_COLMETA || {}; const n = Object.keys(M).length;
+  if (SCHEMA_IDX && SCHEMA_IDX.n === n) return SCHEMA_IDX;
+  const bool = new Set(), date = new Set(), dbl = new Set(), pk = {}, cols = {};
+  for (const t of Object.keys(M)) { cols[t.toLowerCase()] = new Set(); pk[t.toLowerCase()] = []; for (const c of M[t]) { const nm = c[0].toLowerCase(); cols[t.toLowerCase()].add(nm); if (c[1] === 'bit') bool.add(nm); if (c[1] === 'date' || c[1] === 'datetime') date.add(nm); if (c[1] === 'real') dbl.add(nm); if (c[3] === 'pk') pk[t.toLowerCase()].push(nm); } }
+  /* Aynı ad başka tabloda metinse (raw_signups.signup_date gibi kirli veri) tarih sayma */
+  for (const t of Object.keys(M)) for (const c of M[t]) if (c[1] !== 'date' && c[1] !== 'datetime') date.delete(c[0].toLowerCase());
+  return (SCHEMA_IDX = { n, bool, date, dbl, pk, cols });
+}
+const colOf = x => { const m = String(x).trim().match(/^(?:"?\w+"?\.)?"?(\w+)"?$/); return m ? m[1].toLowerCase() : null; };
+const isDateCol = x => { const c = colOf(x); return !!c && schemaIdx().date.has(c); };
+const isBoolCol = x => { const c = colOf(x); return !!c && schemaIdx().bool.has(c); };
+function toTextDate(x, d) { return { pg: `CAST(${x} AS TEXT)`, tsql: `CONVERT(VARCHAR(19), ${x}, 120)`, oracle: `TO_CHAR(${x}, 'YYYY-MM-DD')`, bq: `CAST(${x} AS STRING)` }[d] || x; }
+/* Üst düzeyde karşılaştırma içeren ifade mi? (SUM(a = b) gibi; yalnız SQLite ve MySQL kabul eder) */
+function hasTopCond(toks) {
+  let dd = 0, cs = 0;
+  for (const t of toks) { if (!sigk(t)) continue; if (isP(t, '(')) dd++; else if (isP(t, ')')) dd--; else if (dd === 0) { if (isW(t, 'CASE')) cs++; else if (isW(t, 'END')) cs--; else if (cs === 0 && (t.k === 'o' || t.k === 'p') && ['=', '<', '>', '<=', '>=', '<>', '!='].includes(t.v)) return true; else if (cs === 0 && isW(t, 'LIKE', 'IN', 'IS', 'BETWEEN')) return true; } }
+  return false;
+}
+/* PostgreSQL ROUND(x, n) yalnız NUMERIC alır. Kaynağı double precision olan ifadeler için CAST gerekir. */
+let FWD_SQL = '';
+const DBL_FN = /\b(PERCENT_RANK|CUME_DIST|SQRT|POWER|POW|LN|LOG|LOG10|EXP|SIN|COS|TAN|ASIN|ACOS|ATAN|ATAN2|RADIANS|DEGREES|CORR|COVAR_POP|COVAR_SAMP|REGR_\w+|PERCENTILE_CONT|MEDIAN|EXTRACT|RANDOM|PI)\s*\(/i;
+function pgRoundNeedsCast(x) {
+  if (DBL_FN.test(x)) return true;
+  const dbl = schemaIdx().dbl; const words = x.match(/[A-Za-z_]\w*/g) || [];
+  if (words.some(w => dbl.has(w.toLowerCase()))) return true;
+  /* takma ad zinciri: AS w tanımında double kaynak geçiyorsa */
+  const seen = new Set(); const check = w => { if (seen.has(w)) return false; seen.add(w); const T = rt(FWD_SQL).filter(sigk); for (let i = 0; i < T.length; i++) { if (isW(T[i], 'AS') && T[i + 1] && T[i + 1].k === 'w' && T[i + 1].u === w) { let s = i - 1, dd = 0; const buf = []; for (; s >= 0; s--) { if (isP(T[s], ')')) dd++; else if (isP(T[s], '(')) { if (!dd) break; dd--; } else if (!dd && (isP(T[s], ',') || isW(T[s], 'SELECT'))) break; buf.unshift(T[s].v); } const src = buf.join(' ').replace(/\s*\(\s*/g, '('); if (DBL_FN.test(src)) return true; if ((src.match(/[A-Za-z_]\w*/g) || []).some(n => dbl.has(n.toLowerCase()) || (n.toUpperCase() !== w && check(n.toUpperCase())))) return true; } } return false; };
+  return words.some(w => check(w.toUpperCase()));
+}
 function isDtExpr(x) { const m = String(x).trim().match(/(?:^|\.)"?(\w+)"?$/); return !!m && DT_COLS.has(m[1].toLowerCase()); }
 const bqFmtFn = v => isDtExpr(v) || isTsLit(String(v).trim()) ? 'FORMAT_DATETIME' : 'FORMAT_DATE';
 function fwdStrftime(a, d) {
@@ -148,6 +180,7 @@ function fwdStrftime(a, d) {
   const f = unq(a[0]), v = a[1];
   if (d === 'bq') return `${bqFmtFn(v)}('${f}', ${isTsLit(v.trim()) ? 'DATETIME ' + v : dlit(v, d)})`;
   if (d === 'tsql') return TSQL_FMT[f] ? TSQL_FMT[f](v) : `FORMAT(${v}, '${f.replace('%Y', 'yyyy').replace('%m', 'MM').replace('%d', 'dd').replace('%H', 'HH').replace('%M', 'mm')}')`;
+  if (d === 'pg' && f === '%Y-%m-%d %H:00:00') return `DATE_TRUNC('hour', CAST(${v} AS TIMESTAMP))`;
   if (d === 'pg') return PG_FMT[f] ? PG_FMT[f](v) : `TO_CHAR(${v}, '${f.replace('%Y', 'YYYY').replace('%m', 'MM').replace('%d', 'DD').replace('%H', 'HH24').replace('%M', 'MI')}')`;
   if (d === 'mysql') return MY_FMT[f] ? MY_FMT[f](v) : `DATE_FORMAT(${v}, '${f.replace('%M', '%i')}')`;
   if (d === 'oracle') return ORA_FMT[f] ? ORA_FMT[f](v) : `TO_CHAR(${v}, '${f.replace('%Y', 'YYYY').replace('%m', 'MM').replace('%d', 'DD').replace('%H', 'HH24').replace('%M', 'MI')}')`;
@@ -235,9 +268,20 @@ function fwdCall(N, a, A, d) {
   if (/_$/.test(N) || /^UDF_/.test(N)) { const r = d === 'bq' ? fwdInternalBq(N, a) : fwdInternal(N, a, d); if (r !== null && r !== undefined) return r; }
   if (d === 'bq') { const r = fwdCallBq(N, a); if (r !== undefined) return r; }
   switch (N) {
-    case 'IFNULL': return { tsql: `ISNULL(${a[0]}, ${a[1]})`, pg: `COALESCE(${a[0]}, ${a[1]})`, mysql: null, oracle: `NVL(${a[0]}, ${a[1]})` }[d];
+    case 'IFNULL': { const x = isDateCol(a[0]) && /^'/.test(a[1] || '') && !isDateLit(a[1]) ? toTextDate(a[0], d) : a[0]; return { tsql: `ISNULL(${x}, ${a[1]})`, pg: `COALESCE(${x}, ${a[1]})`, mysql: null, oracle: `NVL(${x}, ${a[1]})` }[d]; }
+    case 'COALESCE': if (a.length === 2 && isDateCol(a[0]) && /^'/.test(a[1]) && !isDateLit(a[1]) && ['pg', 'tsql', 'oracle'].includes(d)) return `COALESCE(${toTextDate(a[0], d)}, ${a[1]})`; return null;
+    case 'SUM': case 'AVG': if (a.length === 1 && d !== 'mysql' && A && A[0] && hasTopCond(A[0])) return `${N}(CASE WHEN ${a[0]} THEN 1 ELSE 0 END)`; return null;
+    case 'DATETIME': {
+      if (a.length === 1) return { tsql: `CAST(${a[0]} AS DATETIME2)`, pg: `CAST(${a[0]} AS TIMESTAMP)` }[d] || null;
+      if (a.length !== 2) return null;
+      const m1 = unq(a[1]).trim().toLowerCase().match(/^([+-]?\d+)\s+(hour|minute|second|day)s?$/);
+      if (m1 && /^'/.test(a[1])) { const n = parseInt(m1[1], 10), u = m1[2]; return { tsql: `DATEADD(${u}, ${n}, ${a[0]})`, pg: `(CAST(${a[0]} AS TIMESTAMP) + INTERVAL '${n} ${u}')`, mysql: `DATE_ADD(${a[0]}, INTERVAL ${n} ${u.toUpperCase()})`, oracle: `(${a[0]} + INTERVAL '${n}' ${u.toUpperCase()})`, bq: `DATETIME_ADD(${a[0]}, INTERVAL ${n} ${u.toUpperCase()})` }[d] || null; }
+      const m2 = a[1].match(/^([\s\S]*?)\s*\|\|\s*' (hour|minute|day)s?'$/);
+      if (m2) return { tsql: `DATEADD(${m2[2]}, ${m2[1]}, ${a[0]})`, pg: `(CAST(${a[0]} AS TIMESTAMP) + ${m2[1]} * INTERVAL '1 ${m2[2]}')` }[d] || null;
+      return null;
+    }
     case 'LENGTH': return d === 'tsql' ? `LEN(${a[0]})` : d === 'mysql' ? `CHAR_LENGTH(${a[0]})` : null;
-    case 'SUBSTR': if (d === 'tsql') return `SUBSTRING(${a[0]}, ${a[1]}, ${a[2] || 'LEN(' + a[0] + ')'})`; if (d === 'mysql' || d === 'pg') return `SUBSTRING(${a.join(', ')})`; return null;
+    case 'SUBSTR': { const x0 = isDateCol(a[0]) ? toTextDate(a[0], d) : a[0]; if (d === 'tsql') return `SUBSTRING(${x0}, ${a[1]}, ${a[2] || 'LEN(' + x0 + ')'})`; if (d === 'mysql' || d === 'pg') return `SUBSTRING(${[x0].concat(a.slice(1)).join(', ')})`; if (x0 !== a[0]) return `SUBSTR(${[x0].concat(a.slice(1)).join(', ')})`; return null; }
     case 'INSTR': if (d === 'tsql') return `CHARINDEX(${a[1]}, ${a[0]})`; if (d === 'pg') return `STRPOS(${a[0]}, ${a[1]})`; return null;
     case 'STRFTIME': return fwdStrftime(a, d);
     case 'DATE': return fwdDate(a, d);
@@ -253,7 +297,7 @@ function fwdCall(N, a, A, d) {
     case 'STDDEV_POP': return d === 'tsql' ? `STDEVP(${a[0]})` : null;
     case 'VAR_POP': return d === 'tsql' ? `VARP(${a[0]})` : null;
     case 'CAST': { const c = castParts(A); if (!c) return null; const x = renderFwdInner(txt(c.xt), d); return `CAST(${x} AS ${fwdType(c.type, d)})`; }
-    case 'ROUND': return d === 'tsql' && a.length === 1 ? `ROUND(${a[0]}, 0)` : null;
+    case 'ROUND': if (d === 'pg' && a.length === 2 && pgRoundNeedsCast(a[0])) return `ROUND(CAST(${a[0]} AS NUMERIC), ${a[1]})`; return d === 'tsql' && a.length === 1 ? `ROUND(${a[0]}, 0)` : null;
     case 'RANDOM': return { tsql: 'NEWID()', pg: 'RANDOM()', mysql: 'RAND()', oracle: 'DBMS_RANDOM.VALUE' }[d];
     case 'LOG10': return d === 'oracle' ? `LOG(10, ${a[0]})` : null;
     case 'CHANGES': return { tsql: '@@ROWCOUNT', mysql: 'ROW_COUNT()', pg: 'NULL /* GET DIAGNOSTICS */', oracle: 'SQL%ROWCOUNT' }[d];
@@ -634,8 +678,24 @@ function convert(code, from, to, mkdb) {
   try { return { text: forwardCanon(canon, to) }; } catch (e) { return { error: 'Çeviri yapılamadı: ' + e.message }; }
 }
 
+/* Boolean sütunlar: PostgreSQL'de = 1 yerine = TRUE, aritmetik ve toplamada CAST; SQL Server BIT toplanamaz */
+function fwdBool(sql, d) {
+  const T = rt(sql); const bool = schemaIdx().bool; const cast = d === 'tsql' ? 'INT' : 'INTEGER';
+  for (let i = 0; i < T.length; i++) {
+    const t = T[i]; if (t.k !== 'w' || !bool.has(t.u.toLowerCase())) continue;
+    const pp = pv(T, i), n1 = nx(T, i); let st = i; if (isP(T[pp], '.')) st = pv(T, pp);
+    if (T[n1] && isP(T[n1], '(')) continue;
+    const before = pv(T, st); const n2 = nx(T, n1);
+    if (d === 'pg' && T[n1] && ['=', '<>', '!='].includes(T[n1].v) && T[n2] && /^[01]$/.test(T[n2].v)) { T[n2] = Object.assign({}, T[n2], { v: T[n2].v === '1' ? 'TRUE' : 'FALSE', k: 'w', u: T[n2].v === '1' ? 'TRUE' : 'FALSE' }); continue; }
+    const arith = x => !!x && ['*', '+', '-', '/', '%'].includes(x.v) && (x.k === 'o' || x.k === 'p');
+    const inAgg = isP(T[before], '(') && T[pv(T, before)] && isW(T[pv(T, before)], 'SUM', 'AVG', 'MIN', 'MAX') && isP(T[n1], ')');
+    if (d === 'pg' ? (inAgg || arith(T[n1]) || arith(T[before])) : (inAgg && !isW(T[pv(T, before)], 'MIN', 'MAX'))) { T[st] = Object.assign({}, T[st], { v: 'CAST(' + T[st].v }); T[i] = Object.assign({}, T[i], { v: T[i].v + ' AS ' + cast + ')' }); }
+  }
+  return T.map(t => t.v).join('');
+}
 function forward(sql, d) {
   if (!sql || d === 'sqlite') return sql;
+  FWD_SQL = sql;
   let s = prePassJulian(sql);
   s = fwdAnchorDates(s, d);
   s = renderFwdInner(s, d);
@@ -649,13 +709,16 @@ function forward(sql, d) {
   s = fwdTx(s, d);
   if (d === 'tsql' || d === 'oracle') s = fwdGroupAlias(s);
   if (d === 'oracle') s = fwdOracleMisc(s);
+  if (d === 'pg' || d === 'tsql') s = fwdBool(s, d);
+  if (d === 'pg') s = s.replace(/\browid\b/gi, 'ctid');
   if (d === 'pg') s = pgDateLits(s);
   if (d === 'bq') { s = fwdBqSetOps(s); s = fwdBqCteCols(s); s = splitSemisKeep(s).map(st => /^\s*(UPDATE|DELETE)\b/i.test(st.replace(/^(\s|--[^\n]*\n)+/, '')) && !/\bWHERE\b/i.test(st) ? st.replace(/(\s*;?\s*)$/, ' WHERE true$1') : st).join(''); }
   return s;
 }
 function pgDateLits(sql) { // INTERVAL ile toplanan sabitlere DATE ekle
   const T = rt(sql); let out = '';
-  for (let i = 0; i < T.length; i++) { const t = T[i]; if (t.k === 's' && isDateLit(t.v)) { const n = nx(T, i), n2 = nx(T, n); if (isP(T[n], '+') && isW(T[n2], 'INTERVAL') && !isW(T[pv(T, i)], 'DATE')) { out += 'DATE ' + t.v; continue; } } out += tv(t); }
+  const rec = /\bWITH\s+RECURSIVE\b/i.test(sql);
+  for (let i = 0; i < T.length; i++) { const t = T[i]; if (t.k === 's' && isDateLit(t.v)) { const n = nx(T, i), n2 = nx(T, n), pb = T[pv(T, i)]; if (isP(T[n], '+') && isW(T[n2], 'INTERVAL') && !isW(pb, 'DATE')) { out += 'DATE ' + t.v; continue; } /* özyinelemeli CTE'nin başlangıç satırındaki tarih sabiti metin olarak kalmasın */ if (rec && isW(pb, 'SELECT')) { out += 'DATE ' + t.v; continue; } } out += tv(t); }
   return out;
 }
 
@@ -752,7 +815,7 @@ function lint(sql, d) {
       if (isW(t, 'NATURAL')) return err('NATURAL', 'BigQuery NATURAL JOIN desteklemez; JOIN ... USING (sutun) kullan.');
       if (isW(t, 'FETCH')) return err('FETCH', 'BigQuery\'de LIMIT n OFFSET m kullanılır.');
       if (isW(t, 'RETURNING') || isW(t, 'CONFLICT')) return err(t.v, 'BigQuery\'de RETURNING ve ON CONFLICT yoktur; upsert için MERGE kullan.');
-      if (t.k === 'tmp' || (t.k === 'var' && !t.v.startsWith('@@'))) return err(t.v, 'Değişkenler ve # geçici tablolar bu öykünmede yalnızca SQL Server modunda desteklenir. (BigQuery\'de @parametre ve DECLARE betikleri vardır.)');
+      if (t.k === 'tmp' || (t.k === 'var' && !t.v.startsWith('@@'))) return err(t.v, 'Değişkenler ve # geçici tablolar bu taklit katmanında yalnızca SQL Server modunda desteklenir. (BigQuery\'de @parametre ve DECLARE betikleri vardır.)');
       if (t.k === 'q' && t.v[0] === '"') return err(t.v, 'BigQuery\'de çift tırnak metin sabitidir; tanımlayıcılar `ters tırnak` ile yazılır.');
       if (isW(t, 'CREATE') && (isW(T[i + 1], 'INDEX') || (isW(T[i + 1], 'UNIQUE') && isW(T[i + 2], 'INDEX')))) return new DErr('Syntax error: Unexpected identifier "INDEX"', 'BigQuery\'de klasik indeks yoktur. Büyük tablolarda PARTITION BY (tarih) ve CLUSTER BY (sık filtrelenen sütunlar) kullanılır.');
       if (isW(t, 'CREATE') && (isW(T[i + 1], 'TRIGGER') || (isW(T[i + 1], 'OR') && isW(T[i + 3], 'TRIGGER')))) return new DErr('Syntax error: Unexpected identifier "TRIGGER"', 'BigQuery\'de trigger yoktur; değişiklikler zamanlanmış sorgular veya Dataform/dbt ile işlenir.');
@@ -762,7 +825,7 @@ function lint(sql, d) {
       if (isW(t, 'PRIMARY') && isW(T[i + 1], 'KEY')) { let j = i + 2; if (isP(T[j], '(')) { while (j < T.length && !isP(T[j], ')')) j++; j++; } if (!(isW(T[j], 'NOT') && isW(T[j + 1], 'ENFORCED'))) return new DErr('Enforced PRIMARY KEY constraints are not supported. Use NOT ENFORCED.', 'BigQuery\'de birincil anahtar bilgi amaçlıdır: PRIMARY KEY (id) NOT ENFORCED.'); }
       if (isW(t, 'REFERENCES')) { let j = i + 2; if (isP(T[j], '(')) { while (j < T.length && !isP(T[j], ')')) j++; j++; } if (!(isW(T[j], 'NOT') && isW(T[j + 1], 'ENFORCED'))) return new DErr('Enforced FOREIGN KEY constraints are not supported. Use NOT ENFORCED.', 'BigQuery\'de yabancı anahtar da NOT ENFORCED yazılır.'); }
       if ((isW(t, 'WITH') || isW(t, 'RECURSIVE') && isW(T[i - 1], 'WITH')) && T[i + 1] && (T[i + 1].k === 'w' || T[i + 1].k === 'q') && !isW(T[i + 1], 'RECURSIVE') && isP(T[i + 2], '(')) return new DErr('Syntax error: Expected keyword AS but got "("', 'BigQuery\'de CTE sütun listesi yazılmaz; sütun adlarını CTE\'nin ilk SELECT\'inde AS ile ver.');
-      if (isW(t, 'DECLARE') || (isW(t, 'SET') && i === 0)) return err(t.v, 'BigQuery betikleri (DECLARE, SET, IF, LOOP) bu öykünmede desteklenmiyor; tek sorgu olarak yaz.');
+      if (isW(t, 'DECLARE') || (isW(t, 'SET') && i === 0)) return err(t.v, 'BigQuery betikleri (DECLARE, SET, IF, LOOP) bu taklit katmanında desteklenmiyor; tek sorgu olarak yaz.');
       if (isW(t, 'UPDATE', 'DELETE') && (i === 0 || isP(T[i - 1], ';'))) { let j = i + 1, has = false; for (; j < T.length && !isP(T[j], ';'); j++) if (isW(T[j], 'WHERE')) { has = true; break; } if (!has) return new DErr(`${u} must have a WHERE clause`, `BigQuery\'de ${u} her zaman WHERE ister; tüm satırlar için WHERE true yaz.`); }
     }
     if (d === 'oracle') {
@@ -784,6 +847,7 @@ function lint(sql, d) {
     let hit = null; groupAliasScan(tokenize(sql), h => { if (!hit && !ALL_COLS.has(h.name.toLowerCase())) hit = h; });
     if (hit) return new DErr(d === 'tsql' ? `Msg 207, Level 16, State 1: Invalid column name '${hit.name}'.` : `ORA-00904: "${hit.name.toUpperCase()}": invalid identifier`, `${DNAME[d]} GROUP BY içinde SELECT takma adını kabul etmez. Takma ad yerine ifadenin kendisini yaz: GROUP BY ${hit.expr}`);
   }
+  const se = lintSemantic(sql, d); if (se) return se;
   if (d === 'oracle') {
     // FROM'suz SELECT
     const TT = tokenize(sql); const D = depthAt(TT);
@@ -795,6 +859,105 @@ function lint(sql, d) {
   }
   return null;
 }
+
+/* ------------------------------------------------------------------ Anlam denetimi
+   SQLite'ın kabul edip gerçek motorların reddettiği sorgular. Temkinli çalışır: emin olamadığı durumda hata vermez.
+   Bilinen sınır: sütunu türetilmiş tablodan gelen karmaşık sorgularda bazı ihlaller yakalanmayabilir. */
+let LINT_DB = null;
+const AGG_FN = new Set(['COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'STRING_AGG', 'GROUP_CONCAT', 'LISTAGG', 'ARRAY_AGG', 'JSON_AGG', 'JSON_GROUP_ARRAY', 'JSON_ARRAYAGG', 'STDDEV', 'STDDEV_SAMP', 'STDDEV_POP', 'STDEV', 'STDEVP', 'VARIANCE', 'VAR_SAMP', 'VAR_POP', 'VAR', 'VARP', 'MEDIAN', 'PERCENTILE_CONT', 'PERCENTILE_DISC', 'BOOL_OR', 'BOOL_AND', 'COUNTIF', 'LOGICAL_OR', 'LOGICAL_AND', 'ANY_VALUE', 'CORR', 'COVAR_POP', 'COVAR_SAMP', 'APPROX_COUNT_DISTINCT', 'BIT_AND', 'BIT_OR', 'TOTAL', 'APPROX_QUANTILES']);
+const NOT_COL = new Set(('SELECT FROM WHERE GROUP BY ORDER HAVING AS ON AND OR NOT IN IS NULL LIKE ILIKE BETWEEN EXISTS DISTINCT ALL ANY SOME CASE WHEN THEN ELSE END CAST TRUE FALSE ASC DESC NULLS FIRST LAST LIMIT OFFSET FETCH ROWS ROW ONLY OVER PARTITION RANGE UNBOUNDED PRECEDING FOLLOWING CURRENT INTERVAL DATE TIMESTAMP TIME UNION INTERSECT EXCEPT MINUS JOIN INNER LEFT RIGHT FULL OUTER CROSS NATURAL USING WITH RECURSIVE TOP PERCENT TIES ROLLUP CUBE GROUPING SETS YEAR MONTH DAY HOUR MINUTE SECOND VALUES INTO').split(' '));
+function scopesOf(T) {
+  const D = []; let dp = 0; for (let i = 0; i < T.length; i++) { if (isP(T[i], ')')) dp--; D.push(dp); if (isP(T[i], '(')) dp++; }
+  const out = [];
+  for (let i = 0; i < T.length; i++) {
+    if (!isW(T[i], 'SELECT')) continue; const d0 = D[i]; const sc = { i, from: -1, where: -1, group: -1, having: -1, order: -1, end: T.length, stop: T.length };
+    let j = i + 1;
+    for (; j < T.length; j++) { if (D[j] < d0) break; if (D[j] > d0) continue; const t = T[j]; if (isP(t, ';') || isW(t, 'UNION', 'INTERSECT', 'EXCEPT', 'MINUS')) break; if (isW(t, 'FROM') && sc.from < 0) sc.from = j; else if (isW(t, 'WHERE') && sc.where < 0) sc.where = j; else if (isW(t, 'GROUP') && isW(T[j + 1], 'BY') && sc.group < 0) sc.group = j; else if (isW(t, 'HAVING') && sc.having < 0) sc.having = j; else if (isW(t, 'ORDER') && isW(T[j + 1], 'BY') && sc.order < 0) sc.order = j; else if (isW(t, 'LIMIT', 'OFFSET', 'FETCH', 'QUALIFY', 'WINDOW', 'FOR') && sc.stop === T.length) sc.stop = j; }
+    sc.end = j; if (sc.stop > j) sc.stop = j; sc.d = d0; out.push(sc);
+  }
+  return { scopes: out, D };
+}
+const clauseEnd = (sc, k) => { const c = ['from', 'where', 'group', 'having', 'order'].map(x => sc[x]).filter(x => x > k); return Math.min(sc.stop, sc.end, ...(c.length ? c : [Infinity])); };
+function splitComma(T, a, b, D, d0) { const o = []; let s = a; for (let i = a; i < b; i++) if (D[i] === d0 && isP(T[i], ',')) { o.push([s, i]); s = i + 1; } if (s < b) o.push([s, b]); return o; }
+function tableCols(name) { const n = name.toLowerCase(); const S = schemaIdx().cols[n]; if (S) return S; if (LINT_DB) { try { const r = LINT_DB.exec(`SELECT name FROM pragma_table_info('${n.replace(/'/g, "''")}')`); if (r[0] && r[0].values.length) return new Set(r[0].values.map(v => String(v[0]).toLowerCase())); } catch (e) { /* yok */ } } return null; }
+/* FROM kapsamındaki sütun adları. known: kesin tablo sütunları + türetilmiş/CTE gövdesindeki sözcükler. null: bilinmeyen kaynak, kural uygulanmaz. */
+function fromCols(T, sc, D) {
+  if (sc.from < 0) return { cols: new Set(), pks: [] };
+  const end = clauseEnd(sc, sc.from); const cols = new Set(); const pks = [];
+  const add = s => s.forEach(c => cols.add(c));
+  for (let i = sc.from + 1; i < end; i++) {
+    if (D[i] !== sc.d) continue; const t = T[i], pb = T[i - 1];
+    if (isP(t, '(') && (isW(pb, 'FROM', 'JOIN', 'APPLY', 'LATERAL') || isP(pb, ','))) { let c = i; let dp = 0; for (; c < T.length; c++) { if (isP(T[c], '(')) dp++; else if (isP(T[c], ')')) { dp--; if (!dp) break; } } for (let q = i; q < c; q++) if (T[q].k === 'w' || T[q].k === 'q') cols.add(String(T[q].u || T[q].v).toLowerCase().replace(/["`\[\]]/g, '')); i = c; continue; }
+    if ((t.k === 'w' || t.k === 'q') && (isW(pb, 'FROM', 'JOIN') || isP(pb, ',')) && !isP(T[i + 1], '(')) {
+      let nm = String(t.v).replace(/["`\[\]]/g, ''); let k = i; while (isP(T[k + 1], '.')) { k += 2; nm = String(T[k] ? T[k].v : nm).replace(/["`\[\]]/g, ''); }
+      const S = tableCols(nm);
+      if (S) { add(S); (schemaIdx().pk[nm.toLowerCase()] || []).forEach(p => pks.push(p)); continue; }
+      /* CTE gövdesi ya da oturumda kurulan nesne */
+      let found = false; for (let q = 0; q < T.length - 2; q++) { if ((T[q].u === nm.toUpperCase()) && (isW(T[q + 1], 'AS') && isP(T[q + 2], '(') || isP(T[q + 1], '('))) { found = true; let c = isP(T[q + 1], '(') ? q + 1 : q + 2; let dp = 0, e = c; let guard = 0; for (; e < T.length; e++) { if (isP(T[e], '(')) dp++; else if (isP(T[e], ')')) { dp--; if (!dp) { guard++; if (isP(T[q + 1], '(') && guard === 1 && isW(T[e + 1], 'AS')) { e += 2; dp = 0; dp++; continue; } break; } } } for (let z = c; z < e; z++) if (T[z].k === 'w' || T[z].k === 'q') cols.add(String(T[z].u || T[z].v).toLowerCase().replace(/["`\[\]]/g, '')); break; } }
+      if (!found) return null;
+    }
+  }
+  return { cols, pks };
+}
+const VERR = {
+  whereAlias: { pg: w => `ERROR: column "${w}" does not exist`, tsql: w => `Msg 207, Level 16, State 1: Invalid column name '${w}'.`, mysql: w => `ERROR 1054 (42S22): Unknown column '${w}' in 'where clause'`, oracle: w => `ORA-00904: "${w.toUpperCase()}": invalid identifier`, bq: w => `Unrecognized name: ${w}` },
+  group: { pg: w => `ERROR: column "${w}" must appear in the GROUP BY clause or be used in an aggregate function`, tsql: w => `Msg 8120, Level 16, State 1: Column '${w}' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause.`, mysql: w => `ERROR 1055 (42000): Expression of SELECT list is not in GROUP BY clause and contains nonaggregated column '${w}'`, oracle: () => 'ORA-00979: not a GROUP BY expression', bq: w => `SELECT list expression references column ${w} which is neither grouped nor aggregated` },
+  noGroup: { pg: w => `ERROR: column "${w}" must appear in the GROUP BY clause or be used in an aggregate function`, tsql: w => `Msg 8120, Level 16, State 1: Column '${w}' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause.`, mysql: () => 'ERROR 1140 (42000): In aggregated query without GROUP BY, expression of SELECT list contains nonaggregated column', oracle: () => 'ORA-00937: not a single-group group function', bq: w => `SELECT list expression references column ${w} which is neither grouped nor aggregated` },
+  boolAgg: { pg: f => `ERROR: function ${f.toLowerCase()}(boolean) does not exist`, tsql: () => "Msg 102, Level 15, State 1: Incorrect syntax near '='.", oracle: () => 'ORA-00907: missing right parenthesis', bq: f => `No matching signature for aggregate function ${f} for argument types: BOOL` },
+  distinct: { pg: () => 'ERROR: for SELECT DISTINCT, ORDER BY expressions must appear in select list', tsql: () => 'Msg 145, Level 15, State 1: ORDER BY items must appear in the select list if SELECT DISTINCT is specified.', oracle: () => 'ORA-01791: not a SELECTed expression', bq: () => 'ORDER BY clause expression references column which is not visible after SELECT DISTINCT' }
+};
+function lintSemantic(sql, d) {
+  if (d === 'sqlite') return null;
+  const TT = tokenize(sql).filter(t => t.k !== 'ws' && t.k !== 'com' && (typeof sigk !== 'function' || sigk(t))); const T = TT;
+  if (!T.some(t => isW(t, 'SELECT'))) return null;
+  const { scopes, D } = scopesOf(T); const idx = schemaIdx();
+  const ident = (a, b, dep, f) => { for (let i = a; i < b; i++) { if (isP(T[i], '(') && isW(T[i + 1], 'SELECT', 'WITH')) { let dp = 0; for (; i < b; i++) { if (isP(T[i], '(')) dp++; else if (isP(T[i], ')')) { dp--; if (!dp) break; } } continue; } const t = T[i]; if (t.k !== 'w' && !(t.k === 'q' && t.v[0] !== "'")) continue; if (isP(T[i + 1], '(') || isP(T[i + 1], '.')) continue; if (isW(T[i - 1], 'AS')) continue; const nm = String(t.u || t.v).toLowerCase().replace(/["`\[\]]/g, ''); if (NOT_COL.has(nm.toUpperCase())) continue; f(nm, i, t); } };
+  /* SUM(koşul), AVG(koşul) */
+  if (d !== 'mysql') for (let i = 0; i < T.length; i++) {
+    if (T[i].k === 'w' && (T[i].u === 'SUM' || T[i].u === 'AVG') && isP(T[i + 1], '(') && !isP(T[i - 1], '.')) { const c = closeP(T, i + 1); if (c < 0 || c === undefined) continue; const inner = T.slice(i + 2, c); if (hasTopCond(inner)) return new DErr(VERR.boolAgg[d](T[i].u), `Koşulu doğrudan toplayamazsın (bu yalnız SQLite ve MySQL'de çalışır). ${T[i].u}(CASE WHEN koşul THEN 1 ELSE 0 END) yaz.`); if ((d === 'pg' || d === 'tsql') && inner.length && idx.bool.has(String(inner[inner.length - 1].u || '').toLowerCase()) && (inner.length === 1 || (inner.length === 3 && isP(inner[1], '.')))) return new DErr(d === 'pg' ? VERR.boolAgg.pg(T[i].u) : `Msg 8117, Level 16, State 1: Operand data type bit is invalid for ${T[i].u.toLowerCase()} operator.`, `Bu sütun ${d === 'pg' ? 'BOOLEAN' : 'BIT'} türünde. ${T[i].u}(CASE WHEN sütun ${d === 'pg' ? '' : '= 1 '}THEN 1 ELSE 0 END) yaz ya da sütunu CAST ile tam sayıya çevir.`); }
+    /* boolean = 1 */
+    if (d === 'pg' && T[i].k === 'w' && idx.bool.has(T[i].u.toLowerCase()) && T[i + 1] && ['=', '<>', '!='].includes(T[i + 1].v) && T[i + 2] && /^[01]$/.test(T[i + 2].v) && !T.some(x => isW(x, 'ADD', 'CREATE'))) return new DErr('ERROR: operator does not exist: boolean = integer', `${T[i].v} sütunu PostgreSQL'de BOOLEAN. ${T[i].v} = ${T[i + 2].v === '1' ? 'TRUE' : 'FALSE'} yaz.`);
+    /* tarih LIKE */
+    if ((d === 'pg' || d === 'bq') && T[i].k === 'w' && idx.date.has(T[i].u.toLowerCase()) && !isP(T[i + 1], '.') && (isW(T[i + 1], 'LIKE') || (isW(T[i + 1], 'NOT') && isW(T[i + 2], 'LIKE'))) && !isW(T[i - 1], 'AS')) return new DErr(d === 'pg' ? 'ERROR: operator does not exist: date ~~ unknown' : 'No matching signature for operator LIKE for argument types: DATE, STRING', 'Tarih sütunu metin değildir, LIKE ile karşılaştırılamaz. Aralık kullan (>= ve <) ya da yılı EXTRACT ile al.');
+    /* çift tırnaklı metin */
+    if ((d === 'pg' || d === 'oracle') && T[i].k === 'q' && T[i].v[0] === '"' && !isP(T[i + 1], '.') && !isP(T[i - 1], '.') && !isW(T[i - 1], 'AS', 'FROM', 'JOIN', 'TABLE', 'INTO', 'UPDATE', 'VIEW') && !T.some(x => isW(x, 'CREATE', 'ALTER', 'INSERT'))) {
+      const nm = T[i].v.slice(1, -1); const low = nm.toLowerCase(); let known = ALL_COLS.has(low) || T.some((x, j) => j !== i && String(x.v).replace(/"/g, '').toLowerCase() === low && (isW(T[j - 1], 'AS') || isP(T[j + 1], '.')));
+      if (!known && !T.some((x, j) => isW(x, 'WITH') )) { if (LINT_DB) { try { const tabs = LINT_DB.exec("SELECT name FROM sqlite_master WHERE type IN ('table','view')"); known = !!(tabs[0] && tabs[0].values.some(v => { const S = tableCols(v[0]); return S && S.has(low); })); } catch (e) { known = true; } } if (!known) return new DErr(d === 'pg' ? `ERROR: column "${nm}" does not exist` : `ORA-00904: "${nm}": invalid identifier`, 'Çift tırnak sütun adı içindir. Metin için tek tırnak kullan.'); }
+    }
+  }
+  if (T.some(t => t.k === 'var') ) return null;  // T-SQL değişkenli toplu iş: kapsam çözümü güvenilir değil
+  for (const sc of scopes) {
+    if (isW(T[sc.i - 2], 'INSERT') && false) continue;
+    const selEnd = sc.from >= 0 ? sc.from : clauseEnd(sc, sc.i); let selStart = sc.i + 1; const distinct = isW(T[selStart], 'DISTINCT'); if (distinct) selStart++;
+    if (isW(T[selStart], 'TOP')) { selStart += 2; if (isP(T[selStart - 1], '(')) { while (selStart < selEnd && !isP(T[selStart], ')')) selStart++; selStart++; } }
+    if (isW(T[selStart], 'ON')) continue;   // DISTINCT ON: kendi kuralı var, burada denetlenmez
+    const items = splitComma(T, selStart, selEnd, D, sc.d).map(([a, b]) => { let al = null; const n = b - a; if (n >= 3 && isW(T[b - 2], 'AS')) al = String(T[b - 1].u || T[b - 1].v).toLowerCase().replace(/["`\[\]]/g, ''); else if (n >= 2 && (T[b - 1].k === 'w' || T[b - 1].k === 'q') && !NOT_COL.has(T[b - 1].u) && !isP(T[b - 2], '.') && !(T[b - 2].k === 'o') && !isP(T[b - 2], '(') && !isW(T[b - 2], 'AND', 'OR', 'NOT', 'WHEN', 'THEN', 'ELSE', 'CASE', 'IN', 'LIKE', 'IS') && (isP(T[b - 2], ')') || T[b - 2].k === 'w' || T[b - 2].k === 'n' || T[b - 2].k === 'q' || T[b - 2].k === 's') && !isW(T[b - 2], 'SELECT', 'DISTINCT')) al = String(T[b - 1].u || T[b - 1].v).toLowerCase().replace(/["`\[\]]/g, ''); const key = T.slice(a, al ? (isW(T[b - 2], 'AS') ? b - 2 : b - 1) : b).map(t => String(t.u || t.v).toLowerCase()).join(' ').replace(/\s*([.(),])\s*/g, '$1'); return { a, b, al, key }; });
+    if (T.slice(selStart, selEnd).some(t => isP(t, '*')) && items.some(it => it.b - it.a === 1 && isP(T[it.a], '*'))) { if (sc.group < 0) continue; }
+    const fc = fromCols(T, sc, D); if (!fc) continue;
+    const aliases = new Set(items.map(x => x.al).filter(Boolean));
+    /* WHERE'de takma ad */
+    if (sc.where >= 0 && aliases.size) { let hit = null; ident(sc.where + 1, clauseEnd(sc, sc.where), sc.d, nm => { if (!hit && aliases.has(nm) && !fc.cols.has(nm)) hit = nm; }); if (hit && !outerHas(T, sc, scopes, hit)) return new DErr(VERR.whereAlias[d](hit), `WHERE, SELECT'ten önce çalışır; "${hit}" takma adı henüz tanımlı değil. İfadenin kendisini yaz ya da sorguyu alt sorgu veya CTE içine al.`); }
+    /* HAVING'de takma ad: PostgreSQL, SQL Server ve Oracle kabul etmez */
+    if (sc.having >= 0 && aliases.size && (d === 'pg' || d === 'tsql' || d === 'oracle')) { let hit = null; ident(sc.having + 1, clauseEnd(sc, sc.having), sc.d, nm => { if (!hit && aliases.has(nm) && !fc.cols.has(nm)) hit = nm; }); if (hit && !outerHas(T, sc, scopes, hit)) return new DErr(VERR.whereAlias[d](hit), `${DNAME[d]} HAVING içinde SELECT takma adını kabul etmez. Toplama ifadesini yeniden yaz: HAVING COUNT(*) > 2 gibi.`); }
+    /* Gruplanmamış sütun */
+    const hasGroup = sc.group >= 0;
+    const aggMask = (a, b) => { const out = []; for (let i = a; i < b; i++) { const t = T[i]; if (isP(t, '(') && isW(T[i + 1], 'SELECT', 'WITH')) { let dp = 0; for (; i < b; i++) { if (isP(T[i], '(')) dp++; else if (isP(T[i], ')')) { dp--; if (!dp) break; } } continue; } if (t.k === 'w' && isP(T[i + 1], '(')) { const isAgg = AGG_FN.has(t.u); const c = closeP(T, i + 1); const after = T[c + 1]; const win = isW(after, 'OVER'); if (isAgg || win) { let e = c; if (win) { const o = c + 2; if (isP(T[o], '(')) e = closeP(T, o); else e = c + 2; } if (isAgg && !win) out.agg = true; if (isW(T[e + 1], 'WITHIN') && isP(T[e + 3], '(')) e = closeP(T, e + 3); if (isW(T[e + 1], 'FILTER') && isP(T[e + 2], '(')) e = closeP(T, e + 2); i = e; continue; } continue; } if (isW(t, 'CAST') && false) continue; if (isW(T[i - 1], 'AS')) continue; if ((t.k === 'w' || (t.k === 'q' && t.v[0] !== "'")) && !isP(T[i + 1], '.')) { const nm = String(t.u || t.v).toLowerCase().replace(/["`\[\]]/g, ''); if (!NOT_COL.has(nm.toUpperCase())) out.push(nm); } } return out; };
+    const masks = items.map(it => aggMask(it.a, it.al ? (isW(T[it.b - 2], 'AS') ? it.b - 2 : it.b - 1) : it.b));
+    const anyAgg = masks.some(m => m.agg) || (sc.having >= 0);
+    if (!distinct && hasGroup || (!hasGroup && anyAgg)) {
+      if (!(hasGroup && (d === 'pg' || d === 'mysql') && groupHasPk(T, sc, fc))) {
+        const grpEnd = hasGroup ? clauseEnd(sc, sc.group) : sc.group; const grpWords = new Set(); const grpKeys = new Set();
+        if (hasGroup) { const parts = splitComma(T, sc.group + 2, grpEnd, D, sc.d); parts.forEach(([a, b]) => { grpKeys.add(T.slice(a, b).map(t => String(t.u || t.v).toLowerCase()).join(' ').replace(/\s*([.(),])\s*/g, '$1')); const m = aggMask(a, b); m.forEach(w => grpWords.add(w)); if (b - a === 1 && T[a].k === 'n') grpKeys.add('#' + T[a].v); }); }
+        for (let k = 0; k < items.length; k++) { const it = items[k]; if (grpKeys.has(it.key) || (it.al && grpKeys.has(it.al)) || grpKeys.has('#' + (k + 1))) continue; for (const w of masks[k]) { if (grpWords.has(w) || !fc.cols.has(w)) continue; if (hasGroup && items.some(x => x.al === w && grpKeys.has(w))) continue; return new DErr((hasGroup ? VERR.group : VERR.noGroup)[d](w), hasGroup ? `"${w}" ne GROUP BY'da ne de bir toplama fonksiyonunun içinde. Her grup için tek değer gerekir: GROUP BY'a ekle ya da MIN/MAX/COUNT içine al. SQLite bunu sessizce kabul eder; gerçek motorlar reddeder.` : `Toplama fonksiyonu varken "${w}" sütunu tek başına kalamaz. GROUP BY ${w} ekle ya da sütunu kaldır.`); } }
+      }
+    }
+    /* DISTINCT + ORDER BY */
+    if (distinct && sc.order >= 0 && d !== 'mysql') { const okW = new Set(aliases); masks.forEach(m => m.forEach(w => okW.add(w))); const keys = new Set(items.map(x => x.key)); const parts = splitComma(T, sc.order + 2, clauseEnd(sc, sc.order), D, sc.d); for (const [a0, b0] of parts) { let b = b0; while (b > a0 && isW(T[b - 1], 'ASC', 'DESC', 'FIRST', 'LAST', 'NULLS')) b--; const key = T.slice(a0, b).map(t => String(t.u || t.v).toLowerCase()).join(' ').replace(/\s*([.(),])\s*/g, '$1'); if (keys.has(key) || (b - a0 === 1 && T[a0].k === 'n')) continue; for (const w of aggMask(a0, b)) if (!okW.has(w) && fc.cols.has(w)) return new DErr(VERR.distinct[d](), `SELECT DISTINCT ile yalnız seçtiğin sütunlara göre sıralayabilirsin. "${w}" sütununu SELECT'e ekle ya da DISTINCT yerine GROUP BY kullan.`); } }
+  }
+  return null;
+}
+function outerHas(T, sc, scopes, nm) { /* ilişkili alt sorgu: dış kapsamdaki tablo sütunu olabilir */ if (sc.d === 0) return false; return scopes.some(o => o !== sc && o.d < sc.d && (T.slice(o.from < 0 ? o.i : o.from, o.end).some(t => (t.k === 'w') && tableCols(String(t.v)) && tableCols(String(t.v)).has(nm)))); }
+function groupHasPk(T, sc, fc) { if (!fc.pks.length) return false; const e = clauseEnd(sc, sc.group); for (let i = sc.group + 2; i < e; i++) { const t = T[i]; if (t.k === 'w' && fc.pks.includes(t.u.toLowerCase())) return true; } return false; }
 
 /* ------------------------------------------------------------------ Ters çeviri (hedef → SQLite) */
 const DATE_TYPES = /^(DATE)$/i;
@@ -1102,6 +1265,7 @@ function revInterval(sql, d) {
   for (let g = 0; g < 30; g++) {
     const i = T.findIndex(t => isW(t, 'INTERVAL')); if (i < 0) break;
     const op = pv(T, i); const valI = nx(T, i);
+    if (isP(T[op], '*') && T[valI].k === 's') { /* x + (ifade) * INTERVAL '1 hour' */ const me = pv(T, op), ms = primStartBack(T, me), op2 = pv(T, ms); const mv = unq(T[valI].v).trim().match(/^(-?\d+)\s*([A-Za-z]+)$/); if (mv && (isP(T[op2], '+') || isP(T[op2], '-'))) { const le2 = pv(T, op2), ls2 = primStartBack(T, le2); const sg = isP(T[op2], '-') ? '-' : ''; T = rt(txt(T.slice(0, ls2)) + `dateadd_('${part(mv[2])}', ${sg}(${txt(T.slice(ms, me + 1))}) * ${mv[1]}, ${txt(T.slice(ls2, le2 + 1))})` + txt(T.slice(valI + 1))); continue; } }
     if (!(isP(T[op], '+') || isP(T[op], '-'))) { T[i] = Object.assign({}, T[i], { u: 'INTERVAL#' }); continue; }
     let n, u, end = valI;
     if (T[valI].k === 's') { const v = unq(T[valI].v).trim(); const m = v.match(/^(-?\d+)\s*([A-Za-z]+)?$/); if (!m) throw new DErr('INTERVAL biçimi anlaşılamadı: ' + v); n = m[1]; u = m[2]; if (!u) { const un = nx(T, valI); u = T[un].v; end = un; } }
@@ -1150,7 +1314,11 @@ function revTsqlPlus(sql) { // '+' metin birleştirme sezgisi
   for (let i = 0; i < T.length; i++) {
     if (isP(T[i], '+')) {
       const le = pv(T, i), rs = nx(T, i);
-      if (le >= 0 && rs < T.length) { const ls = primStartBack(T, le), re = primEndFwd(T, rs); if (isTextish(ls, le) || isTextish(rs, re)) { out += '||'; continue; } }
+      if (le >= 0 && rs < T.length) { const ls = primStartBack(T, le), re = primEndFwd(T, rs);
+        /* Tip önceliği: metin sabiti + sayı → SQL Server metni sayıya çevirir ('5' + 1 = 6) */
+        const numLit = (s, e) => { const x = T.slice(s, e + 1).filter(sigk); return x.length === 1 && x[0].k === 'n'; }; const strLit = (s, e) => { const x = T.slice(s, e + 1).filter(sigk); return x.length === 1 && x[0].k === 's'; };
+        if ((numLit(ls, le) && strLit(rs, re)) || (strLit(ls, le) && numLit(rs, re))) { const sv = unq(T[strLit(ls, le) ? ls : rs].v).trim(); if (!/^-?\d+(\.\d+)?$/.test(sv)) throw new DErr(`Msg 245, Level 16, State 1: Conversion failed when converting the varchar value '${sv}' to data type int.`, 'Sayı ile metni + ile toplayamazsın. Birleştirmek istiyorsan önce sayıyı CAST ile metne çevir.'); out += '+'; continue; }
+        if (isTextish(ls, le) || isTextish(rs, re)) { out += '||'; continue; } }
     }
     out += tv(T[i]);
   }
@@ -1248,7 +1416,7 @@ function revInfoSchema(sql) {
     .replace(/\ball_tables\b/gi, "(SELECT 'ANADOLU' AS OWNER, upper(name) AS TABLE_NAME FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%')");
 }
 
-/* GROUP BY ROLLUP / CUBE / GROUPING SETS / WITH ROLLUP öykünmesi */
+/* GROUP BY ROLLUP / CUBE / GROUPING SETS / WITH ROLLUP taklitsi */
 function revGrouping(sql, d) {
   if (!/\b(ROLLUP|CUBE|GROUPING\s+SETS)\b/i.test(sql)) return sql;
   const T = rt(sql); const D = depthAt(T);
@@ -1304,7 +1472,7 @@ function revGrouping(sql, d) {
   void d;
   return prefix + 'SELECT * FROM (\n' + u + '\n)' + obx + tail;
 }
-/* PIVOT / UNPIVOT öykünmesi */
+/* PIVOT / UNPIVOT taklitsi */
 function revPivot(sql, d, db) {
   if (!/\b(UN)?PIVOT\b/i.test(sql)) return sql;
   let T = rt(sql);
@@ -1347,7 +1515,7 @@ function revPivot(sql, d, db) {
 const q2 = c => '"' + String(c).replace(/^\[|\]$/g, '').replace(/^"|"$/g, '').replace(/"/g, '""') + '"';
 
 
-/* CROSS / OUTER APPLY öykünmesi: ilişkili alt sorguyu pencere fonksiyonlu JOIN'e çevirir */
+/* CROSS / OUTER APPLY taklitsi: ilişkili alt sorguyu pencere fonksiyonlu JOIN'e çevirir */
 function outerAliases(T, upto) {
   const D = depthAt(T); const set = new Set(); const dep = D[upto];
   let inFrom = false;
@@ -1375,7 +1543,7 @@ function revApply(sql, d, db) {
       let end = fc, src, w = null;
       if (T[o].u === 'STRING_SPLIT') src = `json_each(${splitJson(A[0], A[1])})`;
       else if (T[o].u === 'OPENJSON') { src = `json_each(${A.join(', ')})`; w = ojWith(T, fc); if (w) end = w.end; }
-      else throw new DErr('Bu öykünmede GENERATE_SERIES APPLY ile kullanılamıyor; FROM içinde kullan.');
+      else throw new DErr('Bu taklit katmanında GENERATE_SERIES APPLY ile kullanılamıyor; FROM içinde kullan.');
       let k = nx(T, end), alias = null, aEnd = end;
       if (isW(T[k], 'AS')) { alias = T[nx(T, k)].v; aEnd = nx(T, k); } else if (T[k] && (T[k].k === 'w' || T[k].k === 'q') && !isW(T[k], 'WHERE', 'ORDER', 'GROUP', 'JOIN', 'CROSS', 'OUTER', 'LEFT', 'INNER', 'ON')) { alias = T[k].v; aEnd = k; }
       if (!alias) alias = '__ap' + g;
@@ -1413,7 +1581,7 @@ function revApply(sql, d, db) {
       if (lo === ro) throw new DErr('APPLY koşulu çözümlenemedi.');
       ki.push(txt(lo ? sides[1] : sides[0])); ko.push(txt(lo ? sides[0] : sides[1]));
     }
-    if ([listToks, fromToks, G || [], H || [], O || []].some(x => refsOuter(x, outerSet, innerSet))) throw new DErr('APPLY alt sorgusunda dış tabloya yalnızca WHERE içindeki eşitliklerle başvurulabilir (bu öykünmenin sınırı).');
+    if ([listToks, fromToks, G || [], H || [], O || []].some(x => refsOuter(x, outerSet, innerSet))) throw new DErr('APPLY alt sorgusunda dış tabloya yalnızca WHERE içindeki eşitliklerle başvurulabilir (bu taklitnin sınırı).');
     const listTxt = txt(listToks).trim();
     const isAgg = /\b(COUNT|SUM|AVG|MIN|MAX|STRING_AGG)\s*\(/i.test(listTxt) && !G;
     let cols = listTxt + (ki.length ? ', ' + ki.map((x, i) => `${x} AS __k${i}`).join(', ') : '');
@@ -1484,7 +1652,7 @@ function revForJsonXml(sql, db) {
     let cols = [];
     if (items.length === 1 && items[0].filter(sigk).length === 1 && isP(items[0].find(sigk), '*') || items.some(it => { const sg = it.filter(sigk); return isP(sg[sg.length - 1], '*'); })) {
       let names = null; try { const st = db.prepare(reverse('SELECT ' + txt(inner.slice(p)), 'tsql', db)); names = st.getColumnNames(); st.free(); } catch (e) { names = null; }
-      if (!names) throw new DErr('FOR JSON/XML ile SELECT * bu öykünmede ilişkili alt sorguda kullanılamıyor; sütunları tek tek yaz.');
+      if (!names) throw new DErr('FOR JSON/XML ile SELECT * bu taklit katmanında ilişkili alt sorguda kullanılamıyor; sütunları tek tek yaz.');
       cols = names.map(n => ({ expr: q2(n), name: n }));
     } else {
       cols = items.map(it => { const sg = it.filter(sigk); let name = null, expr = txt(it).trim();
@@ -1532,7 +1700,7 @@ function revGenSeries(sql, d) {
     const i = T.findIndex((t, k) => isW(t, 'GENERATE_SERIES') && isP(T[nx(T, k)], '('));
     if (i < 0) break;
     const prev = T[pv(T, i)];
-    if (!(isW(prev, 'FROM', 'JOIN') || isP(prev, ','))) throw new DErr(d === 'tsql' ? 'GENERATE_SERIES tablo döndüren bir fonksiyondur; FROM içinde kullan.' : 'Bu öykünmede generate_series yalnızca FROM içinde destekleniyor.', 'Örn: SELECT value FROM GENERATE_SERIES(1, 10)');
+    if (!(isW(prev, 'FROM', 'JOIN') || isP(prev, ','))) throw new DErr(d === 'tsql' ? 'GENERATE_SERIES tablo döndüren bir fonksiyondur; FROM içinde kullan.' : 'Bu taklit katmanında generate_series yalnızca FROM içinde destekleniyor.', 'Örn: SELECT value FROM GENERATE_SERIES(1, 10)');
     const o = nx(T, i), c = closeP(T, o); const A = argsOf(T, o, c).map(a => txt(a).trim());
     let k = nx(T, c), alias = null, col = null, end = c;
     if (isW(T[k], 'AS')) k = nx(T, k);
@@ -1656,7 +1824,7 @@ function revBqStarExcept(sql, db) {
   let pre = '', st = i; const p = pv(T, i); if (isP(T[p], '.')) { st = pv(T, p); pre = T[st].v + '.'; }
   const plain = txt(T.slice(0, i)) + '*' + txt(T.slice(c + 1));
   let names = null; try { const q = reverse(plain.replace(/;\s*$/, ''), 'bq', db); const stt = db.prepare(q); names = stt.getColumnNames(); stt.free(); } catch (er) { names = null; }
-  if (!names) throw new DErr('SELECT * EXCEPT bu öykünmede yalnızca ana sorguda destekleniyor.');
+  if (!names) throw new DErr('SELECT * EXCEPT bu taklit katmanında yalnızca ana sorguda destekleniyor.');
   const keep = names.filter(n => !ex.includes(n.toLowerCase())); void D;
   return txt(T.slice(0, st)) + keep.map(n => pre + q2(n)).join(', ') + txt(T.slice(c + 1));
 }
@@ -1672,7 +1840,7 @@ function revAnyAll(sql) {
     const agg = (f, empty) => `(WITH __aa(__v) AS (${q}) SELECT ${empty ? `CASE WHEN COUNT(*) = 0 THEN ${empty} ELSE ${f}(__v) END` : `${f}(__v)`} FROM __aa)`;
     if (op === '=' && !all) rep = `IN (${q})`;
     else if ((op === '<>' || op === '!=') && all) rep = `NOT IN (${q})`;
-    else if (op === '=' || op === '<>' || op === '!=') throw new DErr(`${op} ${T[i].u} bu öykünmede desteklenmiyor.`, 'Eşdeğerini IN / NOT IN veya EXISTS ile yaz.');
+    else if (op === '=' || op === '<>' || op === '!=') throw new DErr(`${op} ${T[i].u} bu taklit katmanında desteklenmiyor.`, 'Eşdeğerini IN / NOT IN veya EXISTS ile yaz.');
     else if (all) rep = op[0] === '>' ? `${op} ${agg('MAX', '-1e308')}` : `${op} ${agg('MIN', 'char(1114111)')}`;
     else rep = op[0] === '>' ? `${op} ${agg('MIN')}` : `${op} ${agg('MAX')}`;
     sql = txt(T.slice(0, pv(T, i))) + rep + txt(T.slice(c + 1));
@@ -1735,7 +1903,7 @@ function revConnectBy(sql) {
     return txt(T.slice(0, sel)) + `WITH RECURSIVE __cb(__lvl) AS (SELECT 1 UNION ALL SELECT __lvl + 1 FROM __cb WHERE __lvl < ${lim}) SELECT ${lst} FROM __cb` + (whereTxt ? ' WHERE ' + whereTxt.replace(/\bLEVEL\b/gi, '__lvl') : '') + (orderTxt ? ' ' + orderTxt.replace(/\bLEVEL\b/gi, '__lvl') : '') + txt(T.slice(end));
   }
   const fm = fromTxt.match(/^([\w.]+)(?:\s+(?:AS\s+)?(\w+))?$/i);
-  if (!fm) throw new DErr('Bu CONNECT BY biçimi öykünmede desteklenmiyor (tek tablo olmalı).');
+  if (!fm) throw new DErr('Bu CONNECT BY biçimi taklit katmanında desteklenmiyor (tek tablo olmalı).');
   const tbl = fm[1], al = fm[2] || fm[1].split('.').pop();
   const strip = x => x.replace(new RegExp('\\b' + al + '\\s*\\.\\s*', 'gi'), '');
   let pc = strip(cond), parentCol, childCol;
@@ -1785,6 +1953,16 @@ function revBqQualify(sql, db) {
 }
 
 /* Tek bir ifadeyi SQLite'a çevir (veritabanı gerektirmeyen adımlar) */
+/* case_sensitive_like açıkken ILIKE, iki tarafı küçülterek taklit edilir */
+function revIlike(sql) {
+  let T = rt(sql);
+  for (let g = 0; g < 40; g++) {
+    const i = T.findIndex(t => isW(t, 'ILIKE')); if (i < 0) break;
+    const pe0 = pv(T, i); const neg = isW(T[pe0], 'NOT'); const le = neg ? pv(T, pe0) : pe0; const ls = primStartBack(T, le); const rs = nx(T, i); const re = primEndFwd(T, rs);
+    T = rt(txt(T.slice(0, ls)) + `lower(${txt(T.slice(ls, le + 1))})${neg ? ' NOT' : ''} LIKE lower(${txt(T.slice(rs, re + 1))})` + txt(T.slice(re + 1)));
+  }
+  return txt(T);
+}
 function revSimple(sql, d, ctx) {
   let s = sql;
   if (d === 'sqlite') return s;
@@ -1796,7 +1974,7 @@ function revSimple(sql, d, ctx) {
     s = s.replace(/\bWITH\s+SCHEMABINDING\b/gi, '');
     s = s.replace(/\bNEXT\s+VALUE\s+FOR\s+\[?(\w+)\]?(\s+OVER\s*\([^)]*\))?/gi, "seq_next_('$1')");
     s = revTsqlTvf(s);
-    if (/^\s*CREATE\s+(UNIQUE\s+)?\s*COLUMNSTORE\s+INDEX/i.test(s)) return "SELECT 'Columnstore indeksi öykünmede sembolik olarak oluşturuldu' AS bilgi WHERE 0";
+    if (/^\s*CREATE\s+(UNIQUE\s+)?\s*COLUMNSTORE\s+INDEX/i.test(s)) return "SELECT 'Columnstore indeksi taklit katmanında sembolik olarak oluşturuldu' AS bilgi WHERE 0";
     if (/\/\s*\(?\s*0+(\.0+)?\s*\)?(?![\d.\w])/.test(s.replace(/'(?:[^']|'')*'/g, "''"))) throw new DErr('Msg 8134, Level 16, State 1: Divide by zero error encountered.', 'Sıfıra bölme hatası. Paydayı NULLIF(payda, 0) ile koruyabilirsin.');
   }
   if (d === 'bq') {
@@ -1808,7 +1986,8 @@ function revSimple(sql, d, ctx) {
   s = revInfoSchema(s);
   s = revValuesAlias(s);
   s = revPercentile(s);
-  if (d === 'pg') s = revPgCast(s).replace(/\bILIKE\b/gi, 'LIKE');
+  if (d === 'pg') s = revIlike(revPgCast(s));
+  if (d === 'pg') s = s.replace(/\bctid\b/gi, 'rowid');
   if (d === 'pg') s = revPgRegex(s);
   if (d === 'pg' || d === 'tsql') s = revGenSeries(s, d);
   if (d === 'oracle') s = s.replace(/\b(\w+)\s*\.\s*NEXTVAL\b/gi, "seq_next_('$1')").replace(/\b(\w+)\s*\.\s*CURRVAL\b/gi, "seq_curr_('$1')");
@@ -1860,7 +2039,7 @@ function revLateral(sql) {
       const a = nx(T, on);
       if (isW(T[a], 'TRUE')) tail = a + 1;
       else if (T[a] && T[a].v === '1' && isP(T[nx(T, a)], '=') && T[nx(T, nx(T, a))] && T[nx(T, nx(T, a))].v === '1') tail = nx(T, nx(T, a)) + 1;
-      else throw new DErr('Bu öykünmede LATERAL birleşimi yalnızca ON TRUE ile destekleniyor.', 'İlişkili koşulu alt sorgunun WHERE kısmına yaz, birleşimi ON TRUE ile kapat.');
+      else throw new DErr('Bu taklit katmanında LATERAL birleşimi yalnızca ON TRUE ile destekleniyor.', 'İlişkili koşulu alt sorgunun WHERE kısmına yaz, birleşimi ON TRUE ile kapat.');
     }
     T = rt(txt(T.slice(0, startI)) + (outer ? 'OUTER APPLY (' : 'CROSS APPLY (') + txt(T.slice(o + 1, c)) + ')' + txt(T.slice(c + 1, endI + 1)) + txt(T.slice(tail)));
   }
@@ -2096,7 +2275,7 @@ function tsqlRun(db, sql, opt) {
         if (n === '@@cursor_rows') { out += String(env.cursorRows || 0); continue; }
         if (n === '@@error') { out += ctx && ctx.err ? String(ctx.err.number) : '0'; continue; }
         if (n === '@@identity') { out += 'last_insert_rowid()'; continue; }
-        if (n === '@@version') { out += "'Microsoft SQL Server 2022 (Kesit SQL öykünmesi)'"; continue; }
+        if (n === '@@version') { out += "'Microsoft SQL Server 2022 (Kesit SQL taklitsi)'"; continue; }
         if (n === '@@servername') { out += "'SQLPATIKA'"; continue; }
         if (sc.tables[n]) { out += sc.tables[n]; continue; }
         if (!(n in sc.vars)) throw new DErr(`Msg 137, Level 15: Must declare the scalar variable "${t.v}".`, 'Değişkeni önce DECLARE ile tanımla.');
@@ -2155,7 +2334,7 @@ function tsqlRun(db, sql, opt) {
     switch (n.t) {
       case 'go': return;
       case 'noop': { const s = txt(n.S).toUpperCase(); if (/NOCOUNT\s+ON/.test(s)) env.nocount = true; if (/NOCOUNT\s+OFF/.test(s)) env.nocount = false; return; }
-      case 'use': R.messages.push('Veritabanı bağlamı değiştirildi (öykünmede tek veritabanı var: anadolu).'); return;
+      case 'use': R.messages.push('Veritabanı bağlamı değiştirildi (taklit katmanında tek veritabanı var: anadolu).'); return;
       case 'block': return execNodes(n.body, sc, ctx);
       case 'if': if (evalCond(n.cond, sc, ctx)) execNode(n.then, sc, ctx); else if (n.els) execNode(n.els, sc, ctx); return;
       case 'while': { let g = 0; while (evalCond(n.cond, sc, ctx)) { if (++g > 5000) throw new DErr('WHILE döngüsü 5000 turu aştı; sonsuz döngü olabilir.'); try { execNode(n.body, sc, ctx); } catch (s) { if (s instanceof Signal && s.kind === 'break') break; if (s instanceof Signal && s.kind === 'continue') continue; throw s; } } return; }
@@ -2273,7 +2452,7 @@ function tsqlRun(db, sql, opt) {
     const text = subst(S, sc, ctx);
     if (/^\s*(CREATE|DROP|ALTER)\s+SEQUENCE\b/i.test(text)) { const msg = seqDdl(text, env, 'tsql'); if (msg && msg !== 'skip') R.messages.push(msg); return; }
     if (/\bNEXT\s+VALUE\s+FOR\b/i.test(text) && /\b(TOP|OFFSET)\b/i.test(text)) throw new DErr('Msg 11739, Level 15: NEXT VALUE FOR function cannot be used if ROWCOUNT option has been set, or the query contains TOP or OFFSET.', 'NEXT VALUE FOR, TOP veya OFFSET içeren sorgularda kullanılamaz; önce satırları geçici tabloya al ya da WHERE ile süz.');
-    if (/\bWHERE\s+CURRENT\s+OF\b/i.test(text)) throw new DErr('WHERE CURRENT OF bu öykünmede desteklenmiyor.', 'İmleçten okuduğun anahtar değeriyle güncelle: UPDATE ... WHERE id = @id');
+    if (/\bWHERE\s+CURRENT\s+OF\b/i.test(text)) throw new DErr('WHERE CURRENT OF bu taklit katmanında desteklenmiyor.', 'İmleçten okuduğun anahtar değeriyle güncelle: UPDATE ... WHERE id = @id');
     { const m = text.match(/^\s*DROP\s+(PROC|PROCEDURE|FUNCTION)\s+(IF\s+EXISTS\s+)?(?:dbo\s*\.\s*)?\[?(\w+)\]?/i); if (m) { const nm = m[3].toLowerCase(); const had = env.procs[nm] || env.tvfs[nm] || env.funcs[nm.toUpperCase()]; delete env.procs[nm]; delete env.tvfs[nm]; delete env.funcs[nm.toUpperCase()]; if (!had && !m[2]) throw new DErr(`Msg 3701, Level 11: Cannot drop the ${m[1].toLowerCase().startsWith('f') ? 'function' : 'procedure'} '${m[3]}', because it does not exist or you do not have permission.`); return; } }
     { const m = text.match(/^\s*(CREATE\s+OR\s+ALTER|ALTER)\s+VIEW\s+(?:dbo\s*\.\s*)?(\w+)/i); if (m) { db.exec(`DROP VIEW IF EXISTS ${m[2]}`); const q = toSqlite(text.replace(/^\s*(CREATE\s+OR\s+ALTER|ALTER)\s+VIEW/i, 'CREATE VIEW'), ctx); R.translated.push(q); db.exec(q); R.messages.push('Komutlar başarıyla tamamlandı.'); return; } }
     if (/^\s*MERGE\b/i.test(text) || (/^\s*WITH\b/i.test(text) && (() => { const TT = rt(text); const DD = depthAt(TT); return TT.some((t, z) => DD[z] === 0 && isW(t, 'MERGE')); })())) return doMerge(text, sc, ctx);
@@ -2474,6 +2653,9 @@ function runDialect(db, sql, d, opt) {
   const env0 = opt.env || (opt.env = { procs: {}, funcs: {}, tvfs: {}, tran: 0, nocount: false }); env0.seqs = env0.seqs || {}; env0.fetchStatus = -1;
   if (d !== 'sqlite') bindSeq(db, env0, d);
   if (d === 'oracle') oracleBlankToNull(db);
+  LINT_DB = db;
+  /* LIKE: PostgreSQL, Oracle ve BigQuery'de büyük/küçük harf duyarlıdır */
+  try { db.run('PRAGMA case_sensitive_like=' + (d === 'pg' || d === 'oracle' || d === 'bq' ? 'ON' : 'OFF')); } catch (e) { /* yok */ }
   const t0 = (typeof performance !== 'undefined' ? performance : Date).now();
   const res = { sets: [], messages: [], changes: 0, translated: [], d };
   try {
@@ -2641,8 +2823,12 @@ function convertStyle(v, style) {
   return `${p.y}-${p2(p.mo)}-${p2(p.d)}`;
 }
 function likeToRe(pat) { let s = ''; for (let i = 0; i < pat.length; i++) { const c = pat[i]; if (c === '%') s += '.*'; else if (c === '_') s += '.'; else if (c === '[') { const j = pat.indexOf(']', i); s += pat.slice(i, j + 1); i = j; } else s += c.replace(/[.*+?^${}()|\\]/g, '\\$&'); } return new RegExp('^' + s, 'i'); }
+function trUpper(s) { if (s === null || s === undefined) return s === undefined ? null : s; s = String(s); return (s.includes('@') ? s : s.replace(/i/g, 'İ').replace(/ı/g, 'I')).toUpperCase(); }
+function trLower(s) { if (s === null || s === undefined) return s === undefined ? null : s; s = String(s); return (s.includes('@') ? s.replace(/İ/g, 'i') : s.replace(/İ/g, 'i').replace(/I/g, 'ı')).toLowerCase(); }
 function register(db) {
   const F = (name, fn, variadic) => { if (variadic) Object.defineProperty(fn, 'length', { value: -1 }); db.create_function(name, fn); };
+  /* SQLite'ın UPPER ve LOWER'ı yalnız ASCII dönüştürür; Türkçe metinler bozulmasın diye yerine yazılır. E-posta içeren metinlerde i/I İngilizce kurala göre çevrilir. */
+  F('upper', s => trUpper(s)); F('lower', s => trLower(s));
   F('dateadd_', (pt, n, v) => dateadd(part(pt), n, v));
   F('substring_index_', (str, delim, cnt) => { if (str === null || delim === null || cnt === null) return null; str = String(str); delim = String(delim); const n = Math.trunc(Number(cnt)); if (!delim || !n) return ''; const parts = str.split(delim); return n > 0 ? parts.slice(0, n).join(delim) : parts.slice(n).join(delim); });
   F('datediff_', (pt, a, b) => datediff(part(pt), a, b));

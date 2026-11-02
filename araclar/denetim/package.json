@@ -1,5 +1,5 @@
 {
-  "name": "aud",
+  "name": "kesit-sql-denetim",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -10,6 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "sql.js": "^1.10.3"
-  }
+    "sql.js": "^1.10.3",
+    "@electric-sql/pglite": "0.2.17"
+  },
+  "private": true
 }
