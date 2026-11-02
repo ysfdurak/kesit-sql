@@ -47,7 +47,7 @@ ORDER BY urun DESC;</pre>
 `,
   ex: [
     mc('<p>Aşağıdakilerden hangisi <b>metin sabiti</b> için doğru yazımdır?</p>', ['<code>"Ankara"</code>', "<code>'Ankara'</code>", '<code>[Ankara]</code>', '<code>Ankara</code>'], 1),
-    mc("<p>Metin içinde tek tırnak geçen <b>Ali'nin</b> ifadesi SQL'de nasıl yazılır?</p>", ["<code>'Ali'nin'</code>", "<code>'Ali''nin'</code>", "<code>\"Ali'nin\"</code>", "<code>'Ali\\\\'nin'</code> (tüm programlarda)"], 1, 'Standart SQL\'de tırnak iki kez yazılarak kaçırılır.'),
+    mc("<p>Metin içinde tek tırnak geçen <b>Ali'nin</b> ifadesi SQL'de nasıl yazılır?</p>", ["<code>'Ali'nin'</code>", "<code>'Ali''nin'</code>", "<code>\"Ali'nin\"</code>", "<code>'Ali\\\\'nin'</code> (tüm SQL türlerinde)"], 1, 'Standart SQL\'de tırnak iki kez yazılarak kaçırılır.'),
     sq('Yorum satırı ekleyerek Ankara\'daki departmanların adını getir. (Yorum içeriği serbest.)', "-- Ankara departmanları\nSELECT name FROM departments WHERE city = 'Ankara';"),
     sq("Ürün adında tek tırnak geçen bir arama yap: adı <b>27\" Monitör</b> olan ürünün fiyatını getir (çift tırnak burada metnin parçasıdır).", "SELECT price FROM products WHERE name = '27\" Monitör';", { hint: 'Metin tek tırnak içinde olduğu için içindeki çift tırnak sorun değildir.' })
   ]
@@ -307,7 +307,7 @@ after('alter-drop', [{
 <table>
 <tr><th>Kısıt</th><th>Ne sağlar?</th></tr>
 <tr><td><code>NOT NULL</code></td><td>Değer boş olamaz</td></tr>
-<tr><td><code>UNIQUE</code></td><td>Değer tekrar edemez (NULL'lar çoğu programda birden fazla olabilir)</td></tr>
+<tr><td><code>UNIQUE</code></td><td>Değer tekrar edemez (NULL'lar çoğu SQL türünde birden fazla olabilir)</td></tr>
 <tr><td><code>PRIMARY KEY</code></td><td>NOT NULL + UNIQUE; satırın kimliği</td></tr>
 <tr><td><code>CHECK (koşul)</code></td><td>Koşulu sağlamayan değer reddedilir</td></tr>
 <tr><td><code>DEFAULT</code></td><td>Değer verilmezse kullanılacak varsayılan (kısıt değil, sütun özelliği)</td></tr>
@@ -333,10 +333,10 @@ INSERT INTO kampanya (kampanya_id, kod, indirim, baslangic, bitis) VALUES (2, 'H
 <tr><td><code>NO ACTION</code> / <code>RESTRICT</code> (varsayılan)</td><td>Bağlı satır varsa silme reddedilir</td></tr>
 <tr><td><code>ON DELETE CASCADE</code></td><td>Bağlı satırlar da silinir (sipariş silinince satırları)</td></tr>
 <tr><td><code>ON DELETE SET NULL</code></td><td>Bağlı satırların yabancı anahtarı NULL olur (yönetici ayrılınca)</td></tr>
-<tr><td><code>ON DELETE SET DEFAULT</code></td><td>Varsayılan değere döner (her programda yok)</td></tr>
+<tr><td><code>ON DELETE SET DEFAULT</code></td><td>Varsayılan değere döner (her SQL türünde yok)</td></tr>
 </table>
 ${NR("CREATE TABLE siparis_satiri (\n  satir_id   INT PRIMARY KEY,\n  siparis_id INT NOT NULL,\n  CONSTRAINT fk_satir_siparis FOREIGN KEY (siparis_id)\n    REFERENCES siparis (siparis_id) ON DELETE CASCADE\n);\n\n-- Kısıtı sonradan eklemek ve kaldırmak\nALTER TABLE products ADD CONSTRAINT ck_fiyat CHECK (price >= cost);\nALTER TABLE products DROP CONSTRAINT ck_fiyat;")}
-<div class="note"><b>Programlara göre</b>MySQL CHECK kısıtını 8.0.16'dan beri uygular; daha eski sürümler sessizce yok sayardı. Oracle'da NOT NULL yalnızca sütun düzeyinde (inline) yazılabilir ve kısıtlar <code>DEFERRABLE</code> yapılarak işlem sonunda denetlenebilir. BigQuery'de PRIMARY/FOREIGN KEY yalnızca bilgi amaçlıdır (NOT ENFORCED), UNIQUE ve CHECK yoktur.</div>
+<div class="note"><b>SQL türlerine göre</b>MySQL CHECK kısıtını 8.0.16'dan beri uygular; daha eski sürümler sessizce yok sayardı. Oracle'da NOT NULL yalnızca sütun düzeyinde (inline) yazılabilir ve kısıtlar <code>DEFERRABLE</code> yapılarak işlem sonunda denetlenebilir. BigQuery'de PRIMARY/FOREIGN KEY yalnızca bilgi amaçlıdır (NOT ENFORCED), UNIQUE ve CHECK yoktur.</div>
 <div class="tip"><b>Kısıtlara ad ver</b><code>CONSTRAINT ck_fiyat CHECK (...)</code> gibi adlandırılmış kısıtlar hata mesajlarında anlaşılır görünür ve kolayca kaldırılır.</div>
 `,
   ex: [
@@ -362,7 +362,7 @@ ${NR("CREATE VIEW v_kitap AS\nSELECT product_id, name, price, category\nFROM pro
 <h2>Materialized view (somut görünüm)</h2>
 <p>Normal görünüm her sorguda yeniden hesaplanır. <b>Materialized view</b> sonucu diskte saklar; okunması hızlıdır ama veriler değiştikçe <b>yenilenmesi</b> gerekir.</p>
 <table>
-<tr><th>Program</th><th>Nasıl?</th></tr>
+<tr><th>SQL türü</th><th>Nasıl?</th></tr>
 <tr><td>PostgreSQL</td><td><code>CREATE MATERIALIZED VIEW</code>, <code>REFRESH MATERIALIZED VIEW [CONCURRENTLY]</code></td></tr>
 <tr><td>Oracle</td><td><code>CREATE MATERIALIZED VIEW ... REFRESH FAST|COMPLETE ON COMMIT|DEMAND</code>, sorgu yeniden yazma (query rewrite)</td></tr>
 <tr><td>SQL Server</td><td><b>Indexed view</b>: <code>WITH SCHEMABINDING</code> ile görünüm + benzersiz kümelenmiş indeks; otomatik güncel tutulur</td></tr>
@@ -427,7 +427,7 @@ const certLessons = [{
   sum: 'INITCAP, LPAD, INSTR, SUBSTR; ROUND/TRUNC/MOD; MONTHS_BETWEEN, ADD_MONTHS, NEXT_DAY; NVL ailesi.',
   body: `
 <h2>Karakter fonksiyonları</h2>
-${ORA("SELECT INITCAP('ankara merkez')      AS initcap_,\n       LPAD('42', 5, '0')              AS lpad_,\n       RPAD('SQL', 6, '*')             AS rpad_,\n       SUBSTR('Patika', 2, 3)          AS substr_,\n       SUBSTR('Patika', -3)            AS sondan_3,\n       INSTR('banana', 'a', 1, 2)      AS ikinci_a,\n       LENGTH('Merhaba')               AS uzunluk,\n       TRIM('  x  ')                   AS trim_,\n       REPLACE('2024-12-31', '-', '/') AS replace_\nFROM dual;")}
+${ORA("SELECT INITCAP('ankara merkez')      AS initcap_,\n       LPAD('42', 5, '0')              AS lpad_,\n       RPAD('SQL', 6, '*')             AS rpad_,\n       SUBSTR('Kesit', 2, 3)          AS substr_,\n       SUBSTR('Kesit', -3)            AS sondan_3,\n       INSTR('banana', 'a', 1, 2)      AS ikinci_a,\n       LENGTH('Merhaba')               AS uzunluk,\n       TRIM('  x  ')                   AS trim_,\n       REPLACE('2024-12-31', '-', '/') AS replace_\nFROM dual;")}
 <ul>
 <li><code>SUBSTR(s, -3)</code> negatif başlangıçta sondan sayar.</li>
 <li><code>INSTR(s, aranan, başlangıç, kaçıncı)</code>: başlangıç negatifse sondan geriye arar; bulamazsa 0.</li>
@@ -666,7 +666,7 @@ ${NR("-- En çok CPU kullanan sorgular (Query Store)\nSELECT TOP (10) q.query_id
   sum: 'Ask–Prepare–Process–Analyze–Share–Act döngüsünde SQL; temizleme ve doğrulama kalıpları.',
   body: `
 <h2>Sertifikanın SQL tarafı</h2>
-<p>Google'ın Coursera'daki veri analitiği sertifikası analiz sürecini altı adımda anlatır: <b>Sor, Hazırla, İşle, Analiz et, Paylaş, Harekete geç</b>. SQL özellikle <b>İşle</b> (temizleme) ve <b>Analiz et</b> adımlarında BigQuery üzerinden kullanılır. Programı BigQuery'ye alıp aşağıdaki kalıpları çalıştırabilirsin.</p>
+<p>Google'ın Coursera'daki veri analitiği sertifikası analiz sürecini altı adımda anlatır: <b>Sor, Hazırla, İşle, Analiz et, Paylaş, Harekete geç</b>. SQL özellikle <b>İşle</b> (temizleme) ve <b>Analiz et</b> adımlarında BigQuery üzerinden kullanılır. SQL türü BigQuery'ye alıp aşağıdaki kalıpları çalıştırabilirsin.</p>
 <h2>İşle: temizleme kalıpları</h2>
 <table>
 <tr><th>Amaç</th><th>BigQuery kalıbı</th></tr>
@@ -689,7 +689,7 @@ ${CODE("SELECT c.segment,\n       COUNT(DISTINCT o.customer_id) AS musteri,\n   
 <li>Kategorik sütunlarda <code>SELECT DISTINCT</code> ile yazım farklarını gör (İstanbul / ISTANBUL / istanbul).</li>
 <li>Sonucu bir kaynakla (finans raporu) sağla.</li>
 </ul>
-<div class="note"><b>Programın diğer kısımları</b>Sertifika ayrıca tablolama (spreadsheet), R programlama ve Tableau ile görselleştirmeyi kapsar; bunlar bu uygulamanın dışında.</div>
+<div class="note"><b>SQL türünün diğer kısımları</b>Sertifika ayrıca tablolama (spreadsheet), R programlama ve Tableau ile görselleştirmeyi kapsar; bunlar bu uygulamanın dışında.</div>
 `,
   ex: [
     { t: 'sql', base: 'bq', dl: ['bq'], q: '<p>BigQuery yazımıyla: <code>raw_signups</code>\'ta e-postası boş olmayan satırlar için kırpılmış ve küçük harfe çevrilmiş e-postaların kaç farklı değer olduğunu ve toplam satırı getir: <code>satir</code>, <code>farkli_email</code>.</p>', sol: 'SELECT COUNT(*) AS satir, COUNT(DISTINCT LOWER(TRIM(email))) AS farkli_email FROM raw_signups WHERE email IS NOT NULL;' },
@@ -783,7 +783,7 @@ ${CODE("SELECT TOP (3) WITH TIES name, price\nFROM dbo.products\nORDER BY price 
 const iR = L.findIndex(l => l.id === 'oracle-1z0');
 L.splice(iR < 0 ? L.length : iR + 1, 0, ...certLessons);
 
-/* ======================= Patikalara ekle ======================= */
+/* ======================= Öğrenme yollarına ekle ======================= */
 const P = window.SQLP_PATHS; const PA = {}; P.forEach(p => PA[p.id] = p);
 const ins = (pid, afterId, ids) => { const p = PA[pid]; if (!p) return; ids = ids.filter(x => !p.lessons.includes(x)); const i = p.lessons.indexOf(afterId); p.lessons.splice(i < 0 ? p.lessons.length : i + 1, 0, ...ids); };
 const compAdd = (pid, title, ids) => { const p = PA[pid]; if (!p || !p.comp) return; const c = p.comp.find(x => x.t === title); if (c) ids.forEach(id => { if (!c.l.includes(id)) c.l.push(id); }); };

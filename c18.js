@@ -1,4 +1,4 @@
-/* Kesit SQL içerik 18: Kanat Havayolları veri seti üzerinde ayrı bir patika
+/* Kesit SQL içerik 18: Kanat Havayolları veri seti üzerinde ayrı bir öğrenme yolu
    Temelden ileriye 10 ders, bitirme projesi ve alıştırma bankası soruları. */
 (function () {
 const L = window.SQLP_LESSONS;
@@ -111,9 +111,9 @@ GROUP BY tier;</pre>
   sum: 'İki zaman arasındaki dakika farkı, saate ve aya göre gruplama, zamanında kalkış oranı ve rezervasyon öncesi gün sayısı.',
   body: `
 <h2>İki zaman arasındaki fark</h2>
-<p>Havayolunda her şey dakikayla ölçülür. Kalkış gecikmesi = gerçek kalkış − planlanan kalkış. Her programın yazımı farklıdır:</p>
+<p>Havayolunda her şey dakikayla ölçülür. Kalkış gecikmesi = gerçek kalkış − planlanan kalkış. Her SQL türünün yazımı farklıdır:</p>
 <table>
-<tr><th>Program</th><th>Dakika farkı</th></tr>
+<tr><th>SQL türü</th><th>Dakika farkı</th></tr>
 <tr><td>SQL Server</td><td><code>DATEDIFF(minute, sched_dep, actual_dep)</code></td></tr>
 <tr><td>PostgreSQL</td><td><code>EXTRACT(EPOCH FROM (actual_dep - sched_dep)) / 60</code></td></tr>
 <tr><td>MySQL</td><td><code>TIMESTAMPDIFF(MINUTE, sched_dep, actual_dep)</code></td></tr>
@@ -139,7 +139,7 @@ WHERE f.actual_dep IS NOT NULL;</pre>
   ex: [
     sq('2024-12-24 günündeki ilk 5 uçuşun (planlanan kalkış sırasıyla) kalkış gecikmesini dakika olarak getir: <code>flight_id</code>, <code>flight_no</code>, <code>gecikme</code>.',
       `SELECT f.flight_id, f.flight_no, ${DLY} AS gecikme FROM hv_flights f WHERE f.sched_dep >= '2024-12-24' AND f.sched_dep < '2024-12-25' ORDER BY f.sched_dep, f.flight_id LIMIT 5;`,
-      { ord: true, hint: 'Gerçek kalkış − planlanan kalkış, dakika cinsinden. Programına uygun yazım ders tablosunda.' }),
+      { ord: true, hint: 'Gerçek kalkış − planlanan kalkış, dakika cinsinden. SQL türüne uygun yazım ders tablosunda.' }),
     sq('Ay bazında ortalama kalkış gecikmesini (1 basamak) getir; iptal edilen uçuşlar hariç: <code>ay</code> (YYYY-AA), <code>ort_gecikme</code>. Aya göre sırala.',
       `SELECT strftime('%Y-%m', f.sched_dep) AS ay, ROUND(AVG(${DLY}), 1) AS ort_gecikme FROM hv_flights f WHERE f.actual_dep IS NOT NULL GROUP BY strftime('%Y-%m', f.sched_dep) ORDER BY ay;`,
       { ord: true }),
@@ -472,7 +472,7 @@ WHERE origin = 'ADB' AND dest = 'FRA';</pre>
 const at = L.findIndex(l => l.id === 'proje-temel');
 L.splice(at < 0 ? L.length : at + 1, 0, ...lessons);
 
-/* ---------- Patika ---------- */
+/* ---------- Öğrenme yolu ---------- */
 const P = window.SQLP_PATHS = window.SQLP_PATHS || [];
 P.push({
   id: 'hava', name: 'Kanat Havayolları ile SQL', short: 'KH', color: '#1D6FB8',

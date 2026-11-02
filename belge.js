@@ -1,5 +1,5 @@
-/* Kesit SQL: patika tamamlama belgesi
-   - Bir patikanın çekirdek dersleri bitince patika sayfasında belge paneli açılır.
+/* Kesit SQL: öğrenme yolu tamamlama belgesi
+   - Bir öğrenme yolunun çekirdek dersleri bitince öğrenme yolu sayfasında belge paneli açılır.
    - Belge tamamen tarayıcıda çizilir (canvas). Ad yalnızca kullanıcının tarayıcısında saklanır.
    - Hesap olmadığı için belge doğrulanabilir değildir; üzerinde bu açıkça yazar. */
 (function () {
@@ -41,7 +41,7 @@
     const c = canvas.getContext('2d');
     const INK = '#141C27', MUTED = '#5A6576', LINE = '#D8DEE6', ACC = '#D3352C', BG = '#FBFAF7';
     c.fillStyle = BG; c.fillRect(0, 0, W, H);
-    // kenarlık ve patika rengi şeridi
+    // kenarlık ve öğrenme yolu rengi şeridi
     c.fillStyle = o.color || ACC; c.fillRect(0, 0, 18, H);
     c.strokeStyle = LINE; c.lineWidth = 2; c.strokeRect(56, 56, W - 112, H - 112);
     c.strokeStyle = INK; c.lineWidth = 1; c.strokeRect(70, 70, W - 140, H - 140);
@@ -66,7 +66,7 @@
     c.fillStyle = MUTED; c.font = '400 32px ' + FB; c.fillText('Kesit SQL\'de', W / 2, 622);
     const ps = fit(c, o.path, 1240, 54, '700', FD);
     c.fillStyle = INK; c.font = '700 ' + ps + 'px ' + FD; c.fillText(o.path, W / 2, 686);
-    c.fillStyle = MUTED; c.font = '400 32px ' + FB; c.fillText('patikasının tüm çekirdek derslerini tamamladığını gösterir.', W / 2, 748);
+    c.fillStyle = MUTED; c.font = '400 32px ' + FB; c.fillText('öğrenme yolunun tüm çekirdek derslerini tamamladığını gösterir.', W / 2, 748);
     // sayılar
     const stats = [[o.lessons + ' ders', 'tamamlandı'], [o.exercises + ' alıştırma', 'çözüldü'], ['~' + o.hours + ' saat', 'çalışma']];
     const bw = 300, gap = 36, sx = W / 2 - (bw * 3 + gap * 2) / 2;
@@ -104,7 +104,7 @@
     const d = data(pid); if (!d || !d.complete) return '';
     const name = (d.rec && d.rec.name) || (app().getP().certName || '');
     let h = '<section class="panel cert-panel"><div class="sec-head"><div><span class="eyebrow">Tebrikler</span><h2 style="margin:2px 0 0">Tamamlama belgen hazır</h2></div>' + (d.rec ? '<span class="chip okc">' + esc(trDate(d.rec.date)) + '</span>' : '') + '</div>';
-    h += '<p class="muted" style="margin:0">' + esc(d.name) + ' patikasının ' + d.lessons + ' çekirdek dersini bitirdin. Belgede görünecek adını yaz; ad yalnızca bu tarayıcıda saklanır.</p>';
+    h += '<p class="muted" style="margin:0">' + esc(d.name) + ' öğrenme yolunun ' + d.lessons + ' çekirdek dersini bitirdin. Belgede görünecek adını yaz; ad yalnızca bu tarayıcıda saklanır.</p>';
     h += '<form class="cert-form" data-cert-form="' + esc(pid) + '"><input class="input" name="ad" maxlength="60" required autocomplete="name" aria-label="Belgede görünecek ad" placeholder="Ad Soyad" value="' + esc(name) + '"><button class="btn pri" type="submit">' + (d.rec ? 'Belgeyi güncelle' : 'Belgeyi oluştur') + '</button></form>';
     h += '<div class="cert-out" id="certOut"' + (d.rec ? '' : ' hidden') + '><canvas id="certCanvas" aria-label="Tamamlama belgesi önizlemesi"></canvas><div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn" data-cert="png" data-p="' + esc(pid) + '">Görsel olarak indir (PNG)</button><button class="btn" data-cert="print" data-p="' + esc(pid) + '">Yazdır / PDF kaydet</button><button class="btn" data-cert="li-share" data-p="' + esc(pid) + '">LinkedIn\'de paylaş</button><button class="btn ghost" data-cert="li-profile" data-p="' + esc(pid) + '">LinkedIn profiline ekle</button></div>';
     h += '<p class="muted" style="margin:0;font-size:.82rem">LinkedIn paylaşımında görseli kendin eklemen gerekir: önce PNG olarak indir, paylaşım penceresinde görsel ekle. “Profiline ekle” LinkedIn\'in Lisanslar ve sertifikalar formunu doldurulmuş olarak açar. Bu belge resmî bir sertifika değildir.</p></div></section>';

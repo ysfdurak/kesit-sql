@@ -57,7 +57,7 @@ X('performans-lab', [
   sq('Bileşik indeks ve sorgu: <code>bank_txns</code> üzerinde <code>(txn_type, merchant_category)</code> sütunlarına <code>ix_tur_kategori</code> indeksini oluştur. Ardından kart harcamalarında kategori başına işlem sayısının en yüksek 3 kategorisini getir: <code>merchant_category</code>, <code>islem</code>.',
     "CREATE INDEX ix_tur_kategori ON bank_txns (txn_type, merchant_category);\nSELECT merchant_category, COUNT(*) AS islem FROM bank_txns WHERE txn_type = 'kart_harcama' GROUP BY merchant_category ORDER BY islem DESC, merchant_category LIMIT 3;",
     { ord: true, dl: ['sqlite', 'tsql', 'pg', 'mysql', 'oracle'] }),
-  sq('SQLite\'ta kaplayan indeksi gör: <code>(channel, amount)</code> sütunlarına <code>ix_kanal_tutar</code> indeksini oluştur, sonra <code>EXPLAIN QUERY PLAN</code> ile <code>SELECT SUM(amount) FROM bank_txns WHERE channel = \'mobil\'</code> sorgusunun planını getir. Planda <b>COVERING INDEX</b> ifadesini ara.',
+  sq('SQLite\'ta kapsayan indeks (covering index)i gör: <code>(channel, amount)</code> sütunlarına <code>ix_kanal_tutar</code> indeksini oluştur, sonra <code>EXPLAIN QUERY PLAN</code> ile <code>SELECT SUM(amount) FROM bank_txns WHERE channel = \'mobil\'</code> sorgusunun planını getir. Planda <b>COVERING INDEX</b> ifadesini ara.',
     "CREATE INDEX ix_kanal_tutar ON bank_txns (channel, amount);\nEXPLAIN QUERY PLAN SELECT SUM(amount) FROM bank_txns WHERE channel = 'mobil';",
     { base: 'sqlite', dl: ['sqlite'] })
 ]);
@@ -208,7 +208,7 @@ X('bq-maliyet', [
 X('dwh-bulut', [
   sq('Madalyon katmanları: bronze = <code>raw_signups</code>. Silver CTE\'de kayıtları tekilleştir (<code>id</code> başına bir satır) ve şehri temizle (<code>TRIM</code> + <code>UPPER</code>; boş şehir NULL kalsın). Gold katmanında temiz şehir başına kayıt sayısı: <code>sehir</code>, <code>kayit</code>. Kayda göre azalan.',
     "WITH silver AS (\n  SELECT id, MAX(UPPER(TRIM(city))) AS sehir FROM raw_signups GROUP BY id\n)\nSELECT sehir, COUNT(*) AS kayit FROM silver WHERE sehir IS NOT NULL GROUP BY sehir ORDER BY kayit DESC, sehir;",
-    { ord: true, dl: ['sqlite'], hint: 'Türkçe İ/ı harflerinde UPPER davranışı programdan programa değişir; bu yüzden alıştırma SQLite içindir.' }),
+    { ord: true, dl: ['sqlite'], hint: 'Türkçe İ/ı harflerinde UPPER davranışı SQL türüne göre değişir; bu yüzden alıştırma SQLite içindir.' }),
   sq('Klon taklidi: test için <code>orders_test</code> adında <code>orders</code> kopyası oluştur ve yalnızca kopyadan iptal edilen siparişleri sil. Asıl tablonun etkilenmediğini doğrula.',
     "CREATE TABLE orders_test AS SELECT * FROM orders;\nDELETE FROM orders_test WHERE status = 'cancelled';",
     { dl: ['sqlite', 'pg', 'mysql', 'oracle', 'bq'], check: 'SELECT (SELECT COUNT(*) FROM orders) AS asil, (SELECT COUNT(*) FROM orders_test) AS test' }),

@@ -1,4 +1,4 @@
-/* Kesit SQL içerik 4: Veri Analisti, Veri Bilimi, Veri Mühendisliği modülleri + patikalar, seviye testi, sözlük */
+/* Kesit SQL içerik 4: Veri Analisti, Veri Bilimi, Veri Mühendisliği modülleri + öğrenme yolları, seviye testi, sözlük */
 const REV = 'oi.quantity * oi.unit_price * (1 - oi.discount)';
 (window.SQLP_LESSONS = window.SQLP_LESSONS || []).push(
 
@@ -29,7 +29,7 @@ JOIN order_items oi ON oi.order_id = o.order_id
 WHERE o.status = 'delivered' AND o.order_date >= '2024-01-01'
 GROUP BY ay
 ORDER BY ay;</pre>
-<div class="tip"><b>Kontrol toplamı</b>Her KPI sorgusunu bilinen bir rakamla (finans raporu, önceki dashboard) karşılaştır. Farklıysa önce tanımı, sonra JOIN tanecik düzeyini kontrol et.</div>
+<div class="tip"><b>Kontrol toplamı</b>Her KPI sorgusunu bilinen bir rakamla (finans raporu, önceki dashboard) karşılaştır. Farklıysa önce tanımı, sonra JOIN grain düzeyini kontrol et.</div>
 `,
   ex: [
     { t: 'sql', q: '<p>2024 yılında teslim edilmiş siparişlerin <b>ortalama sepet tutarını</b> (AOV) hesapla, 2 basamağa yuvarla. Tek değer.</p>', sol: `SELECT ROUND(SUM(${REV}) / COUNT(DISTINCT o.order_id), 2) FROM orders o JOIN order_items oi ON oi.order_id = o.order_id WHERE o.status = 'delivered' AND o.order_date >= '2024-01-01' AND o.order_date < '2025-01-01';` },
@@ -156,7 +156,7 @@ ORDER BY b.ay;</pre>
   JOIN orders o ON o.order_id = oi.order_id
   JOIN products p ON p.product_id = oi.product_id
   WHERE o.status = 'delivered'
-  GROUP BY p.product_id
+  GROUP BY p.product_id, p.name
 ),
 k AS (
   SELECT name, ciro,
@@ -413,7 +413,7 @@ WHERE p.price > q3 + 1.5 * (q3 - q1) OR p.price < q1 - 1.5 * (q3 - q1);</pre>
 <pre class="code">WITH d AS (
   SELECT p.price AS x, COALESCE(SUM(oi.quantity), 0) AS y
   FROM products p LEFT JOIN order_items oi ON oi.product_id = p.product_id
-  GROUP BY p.product_id
+  GROUP BY p.product_id, p.price
 )
 SELECT ROUND(
   (COUNT(*) * SUM(x * y) - SUM(x) * SUM(y)) /
@@ -753,7 +753,7 @@ SELECT * FROM raw.events;</pre>
 window.SQLP_PATHS = [
   { id: 'temel', name: 'SQL Temelleri', short: 'SQL', color: 'var(--l3)',
     desc: 'Hiç bilmeyenden ileri seviyeye: tarih, sorgular, JOIN, alt sorgu, CTE ve pencere fonksiyonları.',
-    long: 'SQL\'i hiç bilmiyorsan buradan başla. Veritabanı kavramından pencere fonksiyonlarına kadar her rolün ortak dilini öğrenirsin. Diğer patikaların büyük kısmı bu derslerle ortaktır.',
+    long: 'SQL\'i hiç bilmiyorsan buradan başla. Veritabanı kavramından pencere fonksiyonlarına kadar her rolün ortak dilini öğrenirsin. Diğer öğrenme yollarının büyük kısmı bu derslerle ortaktır.',
     skills: ['SELECT', 'Filtreleme', 'Gruplama', 'JOIN', 'Alt sorgu', 'CTE', 'Pencere fonksiyonları'],
     lessons: ['tarih','veritabani','select','alias-distinct','where','mantik','in-between-like','null','order-limit','aggregate','group-by','having','metin','sayi-tip','tarih-fn','case','coalesce','sorgu-sirasi','iliskiler','inner-join','left-join','right-full-join','self-cross-join','coklu-join','set-ops','subquery','correlated','cte','recursive-cte','window-intro','ranking','lag-lead','frames','ntile-dist','pivot'] },
   { id: 'analist', name: 'Veri Analisti', short: 'VA', color: 'var(--l2)',
@@ -773,7 +773,7 @@ window.SQLP_PATHS = [
     lessons: ['veritabani','select','where','mantik','null','order-limit','aggregate','group-by','having','case','coalesce','iliskiler','inner-join','left-join','coklu-join','set-ops','subquery','correlated','cte','window-intro','ranking','lag-lead','ddl-create','dml','upsert','alter-drop','transaction','normalizasyon','index','view','trigger','performans','de-etl','de-kalite','de-dedup','de-incremental','de-scd','acid','dwh','json','de-partition','lehceler','guvenlik','modern-ekosistem'] },
   { id: 'uzman', name: 'İleri SQL ve Veritabanı Uzmanlığı', short: 'C2', color: 'var(--l6)',
     desc: 'İleri seviye konular: tasarım, performans, ACID, JSON, lehçeler, güvenlik ve ileri desenler.',
-    long: 'Temelleri sağlam olanlar için derinleşme patikası. Mülakatlarda ve kıdemli rollerde beklenen konuları kapsar.',
+    long: 'Temelleri sağlam olanlar için derinleşme öğrenme yolu. Mülakatlarda ve kıdemli rollerde beklenen konuları kapsar.',
     skills: ['Normalizasyon', 'İndeks ve plan', 'ACID / MVCC', 'JSON', 'Lehçeler', 'Güvenlik', 'Gaps & islands'],
     lessons: ['ddl-create','dml','upsert','alter-drop','transaction','normalizasyon','index','view','trigger','performans','acid','json','dwh','lehceler','guvenlik','ileri-desenler','modern-ekosistem'] }
 ];

@@ -1,11 +1,11 @@
 /* Kesit SQL içerik 16: ikinci değerlendirme turu
-   - patikalarda seviye sırası düzeltmeleri
+   - öğrenme yollarında seviye sırası düzeltmeleri
    - (aşağıdaki bölümler: kısa ders metinleri, T-SQL ve teknik derslere alıştırmalar, şık dengeleme) */
 (function () {
 const L = window.SQLP_LESSONS;
 const LM = id => L.find(l => l.id === id);
 const PA = {}; (window.SQLP_PATHS || []).forEach(p => PA[p.id] = p);
-/* Bir dersi patikada başka bir dersin ardına (ya da önüne) taşır; ders veya bağlantı yoksa dokunmaz */
+/* Bir dersi öğrenme yolunda başka bir dersin ardına (ya da önüne) taşır; ders veya bağlantı yoksa dokunmaz */
 const moveAfter = (pid, id, anchor) => { const p = PA[pid]; if (!p) return; const i = p.lessons.indexOf(id), j = p.lessons.indexOf(anchor); if (i < 0 || j < 0) return; p.lessons.splice(i, 1); p.lessons.splice(p.lessons.indexOf(anchor) + 1, 0, id); };
 const moveBefore = (pid, id, anchor) => { const p = PA[pid]; if (!p) return; const i = p.lessons.indexOf(id), j = p.lessons.indexOf(anchor); if (i < 0 || j < 0) return; p.lessons.splice(i, 1); p.lessons.splice(p.lessons.indexOf(anchor), 0, id); };
 
@@ -424,7 +424,7 @@ add('cografi',
 add('dwh',
   sq('Tarih boyutu (dimension) hazırla: 2024 Aralık ayında sipariş verilen günlerden tekrarsız bir liste üret: <code>tarih</code>, <code>yil</code>, <code>ay</code>, <code>gun</code>. Tarihe göre sırala.',
     "SELECT DISTINCT order_date AS tarih, CAST(strftime('%Y', order_date) AS INTEGER) AS yil, CAST(strftime('%m', order_date) AS INTEGER) AS ay, CAST(strftime('%d', order_date) AS INTEGER) AS gun FROM orders WHERE order_date >= '2024-12-01' AND order_date < '2025-01-01' ORDER BY tarih;",
-    { ord: true, hint: 'Tarih parçaları için programının yıl/ay/gün fonksiyonlarını kullan.' }),
+    { ord: true, hint: 'Tarih parçaları için SQL türünün yıl/ay/gün fonksiyonlarını kullan.' }),
   sq('Yıldız şema sorgusu: fact (<code>order_items</code>) tablosunu iki boyutla (<code>products</code> ve <code>orders</code>) birleştirip teslim edilen net ciroyu kategori ve kanal kırılımında getir (tam sayı): <code>category</code>, <code>channel</code>, <code>ciro</code>.',
     `SELECT p.category, o.channel, ROUND(SUM(${NET})) AS ciro FROM order_items oi JOIN products p ON p.product_id = oi.product_id JOIN orders o ON o.order_id = oi.order_id WHERE o.status = 'delivered' GROUP BY p.category, o.channel;`,
     { hint: 'Ölçü (ciro) fact tablosundan, kırılımlar (kategori, kanal) boyutlardan gelir.' }));
@@ -471,7 +471,7 @@ add('ds-ornekleme',
 add('de-etl',
   sq('Temiz katman: <code>raw_signups</code> şehirlerini standartlaştır; kırpılmış ve küçük harfe çevrilmiş değer \'istanbul\' ise \'İstanbul\', \'izmir\' ise \'İzmir\', \'ankara\' ise \'Ankara\', boş veya NULL ise \'Bilinmiyor\' olsun. Standart şehir başına kayıt sayısını getir: <code>sehir</code>, <code>kayit</code>.',
     "SELECT CASE WHEN COALESCE(LENGTH(TRIM(city)), 0) = 0 THEN 'Bilinmiyor' WHEN LOWER(TRIM(city)) = 'istanbul' OR TRIM(city) = 'İstanbul' THEN 'İstanbul' WHEN LOWER(TRIM(city)) = 'izmir' OR TRIM(city) = 'İzmir' THEN 'İzmir' WHEN LOWER(TRIM(city)) = 'ankara' THEN 'Ankara' ELSE TRIM(city) END AS sehir, COUNT(*) AS kayit FROM raw_signups GROUP BY CASE WHEN COALESCE(LENGTH(TRIM(city)), 0) = 0 THEN 'Bilinmiyor' WHEN LOWER(TRIM(city)) = 'istanbul' OR TRIM(city) = 'İstanbul' THEN 'İstanbul' WHEN LOWER(TRIM(city)) = 'izmir' OR TRIM(city) = 'İzmir' THEN 'İzmir' WHEN LOWER(TRIM(city)) = 'ankara' THEN 'Ankara' ELSE TRIM(city) END;",
-    { hint: 'Önce NULL ve boş kontrolü, sonra LOWER(TRIM(city)) ile karşılaştırma. “İ” harfi LOWER ile her programda “i” olmayabilir; bu yüzden asıl yazımı da ayrıca kontrol et.' }),
+    { hint: 'Önce NULL ve boş kontrolü, sonra LOWER(TRIM(city)) ile karşılaştırma. “İ” harfi LOWER ile her SQL türünde “i” olmayabilir; bu yüzden asıl yazımı da ayrıca kontrol et.' }),
   sq('İdempotent yükleme: başlangıç kodu <code>gunluk_ozet(gun, siparis)</code> tablosunu oluşturuyor. 2024-12-31 gününün özetini “önce sil, sonra ekle” yöntemiyle yükle; ifadeleri iki kez çalıştırsan da tek satır kalmalı.',
     "CREATE TABLE gunluk_ozet (gun VARCHAR(10), siparis INTEGER); DELETE FROM gunluk_ozet WHERE gun = '2024-12-31'; INSERT INTO gunluk_ozet (gun, siparis) SELECT '2024-12-31', COUNT(*) FROM orders WHERE order_date = '2024-12-31'; DELETE FROM gunluk_ozet WHERE gun = '2024-12-31'; INSERT INTO gunluk_ozet (gun, siparis) SELECT '2024-12-31', COUNT(*) FROM orders WHERE order_date = '2024-12-31';",
     { dl: ['sqlite', 'pg', 'mysql', 'tsql'], start: "CREATE TABLE gunluk_ozet (gun VARCHAR(10), siparis INTEGER);\n-- DELETE + INSERT ifadelerini yaz; iki kez tekrarlayarak sonucu dene.\n", check: 'SELECT gun, siparis FROM gunluk_ozet', hint: "DELETE FROM gunluk_ozet WHERE gun = '2024-12-31'; ardından INSERT ... SELECT ..." }));

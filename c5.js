@@ -1,4 +1,4 @@
-/* Kesit SQL içerik 5: T-SQL (SQL Server) modülü, programlara özgü dersler, mülakat hazırlığı ve ek konular */
+/* Kesit SQL içerik 5: T-SQL (SQL Server) modülü, SQL türlerine özgü dersler, mülakat hazırlığı ve ek konular */
 (function () {
 const L = window.SQLP_LESSONS = window.SQLP_LESSONS || [];
 const TS = (src, v, o) => CODE(src, v || null, Object.assign({ base: 'tsql' }, o || {}));
@@ -35,7 +35,7 @@ FROM orders;</pre>
   ex: [
     { t: 'sql', q: '<p>Siparişlerdeki <b>farklı durum</b> (<code>status</code>) değerlerini ve her birinin kaç siparişte geçtiğini getir.</p>', sol: 'SELECT status, COUNT(*) FROM orders GROUP BY status;' },
     { t: 'sql', q: '<p>Müşteri tablosunda <b>e-postası boş</b> ve <b>şehri boş</b> olan müşteri sayılarını tek satırda getir: <code>bos_email</code>, <code>bos_sehir</code>.</p>', sol: 'SELECT COUNT(*) - COUNT(email) AS bos_email, COUNT(*) - COUNT(city) AS bos_sehir FROM customers;', hint: '<code>COUNT(*)</code> tüm satırları, <code>COUNT(sutun)</code> NULL olmayanları sayar; farkları boş olanlardır.' },
-    { t: 'mc', q: '<p><code>order_items</code> tablosundaki bir satır neyi temsil eder?</p>', o: ['Bir müşteriyi', 'Bir siparişi', 'Bir siparişteki bir ürünü (sipariş satırı)', 'Bir ürünün stok hareketini'], a: 2, why: 'Bir sipariş birden çok ürün içerebilir; her ürün order_items\'ta ayrı bir satırdır. Buna tablonun tanecik düzeyi (grain) denir.' }
+    { t: 'mc', q: '<p><code>order_items</code> tablosundaki bir satır neyi temsil eder?</p>', o: ['Bir müşteriyi', 'Bir siparişi', 'Bir siparişteki bir ürünü (sipariş satırı)', 'Bir ürünün stok hareketini'], a: 2, why: 'Bir sipariş birden çok ürün içerebilir; her ürün order_items\'ta ayrı bir satırdır. Buna tablonun grain düzeyi (grain) denir.' }
   ]
 }]);
 
@@ -135,7 +135,7 @@ after('correlated', [{
   ]
 }]);
 
-/* ======================= Gruplama kümeleri (tüm programlar) ======================= */
+/* ======================= Gruplama kümeleri (tüm SQL türleri) ======================= */
 after('pivot', [{
   id: 'rollup', lv: 'B2', mod: 'İleri Sorgu Yapıları', min: 16,
   title: 'ROLLUP, CUBE ve GROUPING SETS: ara toplamlar',
@@ -621,7 +621,7 @@ CROSS APPLY (
 WHERE c.city = N'Bursa'
 ORDER BY c.customer_id, s.order_date DESC;`, {
   pg: "-- PostgreSQL: LATERAL JOIN\nSELECT c.customer_id, c.first_name, s.order_id, s.order_date\nFROM customers c\nCROSS JOIN LATERAL (\n    SELECT o.order_id, o.order_date\n    FROM orders o\n    WHERE o.customer_id = c.customer_id\n    ORDER BY o.order_date DESC\n    LIMIT 2\n) AS s\nWHERE c.city = 'Bursa'\nORDER BY c.customer_id, s.order_date DESC;",
-  sqlite: "-- APPLY/LATERAL olmayan programlarda: ROW_NUMBER ile\nSELECT c.customer_id, c.first_name, s.order_id, s.order_date\nFROM customers c\nJOIN (\n    SELECT o.customer_id, o.order_id, o.order_date,\n           ROW_NUMBER() OVER (PARTITION BY o.customer_id ORDER BY o.order_date DESC) AS rn\n    FROM orders o\n) AS s ON s.customer_id = c.customer_id AND s.rn <= 2\nWHERE c.city = 'Bursa'\nORDER BY c.customer_id, s.order_date DESC;",
+  sqlite: "-- APPLY/LATERAL olmayan SQL türlerinde: ROW_NUMBER ile\nSELECT c.customer_id, c.first_name, s.order_id, s.order_date\nFROM customers c\nJOIN (\n    SELECT o.customer_id, o.order_id, o.order_date,\n           ROW_NUMBER() OVER (PARTITION BY o.customer_id ORDER BY o.order_date DESC) AS rn\n    FROM orders o\n) AS s ON s.customer_id = c.customer_id AND s.rn <= 2\nWHERE c.city = 'Bursa'\nORDER BY c.customer_id, s.order_date DESC;",
   oracle: "-- Oracle 12c+: CROSS APPLY desteklenir\nSELECT c.customer_id, c.first_name, s.order_id, s.order_date\nFROM customers c\nCROSS APPLY (\n    SELECT o.order_id, o.order_date\n    FROM orders o\n    WHERE o.customer_id = c.customer_id\n    ORDER BY o.order_date DESC\n    FETCH FIRST 2 ROWS ONLY\n) s\nWHERE c.city = 'Bursa'\nORDER BY c.customer_id, s.order_date DESC;"
 }, { nr: ['pg', 'oracle'] })}
 <h2>OUTER APPLY ile satır bazlı özet</h2>
@@ -634,7 +634,7 @@ OUTER APPLY (
 ) AS x
 ORDER BY d.dept_id;`)}
 <p>Çalışanı olmayan Hukuk departmanı da 0 çalışanla listelenir.</p>
-<div class="note"><b>Diğer kullanımlar</b>APPLY ayrıca tablo değerli fonksiyonları satır satır çağırmak (<code>CROSS APPLY dbo.fn(c.id)</code>), metni parçalamak (<code>CROSS APPLY STRING_SPLIT(etiketler, ',')</code>) ve JSON açmak (<code>CROSS APPLY OPENJSON(...)</code>) için kullanılır. Bu öykünmede APPLY alt sorgu ve satır içi tablo fonksiyonlarıyla çalışır.</div>
+<div class="note"><b>Diğer kullanımlar</b>APPLY ayrıca tablo değerli fonksiyonları satır satır çağırmak (<code>CROSS APPLY dbo.fn(c.id)</code>), metni parçalamak (<code>CROSS APPLY STRING_SPLIT(etiketler, ',')</code>) ve JSON açmak (<code>CROSS APPLY OPENJSON(...)</code>) için kullanılır. Bu taklitte APPLY alt sorgu ve satır içi tablo fonksiyonlarıyla çalışır.</div>
 `,
   ex: [
     ex({ q: '<p>Her departmanın <b>en yüksek maaşlı 2 çalışanını</b> CROSS APPLY ile getir: <code>departman</code> (departman adı), <code>first_name</code>, <code>salary</code>.</p>', sol: 'SELECT d.name AS departman, x.first_name, x.salary\nFROM departments d\nCROSS APPLY (\n    SELECT TOP 2 e.first_name, e.salary\n    FROM employees e\n    WHERE e.dept_id = d.dept_id\n    ORDER BY e.salary DESC\n) AS x;', hint: 'CROSS APPLY (SELECT TOP 2 ... FROM employees e WHERE e.dept_id = d.dept_id ORDER BY e.salary DESC) AS x' }),
@@ -648,7 +648,7 @@ tsql.push({
   sum: 'INFORMATION_SCHEMA, sys.tables, sp_help, IDENTITY, SCOPE_IDENTITY ve @@ROWCOUNT.',
   body: `
 <h2>Veritabanını sorgulayarak keşfetmek</h2>
-<p>SQL Server meta veriyi (tablolar, sütunlar, indeksler) sorgulanabilir görünümlerde tutar. Standart <code>INFORMATION_SCHEMA</code> görünümleri diğer programlarda da vardır; <code>sys.*</code> görünümleri SQL Server'a özgüdür ve daha ayrıntılıdır.</p>
+<p>SQL Server meta veriyi (tablolar, sütunlar, indeksler) sorgulanabilir görünümlerde tutar. Standart <code>INFORMATION_SCHEMA</code> görünümleri diğer SQL türlerinde da vardır; <code>sys.*</code> görünümleri SQL Server'a özgüdür ve daha ayrıntılıdır.</p>
 ${TS(`SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, IS_NULLABLE
 FROM INFORMATION_SCHEMA.COLUMNS
 WHERE TABLE_NAME = 'orders'
@@ -932,7 +932,7 @@ UPDATE orders SET status = 'delivered'
 WHERE status = 'shipped' AND order_date < '2024-12-01';
 
 SELECT order_id, old_status, new_status FROM order_audit ORDER BY order_id;`)}
-<div class="note"><b>INSTEAD OF trigger</b>Asıl işlemin yerine çalışır; çoğunlukla birden çok tabloya dayanan view'ları güncellenebilir yapmak için kullanılır. Bu öykünmede AFTER trigger'lar desteklenir.</div>
+<div class="note"><b>INSTEAD OF trigger</b>Asıl işlemin yerine çalışır; çoğunlukla birden çok tabloya dayanan view'ları güncellenebilir yapmak için kullanılır. Bu taklitte AFTER trigger'lar desteklenir.</div>
 <div class="note"><b>Alternatifler</b>Denetim kaydı için SQL Server'ın yerleşik <b>Temporal Tables</b> (sistem sürümlü tablolar), <b>Change Data Capture</b> ve <b>SQL Server Audit</b> özellikleri trigger'dan daha az bakım gerektirir.</div>
 `,
   ex: [
@@ -1048,10 +1048,10 @@ WHERE status = 'delivered';`)}
 });
 after('modern-ekosistem', tsql);
 
-/* ======================= Programlara özgü dersler ======================= */
+/* ======================= SQL türlerine özgü dersler ======================= */
 const dial = [];
 dial.push({
-  id: 'pg-ozel', lv: 'C2', mod: 'Programlara Özgü', min: 14,
+  id: 'pg-ozel', lv: 'C2', mod: 'SQL Türlerine Özgü', min: 14,
   title: 'PostgreSQL\'e özgü güçlü özellikler',
   sum: '::, ILIKE, FILTER, DISTINCT ON, RETURNING, generate_series, diziler ve JSONB.',
   body: `
@@ -1074,14 +1074,14 @@ GROUP BY channel;`, null, { base: 'pg' })}
 SELECT DISTINCT ON (customer_id) customer_id, order_id, order_date
 FROM orders
 ORDER BY customer_id, order_date DESC;</pre>
-<p>Diğer programlarda bunun karşılığı <code>ROW_NUMBER() ... = 1</code> kalıbıdır.</p>
+<p>Diğer SQL türlerinde bunun karşılığı <code>ROW_NUMBER() ... = 1</code> kalıbıdır.</p>
 <h2>generate_series ve diziler</h2>
 <pre class="code" data-norun>SELECT d::date AS gun
 FROM generate_series(DATE '2024-12-01', DATE '2024-12-31', INTERVAL '1 day') AS d;
 
 SELECT ARRAY_AGG(name ORDER BY price DESC) AS urunler FROM products WHERE category = 'Spor';
 SELECT * FROM products WHERE category = ANY(ARRAY['Kitap', 'Spor']);</pre>
-<div class="note"><b>Neden bu kadar popüler?</b>Açık kaynak, standarda en sadık program; JSONB, tam metin arama, coğrafi veri (PostGIS), vektör arama (pgvector) gibi eklentilerle neredeyse her işi görür. Bu öykünmede DISTINCT ON, generate_series ve diziler çalıştırılamaz; kutuları başvuru olarak kullan.</div>
+<div class="note"><b>Neden bu kadar popüler?</b>Açık kaynak, standarda en sadık SQL türü; JSONB, tam metin arama, coğrafi veri (PostGIS), vektör arama (pgvector) gibi eklentilerle neredeyse her işi görür. Bu taklitte DISTINCT ON, generate_series ve diziler çalıştırılamaz; kutuları başvuru olarak kullan.</div>
 `,
   ex: [
     { t: 'sql', dl: ['pg'], base: 'pg', q: '<p>PostgreSQL yazımıyla: FILTER kullanarak her müşteri segmentinin toplam sipariş sayısını ve <b>mobil kanaldan</b> gelen sipariş sayısını getir: <code>segment</code>, <code>toplam</code>, <code>mobil</code>.</p>', sol: "SELECT c.segment, COUNT(*) AS toplam, COUNT(*) FILTER (WHERE o.channel = 'mobile') AS mobil FROM orders o JOIN customers c ON c.customer_id = o.customer_id GROUP BY c.segment;" },
@@ -1089,7 +1089,7 @@ SELECT * FROM products WHERE category = ANY(ARRAY['Kitap', 'Spor']);</pre>
   ]
 });
 dial.push({
-  id: 'mysql-ozel', lv: 'C2', mod: 'Programlara Özgü', min: 12,
+  id: 'mysql-ozel', lv: 'C2', mod: 'SQL Türlerine Özgü', min: 12,
   title: 'MySQL\'e özgü yazımlar ve tuzaklar',
   sum: 'LIMIT a,b, IFNULL, IF, DATE_FORMAT, GROUP_CONCAT, ON DUPLICATE KEY, WITH ROLLUP.',
   body: `
@@ -1113,7 +1113,7 @@ ${CODE("SELECT DATE_FORMAT(order_date, '%Y-%m') AS ay,\n       COUNT(*) AS sipar
   ]
 });
 dial.push({
-  id: 'oracle-ozel', lv: 'C2', mod: 'Programlara Özgü', min: 14,
+  id: 'oracle-ozel', lv: 'C2', mod: 'SQL Türlerine Özgü', min: 14,
   title: 'Oracle\'a özgü yazımlar',
   sum: 'DUAL, NVL/NVL2/DECODE, ROWNUM, TO_CHAR, boş metin = NULL, MINUS, CONNECT BY.',
   body: `
@@ -1126,7 +1126,7 @@ ${CODE("SELECT SYSDATE AS simdi,\n       TO_CHAR(DATE '2024-05-17', 'DD.MM.YYYY'
 </ul>
 <h2>Boş metin NULL'dır</h2>
 ${CODE("SELECT CASE WHEN '' IS NULL THEN 'Boş metin NULL sayılır' ELSE 'Değil' END AS sonuc,\n       'Ad' || NULL || 'Soyad' AS birlestirme\nFROM dual;", null, { base: 'oracle' })}
-<p>Oracle'da <code>''</code> ile NULL aynıdır ve <code>||</code> NULL'ı yok sayar. Diğer programlardan taşınan kodlarda sık hata kaynağıdır.</p>
+<p>Oracle'da <code>''</code> ile NULL aynıdır ve <code>||</code> NULL'ı yok sayar. Diğer SQL türlerinden taşınan kodlarda sık hata kaynağıdır.</p>
 <h2>ROWNUM ve FETCH FIRST</h2>
 ${CODE("-- Eski yöntem: önce sırala, sonra ROWNUM ile kes\nSELECT * FROM (\n  SELECT name, price FROM products ORDER BY price DESC\n)\nWHERE ROWNUM <= 3;", null, { base: 'oracle' })}
 <p>ROWNUM, ORDER BY'dan <b>önce</b> atanır; bu yüzden sıralı ilk N için alt sorgu gerekir. 12c ve sonrasında <code>FETCH FIRST 3 ROWS ONLY</code> kullan.</p>
@@ -1135,7 +1135,7 @@ ${CODE("-- Eski yöntem: önce sırala, sonra ROWNUM ile kes\nSELECT * FROM (\n 
 FROM employees
 START WITH manager_id IS NULL
 CONNECT BY PRIOR emp_id = manager_id;</pre>
-<p>Oracle'ın özyinelemeli CTE'den önceki hiyerarşi sözdizimidir; hâlâ çok yaygındır. Bu öykünmede çalıştırılamaz; aynı sonucu özyinelemeli WITH ile alabilirsin.</p>
+<p>Oracle'ın özyinelemeli CTE'den önceki hiyerarşi sözdizimidir; hâlâ çok yaygındır. Bu taklitte çalıştırılamaz; aynı sonucu özyinelemeli WITH ile alabilirsin.</p>
 `,
   ex: [
     { t: 'sql', dl: ['oracle'], base: 'oracle', q: '<p>Oracle yazımıyla: müşterilerin adını ve şehrini getir; şehir NULL ise <code>NVL</code> ile <code>Bilinmiyor</code> yazsın. İlk 5 müşteriyi <code>customer_id</code> sırasıyla <code>FETCH FIRST</code> ile getir.</p>', sol: "SELECT first_name, NVL(city, 'Bilinmiyor') AS sehir FROM customers ORDER BY customer_id FETCH FIRST 5 ROWS ONLY;", ord: true },
@@ -1160,7 +1160,7 @@ mul.push({
 <li><b>Eşi olmayanlar</b>: LEFT JOIN … IS NULL veya NOT EXISTS.</li>
 <li><b>Kendine JOIN</b>: Çalışan–yönetici karşılaştırmaları.</li>
 </ul>
-<div class="tip"><b>Mülakatta düşünceni anlat</b>Önce veriyi ve tanecik düzeyini sor (ör. “eşit maaşlar nasıl sayılsın?”), sonra kenar durumları (NULL, eşitlik, boş grup) belirt. Görüşmeci doğru cevap kadar yaklaşımını da değerlendirir.</div>
+<div class="tip"><b>Mülakatta düşünceni anlat</b>Önce veriyi ve grain düzeyini sor (ör. “eşit maaşlar nasıl sayılsın?”), sonra kenar durumları (NULL, eşitlik, boş grup) belirt. Görüşmeci doğru cevap kadar yaklaşımını da değerlendirir.</div>
 `,
   ex: [
     { t: 'sql', q: '<p><b>İkinci en yüksek</b> farklı maaş değerini bul (tek değer).</p>', sol: 'SELECT MAX(salary) FROM employees WHERE salary < (SELECT MAX(salary) FROM employees);', hint: 'Yöntem 1: en yüksekten küçük olanların en büyüğü. Yöntem 2: DENSE_RANK() = 2.' },
@@ -1189,7 +1189,7 @@ mul.push({
 });
 after('ileri-desenler', mul);
 
-/* ======================= Patikaların güncellenmesi ======================= */
+/* ======================= Öğrenme yollarının güncellenmesi ======================= */
 const PA = {}; (window.SQLP_PATHS || []).forEach(p => PA[p.id] = p);
 const ins = (pid, afterId, ids) => { const p = PA[pid]; if (!p) return; ids = ids.filter(x => !p.lessons.includes(x)); const i = p.lessons.indexOf(afterId); p.lessons.splice(i < 0 ? p.lessons.length : i + 1, 0, ...ids); };
 ins('temel', 'veritabani', ['veri-seti']); ins('temel', 'sorgu-sirasi', ['stil']); ins('temel', 'coklu-join', ['non-equi']); ins('temel', 'correlated', ['sik-hatalar']); ins('temel', 'pivot', ['rollup']);
@@ -1199,7 +1199,7 @@ ins('muhendis', 'veritabani', ['veri-seti']); ins('muhendis', 'correlated', ['si
 ins('uzman', 'lehceler', ['pg-ozel', 'mysql-ozel', 'oracle-ozel']); ins('uzman', 'ileri-desenler', ['rollup', 'mulakat-1', 'mulakat-2']);
 window.SQLP_PATHS.splice(1, 0, { id: 'tsql', name: 'SQL Server (T-SQL) Uzmanı', short: 'T-SQL', color: 'var(--l5)',
   desc: 'Kurumsal dünyanın SQL\'i: TOP, değişkenler, TRY/CATCH, saklı yordamlar, MERGE, PIVOT, APPLY ve indeksler.',
-  long: 'Microsoft SQL Server ve Azure SQL ile çalışacaklar için. Temel SQL\'i SQL Server yazımıyla öğrenir, ardından T-SQL\'in programlama özelliklerine (değişkenler, akış kontrolü, hata yönetimi), saklı yordamlara, fonksiyonlara, trigger\'lara ve SQL Server\'a özgü performans konularına geçersin. Bu patikada varsayılan programı SQL Server yapmanı öneririz.',
+  long: 'Microsoft SQL Server ve Azure SQL ile çalışacaklar için. Temel SQL\'i SQL Server yazımıyla öğrenir, ardından T-SQL\'in programlama özelliklerine (değişkenler, akış kontrolü, hata yönetimi), saklı yordamlara, fonksiyonlara, trigger\'lara ve SQL Server\'a özgü performans konularına geçersin. Bu öğrenme yolunda varsayılan SQL türü SQL Server yapmanı öneririz.',
   skills: ['TOP / OFFSET-FETCH', 'T-SQL fonksiyonları', 'DECLARE / IF / WHILE', 'Geçici tablolar', 'PIVOT / APPLY', 'MERGE', 'Saklı yordam', 'TRY / CATCH', 'İndeks tasarımı'],
   lessons: ['ts-giris', 'veri-seti', 'select', 'where', 'mantik', 'in-between-like', 'null', 'order-limit', 'ts-top', 'aggregate', 'group-by', 'having', 'case', 'coalesce', 'ts-metin', 'ts-tarih', 'ts-donusum', 'inner-join', 'left-join', 'coklu-join', 'subquery', 'correlated', 'sik-hatalar', 'cte', 'recursive-cte', 'window-intro', 'ranking', 'lag-lead', 'frames', 'ts-degisken', 'ts-gecici', 'rollup', 'ts-pivot', 'ts-apply', 'ts-sistem', 'ddl-create', 'dml', 'transaction', 'view', 'ts-merge', 'ts-proc', 'ts-func', 'ts-hata', 'ts-trigger', 'ts-dinamik', 'index', 'ts-index', 'ts-izolasyon', 'mulakat-1', 'mulakat-2'] });
 

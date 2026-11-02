@@ -52,7 +52,7 @@ ${BRIF('Operasyon direktörü ve gelir müdürü', '“Kurul, kış tarifesinde 
 <h3>Çalışma planı</h3>
 <ol>
 <li><b>Dönemi ve tanımları sabitle.</b> Veri 2024-09-01 ile 2024-12-31 arasında 3.173 planlı uçuş içeriyor. “Zamanında” = planlanan kalkıştan en fazla 15 dakika sonra; iptal edilen 62 uçuşun gerçek kalkışı NULL'dır.</li>
-<li><b>Tablo tanecikliğini (grain) öğren.</b> <code>hv_delays</code>'te bir uçuşun birden fazla rötar satırı olabilir. Aşağıdaki sorgu bunu gösterir: 1.350 satır ama yalnızca 1.228 uçuş.</li>
+<li><b>Tablo grain düzeyini (tanecik) öğren.</b> <code>hv_delays</code>'te bir uçuşun birden fazla rötar satırı olabilir. Aşağıdaki sorgu bunu gösterir: 1.350 satır ama yalnızca 1.228 uçuş.</li>
 <li><b>Operasyon ve gelir sorularını ayır.</b> Gelir sorularında yalnızca <code>status = 'flown'</code> rezervasyonlar sayılır; iptal edilen uçuşların rezervasyonları zaten iptal durumundadır.</li>
 </ol>
 ${C(`SELECT COUNT(*) AS satir, COUNT(DISTINCT flight_id) AS ucus, SUM(minutes) AS dakika
@@ -69,7 +69,7 @@ FROM hv_delays;`)}
 ${OZET('Aralık\'ta ortalama kalkış gecikmesi 35,2 dakikaya çıktı (Eylül: 20,2); artışın en büyük kaynakları hava (9.199 dk) ve geç gelen uçak (9.160 dk). Dönem genelinde iptal oranı %1,95, ancak 62 iptalin 24\'ü Aralık\'ta. Kış için GZT–IST hattı (%8,6 iptal) öncelikli izlemeye alınmalı ve geç gelen uçak zincirini kırmak için yedek uçak planlanmalı.')}
 <h3>Kendini değerlendir</h3>
 ${R([
-  ['Doğruluk', 'Sonuçlar çıkıyor', 'Paydalar ve iptal hariç tutma doğru', 'JOIN tanecikliği kontrol edilmiş, mutabakat sıfır fark veriyor'],
+  ['Doğruluk', 'Sonuçlar çıkıyor', 'Paydalar ve iptal hariç tutma doğru', 'JOIN grain düzeyi kontrol edilmiş, mutabakat sıfır fark veriyor'],
   ['Yorum', 'Sayı listesi', 'Her slaytta bir neden', 'Neden + önerilen aksiyon + beklenen etki'],
   ['Sunum', 'Tablolar', 'Uygun grafik türü', 'Kurulun kararına bağlanan tek sayfalık özet']
 ])}`));
@@ -185,7 +185,7 @@ ${BRIF('Genel müdür ve BI ekibi', '“Panoyu her ayın ilk iş günü açıp b
 <h3>Çalışma planı</h3>
 <ol>
 <li><b>KPI sözlüğünü kilitle.</b> Her ölçüyü bir cümleyle tanımla ve hangi durumların dahil olduğunu yaz (ciro = yalnızca teslim; sipariş = tüm durumlar).</li>
-<li><b>Ölçüyü kendi tanecikliğinde hesapla.</b> Sipariş sayısı <code>orders</code>'tan, ciro <code>order_items</code>'tan gelir. İkisini aynı JOIN'de hesaplarsan sipariş sayısı kalem sayısına şişer (Ek görev 1).</li>
+<li><b>Ölçüyü kendi grain düzeyinde hesapla.</b> Sipariş sayısı <code>orders</code>'tan, ciro <code>order_items</code>'tan gelir. İkisini aynı JOIN'de hesaplarsan sipariş sayısı kalem sayısına şişer (Ek görev 1).</li>
 <li><b>Boş ayları düşün.</b> Bir ayda hiç değer yoksa GROUP BY o ayı hiç üretmez; panoda çizgi “kopar”. Ek görev 2'de Kasım ve Aralık bu yüzden görünmez.</li>
 </ol>
 <h3>Kontrol listesi</h3>
@@ -306,7 +306,7 @@ ${BRIF('BT müdürü ve iç denetim', '“Gün sonu raporu sabah ekibini bekleti
 ${C(`SELECT SUM(CASE WHEN txn_time >= '2024-12-01' AND txn_time < '2025-01-01' THEN 1 ELSE 0 END) AS dogru_aralik,
        SUM(CASE WHEN txn_time >= '2024-12-01' AND txn_time <= '2024-12-31' THEN 1 ELSE 0 END) AS hatali_aralik
 FROM bank_txns;`)}
-<p>Planı görmek için programına göre <code>EXPLAIN</code> (PostgreSQL, MySQL), <code>EXPLAIN QUERY PLAN</code> (SQLite) ya da gerçek yürütme planı (SQL Server) kullan; indeks öncesi ve sonrası planı yan yana koy.</p>
+<p>Planı görmek için SQL türüne göre <code>EXPLAIN</code> (PostgreSQL, MySQL), <code>EXPLAIN QUERY PLAN</code> (SQLite) ya da gerçek yürütme planı (SQL Server) kullan; indeks öncesi ve sonrası planı yan yana koy.</p>
 <h3>Teslim</h3>
 <p>Değişiklik kuruluna tek sayfa: önce/sonra ölçüm tablosu, mutabakat sonucu, yetki matrisi (rol × nesne × izin), geri alma komutları.</p>
 ${OZET('Gün sonu raporu tarih filtresi SARGable yazılarak ve <code>txn_time</code> indeksi eklenerek tam tablo taraması yerine aralık taraması yapıyor; çıktı eskisiyle birebir aynı (153 satır, 3.584 hareket). Analistler artık ham tablolar yerine iki görünüme erişiyor ve ad soyad maskeli. Kalan risk raporun canlı sistemde çalışması; okuma replikasına taşınmasını öneriyoruz.')}

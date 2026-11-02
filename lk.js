@@ -195,7 +195,7 @@ CREATE TABLE lk_ratings (
   sql += '\nCREATE INDEX ix_lk_orders_customer ON lk_orders (customer_id);\nCREATE INDEX ix_lk_orders_restaurant ON lk_orders (restaurant_id);\nCREATE INDEX ix_lk_orders_courier ON lk_orders (courier_id);\nCREATE INDEX ix_lk_lines_order ON lk_order_lines (order_id);\n';
   root.SQLP_SEED = (root.SQLP_SEED || '') + sql;
   Object.assign(root.SQLP_SCHEMA_NOTES = root.SQLP_SCHEMA_NOTES || {}, {
-    lk_restaurants: 'Platformdaki restoranlar (36); commission_pct platformun aldığı komisyon (%), is_active 0 ise kapanmış',
+    lk_restaurants: 'Platformdaki restoranlar (30); commission_pct platformun aldığı komisyon (%), is_active 0 kapanmış demektir, bu veride kapanmış restoran yok',
     lk_menu_items: 'Restoran menüleri; price güncel fiyat (TL), is_vegetarian 1/0',
     lk_customers: 'Müşteriler; referred_by onları davet eden müşteri (kendine birleştirme), district bazen boş',
     lk_couriers: 'Kuryeler; rating müşterilerin verdiği kurye puanlarının ortalaması (puanı olmayanlarda boş)',

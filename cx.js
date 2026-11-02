@@ -1,4 +1,4 @@
-/* Kesit SQL — programdan bağımsız yeniden yazılan dersler (mevcut derslerin yerine geçer) */
+/* Kesit SQL — SQL türünden bağımsız yeniden yazılan dersler (mevcut derslerin yerine geçer) */
 (function () {
 const R = window.SQLP_LESSONS || [];
 const REV = 'oi.quantity * oi.unit_price * (1 - oi.discount)';
@@ -7,7 +7,7 @@ const put = l => { const i = R.findIndex(x => x.id === l.id); if (i >= 0) R[i] =
 put({
   id: 'order-limit', lv: 'A1', mod: 'Temeller', min: 12,
   title: 'ORDER BY ve ilk N satır (LIMIT / TOP / FETCH)',
-  sum: 'Sıralama, ilk N kaydı almak ve sayfalama; her programın kendi yazımı.',
+  sum: 'Sıralama, ilk N kaydı almak ve sayfalama; her SQL türünün kendi yazımı.',
   body: `
 <h2>Sıralama</h2>
 <p>SQL, ORDER BY yazmadığın sürece sonuçların sırasını <b>garanti etmez</b>. Sıralamak için:</p>
@@ -22,13 +22,13 @@ ORDER BY price DESC;</pre>
 <pre class="code">SELECT category, name, price
 FROM products
 ORDER BY category ASC, price DESC;</pre>
-<h2>İlk N satır: her program farklı yazar</h2>
-<p>Standart SQL'de bu iş <code>FETCH FIRST n ROWS ONLY</code> ile yapılır; ama en yaygın iki yazım <code>LIMIT</code> ve <code>TOP</code>'tur. Aşağıdaki kutunun üstündeki program sekmelerine tıklayarak farkı gör:</p>
+<h2>İlk N satır: her SQL türü farklı yazar</h2>
+<p>Standart SQL'de bu iş <code>FETCH FIRST n ROWS ONLY</code> ile yapılır; ama en yaygın iki yazım <code>LIMIT</code> ve <code>TOP</code>'tur. Aşağıdaki kutunun üstündeki SQL türü sekmelerine tıklayarak farkı gör:</p>
 <pre class="code">SELECT name, price
 FROM products
 ORDER BY price DESC
 LIMIT 5;</pre>
-<table><tr><th>Program</th><th>İlk 5 satır</th><th>6–10. satırlar (sayfalama)</th></tr>
+<table><tr><th>SQL türü</th><th>İlk 5 satır</th><th>6–10. satırlar (sayfalama)</th></tr>
 <tr><td>SQL Server</td><td><code>SELECT TOP 5 ...</code></td><td><code>ORDER BY ... OFFSET 5 ROWS FETCH NEXT 5 ROWS ONLY</code></td></tr>
 <tr><td>PostgreSQL, SQLite</td><td><code>... LIMIT 5</code></td><td><code>LIMIT 5 OFFSET 5</code></td></tr>
 <tr><td>MySQL</td><td><code>... LIMIT 5</code></td><td><code>LIMIT 5 OFFSET 5</code> veya <code>LIMIT 5, 5</code></td></tr>
@@ -41,7 +41,7 @@ SELECT name, price
 FROM products
 ORDER BY price DESC
 LIMIT 5 OFFSET 5;</pre>
-<div class="note"><b>NULL'lar nerede?</b>SQL Server, MySQL ve SQLite'ta NULL'lar artan sıralamada başa gelir; PostgreSQL ve Oracle'da sona. PostgreSQL, Oracle ve SQLite <code>NULLS FIRST / NULLS LAST</code> ile bunu kontrol etmene izin verir. Şehre göre sıralayıp program sekmesini PostgreSQL'e çevirerek dene:</div>
+<div class="note"><b>NULL'lar nerede?</b>SQL Server, MySQL ve SQLite'ta NULL'lar artan sıralamada başa gelir; PostgreSQL ve Oracle'da sona. PostgreSQL, Oracle ve SQLite <code>NULLS FIRST / NULLS LAST</code> ile bunu kontrol etmene izin verir. Şehre göre sıralayıp SQL türü sekmesini PostgreSQL'e çevirerek dene:</div>
 ${CODE("SELECT first_name, city\nFROM customers\nORDER BY city\nLIMIT 8;", null, { diff: ['pg', 'oracle'] })}
 `
 });
@@ -49,10 +49,10 @@ ${CODE("SELECT first_name, city\nFROM customers\nORDER BY city\nLIMIT 8;", null,
 put({
   id: 'metin', lv: 'A2', mod: 'Fonksiyonlar', min: 15,
   title: 'Metin fonksiyonları',
-  sum: 'Büyük/küçük harf, uzunluk, parça alma, arama, birleştirme ve programlar arası farklar.',
+  sum: 'Büyük/küçük harf, uzunluk, parça alma, arama, birleştirme ve SQL türleri arası farklar.',
   body: `
 <h2>En sık kullanılan metin işlemleri</h2>
-<p>Metin fonksiyonları programlar arasında en çok isim değiştiren gruptur. Tabloyu bir başvuru olarak kullan; kod kutularında seçili programın yazımı görünür.</p>
+<p>Metin fonksiyonları SQL türleri arasında en çok isim değiştiren gruptur. Tabloyu bir başvuru olarak kullan; kod kutularında seçili SQL türünün yazımı görünür.</p>
 <div class="tbl-wrap"><table><tr><th>İşlem</th><th>SQL Server</th><th>PostgreSQL</th><th>MySQL</th><th>Oracle</th><th>SQLite</th></tr>
 <tr><td>Büyük / küçük harf</td><td colspan="5"><code>UPPER(s)</code>, <code>LOWER(s)</code> (hepsinde aynı)</td></tr>
 <tr><td>Uzunluk</td><td><code>LEN(s)</code></td><td><code>LENGTH(s)</code></td><td><code>CHAR_LENGTH(s)</code></td><td><code>LENGTH(s)</code></td><td><code>LENGTH(s)</code></td></tr>
@@ -81,7 +81,7 @@ FROM employees;</pre>
 put({
   id: 'sayi-tip', lv: 'A2', mod: 'Fonksiyonlar', min: 14,
   title: 'Sayılar, veri tipleri ve CAST',
-  sum: 'ROUND, tam sayı bölmesi tuzağı (programdan programa değişir) ve tip dönüşümü.',
+  sum: 'ROUND, tam sayı bölmesi tuzağı (SQL türüne göre değişir) ve tip dönüşümü.',
   body: `
 <h2>Sayısal fonksiyonlar</h2>
 <table><tr><th>Fonksiyon</th><th>Açıklama</th></tr>
@@ -92,13 +92,13 @@ put({
 <tr><td><code>POWER(x, y)</code>, <code>SQRT(x)</code></td><td>Üs, karekök</td></tr>
 </table>
 <h2>Tam sayı bölmesi: aynı sorgu, farklı sonuç</h2>
-<p>İki tam sayıyı böldüğünde sonuç programa göre değişir. Aşağıdaki sorguyu çalıştır, sonra program sekmesini değiştirip tekrar çalıştır:</p>
+<p>İki tam sayıyı böldüğünde sonuç SQL türüne göre değişir. Aşağıdaki sorguyu çalıştır, sonra SQL türü sekmesini değiştirip tekrar çalıştır:</p>
 ${CODE("SELECT 7 / 2 AS tam_bolme,\n       7 / 2.0 AS ondalikli,\n       CAST(7 AS REAL) / 2 AS cast_ile;", null, { diff: ['mysql', 'oracle'] })}
-<table><tr><th>Program</th><th><code>7 / 2</code></th></tr>
+<table><tr><th>SQL türü</th><th><code>7 / 2</code></th></tr>
 <tr><td>SQL Server, PostgreSQL, SQLite</td><td><b>3</b> (tam sayı bölmesi)</td></tr>
 <tr><td>MySQL, Oracle</td><td><b>3.5</b> (MySQL'de tam sayı bölmesi için <code>DIV</code>)</td></tr>
 </table>
-<p>Oran hesaplarken (dönüşüm oranı, yüzde) bu hata çok yaygındır. Güvenli yol, payı ondalıklı yapmaktır: <code>100.0 * pay / payda</code>. Böylece her programda aynı sonucu alırsın.</p>
+<p>Oran hesaplarken (dönüşüm oranı, yüzde) bu hata çok yaygındır. Güvenli yol, payı ondalıklı yapmaktır: <code>100.0 * pay / payda</code>. Böylece her SQL türünde aynı sonucu alırsın.</p>
 <h2>Veri tipleri</h2>
 <div class="tbl-wrap"><table><tr><th>Genel tip</th><th>SQL Server</th><th>PostgreSQL</th><th>MySQL</th><th>Oracle</th></tr>
 <tr><td>Tam sayı</td><td><code>INT</code>, <code>BIGINT</code></td><td><code>INTEGER</code>, <code>BIGINT</code></td><td><code>INT</code>, <code>BIGINT</code></td><td><code>NUMBER(10)</code></td></tr>
@@ -108,7 +108,7 @@ ${CODE("SELECT 7 / 2 AS tam_bolme,\n       7 / 2.0 AS ondalikli,\n       CAST(7 
 <tr><td>Tarih / zaman</td><td><code>DATE</code>, <code>DATETIME2</code></td><td><code>DATE</code>, <code>TIMESTAMP</code></td><td><code>DATE</code>, <code>DATETIME</code></td><td><code>DATE</code>, <code>TIMESTAMP</code></td></tr>
 <tr><td>Mantıksal</td><td><code>BIT</code></td><td><code>BOOLEAN</code></td><td><code>BOOLEAN</code> (TINYINT)</td><td><code>NUMBER(1)</code> (23ai: BOOLEAN)</td></tr>
 </table></div>
-<div class="note"><b>SQLite'ın esnek tipleri</b>SQLite'ta yalnızca 5 depolama sınıfı vardır (NULL, INTEGER, REAL, TEXT, BLOB) ve tarihler metin olarak saklanır. Diğer programlar tiplerde çok daha katıdır.</div>
+<div class="note"><b>SQLite'ın esnek tipleri</b>SQLite'ta yalnızca 5 depolama sınıfı vardır (NULL, INTEGER, REAL, TEXT, BLOB) ve tarihler metin olarak saklanır. Diğer SQL türleri tiplerde çok daha katıdır.</div>
 <h2>CAST ile dönüşüm</h2>
 <pre class="code">SELECT name,
        CAST(price AS INTEGER) AS tam_fiyat,
@@ -123,10 +123,10 @@ LIMIT 3;</pre>
 put({
   id: 'tarih-fn', lv: 'A2', mod: 'Fonksiyonlar', min: 18,
   title: 'Tarih ve saat fonksiyonları',
-  sum: 'Yıl/ay çıkarmak, tarih farkı ve tarih aritmetiği; programlar arası en büyük fark burada.',
+  sum: 'Yıl/ay çıkarmak, tarih farkı ve tarih aritmetiği; SQL türleri arası en büyük fark burada.',
   body: `
 <h2>Analistin en çok kullandığı fonksiyonlar</h2>
-<p>Satış trendleri, kohortlar, büyüme oranları… hepsi tarihle başlar. Tarih fonksiyonları programlar arasında <b>en çok fark gösteren</b> alandır. Aşağıdaki her kod kutusunda program sekmesini değiştirerek aynı işin nasıl yazıldığını gör.</p>
+<p>Satış trendleri, kohortlar, büyüme oranları… hepsi tarihle başlar. Tarih fonksiyonları SQL türleri arasında <b>en çok fark gösteren</b> alandır. Aşağıdaki her kod kutusunda SQL türü sekmesini değiştirerek aynı işin nasıl yazıldığını gör.</p>
 <h3>Yıl, ay, gün parçaları</h3>
 <div class="tbl-wrap"><table><tr><th>İşlem</th><th>SQL Server</th><th>PostgreSQL / Oracle</th><th>MySQL</th><th>SQLite</th></tr>
 <tr><td>Yıl</td><td><code>YEAR(d)</code></td><td><code>EXTRACT(YEAR FROM d)</code></td><td><code>YEAR(d)</code></td><td><code>strftime('%Y', d)</code></td></tr>
@@ -151,7 +151,7 @@ ORDER BY ay;</pre>
        date('2024-03-15', 'start of month') AS ay_basi,
        date('2024-03-15', '-7 days') AS bir_hafta_once,
        julianday('2024-12-31') - julianday('2024-01-01') AS gun_farki;</pre>
-<div class="warn"><b>Ay sonu tuzağı</b>31 Ocak'a 1 ay eklemek: SQL Server, PostgreSQL, MySQL ve Oracle <code>2024-02-29</code> (ayın son günü) verir; SQLite ise taşmayı sonraki aya aktarır ve <code>2024-03-02</code> verir. Ay sonu tarihleriyle çalışırken programının davranışını mutlaka test et.</div>
+<div class="warn"><b>Ay sonu tuzağı</b>31 Ocak'a 1 ay eklemek: SQL Server, PostgreSQL, MySQL ve Oracle <code>2024-02-29</code> (ayın son günü) verir; SQLite ise taşmayı sonraki aya aktarır ve <code>2024-03-02</code> verir. Ay sonu tarihleriyle çalışırken SQL türünün davranışını mutlaka test et.</div>
 <div class="note" data-d="tsql"><b>SQL Server'da DATEDIFF</b><code>DATEDIFF(month, '2024-01-31', '2024-02-01')</code> sonucu 1'dir; çünkü DATEDIFF geçen tam süreyi değil, <b>aşılan sınır sayısını</b> sayar. Yaş hesaplarken bu fark önemlidir.</div>
 <p>Çalışanların işe girişinden bu yana geçen gün:</p>
 <pre class="code">SELECT first_name, hire_date,
@@ -202,7 +202,7 @@ put({
   sum: 'Tablo tanımlamak; PRIMARY KEY, NOT NULL, UNIQUE, CHECK, DEFAULT, FOREIGN KEY.',
   body: `
 <h2>Tablo oluşturmak</h2>
-<p>Kod kutusundaki program sekmesini değiştirerek her programın veri tiplerini gör (ör. metin için SQL Server'da <code>NVARCHAR</code>, Oracle'da <code>VARCHAR2</code>).</p>
+<p>Kod kutusundaki SQL türü sekmesini değiştirerek her SQL türünün veri tiplerini gör (ör. metin için SQL Server'da <code>NVARCHAR</code>, Oracle'da <code>VARCHAR2</code>).</p>
 <pre class="code">CREATE TABLE suppliers (
   supplier_id INTEGER PRIMARY KEY,
   name        TEXT NOT NULL,
@@ -221,7 +221,7 @@ SELECT * FROM suppliers;</pre>
 <tr><td><code>DEFAULT değer</code></td><td>Değer verilmezse kullanılır.</td></tr>
 <tr><td><code>REFERENCES t(sutun)</code></td><td>Yabancı anahtar: değer diğer tabloda olmalı.</td></tr>
 </table>
-<p>Kısıtların işe yaradığını gör: aşağıdaki sorgu CHECK kuralını ihlal ettiği için hata verir. Hata mesajı seçili programın kendi mesajına benzer şekilde gösterilir.</p>
+<p>Kısıtların işe yaradığını gör: aşağıdaki sorgu CHECK kuralını ihlal ettiği için hata verir. Hata mesajı seçili SQL türünün kendi mesajına benzer şekilde gösterilir.</p>
 ${CODE("CREATE TABLE ratings (id INTEGER PRIMARY KEY, stars INTEGER CHECK (stars BETWEEN 1 AND 5));\nINSERT INTO ratings (id, stars) VALUES (1, 7);", null, { err: true })}
 <h2>Yabancı anahtar ve eylemler</h2>
 <pre class="code" data-norun>CREATE TABLE supplier_products (
@@ -237,7 +237,7 @@ SELECT * FROM customers WHERE segment = 'Premium';
 SELECT COUNT(*) FROM vip_customers;</pre>
 `,
   ex: [
-    { t: 'sql', q: '<p><code>campaigns</code> adında bir tablo oluştur: <code>campaign_id</code> tam sayı birincil anahtar, <code>name</code> metin ve boş olamaz, <code>budget</code> ondalıklı sayı, <code>start_date</code> tarih (programının tiplerini kullan: SQL Server\'da INT, NVARCHAR(100), DECIMAL(12,2), DATE gibi).</p>', start: 'CREATE TABLE campaigns (\n  \n);', sol: 'CREATE TABLE campaigns (campaign_id INTEGER PRIMARY KEY, name TEXT NOT NULL, budget REAL, start_date TEXT);', check: "SELECT name, affinity_(type), \"notnull\", pk FROM pragma_table_info('campaigns') ORDER BY cid", hint: 'Sütun adları ve sırası kontrol edilir; tipler genel ailesine göre (tam sayı / ondalık / metin) değerlendirilir.' },
+    { t: 'sql', q: '<p><code>campaigns</code> adında bir tablo oluştur: <code>campaign_id</code> tam sayı birincil anahtar, <code>name</code> metin ve boş olamaz, <code>budget</code> ondalıklı sayı, <code>start_date</code> tarih (SQL türünün tiplerini kullan: SQL Server\'da INT, NVARCHAR(100), DECIMAL(12,2), DATE gibi).</p>', start: 'CREATE TABLE campaigns (\n  \n);', sol: 'CREATE TABLE campaigns (campaign_id INTEGER PRIMARY KEY, name TEXT NOT NULL, budget REAL, start_date TEXT);', check: "SELECT name, affinity_(type), \"notnull\", pk FROM pragma_table_info('campaigns') ORDER BY cid", hint: 'Sütun adları ve sırası kontrol edilir; tipler genel ailesine göre (tam sayı / ondalık / metin) değerlendirilir.' },
     { t: 'sql', q: '<p><code>reviews</code> tablosu oluştur: <code>review_id</code> tam sayı birincil anahtar, <code>product_id</code> tam sayı (products tablosuna referans), <code>stars</code> tam sayı ve <b>1–5 arasında olmalı</b> (CHECK).</p>', sol: 'CREATE TABLE reviews (review_id INTEGER PRIMARY KEY, product_id INTEGER REFERENCES products(product_id), stars INTEGER CHECK (stars BETWEEN 1 AND 5));', check: "SELECT name, affinity_(type), pk, (SELECT COUNT(*) FROM sqlite_master WHERE name='reviews' AND sql LIKE '%CHECK%') FROM pragma_table_info('reviews') ORDER BY cid" },
     { t: 'sql', q: '<p><b>Elektronik</b> kategorisindeki ürünleri içeren <code>electronics</code> tablosunu bir sorgunun sonucundan oluştur (SQL Server\'da <code>SELECT ... INTO</code>, diğerlerinde <code>CREATE TABLE ... AS SELECT</code>).</p>', sol: "CREATE TABLE electronics AS SELECT * FROM products WHERE category = 'Elektronik';", check: 'SELECT product_id, name, price FROM electronics ORDER BY product_id' }
   ]
@@ -277,13 +277,13 @@ put({
   sum: 'ON CONFLICT, ON DUPLICATE KEY UPDATE, MERGE ve değişen satırları döndürmek.',
   body: `
 <h2>Varsa güncelle, yoksa ekle</h2>
-<p>Veri yüklerken aynı anahtarlı kayıt zaten olabilir. Her program bunu farklı yazar; bu ders program sekmeleri arasındaki farkı görmek için en iyi örneklerden biri:</p>
+<p>Veri yüklerken aynı anahtarlı kayıt zaten olabilir. Her SQL türü bunu farklı yazar; bu ders SQL türü sekmeleri arasındaki farkı görmek için en iyi örneklerden biri:</p>
 ${CODE("INSERT INTO departments (dept_id, name, city)\nVALUES (7, 'Hukuk ve Uyum', 'Ankara'),\n       (12, 'Satın Alma', 'Bursa')\nON CONFLICT (dept_id) DO UPDATE\n  SET name = excluded.name, city = excluded.city;\nSELECT * FROM departments ORDER BY dept_id;", {
   tsql: "MERGE INTO departments AS t\nUSING (SELECT 7 AS dept_id, N'Hukuk ve Uyum' AS name, N'Ankara' AS city\n       UNION ALL SELECT 12, N'Satın Alma', N'Bursa') AS s\n   ON t.dept_id = s.dept_id\nWHEN MATCHED THEN\n  UPDATE SET name = s.name, city = s.city\nWHEN NOT MATCHED THEN\n  INSERT (dept_id, name, city) VALUES (s.dept_id, s.name, s.city);\nSELECT * FROM departments ORDER BY dept_id;",
   mysql: "INSERT INTO departments (dept_id, name, city)\nVALUES (7, 'Hukuk ve Uyum', 'Ankara'),\n       (12, 'Satın Alma', 'Bursa')\nON DUPLICATE KEY UPDATE\n  name = VALUES(name), city = VALUES(city);\nSELECT * FROM departments ORDER BY dept_id;",
   oracle: "MERGE INTO departments t\nUSING (SELECT 7 AS dept_id, 'Hukuk ve Uyum' AS name, 'Ankara' AS city FROM dual\n       UNION ALL SELECT 12, 'Satın Alma', 'Bursa' FROM dual) s\n   ON (t.dept_id = s.dept_id)\nWHEN MATCHED THEN\n  UPDATE SET t.name = s.name, t.city = s.city\nWHEN NOT MATCHED THEN\n  INSERT (dept_id, name, city) VALUES (s.dept_id, s.name, s.city);\nSELECT * FROM departments ORDER BY dept_id;"
 })}
-<table><tr><th>Program</th><th>Yazım</th></tr>
+<table><tr><th>SQL türü</th><th>Yazım</th></tr>
 <tr><td>PostgreSQL, SQLite</td><td><code>INSERT ... ON CONFLICT (anahtar) DO UPDATE SET ... = excluded....</code></td></tr>
 <tr><td>MySQL</td><td><code>INSERT ... ON DUPLICATE KEY UPDATE ... = VALUES(...)</code></td></tr>
 <tr><td>SQL Server, Oracle</td><td><code>MERGE INTO hedef USING kaynak ON ... WHEN MATCHED ... WHEN NOT MATCHED ...</code></td></tr>
@@ -298,7 +298,7 @@ ${CODE("UPDATE products SET stock = stock + 50\nWHERE stock < 10\nRETURNING prod
 <div class="note"><b>Özet</b>PostgreSQL ve SQLite <code>RETURNING</code>, SQL Server <code>OUTPUT inserted.* / deleted.*</code> kullanır. OUTPUT, DELETE'te silinen satırları, UPDATE'te hem eski (<code>deleted</code>) hem yeni (<code>inserted</code>) değerleri verebilir.</div>
 `,
   ex: [
-    { t: 'sql', q: '<p>Departman <b>2</b>\'nin adını <b>\'Pazarlama ve İletişim\'</b>, şehrini <b>\'İstanbul\'</b> yap; aynı ifadeyle departman <b>11</b> (<b>\'Veri Platformu\'</b>, <b>\'Ankara\'</b>) yoksa ekle. Programının upsert yazımını kullan (SQL Server/Oracle: MERGE).</p>', sol: "INSERT INTO departments (dept_id, name, city) VALUES (2, 'Pazarlama ve İletişim', 'İstanbul'), (11, 'Veri Platformu', 'Ankara') ON CONFLICT (dept_id) DO UPDATE SET name = excluded.name, city = excluded.city;", solv: { tsql: "MERGE INTO departments AS t\nUSING (SELECT 2 AS dept_id, N'Pazarlama ve İletişim' AS name, N'İstanbul' AS city\n       UNION ALL SELECT 11, N'Veri Platformu', N'Ankara') AS s\n   ON t.dept_id = s.dept_id\nWHEN MATCHED THEN UPDATE SET name = s.name, city = s.city\nWHEN NOT MATCHED THEN INSERT (dept_id, name, city) VALUES (s.dept_id, s.name, s.city);", mysql: "INSERT INTO departments (dept_id, name, city) VALUES (2, 'Pazarlama ve İletişim', 'İstanbul'), (11, 'Veri Platformu', 'Ankara')\nON DUPLICATE KEY UPDATE name = VALUES(name), city = VALUES(city);", oracle: "MERGE INTO departments t\nUSING (SELECT 2 AS dept_id, 'Pazarlama ve İletişim' AS name, 'İstanbul' AS city FROM dual\n       UNION ALL SELECT 11, 'Veri Platformu', 'Ankara' FROM dual) s\n   ON (t.dept_id = s.dept_id)\nWHEN MATCHED THEN UPDATE SET t.name = s.name, t.city = s.city\nWHEN NOT MATCHED THEN INSERT (dept_id, name, city) VALUES (s.dept_id, s.name, s.city);" }, check: 'SELECT * FROM departments ORDER BY dept_id' },
+    { t: 'sql', q: '<p>Departman <b>2</b>\'nin adını <b>\'Pazarlama ve İletişim\'</b>, şehrini <b>\'İstanbul\'</b> yap; aynı ifadeyle departman <b>11</b> (<b>\'Veri Platformu\'</b>, <b>\'Ankara\'</b>) yoksa ekle. SQL türünün upsert yazımını kullan (SQL Server/Oracle: MERGE).</p>', sol: "INSERT INTO departments (dept_id, name, city) VALUES (2, 'Pazarlama ve İletişim', 'İstanbul'), (11, 'Veri Platformu', 'Ankara') ON CONFLICT (dept_id) DO UPDATE SET name = excluded.name, city = excluded.city;", solv: { tsql: "MERGE INTO departments AS t\nUSING (SELECT 2 AS dept_id, N'Pazarlama ve İletişim' AS name, N'İstanbul' AS city\n       UNION ALL SELECT 11, N'Veri Platformu', N'Ankara') AS s\n   ON t.dept_id = s.dept_id\nWHEN MATCHED THEN UPDATE SET name = s.name, city = s.city\nWHEN NOT MATCHED THEN INSERT (dept_id, name, city) VALUES (s.dept_id, s.name, s.city);", mysql: "INSERT INTO departments (dept_id, name, city) VALUES (2, 'Pazarlama ve İletişim', 'İstanbul'), (11, 'Veri Platformu', 'Ankara')\nON DUPLICATE KEY UPDATE name = VALUES(name), city = VALUES(city);", oracle: "MERGE INTO departments t\nUSING (SELECT 2 AS dept_id, 'Pazarlama ve İletişim' AS name, 'İstanbul' AS city FROM dual\n       UNION ALL SELECT 11, 'Veri Platformu', 'Ankara' FROM dual) s\n   ON (t.dept_id = s.dept_id)\nWHEN MATCHED THEN UPDATE SET t.name = s.name, t.city = s.city\nWHEN NOT MATCHED THEN INSERT (dept_id, name, city) VALUES (s.dept_id, s.name, s.city);" }, check: 'SELECT * FROM departments ORDER BY dept_id' },
     { t: 'sql', q: '<p><code>price_updates</code> tablosundaki <b>her ürünün en son</b> (<code>updated_at</code> en büyük) fiyatını <code>products.price</code>\'a uygula.</p>', sol: 'UPDATE products SET price = (SELECT pu.new_price FROM price_updates pu WHERE pu.product_id = products.product_id ORDER BY pu.updated_at DESC LIMIT 1) WHERE product_id IN (SELECT product_id FROM price_updates);', check: 'SELECT product_id, price FROM products ORDER BY product_id', hint: 'UPDATE ... SET price = (ilişkili alt sorgu: en son kaydı alan TOP 1 / LIMIT 1 / FETCH FIRST 1) WHERE product_id IN (...)' }
   ]
 });
@@ -341,14 +341,14 @@ put({
 <h2>İndeks = kitabın arkasındaki dizin</h2>
 <p>İndeks olmadan veritabanı bir koşulu sağlayan satırları bulmak için tüm tabloyu tarar (<i>full table scan</i> / SQL Server'da <i>Table Scan</i>). İndeks, sütun değerlerini sıralı bir <b>B-tree</b> yapısında tutar ve aramayı logaritmik zamana indirir.</p>
 <h2>Sorgu planını görmek</h2>
-<table><tr><th>Program</th><th>Planı görme</th></tr>
+<table><tr><th>SQL türü</th><th>Planı görme</th></tr>
 <tr><td>SQL Server</td><td>SSMS'te <b>Ctrl+M</b> (gerçek plan) veya <code>SET SHOWPLAN_TEXT ON</code></td></tr>
 <tr><td>PostgreSQL</td><td><code>EXPLAIN</code>, <code>EXPLAIN ANALYZE</code></td></tr>
 <tr><td>MySQL</td><td><code>EXPLAIN</code>, <code>EXPLAIN ANALYZE</code> (8.0.18+)</td></tr>
 <tr><td>Oracle</td><td><code>EXPLAIN PLAN FOR ...</code> + <code>DBMS_XPLAN.DISPLAY</code></td></tr>
 <tr><td>SQLite</td><td><code>EXPLAIN QUERY PLAN</code></td></tr>
 </table>
-<p>Tarayıcıdaki motor SQLite olduğu için aşağıdaki kutular hangi programı seçersen seç SQLite planını gösterir; yazım farkını sekmelerde görebilirsin.</p>
+<p>Tarayıcıdaki motor SQLite olduğu için aşağıdaki kutular hangi SQL türü seçersen seç SQLite planını gösterir; yazım farkını sekmelerde görebilirsin.</p>
 ${CODE("EXPLAIN QUERY PLAN\nSELECT * FROM orders WHERE customer_id = 42;", {
   tsql: "SET SHOWPLAN_TEXT ON;\nGO\nSELECT * FROM orders WHERE customer_id = 42;\nGO\nSET SHOWPLAN_TEXT OFF;",
   pg: "EXPLAIN\nSELECT * FROM orders WHERE customer_id = 42;",
@@ -411,14 +411,14 @@ put({
   sum: 'Bir olay olduğunda otomatik çalışan SQL; satır bazlı ve küme bazlı tetikleyiciler.',
   body: `
 <h2>Olay → eylem</h2>
-<p>Trigger, bir tabloda INSERT, UPDATE veya DELETE olduğunda otomatik çalışır. Denetim kaydı (audit log), türetilmiş alanları güncel tutma ve karmaşık doğrulamalar için kullanılır. Yazım programdan programa çok değişir; sekmelerle karşılaştır:</p>
+<p>Trigger, bir tabloda INSERT, UPDATE veya DELETE olduğunda otomatik çalışır. Denetim kaydı (audit log), türetilmiş alanları güncel tutma ve karmaşık doğrulamalar için kullanılır. Yazım SQL türünden SQL türüne çok değişir; sekmelerle karşılaştır:</p>
 ${CODE("CREATE TABLE price_log (\n  product_id INTEGER, old_price REAL, new_price REAL\n);\n\nCREATE TRIGGER trg_price_change\nAFTER UPDATE OF price ON products\nFOR EACH ROW\nWHEN OLD.price <> NEW.price\nBEGIN\n  INSERT INTO price_log (product_id, old_price, new_price)\n  VALUES (OLD.product_id, OLD.price, NEW.price);\nEND;\n\nUPDATE products SET price = price + 10 WHERE category = 'Kitap';\nSELECT product_id, old_price, new_price FROM price_log ORDER BY product_id;", {
   tsql: "CREATE TABLE price_log (\n  product_id INT, old_price DECIMAL(12,2), new_price DECIMAL(12,2)\n);\nGO\nCREATE TRIGGER trg_price_change ON products\nAFTER UPDATE\nAS\nBEGIN\n  SET NOCOUNT ON;\n  INSERT INTO price_log (product_id, old_price, new_price)\n  SELECT d.product_id, d.price, i.price\n  FROM deleted d\n  JOIN inserted i ON i.product_id = d.product_id\n  WHERE d.price <> i.price;\nEND;\nGO\nUPDATE products SET price = price + 10 WHERE category = N'Kitap';\nSELECT product_id, old_price, new_price FROM price_log ORDER BY product_id;",
   pg: "CREATE TABLE price_log (product_id INTEGER, old_price NUMERIC(12,2), new_price NUMERIC(12,2));\n\nCREATE FUNCTION fn_price_change() RETURNS trigger AS $$\nBEGIN\n  IF OLD.price <> NEW.price THEN\n    INSERT INTO price_log VALUES (OLD.product_id, OLD.price, NEW.price);\n  END IF;\n  RETURN NEW;\nEND;\n$$ LANGUAGE plpgsql;\n\nCREATE TRIGGER trg_price_change\nAFTER UPDATE OF price ON products\nFOR EACH ROW EXECUTE FUNCTION fn_price_change();",
   mysql: "CREATE TABLE price_log (product_id INT, old_price DECIMAL(12,2), new_price DECIMAL(12,2));\n\nDELIMITER //\nCREATE TRIGGER trg_price_change\nAFTER UPDATE ON products\nFOR EACH ROW\nBEGIN\n  IF OLD.price <> NEW.price THEN\n    INSERT INTO price_log VALUES (OLD.product_id, OLD.price, NEW.price);\n  END IF;\nEND //\nDELIMITER ;",
   oracle: "CREATE TABLE price_log (product_id NUMBER(10), old_price NUMBER(12,2), new_price NUMBER(12,2));\n\nCREATE OR REPLACE TRIGGER trg_price_change\nAFTER UPDATE OF price ON products\nFOR EACH ROW\nWHEN (OLD.price <> NEW.price)\nBEGIN\n  INSERT INTO price_log VALUES (:OLD.product_id, :OLD.price, :NEW.price);\nEND;\n/"
 }, { nr: ['pg', 'mysql', 'oracle'] })}
-<table><tr><th>Program</th><th>Önceki / yeni değer</th><th>Çalışma biçimi</th></tr>
+<table><tr><th>SQL türü</th><th>Önceki / yeni değer</th><th>Çalışma biçimi</th></tr>
 <tr><td>SQL Server</td><td><code>deleted</code> / <code>inserted</code> sanal tabloları</td><td>İfade başına bir kez (küme bazlı)</td></tr>
 <tr><td>PostgreSQL</td><td><code>OLD</code> / <code>NEW</code></td><td>Trigger fonksiyonu + <code>FOR EACH ROW</code> veya <code>STATEMENT</code></td></tr>
 <tr><td>MySQL, SQLite</td><td><code>OLD</code> / <code>NEW</code></td><td>Satır başına</td></tr>
@@ -448,7 +448,7 @@ put({
 <li><b>Önce topla, sonra birleştir.</b> Büyük bir olay tablosunu boyut tablosuyla birleştirmeden önce özetle.</li>
 <li><b>Planı oku.</b> Tam tarama, iç içe döngü ve tahmini satır sayılarını incele (önceki ders).</li>
 </ol>
-<div class="note" data-d="tsql"><b>SQL Server'a özgü</b>Parametre koklama (parameter sniffing), eksik istatistikler ve örtük tip dönüşümleri (ör. NVARCHAR sütunu VARCHAR parametreyle karşılaştırmak) en sık performans sorunlarıdır. <code>SET STATISTICS IO, TIME ON</code> ile okunan sayfa sayısını ölç.</div>
+<div class="note" data-d="tsql"><b>SQL Server'a özgü</b>Parameter sniffing, eksik istatistikler ve örtük tip dönüşümleri (ör. NVARCHAR sütunu VARCHAR parametreyle karşılaştırmak) en sık performans sorunlarıdır. <code>SET STATISTICS IO, TIME ON</code> ile okunan sayfa sayısını ölç.</div>
 ${CODE("-- Yavaş kalıp: tarih fonksiyonu sütunu sarıyor\nEXPLAIN QUERY PLAN\nSELECT COUNT(*) FROM orders WHERE strftime('%Y', order_date) = '2024';", {
   tsql: "-- Yavaş kalıp (SARGable değil)\nSET STATISTICS IO ON;\nSELECT COUNT(*) FROM orders WHERE YEAR(order_date) = 2024;",
   pg: "EXPLAIN SELECT COUNT(*) FROM orders WHERE EXTRACT(YEAR FROM order_date) = 2024;",
@@ -467,10 +467,10 @@ ${CODE("-- Daha iyi: aralık + indeks\nCREATE INDEX idx_o_date ON orders(order_d
 put({
   id: 'json', lv: 'C2', mod: 'Modern SQL', min: 14,
   title: 'SQL ile JSON verisi',
-  sum: 'Yarı yapılandırılmış veriyi sorgulamak ve üretmek; programlar arası farklar.',
+  sum: 'Yarı yapılandırılmış veriyi sorgulamak ve üretmek; SQL türleri arası farklar.',
   body: `
 <h2>Neden JSON?</h2>
-<p>Uygulama olayları, API yanıtları ve esnek nitelikler çoğu zaman JSON olarak gelir. SQL:2016 ile JSON desteği standarda girdi; ama her program kendi fonksiyonlarını kullanır.</p>
+<p>Uygulama olayları, API yanıtları ve esnek nitelikler çoğu zaman JSON olarak gelir. SQL:2016 ile JSON desteği standarda girdi; ama her SQL türü kendi fonksiyonlarını kullanır.</p>
 <div class="tbl-wrap"><table><tr><th>İşlem</th><th>SQL Server</th><th>PostgreSQL</th><th>MySQL</th><th>Oracle</th><th>SQLite</th></tr>
 <tr><td>Alan oku</td><td><code>JSON_VALUE(j, '$.a.b')</code></td><td><code>j-&gt;'a'-&gt;&gt;'b'</code></td><td><code>j-&gt;&gt;'$.a.b'</code></td><td><code>JSON_VALUE(j, '$.a.b')</code></td><td><code>json_extract(j, '$.a.b')</code></td></tr>
 <tr><td>Diziyi satırlara aç</td><td><code>OPENJSON</code></td><td><code>jsonb_array_elements</code></td><td><code>JSON_TABLE</code></td><td><code>JSON_TABLE</code></td><td><code>json_each</code></td></tr>
@@ -499,10 +499,10 @@ ${CODE("SELECT json_object('id', customer_id, 'ad', first_name, 'sehir', city) A
 put({
   id: 'ds-tanimsal', lv: 'B1', mod: 'Veri Bilimi', min: 16,
   title: 'SQL ile tanımlayıcı istatistik',
-  sum: 'Ortalama, medyan, standart sapma, varyans, mod; programlara göre fonksiyon adları.',
+  sum: 'Ortalama, medyan, standart sapma, varyans, mod; SQL türlerine göre fonksiyon adları.',
   body: `
 <h2>Veriyi tanımak</h2>
-<p>Modelden önce dağılımı anlamak gerekir. İstatistik fonksiyonlarının adları programa göre değişir:</p>
+<p>Modelden önce dağılımı anlamak gerekir. İstatistik fonksiyonlarının adları SQL türüne göre değişir:</p>
 <div class="tbl-wrap"><table><tr><th>Ölçü</th><th>SQL Server</th><th>PostgreSQL</th><th>MySQL</th><th>Oracle</th></tr>
 <tr><td>Ortalama</td><td colspan="4"><code>AVG(x)</code></td></tr>
 <tr><td>Standart sapma (örneklem)</td><td><code>STDEV(x)</code></td><td><code>STDDEV(x)</code></td><td><code>STDDEV_SAMP(x)</code></td><td><code>STDDEV(x)</code></td></tr>
@@ -528,7 +528,7 @@ LIMIT 1;</pre>
 FROM products;</pre>
 `,
   ex: [
-    { t: 'sql', q: '<p>Çalışan maaşlarının <b>ortalama, medyan ve standart sapmasını</b> (örneklem) getir, hepsini tam sayıya yuvarla.</p>', sol: 'SELECT ROUND(AVG(salary)), ROUND(MEDIAN(salary)), ROUND(STDDEV(salary)) FROM employees;', solv: { tsql: 'WITH med AS (SELECT DISTINCT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY salary) OVER () AS m FROM employees)\nSELECT ROUND(AVG(salary), 0), ROUND(MAX(med.m), 0), ROUND(STDEV(salary), 0)\nFROM employees CROSS JOIN med;', mysql: 'WITH s AS (SELECT salary, ROW_NUMBER() OVER (ORDER BY salary) AS rn, COUNT(*) OVER () AS c FROM employees),\nmed AS (SELECT AVG(salary) AS m FROM s WHERE rn IN (FLOOR((c + 1) / 2), FLOOR((c + 2) / 2)))\nSELECT ROUND(AVG(salary)), ROUND(MAX(med.m)), ROUND(STDDEV_SAMP(salary))\nFROM employees CROSS JOIN med;' }, hint: 'Programının fonksiyon adlarını tablodan kontrol et. SQL Server\'da medyanı ayrı CTE\'de PERCENTILE_CONT ... OVER () ile hesapla.' },
+    { t: 'sql', q: '<p>Çalışan maaşlarının <b>ortalama, medyan ve standart sapmasını</b> (örneklem) getir, hepsini tam sayıya yuvarla.</p>', sol: 'SELECT ROUND(AVG(salary)), ROUND(MEDIAN(salary)), ROUND(STDDEV(salary)) FROM employees;', solv: { tsql: 'WITH med AS (SELECT DISTINCT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY salary) OVER () AS m FROM employees)\nSELECT ROUND(AVG(salary), 0), ROUND(MAX(med.m), 0), ROUND(STDEV(salary), 0)\nFROM employees CROSS JOIN med;', mysql: 'WITH s AS (SELECT salary, ROW_NUMBER() OVER (ORDER BY salary) AS rn, COUNT(*) OVER () AS c FROM employees),\nmed AS (SELECT AVG(salary) AS m FROM s WHERE rn IN (FLOOR((c + 1) / 2), FLOOR((c + 2) / 2)))\nSELECT ROUND(AVG(salary)), ROUND(MAX(med.m)), ROUND(STDDEV_SAMP(salary))\nFROM employees CROSS JOIN med;' }, hint: 'SQL türünün fonksiyon adlarını tablodan kontrol et. SQL Server\'da medyanı ayrı CTE\'de PERCENTILE_CONT ... OVER () ile hesapla.' },
     { t: 'sql', q: '<p>Her kategori için ürün fiyatlarının <b>ortalama ve medyanını</b> getir (1 basamak) ve ortalama/medyan oranına göre en çarpık kategori en üstte olacak şekilde sırala: <code>category</code>, <code>ort</code>, <code>med</code>.</p>', sol: 'SELECT category, ROUND(AVG(price), 1) AS ort, ROUND(MEDIAN(price), 1) AS med FROM products GROUP BY category ORDER BY AVG(price) / MEDIAN(price) DESC;', ord: true, dl: ['sqlite', 'pg', 'oracle'], hint: 'PostgreSQL: PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price), Oracle: MEDIAN(price).' }
   ]
 });

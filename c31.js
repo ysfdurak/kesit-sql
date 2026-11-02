@@ -1,4 +1,4 @@
-/* Kesit SQL içerik 31: kısa kalan Veri Bilimi, Veri Mühendisliği, genel, vaka ve programa özgü derslere
+/* Kesit SQL içerik 31: kısa kalan Veri Bilimi, Veri Mühendisliği, genel, vaka ve SQL türüne özgü derslere
    “Derinleş” bölümleri ve ek alıştırmalar. Alıştırmalar yalnızca sona eklenir (ilerleme korunur). */
 (function () {
 const L = window.SQLP_LESSONS; const LM = id => L.find(l => l.id === id);
@@ -290,7 +290,7 @@ FROM s;`)}
 <p>39 tekil e-posta var; ROW_NUMBER 39 satır bırakır, RANK ise 51. Tam tekrar satırlar aynı <code>id</code>'ye sahip olduğu için RANK hepsine 1 verir ve tekrarlar yerinde kalır.</p>
 <h3>Birleştirmenin bedeli</h3>
 <p>Kanat Havayolları'nda 33 e-posta birden fazla yolcu kaydında geçiyor. En eski kaydı (en küçük <code>joined_date</code>) bırakırsak 34 yolcu kaydı birleşir ve bunlara bağlı 172 rezervasyonun <code>passenger_id</code>'si kalan kayda taşınmalıdır. Tekilleştirme yalnızca bir tabloyu değil, ona bakan tüm tabloları etkiler.</p>
-<div class="note"><b>Programlara göre kısayollar</b>PostgreSQL: <code>SELECT DISTINCT ON (email) ... ORDER BY email, joined_date</code>. BigQuery ve Snowflake: <code>QUALIFY ROW_NUMBER() OVER (...) = 1</code>. Diğerlerinde CTE + ROW_NUMBER kalıbı her yerde çalışır.</div>`));
+<div class="note"><b>SQL türlerine göre kısayollar</b>PostgreSQL: <code>SELECT DISTINCT ON (email) ... ORDER BY email, joined_date</code>. BigQuery ve Snowflake: <code>QUALIFY ROW_NUMBER() OVER (...) = 1</code>. Diğerlerinde CTE + ROW_NUMBER kalıbı her yerde çalışır.</div>`));
 X('de-dedup', [
   sq('Kanat Havayolları: e-postası dolu yolcuları e-postaya göre tekilleştir; her e-postada en eski <code>joined_date</code> (eşitlikte küçük <code>passenger_id</code>) kalsın. Yalnızca birden fazla kaydı olan e-postaların <b>kalan</b> kaydını getir: <code>email</code>, <code>passenger_id</code>, <code>joined_date</code>. E-postaya göre sırala.', 'WITH s AS (SELECT passenger_id, email, joined_date, ROW_NUMBER() OVER (PARTITION BY email ORDER BY joined_date, passenger_id) AS rn, COUNT(*) OVER (PARTITION BY email) AS adet FROM hv_passengers WHERE email IS NOT NULL) SELECT email, passenger_id, joined_date FROM s WHERE rn = 1 AND adet > 1 ORDER BY email;', Object.assign({ hint: 'ROW_NUMBER ile kalanı, COUNT(*) OVER (PARTITION BY email) ile grubun büyüklüğünü aynı CTE\'de hesapla.' }, O)),
   sq('Birleştirmenin etkisi: yukarıdaki kurala göre <b>silinecek</b> (rn &gt; 1) yolcu kayıtlarının sayısı ve bu kayıtlara bağlı, kalan kayda taşınması gereken rezervasyon sayısı: <code>birlesen_yolcu</code>, <code>tasinacak_rezervasyon</code>.', 'WITH s AS (SELECT passenger_id, email, ROW_NUMBER() OVER (PARTITION BY email ORDER BY joined_date, passenger_id) AS rn FROM hv_passengers WHERE email IS NOT NULL) SELECT COUNT(DISTINCT s.passenger_id) AS birlesen_yolcu, COUNT(b.booking_id) AS tasinacak_rezervasyon FROM s LEFT JOIN hv_bookings b ON b.passenger_id = s.passenger_id WHERE s.rn > 1;', { hint: 'rn > 1 olan yolculara rezervasyonları LEFT JOIN ile bağla; yolcu için COUNT(DISTINCT), rezervasyon için COUNT(b.booking_id).' })
@@ -467,12 +467,12 @@ SELECT is_vip, COUNT(*) AS musteri FROM customers GROUP BY is_vip ORDER BY is_vi
 X('alter-drop', [
   sq('<code>products</code> tablosuna <code>kar_marji</code> adında <code>DECIMAL(10,2)</code> bir sütun ekle ve her ürün için <code>price - cost</code> değeriyle doldur.', 'ALTER TABLE products ADD COLUMN kar_marji DECIMAL(10,2); UPDATE products SET kar_marji = price - cost;', { check: 'SELECT product_id, kar_marji FROM products ORDER BY product_id', hint: 'İki ifade: ALTER TABLE ... ADD (SQL Server ve Oracle\'da COLUMN yazılmaz) ve ardından WHERE\'siz bir UPDATE.' }),
   sq('Genişlet–daralt adımının “daralt” kısmı: <code>raw_signups</code> tablosundan artık kullanılmayan <code>city</code> sütununu kaldır.', 'ALTER TABLE raw_signups DROP COLUMN city;', { check: "SELECT name FROM pragma_table_info('raw_signups') ORDER BY cid", dl: ['sqlite', 'pg', 'mysql', 'oracle', 'bq'], hint: 'ALTER TABLE tablo DROP COLUMN sütun;' }),
-  sq('<code>raw_signups</code> tablosunun yapısını koruyarak <b>tüm satırlarını</b> sil (bu uygulamadaki her programda çalışan yolla).', 'DELETE FROM raw_signups;', { check: "SELECT COUNT(*) AS satir, (SELECT COUNT(*) FROM sqlite_master WHERE name = 'raw_signups') AS tablo FROM raw_signups", hint: 'TRUNCATE SQLite\'ta yok; WHERE\'siz DELETE her yerde çalışır ve tabloyu korur.' })
+  sq('<code>raw_signups</code> tablosunun yapısını koruyarak <b>tüm satırlarını</b> sil (bu uygulamadaki her SQL türünde çalışan yolla).', 'DELETE FROM raw_signups;', { check: "SELECT COUNT(*) AS satir, (SELECT COUNT(*) FROM sqlite_master WHERE name = 'raw_signups') AS tablo FROM raw_signups", hint: 'TRUNCATE SQLite\'ta yok; WHERE\'siz DELETE her yerde çalışır ve tabloyu korur.' })
 ]);
 
-more('json', D('JSON ile çalışırken programlar arası farklar', `
-<p>JSON fonksiyonlarının adları programdan programa değişir, ama asıl farklar daha derindedir: <b>saklama tipi</b>, <b>dönen değerin tipi</b> ve <b>dizileri satırlara açma</b> yöntemi.</p>
-<table><tr><th>Program</th><th>Saklama</th><th>Not</th></tr>
+more('json', D('JSON ile çalışırken SQL türleri arası farklar', `
+<p>JSON fonksiyonlarının adları SQL türüne göre değişir, ama asıl farklar daha derindedir: <b>saklama tipi</b>, <b>dönen değerin tipi</b> ve <b>dizileri satırlara açma</b> yöntemi.</p>
+<table><tr><th>SQL türü</th><th>Saklama</th><th>Not</th></tr>
 <tr><td>PostgreSQL</td><td><code>json</code> (metin olarak) ve <code>jsonb</code> (ikili, indekslenebilir)</td><td>Analitik için <code>jsonb</code> + GIN indeks</td></tr>
 <tr><td>MySQL</td><td><code>JSON</code> tipi (doğrulanır, ikili saklanır)</td><td>Üretilmiş (generated) sütunla indekslenir</td></tr>
 <tr><td>SQL Server</td><td>Ayrı tip yok (2025 öncesi): <code>NVARCHAR(MAX)</code></td><td><code>ISJSON()</code> ile CHECK kısıtı ekle</td></tr>
@@ -527,7 +527,7 @@ GROUP BY jt.etiket;`)}
 <div class="tip"><b>Ne zaman JSON, ne zaman sütun?</b>Sık filtrelenen, raporlanan veya birleştirilen alanları gerçek sütunlara çıkar. JSON'u gerçekten esnek, seyrek ve kaynağa göre değişen nitelikler için bırak.</div>`));
 X('json', [
   sq('Her Lezzet Kurye restoranı için <code>{"ad": ..., "mutfak": ..., "komisyon": ...}</code> biçiminde bir JSON nesnesi üret (CTE), sonra JSON\'dan <code>mutfak</code> alanını okuyarak mutfak başına restoran sayısını getir: <code>mutfak</code>, <code>restoran</code>. Sayıya göre azalan, eşitlikte mutfağa göre sırala.', "WITH t AS (SELECT restaurant_id, json_object('ad', name, 'mutfak', cuisine, 'komisyon', commission_pct) AS j FROM lk_restaurants) SELECT json_extract(j, '$.mutfak') AS mutfak, COUNT(*) AS restoran FROM t GROUP BY json_extract(j, '$.mutfak') ORDER BY restoran DESC, mutfak;", Object.assign({ hint: "Alanı okumak: SQLite json_extract(j, '$.mutfak'), SQL Server/Oracle JSON_VALUE, PostgreSQL j->>'mutfak'." }, O)),
-  sq('Aynı JSON\'dan komisyonu <b>sayıya çevirerek</b> (<code>CAST(... AS REAL)</code>) filtrele: komisyonu 20 ve üzeri olan restoranların şehir başına sayısı. JSON\'a <code>sehir</code> alanını koy: <code>sehir</code>, <code>restoran</code>. Şehre göre sırala.', "WITH t AS (SELECT restaurant_id, json_object('ad', name, 'sehir', city, 'komisyon', commission_pct) AS j FROM lk_restaurants) SELECT json_extract(j, '$.sehir') AS sehir, COUNT(*) AS restoran FROM t WHERE CAST(json_extract(j, '$.komisyon') AS REAL) >= 20 GROUP BY json_extract(j, '$.sehir') ORDER BY sehir;", Object.assign({ hint: 'JSON\'dan okunan değer birçok programda metindir; sayısal karşılaştırmadan önce CAST et.' }, O))
+  sq('Aynı JSON\'dan komisyonu <b>sayıya çevirerek</b> (<code>CAST(... AS REAL)</code>) filtrele: komisyonu 20 ve üzeri olan restoranların şehir başına sayısı. JSON\'a <code>sehir</code> alanını koy: <code>sehir</code>, <code>restoran</code>. Şehre göre sırala.', "WITH t AS (SELECT restaurant_id, json_object('ad', name, 'sehir', city, 'komisyon', commission_pct) AS j FROM lk_restaurants) SELECT json_extract(j, '$.sehir') AS sehir, COUNT(*) AS restoran FROM t WHERE CAST(json_extract(j, '$.komisyon') AS REAL) >= 20 GROUP BY json_extract(j, '$.sehir') ORDER BY sehir;", Object.assign({ hint: 'JSON\'dan okunan değer birçok SQL türünde metindir; sayısal karşılaştırmadan önce CAST et.' }, O))
 ]);
 
 more('mulakat-1', D('klasik soruların tuzakları', `
@@ -650,7 +650,7 @@ X('vaka-kayip', [
   sq('<b>7. Sessizlik süresi:</b> Kayıp müşterileri (son sipariş 180 günden eski) ne kadar süredir sessiz olduklarına göre grupla: <b>181-270 gün</b>, <b>271-365 gün</b>, <b>365+ gün</b>: <code>grup</code>, <code>musteri</code>. Gruba göre sırala.', "WITH m AS (SELECT customer_id, julianday('2024-12-31') - julianday(MAX(order_date)) AS gun FROM orders GROUP BY customer_id) SELECT CASE WHEN gun <= 270 THEN '181-270 gün' WHEN gun <= 365 THEN '271-365 gün' ELSE '365+ gün' END AS grup, COUNT(*) AS musteri FROM m WHERE gun > 180 GROUP BY CASE WHEN gun <= 270 THEN '181-270 gün' WHEN gun <= 365 THEN '271-365 gün' ELSE '365+ gün' END ORDER BY grup;", Object.assign({ why: 'Yakın zamanda kaybedilen müşteriler genellikle daha kolay geri kazanılır; kampanya önceliği bu gruptan başlar.' }, O))
 ]);
 
-/* ======================= T-SQL ve programlara özgü ======================= */
+/* ======================= T-SQL ve SQL türlerine özgü ======================= */
 
 more('ts-top', D('TOP\'u doğru kullanmak ve sayfalama', `
 <p>TOP basit görünür ama üç inceliği vardır: <b>belirlilik</b>, <b>değişkenle kullanım</b> ve <b>büyük tablolarda sayfalama</b>.</p>
@@ -676,7 +676,7 @@ ORDER BY customer_id;`)}
 <tr><td>OFFSET-FETCH</td><td>“5. sayfaya git” kolay</td><td>Derin sayfalarda yavaş, kayma olur</td></tr>
 <tr><td>Keyset</td><td>Her sayfa aynı hızda, kayma yok</td><td>Rastgele sayfaya atlanamaz, sıralama anahtarı benzersiz olmalı</td></tr>
 <tr><td>ROW_NUMBER + filtre</td><td>Taşınabilir</td><td>OFFSET gibi tüm önceki satırları işler</td></tr></table>
-<div class="note"><b>Programlar arası</b>PostgreSQL ve MySQL <code>LIMIT n OFFSET m</code>; Oracle 12c+ ve PostgreSQL 13+ <code>FETCH FIRST n ROWS WITH TIES</code>; MySQL ve SQLite'ta WITH TIES yoktur, <code>RANK() &lt;= n</code> ile yazılır.</div>`));
+<div class="note"><b>SQL türleri arası</b>PostgreSQL ve MySQL <code>LIMIT n OFFSET m</code>; Oracle 12c+ ve PostgreSQL 13+ <code>FETCH FIRST n ROWS WITH TIES</code>; MySQL ve SQLite'ta WITH TIES yoktur, <code>RANK() &lt;= n</code> ile yazılır.</div>`));
 X('ts-top', [
   sq('Değişkenle TOP: <code>@n INT = 3</code> tanımla ve Lezzet Kurye\'de komisyon oranı en yüksek <code>@n</code> restoranı, son sıradakiyle aynı orana sahip olanlar da dahil getir: <code>name</code>, <code>commission_pct</code>.', 'DECLARE @n INT = 3;\nSELECT TOP (@n) WITH TIES name, commission_pct FROM lk_restaurants ORDER BY commission_pct DESC;', Object.assign({ hint: 'Değişkenle TOP yazarken parantez zorunlu: TOP (@n) WITH TIES ... ORDER BY ...' }, T)),
   sq('Keyset sayfalama: önceki sayfanın son müşterisi <code>customer_id = 40</code>. Sonraki 5 müşteriyi OFFSET kullanmadan, TOP ve WHERE ile getir: <code>customer_id</code>, <code>first_name</code>.', 'SELECT TOP 5 customer_id, first_name FROM customers WHERE customer_id > 40 ORDER BY customer_id;', TO)
@@ -714,7 +714,7 @@ ORDER BY cuisine;`)}
 <tr><td>Tek ölçü, sabit sütunlar</td><td>Uygun</td><td>Uygun</td></tr>
 <tr><td>Birden çok ölçü (adet + tutar)</td><td>Tek PIVOT'ta olmaz</td><td>Kolay</td></tr>
 <tr><td>Farklı koşullar (tarih aralığı gibi)</td><td>Zor</td><td>Kolay</td></tr>
-<tr><td>Taşınabilirlik</td><td>SQL Server, Oracle</td><td>Her program</td></tr></table>
+<tr><td>Taşınabilirlik</td><td>SQL Server, Oracle</td><td>Her SQL türü</td></tr></table>
 <p><b>Kontrol listesi:</b> Kaynak sorguda yalnızca satır anahtarı, pivot sütunu ve ölçü var mı? Sütun listesi sıralı ve QUOTENAME'li mi? Toplam fonksiyonu NULL üretebiliyorsa dışarıda ISNULL var mı? Sonucun satır toplamı, pivotsuz bir GROUP BY toplamıyla aynı mı?</p>
 <div class="warn"><b>Kaynak sorguyu dar tut</b>Yukarıdaki kaynağa <code>o.order_id</code> eklersen her sipariş ayrı bir gruplama anahtarı olur ve sonuç 8 satır yerine binlerce satıra çıkar.</div>`));
 X('ts-pivot', [
@@ -725,7 +725,7 @@ X('ts-pivot', [
 more('ts-sistem', D('katalog görünümleriyle veritabanını keşfetmek', `
 <p>Yeni bir projeye katıldığında ilk iş, veritabanında ne olduğunu belgeye değil <b>kataloga</b> sormaktır; belge eskiyebilir, katalog her zaman günceldir. SQL Server'da iki katman vardır:</p>
 <table><tr><th>Katman</th><th>Örnek</th><th>Ne zaman?</th></tr>
-<tr><td><code>INFORMATION_SCHEMA</code></td><td><code>TABLES</code>, <code>COLUMNS</code></td><td>Standart, diğer programlara taşınabilir sorgular</td></tr>
+<tr><td><code>INFORMATION_SCHEMA</code></td><td><code>TABLES</code>, <code>COLUMNS</code></td><td>Standart, diğer SQL türlerine taşınabilir sorgular</td></tr>
 <tr><td><code>sys.*</code> katalog görünümleri</td><td><code>sys.tables</code>, <code>sys.columns</code>, <code>sys.indexes</code></td><td>SQL Server'a özgü ayrıntılar (indeks, IDENTITY, bağımlılık)</td></tr></table>
 <p><code>sys</code> görünümleri <code>object_id</code> ile birbirine bağlanır. Lezzet Kurye tablolarının sütun sayıları:</p>
 ${TS(`SELECT t.name AS tablo, COUNT(*) AS sutun

@@ -47,7 +47,7 @@ FROM bk_trips;</pre>
   sum: 'EXPLAIN QUERY PLAN ile tam tarama ve indeks aramasını ayırt etmek, indeks oluşturup süre farkını ölçmek, sütuna fonksiyon uygulamanın indeksi nasıl devre dışı bıraktığını görmek.',
   body: `
 <h2>Plan neyi söyler?</h2>
-<p>Veritabanı bir sorguyu çalıştırmadan önce bir <b>plan</b> yapar: tabloyu baştan sona mı tarayacak (SCAN), yoksa bir indeksle doğrudan ilgili satırlara mı gidecek (SEARCH)? SQLite'ta planı <code>EXPLAIN QUERY PLAN</code> gösterir. Diğer programlarda karşılığı <code>EXPLAIN</code> (PostgreSQL, MySQL), tahmini yürütme planı (SQL Server) ve <code>EXPLAIN PLAN FOR</code> (Oracle) ifadeleridir.</p>
+<p>Veritabanı bir sorguyu çalıştırmadan önce bir <b>plan</b> yapar: tabloyu baştan sona mı tarayacak (SCAN), yoksa bir indeksle doğrudan ilgili satırlara mı gidecek (SEARCH)? SQLite'ta planı <code>EXPLAIN QUERY PLAN</code> gösterir. Diğer SQL türlerinde karşılığı <code>EXPLAIN</code> (PostgreSQL, MySQL), tahmini yürütme planı (SQL Server) ve <code>EXPLAIN PLAN FOR</code> (Oracle) ifadeleridir.</p>
 <pre class="code" data-na="tsql pg mysql oracle bq">EXPLAIN QUERY PLAN
 SELECT COUNT(*) FROM bk_trips WHERE start_station = 5;</pre>
 <p><code>bk_trips</code> tablosunda yalnızca <code>started_at</code> ve <code>user_id</code> üzerinde indeks var; istasyon sütunlarında yok. Bu yüzden <code>start_station</code> filtresi <b>SCAN bk_trips</b> (tam tarama) üretir. Sonuç kutusunun altındaki süreye dikkat et.</p>
@@ -79,7 +79,7 @@ GROUP BY CASE WHEN w.rain_mm &gt; 0 THEN 'yağmurlu' ELSE 'kuru' END;</pre>
     sq('İndeksi kullanabilen (sargable) biçimde yaz: 15 Temmuz 2024\'te başlayan yolculuk sayısı (<code>date()</code> kullanmadan): <code>yolculuk</code>.', "SELECT COUNT(*) AS yolculuk FROM bk_trips WHERE started_at >= '2024-07-15' AND started_at < '2024-07-16';"),
     sq('Saatlik hava ile birleştir (hava tablosunun anahtarında arama): yağmurlu ve kuru saatlerde başlayan yolculuk sayısı: <code>yagmur</code> (1/0), <code>yolculuk</code>.', `SELECT CASE WHEN w.rain_mm > 0 THEN 1 ELSE 0 END AS yagmur, COUNT(*) AS yolculuk FROM bk_trips t JOIN bk_weather w ON w.obs_hour = ${HOUR} GROUP BY CASE WHEN w.rain_mm > 0 THEN 1 ELSE 0 END;`),
     sq('Bileşik indeks: <code>(start_station, started_at)</code> üzerinde <code>ix_st_time</code> oluştur ve 5 numaralı istasyondan Temmuz 2024\'te başlayan yolculukları say: <code>yolculuk</code>.', "CREATE INDEX ix_st_time ON bk_trips (start_station, started_at); SELECT COUNT(*) AS yolculuk FROM bk_trips WHERE start_station = 5 AND started_at >= '2024-07-01' AND started_at < '2024-08-01';", { base: 'sqlite', dl: ['sqlite'] }),
-    mc('<p><code>WHERE strftime(\'%m\', started_at) = \'07\'</code> neden <code>started_at</code> indeksini kullanamaz?</p>', ['strftime her veritabanında yavaş çalışan, indeksle birlikte kullanılması yasak bir fonksiyon olduğu için', 'İndeks sütunun ham değerlerini sıralı tutar; fonksiyonun çıktısı için sıralı bir yapı yoktur', 'Ay numarası metin olarak döndüğü için karşılaştırma sayı indeksiyle eşleşemez', 'İndeks yalnızca eşitlik koşullarında çalışır, aralık ve fonksiyonlarda hiç kullanılmaz'], 1, 'Sütuna fonksiyon uygulanan koşullar “sargable” değildir. Aynı soruyu aralık koşuluyla yazmak indeksin sıralı yapısından yararlanır. Bazı programlar ifade (fonksiyon tabanlı) indeksleri de destekler.')
+    mc('<p><code>WHERE strftime(\'%m\', started_at) = \'07\'</code> neden <code>started_at</code> indeksini kullanamaz?</p>', ['strftime her veritabanında yavaş çalışan, indeksle birlikte kullanılması yasak bir fonksiyon olduğu için', 'İndeks sütunun ham değerlerini sıralı tutar; fonksiyonun çıktısı için sıralı bir yapı yoktur', 'Ay numarası metin olarak döndüğü için karşılaştırma sayı indeksiyle eşleşemez', 'İndeks yalnızca eşitlik koşullarında çalışır, aralık ve fonksiyonlarda hiç kullanılmaz'], 1, 'Sütuna fonksiyon uygulanan koşullar “sargable” değildir. Aynı soruyu aralık koşuluyla yazmak indeksin sıralı yapısından yararlanır. Bazı SQL türleri ifade (fonksiyon tabanlı) indeksleri de destekler.')
   ]
 },
 {
@@ -179,7 +179,7 @@ P.push({ id: 'buyuk-veri', name: 'Büyük Veriyle Çalışmak', short: 'BV', col
     { t: 'Büyük tabloyu tanımak', d: 'Profil, örneklem, plan ve indeks', l: ['bv-giris', 'index', 'bv-plan'] },
     { t: 'Analiz', d: 'Zaman, istasyon ve gelir', l: ['bv-zaman', 'bv-istasyon', 'bv-gelir'] }
   ],
-  beyond: ['Arena: Pedal İzmir meydan okumaları', 'Alıştırma: Bisiklet verisi konusu', 'Bölümleme ve sütun tabanlı depolama (Veri Mühendisliği patikası)', 'Gerçek açık veri: belediyelerin bisiklet paylaşım verileri'] });
+  beyond: ['Arena: Pedal İzmir meydan okumaları', 'Alıştırma: Bisiklet verisi konusu', 'Bölümleme ve sütun tabanlı depolama (Veri Mühendisliği öğrenme yolu)', 'Gerçek açık veri: belediyelerin bisiklet paylaşım verileri'] });
 
 /* ---------- Alıştırma bankası: İK ve Bisiklet ---------- */
 const PR = window.SQLP_PRACTICE; const T = window.SQLP_PRACTICE_TOPICS = window.SQLP_PRACTICE_TOPICS || {};

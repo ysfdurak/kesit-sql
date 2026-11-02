@@ -58,16 +58,16 @@ const lessons = [
 <li>Oranlarda tam sayı bölmesi: <code>5 / 10 = 0</code>. <code>100.0 *</code> ile başla.</li>
 <li>LEFT JOIN'in sağ tablosuna WHERE ile koşul yazıp onu INNER JOIN'e çevirmek.</li>
 </ul>
-<div class="note"><b>Bu modülün yapısı</b>Sonraki derslerin her biri bir soru kalıbını işler: soru, netleştirme soruları, yaklaşım, iki çözüm ve karşılaştırması, sınır durumları ve takip soruları. Alıştırmalar aynı kalıbı üç farklı veri setinde uygular. Kendini denemek için <b>Oyun Alanı</b>'ndaki süreli <b>Mülakat simülasyonu</b>'nu kullan.</div>
+<div class="note"><b>Bu modülün yapısı</b>Sonraki derslerin her biri bir soru kalıbını işler: soru, netleştirme soruları, yaklaşım, iki çözüm ve karşılaştırması, sınır durumları ve takip soruları. Alıştırmalar aynı kalıbı üç farklı veri setinde uygular. Kendini denemek için <b>SQL Arena</b>'ndaki süreli <b>Mülakat simülasyonu</b>'nu kullan.</div>
 `,
   ex: [
-    mc('<p>Görüşmeci “Geçen ay en çok harcama yapan 3 müşteriyi bul” diyor. İlk yapman gereken nedir?</p>', ['Hemen ORDER BY ... LIMIT 3 ile sorguyu yazıp sonra açıklamak', '“Geçen ay”, iptal ve eşitlik tanımlarını netleştirmek', 'Tablonun boyutunu ve indekslerini sorup performansı konuşmak', 'Hangi programın kullanılacağını sorup ezber kalıp seçmek'], 1,
+    mc('<p>Görüşmeci “Geçen ay en çok harcama yapan 3 müşteriyi bul” diyor. İlk yapman gereken nedir?</p>', ['Hemen ORDER BY ... LIMIT 3 ile sorguyu yazıp sonra açıklamak', '“Geçen ay”, iptal ve eşitlik tanımlarını netleştirmek', 'Tablonun boyutunu ve indekslerini sorup performansı konuşmak', 'Hangi SQL türünün kullanılacağını sorup ezber kalıp seçmek'], 1,
       'Tanım belirsizlikleri çözülmeden yazılan sorgu doğru çalışsa bile yanlış soruyu cevaplar. Görüşmeciler netleştirme sorularını açıkça puanlar.'),
-    mc('<p>Hangisi mülakatta <b>en az</b> önemlidir?</p>', ['Sınır durumlarını (NULL, eşitlik, boş grup) sesli kontrol etmek', 'Her yan cümleyi ayrı satıra yazıp anlamlı takma adlar kullanmak', 'Bir fonksiyonun programa özgü tam adını ezbere bilmek', 'Taneciği (bir satırın neyi temsil ettiğini) söylemek'], 2,
+    mc('<p>Hangisi mülakatta <b>en az</b> önemlidir?</p>', ['Sınır durumlarını (NULL, eşitlik, boş grup) sesli kontrol etmek', 'Her yan cümleyi ayrı satıra yazıp anlamlı takma adlar kullanmak', 'Bir fonksiyonun SQL türüne özgü tam adını ezbere bilmek', 'Taneciği (bir satırın neyi temsil ettiğini) söylemek'], 2,
       'Görüşmeciler genellikle “bu fonksiyonun SQL Server karşılığı neydi” gibi ayrıntılarda esnektir; düşünme biçimi, doğruluk ve iletişim çok daha ağır basar.'),
     sq('Isınma: her departmanın adını, çalışan sayısını ve ortalama maaşını (tam sayı) getir; çalışanı olmayan departman da 0 ile görünsün. Ortalama maaşa göre azalan, eşitlikte ada göre sırala; NULL ortalamalar en sonda olsun: <code>name</code>, <code>calisan</code>, <code>ort_maas</code>.',
       'SELECT d.name, COUNT(e.emp_id) AS calisan, ROUND(AVG(e.salary)) AS ort_maas FROM departments d LEFT JOIN employees e ON e.dept_id = d.dept_id GROUP BY d.dept_id, d.name ORDER BY CASE WHEN AVG(e.salary) IS NULL THEN 1 ELSE 0 END, ort_maas DESC, d.name;',
-      { ord: true, hint: 'NULL\'ları sona atmak için ORDER BY içinde önce CASE WHEN ... IS NULL THEN 1 ELSE 0 END; çünkü programlar NULL sırasında farklı davranır.' })
+      { ord: true, hint: 'NULL\'ları sona atmak için ORDER BY içinde önce CASE WHEN ... IS NULL THEN 1 ELSE 0 END; çünkü SQL türleri NULL sırasında farklı davranır.' })
   ]
 },
 {
@@ -96,7 +96,7 @@ WHERE e.dept_id IS NOT NULL
        WHERE e2.dept_id = e.dept_id AND e2.salary > e.salary) < 2
 ORDER BY e.dept_id, e.salary DESC, e.first_name;`],
     karsilastir: 'İkinci çözüm, “benden yüksek kaç farklı maaş var?” sorusunu sorar; 2\'den azsa ilk ikidedir. DENSE_RANK ile aynı sonucu verir ama her satır için alt sorgu çalıştığından büyük tablolarda yavaştır. Mülakatta önce pencere çözümünü yaz, alternatifi sözlü anlat.',
-    sinir: [['Eşit maaşlar', 'DENSE_RANK ikisini de 1 yapar; ROW_NUMBER birini 2. sıraya iter (hangisi olacağı belirsiz, ikinci sıralama sütunu ekle)'], ['Departmanda tek çalışan', 'Yalnızca o çalışan döner; hata yok'], ['NULL maaş', 'Sıralamada programa göre en başa veya sona düşer; gerekirse WHERE salary IS NOT NULL'], ['3. farklı maaş yoksa', 'Alt sorgu çözümünde NULL dönmesi istenir; MAX(...) ile sarmak boş sonuç yerine NULL verir']],
+    sinir: [['Eşit maaşlar', 'DENSE_RANK ikisini de 1 yapar; ROW_NUMBER birini 2. sıraya iter (hangisi olacağı belirsiz, ikinci sıralama sütunu ekle)'], ['Departmanda tek çalışan', 'Yalnızca o çalışan döner; hata yok'], ['NULL maaş', 'Sıralamada SQL türüne göre en başa veya sona düşer; gerekirse WHERE salary IS NOT NULL'], ['3. farklı maaş yoksa', 'Alt sorgu çözümünde NULL dönmesi istenir; MAX(...) ile sarmak boş sonuç yerine NULL verir']],
     takip: ['N parametre olsaydı nasıl yazardın? (değişken / sorgu parametresi)', 'Büyük tabloda hangi indeks yardımcı olur? (dept_id, salary DESC)', 'SQL Server\'da aynı iş TOP ve CROSS APPLY ile nasıl yazılır?'],
     bakilan: 'Eşitlik sorusunu kendiliğinden sorman ve ROW_NUMBER / RANK / DENSE_RANK farkını tek cümleyle açıklayabilmen.'
   }),
@@ -184,7 +184,7 @@ LIMIT 10;`],
   body: KALIP({
     soru: '“Her cihaz için ziyaretçilerin yüzde kaçı satın almış?” Takip: “Peki A/B testinde B varyantı A\'ya göre ne kadar iyi?”',
     netlestir: ['Payda ne: ziyaret eden <b>kullanıcı</b> mı, <b>oturum</b> mu, <b>olay</b> mı?', 'Bir kullanıcı iki cihaz kullandıysa hangisine yazılır?', 'Satın alma ziyaretten önce kaydedilmişse (veri hatası) sayılır mı?', 'Oran yüzde mi, ondalık mı; kaç basamak?'],
-    yaklasim: ['Payda kümesini tanımla (ziyaret eden kullanıcılar).', 'Pay kümesini aynı tanecikte tanımla (satın alan kullanıcılar).', 'Koşullu sayımla ikisini tek geçişte hesapla.', '100.0 ile çarparak tam sayı bölmesinden kaç.'],
+    yaklasim: ['Payda kümesini tanımla (ziyaret eden kullanıcılar).', 'Pay kümesini aynı grain düzeyinde tanımla (satın alan kullanıcılar).', 'Koşullu sayımla ikisini tek geçişte hesapla.', '100.0 ile çarparak tam sayı bölmesinden kaç.'],
     c1: ['koşullu COUNT DISTINCT', `SELECT device,
        COUNT(DISTINCT CASE WHEN event_type = 'visit' THEN user_id END) AS ziyaretci,
        COUNT(DISTINCT CASE WHEN event_type = 'purchase' THEN user_id END) AS alici,
@@ -369,7 +369,7 @@ LIMIT 5;`],
 {
   id: 'mk-medyan', lv: 'C1', mod: MOD, min: 16,
   title: 'Mülakat kalıbı: medyan, yüzdelik ve mod',
-  sum: 'Programdan bağımsız medyan hesabı, grup başına medyan, en sık değer ve yüzdelik dilimler.',
+  sum: 'SQL türünden bağımsız medyan hesabı, grup başına medyan, en sık değer ve yüzdelik dilimler.',
   body: KALIP({
     soru: '“Her kategoride ürün fiyatlarının medyanını hesapla. MEDIAN fonksiyonu kullanma.” Takip: “En sık görülen sipariş tutarı aralığı (mod) hangisi?”',
     netlestir: ['Çift sayıda değer varsa medyan ortadaki iki değerin ortalaması mı?', 'NULL fiyatlar dahil mi?', 'Mod için eşit sıklıkta birden çok değer varsa hepsi mi?'],
@@ -385,7 +385,7 @@ FROM s
 WHERE rn IN ((n + 1) / 2, (n + 2) / 2)
 GROUP BY category
 ORDER BY category;`],
-    c2: ['programın yerleşik fonksiyonu (destekleniyorsa)', `-- PostgreSQL, Oracle, SQL Server 2022:
+    c2: ['SQL türünün yerleşik fonksiyonu (destekleniyorsa)', `-- PostgreSQL, Oracle, SQL Server 2022:
 -- PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price)
 -- BigQuery: APPROX_QUANTILES(price, 2)[OFFSET(1)]  (yaklaşık)
 SELECT category, MEDIAN(price) AS medyan   -- Oracle ve bu uygulama
@@ -395,7 +395,7 @@ ORDER BY category;`],
     karsilastir: 'Birinci çözümün püf noktası <code>(n + 1) / 2</code> ve <code>(n + 2) / 2</code> ifadeleridir: tam sayı bölmesiyle n tekken ikisi de ortadaki sırayı, n çiftken ortadaki iki sırayı verir. Bu ifade MySQL, Oracle ve BigQuery\'de ondalıklı bölündüğü için orada FLOOR ile sarılmalıdır. Mülakatta yerleşik fonksiyonu bildiğini söyle, ama genellikle elle yazmanı isterler.',
     sinir: [['Çift sayıda değer', 'Ortadaki iki değerin ortalaması'], ['Tek değerli grup', 'O değerin kendisi'], ['NULL', 'COUNT(*) yerine COUNT(price) ve WHERE price IS NOT NULL'], ['Tam sayı bölmesi farkı', 'MySQL / Oracle / BigQuery\'de FLOOR gerekir']],
     takip: ['90. yüzdelik nasıl hesaplanır? (NTILE(10) veya PERCENT_RANK)', 'Medyan neden çarpık dağılımlarda ortalamadan daha iyi bir özet?', 'Çok büyük veride kesin medyan pahalıysa ne yaparsın? (yaklaşık yüzdelik)'],
-    bakilan: 'Tek ve çift sayıda değeri tek bir koşulla ele alman ve tam sayı bölmesinin programlara göre farkını bilmen.'
+    bakilan: 'Tek ve çift sayıda değeri tek bir koşulla ele alman ve tam sayı bölmesinin SQL türlerine göre farkını bilmen.'
   }),
   ex: [
     sq('MEDIAN kullanmadan her departmanın <b>medyan maaşını</b> hesapla (departmanı olmayanlar hariç, tam sayı): <code>dept_id</code>, <code>medyan</code>. Departmana göre sırala.',
@@ -459,7 +459,7 @@ L.splice(at < 0 ? L.length : at + 1, 0, ...lessons);
 const P = window.SQLP_PATHS = window.SQLP_PATHS || [];
 P.push({ id: 'mulakat', name: 'Teknik Mülakat Hazırlığı', short: 'MK', color: '#0F766E',
   desc: 'Veri analisti, analitik mühendisi ve veri bilimci mülakatları için soru kalıpları, ayrıntılı çözümler ve süreli simülasyon.',
-  long: 'Mülakatlarda en sık çıkan SQL soru kalıplarını tek tek işler: grup başına ilk N, ardışık seriler, oranlar, tekrarlar, zaman pencereleri, kendine birleştirme, medyan ve açık uçlu vaka. Her derste netleştirme soruları, iki çözüm, sınır durumları, takip soruları ve görüşmecinin neye baktığı var. Sonunda Oyun Alanı\'ndaki süreli mülakat simülasyonu ve kodlama sınavıyla kendini dene.',
+  long: 'Mülakatlarda en sık çıkan SQL soru kalıplarını tek tek işler: grup başına ilk N, ardışık seriler, oranlar, tekrarlar, zaman pencereleri, kendine birleştirme, medyan ve açık uçlu vaka. Her derste netleştirme soruları, iki çözüm, sınır durumları, takip soruları ve görüşmecinin neye baktığı var. Sonunda SQL Arena\'daki süreli mülakat simülasyonu ve kodlama sınavıyla kendini dene.',
   skills: ['Netleştirme soruları', 'Pencere fonksiyonları', 'Boşluklar ve adalar', 'Doğru payda', 'Kendine birleştirme', 'Medyan ve yüzdelik', 'Vaka analizi'],
   lessons: ['mk-yontem', 'mulakat-1', 'mk-topn', 'mk-tekrar', 'mk-oran', 'mk-selfjoin', 'mk-zaman', 'mk-ardisik', 'mk-medyan', 'mulakat-2', 'mk-vaka', 'vaka-yilsonu', 'vaka-kayip'],
   comp: [
@@ -468,6 +468,6 @@ P.push({ id: 'mulakat', name: 'Teknik Mülakat Hazırlığı', short: 'MK', colo
     { t: 'İleri kalıplar', d: 'Zaman pencereleri, seriler, medyan', l: ['mk-zaman', 'mk-ardisik', 'mk-medyan', 'mulakat-2'] },
     { t: 'Vaka', d: 'Açık uçlu analitik sorular', l: ['mk-vaka', 'vaka-yilsonu', 'vaka-kayip'] }
   ],
-  beyond: ['Oyun Alanı: süreli mülakat simülasyonu', 'Sınavlar: Teknik Mülakat kodlama sınavı', 'İstatistik temelleri (A/B testi, güven aralığı)', 'Ürün metrikleri ve sesli problem çözme pratiği']
+  beyond: ['SQL Arena: süreli mülakat simülasyonu', 'Sınavlar: Teknik Mülakat kodlama sınavı', 'İstatistik temelleri (A/B testi, güven aralığı)', 'Ürün metrikleri ve sesli problem çözme pratiği']
 });
 })();

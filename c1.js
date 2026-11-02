@@ -69,7 +69,7 @@
 <tr><td><code>web_events</code>, <code>ab_test</code></td><td>Web sitesi olayları ve A/B testi (analitik dersleri için)</td></tr>
 </table>
 <p>Tüm tabloları, sütunlarını ve verinin kendisini <b>Veri Seti</b> sayfasında inceleyebilirsin. Bir tablonun tamamını görmek için aşağıdaki sorguyu çalıştır. Kod kutularındaki <b>Çalıştır</b> düğmesi sorguyu gerçek veritabanında çalıştırır.</p>
-<div class="tip"><b>Hangi programı kullanıyorsun?</b>SQL bir standarttır ama SQL Server, PostgreSQL, MySQL, Oracle, BigQuery ve SQLite onu biraz farklı yazar. Menüden <b>varsayılan programını</b> seç; tüm kodlar o programın yazımıyla gösterilir. Bir kod kutusunun üstündeki sekmelerle, varsayılanı değiştirmeden aynı sorgunun başka bir programdaki yazılışını ve çıktısını görebilirsin.</div>
+<div class="tip"><b>Hangi SQL türü kullanıyorsun?</b>SQL bir standarttır ama SQL Server, PostgreSQL, MySQL, Oracle, BigQuery ve SQLite onu biraz farklı yazar. Menüden <b>varsayılan SQL türünü</b> seç; tüm kodlar o SQL türünün yazımıyla gösterilir. Bir kod kutusunun üstündeki sekmelerle, varsayılanı değiştirmeden aynı sorgunun başka bir SQL türündeki yazılışını ve çıktısını görebilirsin.</div>
 <pre class="code">SELECT * FROM departments;</pre>
 <div class="tip"><b>SQL komut grupları</b>SQL komutları dört aileye ayrılır: <b>DQL</b> (sorgulama: SELECT), <b>DML</b> (veri değiştirme: INSERT, UPDATE, DELETE), <b>DDL</b> (yapı tanımlama: CREATE, ALTER, DROP), <b>DCL/TCL</b> (yetki ve işlem: GRANT, COMMIT, ROLLBACK). Önce DQL ile başlıyoruz.</div>
 `,
@@ -361,9 +361,9 @@ FROM products
 GROUP BY category;</pre>
 <h2>Altın kural</h2>
 <p>SELECT listesindeki her sütun ya <b>GROUP BY'da yer almalı</b> ya da bir <b>toplama fonksiyonunun içinde</b> olmalıdır.</p>
-<pre class="code">-- Hatalı mantık: name gruplanmamış
+<pre class="code" data-err>-- Hatalı: name gruplanmamış
 SELECT category, name, COUNT(*) FROM products GROUP BY category;</pre>
-<p>SQLite bu sorguyu çalıştırır ama rastgele bir <code>name</code> döndürür. PostgreSQL ve SQL Server ise hata verir. Doğru alışkanlık: kuralı her zaman uygula.</p>
+<p>PostgreSQL, SQL Server, MySQL, Oracle ve BigQuery bu sorguyu reddeder; bu uygulamada da o türleri seçince aynı hatayı alırsın. Yalnız SQLite çalıştırır ve rastgele bir <code>name</code> döndürür. Doğru alışkanlık: kuralı her zaman uygula.</p>
 <h2>Birden fazla sütunla gruplama</h2>
 <pre class="code">SELECT status, channel, COUNT(*) AS adet
 FROM orders

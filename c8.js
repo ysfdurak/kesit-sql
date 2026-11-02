@@ -1,5 +1,5 @@
 /* Kesit SQL içerik 8: BigQuery, Yapay Zekâ ile SQL, kurs ve sertifika taramasından gelen eksikler,
-   Alıştırma Kampı, Sertifika Hazırlık patikası; mevcut derslere BigQuery uyarlamaları */
+   Alıştırma Kampı, Sertifika Hazırlık öğrenme yolu; mevcut derslere BigQuery uyarlamaları */
 (function () {
 const L = window.SQLP_LESSONS = window.SQLP_LESSONS || [];
 const LM = id => L.find(l => l.id === id);
@@ -42,18 +42,18 @@ const aiLessons = [{
   sum: 'Doğal dilden SQL, iyi bir istem (prompt) yazmak ve gizlilik.',
   body: `
 <h2>Yapay zekâ SQL yazabilir mi?</h2>
-<p>Büyük dil modelleri (ChatGPT, Claude, Gemini, Copilot…) iyi tarif edilmiş bir soruyu çoğu zaman doğru SQL'e çevirir. Artık veritabanı araçlarının çoğunda bu özellik hazır geliyor: SSMS ve VS Code'da Copilot, BigQuery'de Gemini, Databricks Assistant, Snowflake Copilot. Ama yapay zekâ <b>senin veritabanını tanımaz</b>: tablo adlarını, iş kurallarını ve “ciro”dan ne kastettiğini sen anlatmazsan tahmin eder. Bu uygulamada da <b>Oyun Alanı</b>'ndaki <b>Yapay zekâya sor</b> panelinden Türkçe soru yazıp seçili programda SQL ürettirebilirsin (claude.ai içinde açıldığında çalışır).</p>
+<p>Büyük dil modelleri (ChatGPT, Claude, Gemini, Copilot…) iyi tarif edilmiş bir soruyu çoğu zaman doğru SQL'e çevirir. Artık veritabanı araçlarının çoğunda bu özellik hazır geliyor: SSMS ve VS Code'da Copilot, BigQuery'de Gemini, Databricks Assistant, Snowflake Copilot. Ama yapay zekâ <b>senin veritabanını tanımaz</b>: tablo adlarını, iş kurallarını ve “ciro”dan ne kastettiğini sen anlatmazsan tahmin eder. Bu uygulamada da <b>SQL Arena</b>'ndaki <b>Yapay zekâya sor</b> panelinden Türkçe soru yazıp seçili SQL türünde SQL ürettirebilirsin (claude.ai içinde açıldığında çalışır).</p>
 <h2>İyi bir istemin beş parçası</h2>
 <table>
 <tr><th>Parça</th><th>Örnek</th></tr>
-<tr><td><b>Program</b></td><td>“SQL Server 2022 için T-SQL yaz.”</td></tr>
+<tr><td><b>SQL türü</b></td><td>“SQL Server 2022 için T-SQL yaz.”</td></tr>
 <tr><td><b>Şema</b></td><td>İlgili tabloların CREATE TABLE ifadeleri veya sütun listesi (Veri Seti sayfasından kopyalayabilirsin).</td></tr>
 <tr><td><b>İş kuralları</b></td><td>“Net ciro = adet × birim fiyat × (1 − indirim). Yalnızca teslim edilen siparişler sayılır.”</td></tr>
 <tr><td><b>Soru</b></td><td>“2024'te kanal bazında aylık net ciroyu bul.”</td></tr>
 <tr><td><b>Çıktı biçimi</b></td><td>“Sütunlar: ay (YYYY-AA), channel, ciro. Aya göre sırala. Açıklama yazma, yalnızca SQL.”</td></tr>
 </table>
 ${NR("Rol: SQL Server 2022 uzmanısın.\nŞema:\n  orders(order_id INT PK, customer_id INT, order_date DATE, status NVARCHAR(20), channel NVARCHAR(20))\n  order_items(item_id INT PK, order_id INT, product_id INT, quantity INT, unit_price DECIMAL(12,2), discount DECIMAL(4,2))\nKurallar: Net ciro = quantity * unit_price * (1 - discount). Yalnızca status = 'delivered'.\nSoru: 2024'te kanal bazında aylık net ciro.\nÇıktı: ay (yyyy-MM), channel, ciro (2 basamak). Aya ve kanala göre sırala. Yalnızca T-SQL kodu ver.")}
-<div class="tip"><b>Neden işe yarar?</b>Modelin hata yaptığı yerlerin çoğu bilinmeyen bilgilerdir: sütun adı (<code>order_date</code> mi <code>created_at</code> mi?), program farkı (LIMIT mi TOP mu?) ve iş kuralı (iptaller dahil mi?). İstemde bunları verdiğinde tahmin edecek bir şey kalmaz.</div>
+<div class="tip"><b>Neden işe yarar?</b>Modelin hata yaptığı yerlerin çoğu bilinmeyen bilgilerdir: sütun adı (<code>order_date</code> mi <code>created_at</code> mi?), SQL türü farkı (LIMIT mi TOP mu?) ve iş kuralı (iptaller dahil mi?). İstemde bunları verdiğinde tahmin edecek bir şey kalmaz.</div>
 <h2>Gizlilik ve güvenlik</h2>
 <ul>
 <li>Genel bir sohbet aracına <b>müşteri verisi yapıştırma</b>; çoğu zaman yalnızca şema yeterlidir.</li>
@@ -64,7 +64,7 @@ ${NR("Rol: SQL Server 2022 uzmanısın.\nŞema:\n  orders(order_id INT PK, custo
 <p>En verimli kullanım, yapay zekâyı <b>öğretmen</b> gibi kullanmaktır: “Bu sorgu neden yavaş?”, “Bu hata mesajı ne demek?”, “Bu sorguyu adım adım açıkla”. Sorguyu ondan almak yerine önce kendin yaz, sonra karşılaştır. Mülakatlarda ve gerçek işte sorgunun doğruluğundan hâlâ sen sorumlusun.</p>
 `,
   ex: [
-    mc('<p>Aşağıdaki istemlerden hangisi en doğru SQL\'i üretme olasılığı en yüksek olandır?</p>', ['“Satışları göster.”', '“2024 satışlarını aylara göre ver.”', '“PostgreSQL için yaz. Tablolar: orders(order_id, order_date, status), order_items(order_id, quantity, unit_price). Yalnızca delivered siparişler. 2024 aylık ciroyu (ay, ciro) aya göre sıralı ver.”', '“SQL bilen biri gibi en iyi sorguyu yaz.”'], 2, 'Program, şema, iş kuralı, soru ve çıktı biçimi birlikte verildiğinde model tahmin etmek zorunda kalmaz.'),
+    mc('<p>Aşağıdaki istemlerden hangisi en doğru SQL\'i üretme olasılığı en yüksek olandır?</p>', ['“Satışları göster.”', '“2024 satışlarını aylara göre ver.”', '“PostgreSQL için yaz. Tablolar: orders(order_id, order_date, status), order_items(order_id, quantity, unit_price). Yalnızca delivered siparişler. 2024 aylık ciroyu (ay, ciro) aya göre sıralı ver.”', '“SQL bilen biri gibi en iyi sorguyu yaz.”'], 2, 'SQL türü, şema, iş kuralı, soru ve çıktı biçimi birlikte verildiğinde model tahmin etmek zorunda kalmaz.'),
     mc('<p>Şirket verisiyle çalışırken yapay zekâ aracına ne vermek <b>genellikle yeterlidir</b>?</p>', ['Müşteri tablosunun tamamı', 'Tabloların şeması (sütun adları ve tipleri) ve iş kuralları', 'Veritabanı şifresi', 'Yedek dosyası'], 1),
     { t: 'sql', q: '<p>Bir yapay zekâ aracına şu soruyu sordun: “Her segmentte kaç müşteri var ve bunların kaçının e-postası boş?” Doğru sorguyu sen yaz: <code>segment</code>, <code>musteri</code>, <code>email_bos</code>.</p>', sol: 'SELECT segment, COUNT(*) AS musteri, SUM(CASE WHEN email IS NULL THEN 1 ELSE 0 END) AS email_bos FROM customers GROUP BY segment;' }
   ]
@@ -132,9 +132,9 @@ JOIN emb b ON b.product_id <> a.product_id
 JOIN products p ON p.product_id = b.product_id
 WHERE a.product_id = 1
 ORDER BY benzerlik DESC;</pre>
-<h2>Programlarda vektör desteği</h2>
+<h2>SQL türlerinde vektör desteği</h2>
 <table>
-<tr><th>Program</th><th>Nasıl?</th></tr>
+<tr><th>SQL türü</th><th>Nasıl?</th></tr>
 <tr><td>SQL Server 2025 / Azure SQL</td><td><code>VECTOR(1536)</code> veri tipi, <code>VECTOR_DISTANCE('cosine', a, b)</code>, vektör indeksi</td></tr>
 <tr><td>PostgreSQL</td><td><b>pgvector</b> eklentisi: <code>vector(1536)</code> tipi, <code>a &lt;=&gt; b</code> (kosinüs mesafesi), HNSW indeksi</td></tr>
 <tr><td>Oracle 23ai</td><td><code>VECTOR</code> tipi, <code>VECTOR_DISTANCE</code>, AI Vector Search</td></tr>
@@ -218,7 +218,7 @@ const bqLessons = [{
   body: `
 <h2>BigQuery nedir?</h2>
 <p>BigQuery, Google Cloud'un <b>sunucusuz</b> (serverless) veri ambarıdır: sunucu kurmaz, indeks oluşturmazsın; terabaytlarca veriyi saniyeler içinde tarayan sorgular yazarsın. Google Analytics 4 ve Google Ads verilerinin doğrudan aktarıldığı yer olduğu için pazarlama ve ürün analitiğinde çok yaygındır. Dili <b>GoogleSQL</b>'dir (standart SQL'e yakın).</p>
-<p>Varsayılan programı <b>BigQuery</b> yaparsan tüm derslerdeki sorgular BigQuery yazımıyla gösterilir; her kod kutusunda BigQuery sekmesi de vardır.</p>
+<p>Varsayılan SQL türü <b>BigQuery</b> yaparsan tüm derslerdeki sorgular BigQuery yazımıyla gösterilir; her kod kutusunda BigQuery sekmesi de vardır.</p>
 <h2>Adlandırma: proje.veri_seti.tablo</h2>
 ${NR("SELECT order_id, order_date\nFROM `sirket-proje.anadolu.orders`\nWHERE order_date >= '2024-12-01';")}
 <p>Gerçek BigQuery'de tablo adı veri setiyle (çoğu zaman projeyle de) yazılır ve ters tırnak kullanılır. Bu uygulamada <code>anadolu</code> veri seti varsayılan olduğu için kısaca <code>orders</code> yazabilirsin; <code>anadolu.orders</code> da çalışır.</p>
@@ -230,7 +230,7 @@ ${NR("SELECT order_id, order_date\nFROM `sirket-proje.anadolu.orders`\nWHERE ord
 <li>Bölümlenmiş (partitioned) tabloda tarih filtresi okunan bölümleri azaltır.</li>
 <li>Sorguyu çalıştırmadan önce editör “bu sorgu X GB işleyecek” diye tahmini gösterir (dry run).</li>
 </ul>
-<h2>Diğer programlardan farklar</h2>
+<h2>Diğer SQL türlerinden farklar</h2>
 <table>
 <tr><th>Konu</th><th>BigQuery</th></tr>
 <tr><td>Küme işlemleri</td><td><code>UNION ALL</code> veya <code>UNION DISTINCT</code>; çıplak <code>UNION</code> hata verir</td></tr>
@@ -306,7 +306,7 @@ ${BQ("SELECT signup_date,\n       COALESCE(SAFE.PARSE_DATE('%Y-%m-%d', signup_da
 <tr><td><code>SAFE_DIVIDE(10, 0)</code></td><td>NULL</td></tr>
 <tr><td><code>SAFE.PARSE_DATE('%d.%m.%Y', '31.02.2024')</code></td><td>NULL</td></tr>
 </table>
-<div class="tip"><b>Diğer programlardaki karşılıkları</b>SQL Server'da TRY_CAST / TRY_CONVERT, PostgreSQL'de NULLIF ile bölme, Oracle'da <code>CAST(... DEFAULT NULL ON CONVERSION ERROR)</code>.</div>
+<div class="tip"><b>Diğer SQL türlerindeki karşılıkları</b>SQL Server'da TRY_CAST / TRY_CONVERT, PostgreSQL'de NULLIF ile bölme, Oracle'da <code>CAST(... DEFAULT NULL ON CONVERSION ERROR)</code>.</div>
 `,
   ex: [
     bx({ q: '<p><code>QUALIFY</code> kullanarak her kategorinin <b>en pahalı</b> ürününü getir (eşitlikte küçük <code>product_id</code>): <code>category</code>, <code>name</code>, <code>price</code>.</p>', sol: 'SELECT category, name, price FROM products QUALIFY ROW_NUMBER() OVER (PARTITION BY category ORDER BY price DESC, product_id) = 1;', hint: 'QUALIFY ROW_NUMBER() OVER (PARTITION BY category ORDER BY price DESC, product_id) = 1' }),
@@ -387,9 +387,9 @@ after('metin-benzerlik', [{
 <tr><td><b>CI</b> / <b>CS</b></td><td>Case Insensitive / Sensitive: büyük/küçük harf duyarsız / duyarlı</td><td>CI'da 'ali' = 'ALİ'?</td></tr>
 <tr><td><b>AI</b> / <b>AS</b></td><td>Accent Insensitive / Sensitive: aksan duyarsız / duyarlı</td><td>AI'da 'Şahin' = 'Sahin'</td></tr>
 </table>
-<h2>Programlara göre</h2>
+<h2>SQL türlerine göre</h2>
 <table>
-<tr><th>Program</th><th>Varsayılan davranış</th><th>Türkçe için</th></tr>
+<tr><th>SQL türü</th><th>Varsayılan davranış</th><th>Türkçe için</th></tr>
 <tr><td>SQL Server</td><td>Kurulumda seçilir (çoğunlukla CI_AS)</td><td><code>Turkish_CI_AS</code>; sorguda <code>COLLATE Turkish_CI_AS</code></td></tr>
 <tr><td>PostgreSQL</td><td>Büyük/küçük harf <b>duyarlı</b></td><td>ICU collation (<code>tr-x-icu</code>), duyarsız arama için <code>ILIKE</code> veya <code>LOWER()</code></td></tr>
 <tr><td>MySQL</td><td><code>utf8mb4_0900_ai_ci</code>: duyarsız</td><td><code>utf8mb4_turkish_ci</code></td></tr>
@@ -413,7 +413,7 @@ after('er-modelleme', []);
 after('iliskiler', [{
   id: 'er-modelleme', lv: 'B1', mod: 'Tabloları Birleştirme', min: 14,
   title: 'Veri modelleme ve ER diyagramı: varlıktan tabloya',
-  sum: 'Kavramsal, mantıksal ve fiziksel model; kardinalite ve kaz ayağı gösterimi.',
+  sum: 'Kavramsal, mantıksal ve fiziksel model; kardinalite ve crow\'s foot (kaz ayağı) gösterimi.',
   body: `
 <h2>Tablolardan önce model</h2>
 <p>Bir veritabanı tasarlanırken önce iş dünyasındaki <b>varlıklar</b> (müşteri, sipariş, ürün) ve aralarındaki <b>ilişkiler</b> çizilir. Bu çizime <b>ER diyagramı</b> (Entity–Relationship) denir. Oracle 1Z0-071 gibi sertifika sınavlarında ER diyagramını okuyup doğru SELECT'i yazmak beklenir.</p>
@@ -421,15 +421,15 @@ after('iliskiler', [{
 <tr><th>Düzey</th><th>Ne içerir?</th><th>Kimin için?</th></tr>
 <tr><td><b>Kavramsal</b></td><td>Varlıklar ve ilişkiler (sütun yok)</td><td>İş birimi</td></tr>
 <tr><td><b>Mantıksal</b></td><td>Öznitelikler, anahtarlar, kardinalite, normalizasyon</td><td>Analist, mimar</td></tr>
-<tr><td><b>Fiziksel</b></td><td>Program tipleri, indeksler, bölümleme</td><td>Veritabanı ekibi</td></tr>
+<tr><td><b>Fiziksel</b></td><td>VTYS tipleri, indeksler, bölümleme</td><td>Veritabanı ekibi</td></tr>
 </table>
-<h2>Kaz ayağı (crow's foot) gösterimi</h2>
+<h2>Crow\'s foot (kaz ayağı) (crow's foot) gösterimi</h2>
 <svg viewBox="0 0 640 150" role="img" aria-label="Müşteri, sipariş, sipariş satırı ve ürün arasındaki ilişkiler" style="max-width:100%;height:auto;font-family:var(--f-mono);font-size:12px">
 <g fill="var(--surface)" stroke="var(--ink)" stroke-width="1.2"><rect x="10" y="50" width="110" height="40" rx="6"/><rect x="180" y="50" width="110" height="40" rx="6"/><rect x="350" y="50" width="120" height="40" rx="6"/><rect x="520" y="50" width="110" height="40" rx="6"/></g>
 <g fill="var(--ink)" text-anchor="middle"><text x="65" y="75">customers</text><text x="235" y="75">orders</text><text x="410" y="75">order_items</text><text x="575" y="75">products</text></g>
 <g stroke="var(--muted)" stroke-width="1.5" fill="none"><path d="M120 70 H180"/><path d="M128 63 V77 M133 63 V77"/><path d="M170 70 L180 62 M170 70 L180 78 M166 63 V77"/><path d="M290 70 H350"/><path d="M298 63 V77 M303 63 V77"/><path d="M340 70 L350 62 M340 70 L350 78 M336 63 V77"/><path d="M470 70 H520"/><path d="M512 63 V77 M507 63 V77"/><path d="M480 70 L470 62 M480 70 L470 78 M484 63 V77"/></g>
 <g fill="var(--muted)" font-size="11" text-anchor="middle"><text x="150" y="45">1 — N</text><text x="320" y="45">1 — N</text><text x="495" y="45">N — 1</text></g>
-<text x="320" y="125" fill="var(--muted)" font-size="11" text-anchor="middle">Kaz ayağı “çok”, dik çizgi “bir” demektir. orders ile products arasındaki çoka-çok ilişkiyi order_items çözer.</text>
+<text x="320" y="125" fill="var(--muted)" font-size="11" text-anchor="middle">Crow\'s foot (kaz ayağı) “çok”, dik çizgi “bir” demektir. orders ile products arasındaki çoka-çok ilişkiyi order_items çözer.</text>
 </svg>
 <h2>İlişki türleri ve tablolar</h2>
 <ul>
@@ -444,7 +444,7 @@ after('iliskiler', [{
 `,
   ex: [
     mc('<p>Bir öğrencinin birden çok derse, bir dersin birden çok öğrenciye sahip olduğu ilişki nasıl tablolanır?</p>', ['Öğrenci tablosuna ders_id sütunu eklenir', 'Ders tablosuna ogrenci_id sütunu eklenir', 'ogrenci_ders gibi bir ara tablo (ogrenci_id, ders_id) oluşturulur', 'Tek tabloda virgülle yazılır'], 2),
-    mc('<p>ER diyagramında kaz ayağı (üç çatallı uç) neyi gösterir?</p>', ['İlişkinin “bir” tarafını', 'İlişkinin “çok” tarafını', 'Birincil anahtarı', 'Silinmiş kaydı'], 1),
+    mc('<p>ER diyagramında crow\'s foot (kaz ayağı) (üç çatallı uç) neyi gösterir?</p>', ['İlişkinin “bir” tarafını', 'İlişkinin “çok” tarafını', 'Birincil anahtarı', 'Silinmiş kaydı'], 1),
     { t: 'sql', q: '<p>Çoka-çok ilişkiyi köprü tablo üzerinden sorgula: her siparişte <b>kaç farklı ürün</b> olduğunu bul ve bu sayıya göre siparişleri say: <code>urun_cesidi</code>, <code>siparis</code>. Ürün çeşidine göre sırala.</p>', sol: 'SELECT urun_cesidi, COUNT(*) AS siparis FROM (SELECT order_id, COUNT(DISTINCT product_id) AS urun_cesidi FROM order_items GROUP BY order_id) AS t GROUP BY urun_cesidi ORDER BY urun_cesidi;', ord: true }
   ]
 }]);
@@ -456,7 +456,7 @@ after('dba-ha', [{
   body: `
 <h2>Dosyadan tabloya</h2>
 <table>
-<tr><th>Program</th><th>Komut / araç</th></tr>
+<tr><th>SQL türü</th><th>Komut / araç</th></tr>
 <tr><td>SQL Server</td><td><code>BULK INSERT</code>, <code>bcp</code> komut satırı aracı, SSMS “Import Flat File”, <code>OPENROWSET(BULK ...)</code></td></tr>
 <tr><td>PostgreSQL</td><td><code>COPY tablo FROM 'dosya.csv'</code> (sunucu), <code>\\copy</code> (psql istemcisi)</td></tr>
 <tr><td>MySQL</td><td><code>LOAD DATA [LOCAL] INFILE</code></td></tr>
@@ -533,7 +533,7 @@ after('ts-guvenlik', [{
 <tr><td><b>Ledger tablo</b></td><td>Kriptografik olarak doğrulanabilir değişiklik geçmişi</td><td>Değiştirilemezlik kanıtı gereken kayıtlar</td></tr>
 </table>
 ${NR("-- Temporal tablo\nCREATE TABLE dbo.fiyat (\n    product_id INT PRIMARY KEY,\n    price      DECIMAL(12,2) NOT NULL,\n    gecerli_baslangic DATETIME2 GENERATED ALWAYS AS ROW START,\n    gecerli_bitis     DATETIME2 GENERATED ALWAYS AS ROW END,\n    PERIOD FOR SYSTEM_TIME (gecerli_baslangic, gecerli_bitis)\n) WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = dbo.fiyat_gecmis));\n\n-- 1 Aralık 2024'teki fiyatlar\nSELECT product_id, price\nFROM dbo.fiyat FOR SYSTEM_TIME AS OF '2024-12-01';\n\n-- Bir ürünün tüm fiyat geçmişi\nSELECT price, gecerli_baslangic, gecerli_bitis\nFROM dbo.fiyat FOR SYSTEM_TIME ALL\nWHERE product_id = 5\nORDER BY gecerli_baslangic;\n\n-- CDC'yi açmak\nEXEC sys.sp_cdc_enable_db;\nEXEC sys.sp_cdc_enable_table @source_schema = N'dbo', @source_name = N'orders', @role_name = NULL;")}
-<p>Diğer programlar: Oracle'da <b>Flashback Query</b> (<code>AS OF TIMESTAMP</code>), MariaDB'de system-versioned tablolar, BigQuery'de <code>FOR SYSTEM_TIME AS OF</code> (son 7 gün), PostgreSQL'de eklenti veya trigger tabanlı geçmiş tabloları. Veri ambarında aynı ihtiyaç SCD Tip 2 ile karşılanır.</p>
+<p>Diğer SQL türleri: Oracle'da <b>Flashback Query</b> (<code>AS OF TIMESTAMP</code>), MariaDB'de system-versioned tablolar, BigQuery'de <code>FOR SYSTEM_TIME AS OF</code> (son 7 gün), PostgreSQL'de eklenti veya trigger tabanlı geçmiş tabloları. Veri ambarında aynı ihtiyaç SCD Tip 2 ile karşılanır.</p>
 `,
   ex: [
     mc('<p>Temporal tabloda “1 Ocak 2024 itibarıyla” satırların halini görmek için hangisi yazılır?</p>', ["<code>FOR SYSTEM_TIME AS OF '2024-01-01'</code>", "<code>WHERE updated_at = '2024-01-01'</code>", '<code>WITH (NOLOCK)</code>', "<code>AS OF VERSION '2024-01-01'</code>"], 0),
@@ -543,7 +543,7 @@ ${NR("-- Temporal tablo\nCREATE TABLE dbo.fiyat (\n    product_id INT PRIMARY KE
 }]);
 
 after('oracle-ozel', [{
-  id: 'plsql', lv: 'C1', mod: 'Programlara Özgü', min: 18,
+  id: 'plsql', lv: 'C1', mod: 'SQL Türlerine Özgü', min: 18,
   title: 'Oracle PL/SQL ile programlama: blok, imleç, prosedür, paket',
   sum: 'Anonim bloklar, değişkenler, döngüler, imleçler, istisnalar ve paketler.',
   body: `
@@ -575,7 +575,7 @@ ${NR("CREATE OR REPLACE FUNCTION net_tutar(p_adet NUMBER, p_fiyat NUMBER, p_indi
     mc('<p>PL/SQL\'de kullanıcı tanımlı bir hata fırlatmak için hangisi kullanılır?</p>', ['<code>THROW 50000, ...</code>', '<code>RAISE_APPLICATION_ERROR(-20001, \'mesaj\')</code>', '<code>PRINT ERROR</code>', '<code>SIGNAL SQLSTATE</code>'], 1)
   ]
 }, {
-  id: 'plpgsql', lv: 'C1', mod: 'Programlara Özgü', min: 15,
+  id: 'plpgsql', lv: 'C1', mod: 'SQL Türlerine Özgü', min: 15,
   title: 'PostgreSQL\'de programlama: PL/pgSQL, DO blokları ve eklentiler',
   sum: 'Fonksiyon, prosedür, trigger fonksiyonu; RETURNS TABLE; eklenti ekosistemi.',
   body: `
@@ -609,14 +609,14 @@ const certLessons = [{
 <p>SQL işlerinde belirleyici olan genellikle portföy ve teknik mülakattır; ama sertifika, özellikle kurumsal şirketlerde ve kariyer değişikliğinde özgeçmişi öne çıkarır ve çalışmaya yapı kazandırır. Aşağıdaki tablo yaygın sınavları ve bu uygulamadaki karşılıklarını özetler.</p>
 <table>
 <tr><th>Sertifika</th><th>Kurum</th><th>Odak</th><th>Kesit SQL'de</th></tr>
-<tr><td>Oracle Database SQL Certified Associate (1Z0-071)</td><td>Oracle</td><td>Saf SQL: SELECT, fonksiyonlar, JOIN, alt sorgu, DDL/DML, view, sequence, yetkiler</td><td>SQL Temelleri patikası + Oracle dersleri + “1Z0-071 konuları”</td></tr>
-<tr><td>Azure Database Administrator Associate (DP-300)</td><td>Microsoft</td><td>Azure SQL yönetimi, güvenlik, performans, otomasyon, HA/DR</td><td>DBA patikası + “Bulutta SQL Server”</td></tr>
-<tr><td>Power BI Data Analyst Associate (PL-300)</td><td>Microsoft</td><td>Power BI; SQL veri hazırlığında destekleyici</td><td>İş Zekası patikası</td></tr>
-<tr><td>Google Data Analytics Professional Certificate</td><td>Google (Coursera)</td><td>Analiz süreci, tablolar, BigQuery'de SQL, R, görselleştirme</td><td>Veri Analisti patikası + BigQuery modülü</td></tr>
+<tr><td>Oracle Database SQL Certified Associate (1Z0-071)</td><td>Oracle</td><td>Saf SQL: SELECT, fonksiyonlar, JOIN, alt sorgu, DDL/DML, view, sequence, yetkiler</td><td>SQL Temelleri öğrenme yolu + Oracle dersleri + “1Z0-071 konuları”</td></tr>
+<tr><td>Azure Database Administrator Associate (DP-300)</td><td>Microsoft</td><td>Azure SQL yönetimi, güvenlik, performans, otomasyon, HA/DR</td><td>DBA öğrenme yolu + “Bulutta SQL Server”</td></tr>
+<tr><td>Power BI Data Analyst Associate (PL-300)</td><td>Microsoft</td><td>Power BI; SQL veri hazırlığında destekleyici</td><td>İş Zekâsı öğrenme yolu</td></tr>
+<tr><td>Google Data Analytics Professional Certificate</td><td>Google (Coursera)</td><td>Analiz süreci, tablolar, BigQuery'de SQL, R, görselleştirme</td><td>Veri Analisti öğrenme yolu + BigQuery modülü</td></tr>
 <tr><td>Databricks Certified Data Analyst Associate</td><td>Databricks</td><td>Databricks SQL, Unity Catalog, panolar, sorgu analizi</td><td>Bulut veri ambarları + Veri Analisti</td></tr>
 <tr><td>SnowPro Core</td><td>Snowflake</td><td>Snowflake mimarisi, ambarlar, veri yükleme, güvenlik, SQL</td><td>Bulut veri ambarları + Veri Mühendisi</td></tr>
 <tr><td>dbt Analytics Engineering</td><td>dbt Labs</td><td>dbt ile modelleme, test, belgeleme</td><td>dbt dersi + Veri Mühendisi</td></tr>
-<tr><td>MySQL / PostgreSQL sertifikaları</td><td>Oracle, EnterpriseDB</td><td>Kurulum, yönetim, performans</td><td>DBA patikası + programlara özgü dersler</td></tr>
+<tr><td>MySQL / PostgreSQL sertifikaları</td><td>Oracle, EnterpriseDB</td><td>Kurulum, yönetim, performans</td><td>DBA öğrenme yolu + SQL türlerine özgü dersler</td></tr>
 </table>
 <div class="warn"><b>Güncelliği kontrol et</b>Sınav kodları, kapsamları ve ücretleri sık değişir; bazı sınavlar emekliye ayrılır. Başvurmadan önce sınavın resmi sayfasındaki çalışma rehberini oku.</div>
 <h2>Nasıl hazırlanılır?</h2>
@@ -625,7 +625,7 @@ const certLessons = [{
 <li>Her konuda <b>yazarak</b> çalış: bu uygulamanın alıştırmaları ve Alıştırma Kampı tam bunun için.</li>
 <li>Seçmeli sorularda tuzaklar ayrıntıdadır: NULL davranışı, tam sayı bölmesi, GROUP BY kuralları, JOIN türleri. “Sık yapılan hatalar” ve mülakat derslerini tekrar et.</li>
 <li>Deneme sınavlarıyla süre yönetimini çalış.</li>
-<li><b>Sertifika Hazırlık</b> patikasındaki dersleri bitir ve Tekrar sayfasında aralıklı tekrar yap.</li>
+<li><b>Sertifika Hazırlık</b> öğrenme yolundaki dersleri bitir ve Tekrar sayfasında aralıklı tekrar yap.</li>
 </ol>
 `,
   ex: [
@@ -751,7 +751,7 @@ L.push({
   ]
 });
 
-/* ======================= Patikalar ======================= */
+/* ======================= Öğrenme yolları ======================= */
 const P = window.SQLP_PATHS; const PA = {}; P.forEach(p => PA[p.id] = p);
 const ins = (pid, afterId, ids) => { const p = PA[pid]; if (!p) return; ids = ids.filter(x => !p.lessons.includes(x)); const i = p.lessons.indexOf(afterId); p.lessons.splice(i < 0 ? p.lessons.length : i + 1, 0, ...ids); };
 const compAdd = (pid, c) => { const p = PA[pid]; if (p && p.comp) p.comp.push(c); };
@@ -775,14 +775,14 @@ compAdd('uzman', C('Programlama dilleri', 'PL/SQL ve PL/pgSQL', ['plsql', 'plpgs
 const COMP_T = PA.temel && PA.temel.comp; if (COMP_T) COMP_T.push(C('Bol pratik', 'Alıştırma kampları ve veri modelleme', ['kamp-musteri', 'kamp-ik', 'kamp-eticaret', 'er-modelleme']));
 P.push({ id: 'yz', name: 'Yapay Zekâ Destekli SQL', short: 'YZ', color: '#6D28D9',
   desc: 'YZ ile sorgu yazmak, doğrulamak, vektör arama, SQL ile makine öğrenmesi ve güvenli asistanlar.',
-  long: 'Yapay zekâ araçlarını SQL işinde verimli ve güvenli kullanmak isteyenler için. Önce sağlam bir sorgu temeli kurar, sonra YZ\'ye doğru soruyu sormayı, ürettiği sorgulardaki sessiz hataları yakalamayı, embedding ve vektör aramayı, BigQuery ML gibi SQL içi modelleri ve doğal dilden SQL asistanlarının güvenliğini öğrenirsin. Oyun Alanı\'ndaki “Yapay zekâya sor” paneliyle pratik yapabilirsin.',
+  long: 'Yapay zekâ araçlarını SQL işinde verimli ve güvenli kullanmak isteyenler için. Önce sağlam bir sorgu temeli kurar, sonra YZ\'ye doğru soruyu sormayı, ürettiği sorgulardaki sessiz hataları yakalamayı, embedding ve vektör aramayı, BigQuery ML gibi SQL içi modelleri ve doğal dilden SQL asistanlarının güvenliğini öğrenirsin. SQL Arena\'daki “Yapay zekâya sor” paneliyle pratik yapabilirsin.',
   skills: ['Prompt yazma', 'YZ çıktısını doğrulama', 'Vektör arama', 'BigQuery ML', 'Semantik katman', 'Güvenli asistan'],
   lessons: ['veri-seti', 'select', 'where', 'null', 'order-limit', 'aggregate', 'group-by', 'having', 'case', 'kosullu', 'inner-join', 'left-join', 'coklu-join', 'subquery', 'correlated', 'sik-hatalar', 'cte', 'window-intro', 'ranking', 'ai-giris', 'ai-dogrulama', 'view', 'bi-hazirlik', 'guvenlik', 'ai-guvenli', 'ai-vektor', 'bq-giris', 'ds-feature', 'ai-ml', 'json'],
   comp: [C('Sorgu temeli', 'YZ çıktısını değerlendirebilecek kadar sağlam SQL', ['select', 'where', 'group-by', 'inner-join', 'left-join', 'subquery', 'cte', 'window-intro']), C('YZ ile sorgu yazmak', 'İstem yazma, şema ve iş kuralı verme', ['ai-giris', 'kosullu']), C('Doğrulama', 'Sessiz hataları yakalamak, sağlama yapmak', ['ai-dogrulama', 'sik-hatalar', 'null', 'coklu-join']), C('Veritabanında YZ', 'Embedding, vektör arama, SQL ile ML', ['ai-vektor', 'ai-ml', 'ds-feature', 'bq-giris']), C('Güvenli asistanlar', 'Semantik katman, yetki, prompt enjeksiyonu', ['ai-guvenli', 'view', 'bi-hazirlik', 'guvenlik'])],
   beyond: ['Bir YZ aracının kurumsal kullanım ve gizlilik politikaları', 'Python ile YZ API kullanımı (isteğe bağlı)', 'Embedding modelleri ve RAG mimarisi temelleri'] });
 P.push({ id: 'sertifika', name: 'SQL Sertifika Hazırlık', short: 'SRT', color: '#B45309',
   desc: 'Oracle 1Z0-071 başta olmak üzere SQL sertifikalarının ortak konuları ve sınav tuzakları.',
-  long: 'Saf SQL bilgisini ölçen sertifikalara (özellikle Oracle Database SQL Certified Associate, 1Z0-071) hazırlananlar için. Sınavların ölçtüğü konuları sırayla işler: sorgular, tek satır ve grup fonksiyonları, dönüşümler, JOIN, alt sorgular, küme işlemleri, DML ve işlemler, DDL ve kısıtlar, view ve sequence, veri sözlüğü ve yetkiler. Sonda sınav tuzaklarını içeren dersler ve alıştırma kampları var. Bu patikada varsayılan programı Oracle yapmanı öneririz.',
+  long: 'Saf SQL bilgisini ölçen sertifikalara (özellikle Oracle Database SQL Certified Associate, 1Z0-071) hazırlananlar için. Sınavların ölçtüğü konuları sırayla işler: sorgular, tek satır ve grup fonksiyonları, dönüşümler, JOIN, alt sorgular, küme işlemleri, DML ve işlemler, DDL ve kısıtlar, view ve sequence, veri sözlüğü ve yetkiler. Sonda sınav tuzaklarını içeren dersler ve alıştırma kampları var. Bu öğrenme yolunda varsayılan SQL türü Oracle yapmanı öneririz.',
   skills: ['SELECT ve fonksiyonlar', 'Dönüşümler', 'JOIN türleri', 'Alt sorgu', 'Küme işlemleri', 'DML ve TCL', 'DDL ve kısıtlar', 'View ve sequence', 'Veri sözlüğü', 'Yetkiler'],
   lessons: ['sertifika-rehber', 'veritabani', 'er-modelleme', 'select', 'alias-distinct', 'hesaplama', 'where', 'mantik', 'in-between-like', 'null', 'order-limit', 'metin', 'sayi-tip', 'tarih-fn', 'case', 'coalesce', 'aggregate', 'group-by', 'having', 'sorgu-sirasi', 'iliskiler', 'inner-join', 'left-join', 'right-full-join', 'self-cross-join', 'non-equi', 'set-ops', 'subquery', 'correlated', 'cte', 'window-intro', 'lag-lead', 'dml', 'upsert', 'transaction', 'ddl-create', 'alter-drop', 'view', 'ts-sequence', 'index', 'guvenlik', 'oracle-ozel', 'oracle-1z0', 'sik-hatalar', 'kamp-musteri', 'kamp-ik', 'kamp-eticaret', 'mulakat-1', 'mulakat-2'],
   comp: [C('Sorgu temeli', 'SELECT, kısıtlama, sıralama, satır sınırlama', ['select', 'alias-distinct', 'where', 'mantik', 'in-between-like', 'null', 'order-limit']), C('Fonksiyonlar', 'Karakter, sayı, tarih, dönüşüm ve koşullu ifadeler', ['hesaplama', 'metin', 'sayi-tip', 'tarih-fn', 'case', 'coalesce', 'oracle-ozel']), C('Gruplama', 'Grup fonksiyonları, GROUP BY, HAVING', ['aggregate', 'group-by', 'having', 'sorgu-sirasi']), C('Çok tablolu sorgular', 'Eşit ve eşit olmayan JOIN, dış JOIN, self join, küme işlemleri', ['iliskiler', 'er-modelleme', 'inner-join', 'left-join', 'right-full-join', 'self-cross-join', 'non-equi', 'set-ops']), C('Alt sorgular', 'Tek/çok satırlı, ilişkili, EXISTS, WITH', ['subquery', 'correlated', 'cte']), C('Veri değiştirme', 'DML, MERGE, işlemler', ['dml', 'upsert', 'transaction']), C('Şema nesneleri', 'DDL, kısıtlar, view, sequence, indeks', ['ddl-create', 'alter-drop', 'view', 'ts-sequence', 'index']), C('Sözlük ve yetkiler', 'Veri sözlüğü, sistem/nesne ayrıcalıkları, roller', ['oracle-1z0', 'guvenlik']), C('Sınav pratiği', 'Tuzaklar ve yoğun alıştırma', ['sik-hatalar', 'kamp-musteri', 'kamp-ik', 'kamp-eticaret', 'mulakat-1', 'mulakat-2'])],

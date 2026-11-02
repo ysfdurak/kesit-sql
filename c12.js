@@ -161,7 +161,7 @@ ${NR("df_sonuc.to_sql(\"kampanya_skorlari\", engine, schema=\"analiz\", if_exist
 }]);
 
 after('mysql-ozel', [{
-  id: 'tam-metin', lv: 'C1', mod: 'Programlara Özgü', min: 15,
+  id: 'tam-metin', lv: 'C1', mod: 'SQL Türlerine Özgü', min: 15,
   title: 'Tam metin arama: LIKE yerine dizinli kelime araması',
   sum: 'PostgreSQL tsvector, SQL Server CONTAINS, MySQL MATCH AGAINST, SQLite FTS; sıralama ve Türkçe.',
   body: `
@@ -174,7 +174,7 @@ INSERT INTO urun_ara (docid, name, category) SELECT product_id, name, category F
 SELECT docid AS product_id, name
 FROM urun_ara
 WHERE urun_ara MATCH 'kablosuz OR bluetooth';</pre>
-<h2>Programlara göre</h2>
+<h2>SQL türlerine göre</h2>
 ${NR("-- PostgreSQL\nALTER TABLE products ADD COLUMN arama tsvector\n  GENERATED ALWAYS AS (to_tsvector('turkish', coalesce(name, '') || ' ' || coalesce(category, ''))) STORED;\nCREATE INDEX ix_products_arama ON products USING GIN (arama);\n\nSELECT name, ts_rank(arama, q) AS puan\nFROM products, websearch_to_tsquery('turkish', 'kablosuz kulaklık') AS q\nWHERE arama @@ q\nORDER BY puan DESC;\n\n-- Benzer yazım için: CREATE EXTENSION pg_trgm; WHERE name % 'kulaklik'\n\n-- SQL Server\nCREATE FULLTEXT CATALOG ftc AS DEFAULT;\nCREATE FULLTEXT INDEX ON dbo.products (name LANGUAGE 1055) KEY INDEX PK_products;  -- 1055 = Türkçe\nSELECT name FROM dbo.products WHERE CONTAINS(name, N'\"kablosuz*\"');\nSELECT name FROM dbo.products WHERE FREETEXT(name, N'kablosuz kulaklık');\n\n-- MySQL (InnoDB)\nALTER TABLE products ADD FULLTEXT INDEX ft_name (name);\nSELECT name, MATCH(name) AGAINST('kablosuz kulaklık' IN NATURAL LANGUAGE MODE) AS puan\nFROM products WHERE MATCH(name) AGAINST('+kablosuz -hoparlör' IN BOOLEAN MODE);\n\n-- Oracle Text\nCREATE INDEX ix_ad ON products (name) INDEXTYPE IS CTXSYS.CONTEXT;\nSELECT name, SCORE(1) FROM products WHERE CONTAINS(name, 'kablosuz', 1) > 0 ORDER BY SCORE(1) DESC;\n\n-- BigQuery\nCREATE SEARCH INDEX ix_ara ON anadolu.products (name);\nSELECT name FROM anadolu.products WHERE SEARCH(name, 'kablosuz');")}
 <h2>Türkçe dikkat noktaları</h2>
 <ul>
@@ -195,7 +195,7 @@ ${NR("-- PostgreSQL\nALTER TABLE products ADD COLUMN arama tsvector\n  GENERATED
 after('recursive-cte', [{
   id: 'hiyerarsi', lv: 'C1', mod: 'İleri Sorgu Yapıları', min: 16,
   title: 'Hiyerarşik veriler: CONNECT BY, özyinelemeli CTE, hierarchyid ve yol yöntemi',
-  sum: 'Oracle START WITH / CONNECT BY PRIOR, LEVEL, SYS_CONNECT_BY_PATH; diğer programlarda karşılıkları.',
+  sum: 'Oracle START WITH / CONNECT BY PRIOR, LEVEL, SYS_CONNECT_BY_PATH; diğer SQL türlerinde karşılıkları.',
   body: `
 <h2>Ağaç yapıları</h2>
 <p>Organizasyon şeması, kategori ağacı, ürün reçetesi (bill of materials), yorum yanıtları… Hepsi bir satırın başka bir satıra “ebeveyn” olarak bağlandığı yapılardır. En yaygın saklama biçimi <b>komşuluk listesi</b>dir: <code>employees.manager_id → employees.emp_id</code>.</p>
@@ -247,7 +247,7 @@ ${NR("-- SQL Server hierarchyid\nSELECT ad, dugum.ToString() AS yol, dugum.GetLe
 after('first-last', [{
   id: 'pencere-cerceve', lv: 'C1', mod: 'Pencere Fonksiyonları', min: 15,
   title: 'İleri pencere çerçeveleri: ROWS, RANGE, GROUPS ve EXCLUDE',
-  sum: 'Eşitliklerin pencereyi nasıl etkilediği, değer aralığına göre pencere, programlara göre destek.',
+  sum: 'Eşitliklerin pencereyi nasıl etkilediği, değer aralığına göre pencere, SQL türlerine göre destek.',
   body: `
 <h2>Üç çerçeve birimi</h2>
 <table>
@@ -290,7 +290,7 @@ WHERE category = 'Kitap'
 ORDER BY price;</pre>
 <p><code>EXCLUDE CURRENT ROW</code> satırın kendisini pencereden çıkarır: “bu ürün kategorideki diğer ürünlerin ortalamasından ne kadar farklı?” sorusu için idealdir. Diğer seçenekler: <code>EXCLUDE GROUP</code>, <code>EXCLUDE TIES</code>, <code>EXCLUDE NO OTHERS</code>.</p>
 <table>
-<tr><th>Program</th><th>ROWS</th><th>RANGE (değer aralığı)</th><th>GROUPS</th><th>EXCLUDE</th></tr>
+<tr><th>SQL türü</th><th>ROWS</th><th>RANGE (değer aralığı)</th><th>GROUPS</th><th>EXCLUDE</th></tr>
 <tr><td>PostgreSQL 11+</td><td>✓</td><td>✓ (interval dahil)</td><td>✓</td><td>✓</td></tr>
 <tr><td>Oracle</td><td>✓</td><td>✓</td><td>21c+</td><td>21c+</td></tr>
 <tr><td>MySQL 8</td><td>✓</td><td>✓</td><td>—</td><td>—</td></tr>
@@ -300,7 +300,7 @@ ORDER BY price;</pre>
 </table>
 `,
   ex: [
-    sq('Aralık 2024\'te her gün için o gün ve önceki 2 takvim günündeki toplam sipariş sayısı (sipariş olmayan günler atlanmış olsa bile takvime göre): <code>order_date</code>, <code>gunluk</code>, <code>son3</code>. Tarihe göre sırala.', "WITH g AS (SELECT order_date, COUNT(*) AS gunluk FROM orders WHERE order_date >= '2024-12-01' AND order_date < '2025-01-01' GROUP BY order_date) SELECT a.order_date, a.gunluk, (SELECT SUM(b.gunluk) FROM g b WHERE b.order_date BETWEEN date(a.order_date, '-2 days') AND a.order_date) AS son3 FROM g a ORDER BY a.order_date;", { ord: true, hint: 'Her programda çalışan yol: ilişkili alt sorgu veya kendine birleştirme ile tarih aralığı. RANGE destekleyen programlarda pencereyle de yazabilirsin.' }),
+    sq('Aralık 2024\'te her gün için o gün ve önceki 2 takvim günündeki toplam sipariş sayısı (sipariş olmayan günler atlanmış olsa bile takvime göre): <code>order_date</code>, <code>gunluk</code>, <code>son3</code>. Tarihe göre sırala.', "WITH g AS (SELECT order_date, COUNT(*) AS gunluk FROM orders WHERE order_date >= '2024-12-01' AND order_date < '2025-01-01' GROUP BY order_date) SELECT a.order_date, a.gunluk, (SELECT SUM(b.gunluk) FROM g b WHERE b.order_date BETWEEN date(a.order_date, '-2 days') AND a.order_date) AS son3 FROM g a ORDER BY a.order_date;", { ord: true, hint: 'Her SQL türünde çalışan yol: ilişkili alt sorgu veya kendine birleştirme ile tarih aralığı. RANGE destekleyen SQL türlerinde pencereyle de yazabilirsin.' }),
     sq('Her Kitap ürününün fiyatı ile aynı kategorideki <b>diğer</b> ürünlerin ortalama fiyatı arasındaki fark (2 basamak): <code>name</code>, <code>price</code>, <code>fark</code>. (EXCLUDE yoksa toplamdan kendini çıkararak hesapla.)', "SELECT name, price, ROUND(price - (SUM(price) OVER () - price) / (COUNT(*) OVER () - 1), 2) AS fark FROM products WHERE category = 'Kitap';", { hint: 'Diğerlerinin ortalaması = (toplam − kendisi) ÷ (adet − 1).' }),
     mc('<p>ORDER BY içeren bir pencerede çerçeve yazılmazsa varsayılan nedir?</p>', ['ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW', 'RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW', 'Tüm bölüm', 'Yalnızca mevcut satır'], 1),
     mc('<p>Bazı günlerde hiç kaydın olmadığı bir tabloda “son 7 takvim günü” toplamı için hangisi doğrudur?</p>', ['ROWS BETWEEN 6 PRECEDING AND CURRENT ROW', 'Tarihe göre RANGE aralığı veya eksik günleri takvimle doldurduktan sonra ROWS', 'GROUPS BETWEEN 6 PRECEDING', 'LAG(x, 7)'], 1)
@@ -447,7 +447,7 @@ ${NR("-- PostgreSQL + PostGIS\nCREATE EXTENSION postgis;\nALTER TABLE magaza ADD
   ]
 }]);
 
-/* Patikalar */
+/* Öğrenme yolları */
 const P = window.SQLP_PATHS; const PA = {}; P.forEach(p => PA[p.id] = p);
 const ins = (pid, afterId, ids) => { const p = PA[pid]; if (!p) return; ids = ids.filter(x => !p.lessons.includes(x)); const i = p.lessons.indexOf(afterId); p.lessons.splice(i < 0 ? p.lessons.length : i + 1, 0, ...ids); };
 const comp = (pid, t, d, ids) => { const p = PA[pid]; if (p && p.comp) p.comp.push({ t, d, l: ids }); };

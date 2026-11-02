@@ -16,11 +16,11 @@ const DK = '(julianday(f.actual_dep) - julianday(f.sched_dep)) * 1440';
    VERİ ANALİSTİ
    ===================================================================== */
 
-more('an-kpi', D('KPI ağacı ve tanecik hataları', `
+more('an-kpi', D('KPI ağacı ve grain hataları', `
 <p>Tek bir ciro rakamı “ne oldu?” sorusunu cevaplar, “neden?” sorusunu cevaplamaz. Bu yüzden analistler ciroyu çarpanlarına ayırır:</p>
 <p><b>Net ciro = aktif müşteri × müşteri başına sipariş (frekans) × ortalama sepet (AOV)</b></p>
 <p>Üç çarpandan hangisinin değiştiğini görmek aksiyonu belirler. Müşteri sayısı düştüyse sorun edinmededir, frekans düştüyse elde tutmada, AOV düştüyse fiyat ya da sepet büyüklüğündedir. Anadolu Market'te teslim edilmiş siparişlerde 2023'ten 2024'e ciro 335.573 TL'den 636.316 TL'ye çıktı. Aktif müşteri 74'ten 120'ye (%62), frekans 3,23'ten 3,51'e, AOV 1.404'ten 1.511 TL'ye yükseldi. Yani büyümenin büyük kısmı <b>yeni müşteriden</b> geliyor. Bu cümleyi tek bir ciro sayısından kuramazdın.</p>
-<h3>En sık hata: JOIN sonrası tanecik</h3>
+<h3>En sık hata: JOIN sonrası grain</h3>
 <p><code>orders</code> tablosunu <code>order_items</code> ile birleştirdiğinde her satır artık bir <b>sipariş kalemi</b> olur. Bu satırlarda <code>COUNT(*)</code> sipariş sayısını değil kalem sayısını verir. <code>AVG(tutar)</code> da sepet ortalamasını değil kalem ortalamasını verir:</p>
 ${C(`SELECT COUNT(*) AS satir,
        COUNT(DISTINCT o.order_id) AS siparis,
@@ -384,7 +384,7 @@ ORDER BY s;`)}
 <tr><td>Takvim günü ile iş günü karışır</td><td>Hafta sonuna denk gelen izinler sorun olur</td><td>Tanımı yaz (bu veride <code>days</code> iş günüdür)</td></tr>
 <tr><td>Bradford'u otomatik yaptırım için kullanmak</td><td>Kronik hastalık ve engellilik durumlarında haksızlık</td><td>Konuşma başlatmak için kullan</td></tr>
 </table>
-<div class="note"><b>Haftanın günü</b>SQLite'ta <code>strftime('%w', start_date)</code> haftanın gününü verir (1 = Pazartesi). Bu veride hastalık izinlerinin yaklaşık 2.200'ü Pazartesi başlıyor; diğer günlerin her biri 1.130–1.210 arasında. Diğer programlarda bu hesap farklı fonksiyonlarla yapılır (SQL Server <code>DATEPART(weekday, …)</code>, PostgreSQL <code>EXTRACT(DOW FROM …)</code>).</div>
+<div class="note"><b>Haftanın günü</b>SQLite'ta <code>strftime('%w', start_date)</code> haftanın gününü verir (1 = Pazartesi). Bu veride hastalık izinlerinin yaklaşık 2.200'ü Pazartesi başlıyor; diğer günlerin her biri 1.130–1.210 arasında. Diğer SQL türlerinde bu hesap farklı fonksiyonlarla yapılır (SQL Server <code>DATEPART(weekday, …)</code>, PostgreSQL <code>EXTRACT(DOW FROM …)</code>).</div>
 `));
 X('ik-devamsizlik', [
   sq('Bradford bantları: 2024\'te hastalık izni olan çalışanları Bradford puanına göre bantlara ayır: <b>1: 0-49</b>, <b>2: 50-199</b>, <b>3: 200-499</b>, <b>4: 500+</b>. Her bantta kaç kişi var: <code>bant</code>, <code>kisi</code>. Banda göre sırala.',
@@ -711,7 +711,7 @@ ${C(`SELECT
                          WHERE seat IS NOT NULL
                          GROUP BY flight_id, seat HAVING COUNT(*) > 1) t) AS cift_koltuk;`)}
 <p>Kanat'ın verisi dört kontrolden temiz geçiyor ama beşincide 20 uçuş–koltuk çifti çıkıyor. Örneğin 219 numaralı uçuşta 27B koltuğu iki ayrı yolcuya atanmış ve ikisi de “flown” görünüyor. <code>UNIQUE (flight_id, seat)</code> kısıtı olsaydı ikinci kayıt hiç girilemezdi.</p>
-<h3>UNIQUE ve NULL: programlar ayrışır</h3>
+<h3>UNIQUE ve NULL: SQL türleri ayrışır</h3>
 <p>İptal edilen rezervasyonların koltuğu NULL'dır. Standart SQL'de ve PostgreSQL, MySQL, Oracle, SQLite'ta birden çok NULL bir UNIQUE kısıtını ihlal etmez. <b>SQL Server ise UNIQUE sütunda yalnızca bir NULL'a izin verir.</b> Orada çözüm filtreli bir indekstir: <code>CREATE UNIQUE INDEX ... WHERE seat IS NOT NULL</code>.</p>
 <h3>Güvenli değişiklik akışı</h3>
 <ol>

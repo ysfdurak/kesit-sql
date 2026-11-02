@@ -304,7 +304,7 @@ L.splice(at < 0 ? L.length : at + 1, 0, ...lessons);
 const P = window.SQLP_PATHS;
 P.push({ id: 'ik-analitigi', name: 'İK Analitiği', short: 'İK', color: '#BE185D',
   desc: 'İnsan kaynakları verisiyle kadro, devir hızı, ücret eşitliği, performans, işe alım ve bağlılık analizleri.',
-  long: 'İK analisti, İK iş ortağı ya da İK verisiyle çalışan veri analistleri için. Pusula A.Ş.\'nin altı yıllık İK verisiyle “o tarihte durum neydi?” mantığını, kadro ve devir hızı hesaplarını, ücret bantları ve ücret eşitliğini, performans kalibrasyonunu, işe alım hunisini, devamsızlığı ve anket analizini öğrenirsin. Patika, gerçekçi bir vaka ve Arena\'daki İK problemleriyle biter.',
+  long: 'İK analisti, İK iş ortağı ya da İK verisiyle çalışan veri analistleri için. Pusula A.Ş.\'nin altı yıllık İK verisiyle “o tarihte durum neydi?” mantığını, kadro ve devir hızı hesaplarını, ücret bantları ve ücret eşitliğini, performans kalibrasyonunu, işe alım hunisini, devamsızlığı ve anket analizini öğrenirsin. Öğrenme yolu, gerçekçi bir vaka ve Arena\'daki İK problemleriyle biter.',
   skills: ['O tarihte aktif mantığı', 'Kadro ve köprü', 'Devir hızı ve elde tutma', 'Compa-ratio ve ücret eşitliği', 'Performans kalibrasyonu', 'İşe alım hunisi', 'Bradford faktörü', 'eNPS'],
   lessons: ['ik-giris', 'ik-kadro', 'ik-devir', 'ik-ucret', 'ik-performans', 'ik-alim', 'ik-devamsizlik', 'ik-baglilik', 'ik-proje'],
   comp: [

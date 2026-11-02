@@ -21,7 +21,7 @@ if (dml) {
   after('kosullu', [dml]);
   dml.ex.push(sq('Tek bir INSERT ifadesiyle iki yeni departman ekle: <b>8, \'Kalite\', \'Bursa\'</b> ve <b>9, \'Satın Alma\', \'Ankara\'</b>.',
     "INSERT INTO departments (dept_id, name, city) VALUES (8, 'Kalite', 'Bursa'), (9, 'Satın Alma', 'Ankara');",
-    { check: 'SELECT dept_id, name, city FROM departments ORDER BY dept_id', hint: 'VALUES sonrasına parantez içindeki satırları virgülle ayırarak yaz.', why: 'Çok satırlı VALUES tüm programlarda çalışır (Oracle 23ai öncesinde INSERT ALL gerekir).' }));
+    { check: 'SELECT dept_id, name, city FROM departments ORDER BY dept_id', hint: 'VALUES sonrasına parantez içindeki satırları virgülle ayırarak yaz.', why: 'Çok satırlı VALUES tüm SQL türlerinde çalışır (Oracle 23ai öncesinde INSERT ALL gerekir).' }));
 }
 
 /* ======================= Yeni dersler ======================= */
@@ -50,8 +50,8 @@ WHERE merchant_category LIKE 'e!_%' ESCAPE '!'
 ORDER BY merchant_category;</pre>
 <p>Artık yalnızca <code>e_ticaret</code> gelir. Aynı yöntem yüzde işareti için de geçerlidir: <code>LIKE '%!%%' ESCAPE '!'</code> içinde “%” geçen değerleri bulur (örneğin “%20 indirim”).</p>
 <table>
-<tr><th>Program</th><th>Not</th></tr>
-<tr><td>Tüm programlar</td><td><code>LIKE '...' ESCAPE '!'</code> standarttır ve her yerde çalışır.</td></tr>
+<tr><th>SQL türü</th><th>Not</th></tr>
+<tr><td>Tüm SQL türleri</td><td><code>LIKE '...' ESCAPE '!'</code> standarttır ve her yerde çalışır.</td></tr>
 <tr><td>SQL Server</td><td>Ayrıca köşeli parantezle de kaçırılabilir: <code>LIKE 'e[_]%'</code>. Köşeli parantez SQL Server'a özgüdür.</td></tr>
 <tr><td>MySQL, PostgreSQL</td><td>ESCAPE yazmazsan varsayılan kaçış karakteri ters bölüdür: <code>LIKE 'e\\_%'</code>. Taşınabilirlik için ESCAPE'i açıkça yazmak daha güvenlidir.</td></tr>
 <tr><td>Oracle, BigQuery</td><td>Varsayılan kaçış karakteri yoktur; ESCAPE yazmak gerekir (BigQuery'de ters bölü desteklenir).</td></tr>
@@ -87,7 +87,7 @@ WHERE city <> 'İstanbul';</pre>
 <pre class="code">SELECT COUNT(*) AS adet
 FROM raw_signups
 WHERE city <> 'İstanbul' OR city IS NULL;</pre>
-<p>Her programda çalışır. İki <b>sütunu</b> karşılaştırırken (örneğin eski ve yeni değer) yazım uzar:</p>
+<p>Her SQL türünde çalışır. İki <b>sütunu</b> karşılaştırırken (örneğin eski ve yeni değer) yazım uzar:</p>
 <pre class="code" data-norun>WHERE (a <> b) OR (a IS NULL AND b IS NOT NULL) OR (a IS NOT NULL AND b IS NULL)</pre>
 <h2>IS DISTINCT FROM</h2>
 <p>SQL standardı bu karşılaştırma için ayrı bir operatör tanımlar. <code>a IS DISTINCT FROM b</code>, NULL'ı sıradan bir değer gibi ele alır:</p>
@@ -100,7 +100,7 @@ WHERE city <> 'İstanbul' OR city IS NULL;</pre>
 </table>
 <p>Tersi <code>IS NOT DISTINCT FROM</code>'dur: iki NULL'ı da “eşit” sayar.</p>
 <table>
-<tr><th>Program</th><th>“Farklı mı?” (NULL dahil)</th><th>“Aynı mı?” (NULL dahil)</th></tr>
+<tr><th>SQL türü</th><th>“Farklı mı?” (NULL dahil)</th><th>“Aynı mı?” (NULL dahil)</th></tr>
 <tr><td>PostgreSQL, BigQuery, SQL Server 2022+</td><td><code>a IS DISTINCT FROM b</code></td><td><code>a IS NOT DISTINCT FROM b</code></td></tr>
 <tr><td>MySQL</td><td><code>NOT (a &lt;=&gt; b)</code></td><td><code>a &lt;=&gt; b</code> (NULL güvenli eşitlik)</td></tr>
 <tr><td>Oracle</td><td><code>DECODE(a, b, 0, 1) = 1</code> (DECODE iki NULL'ı eşit sayar)</td><td><code>DECODE(a, b, 1, 0) = 1</code></td></tr>
@@ -112,7 +112,7 @@ WHERE city <> 'İstanbul' OR city IS NULL;</pre>
     mc('<p><code>SELECT COUNT(*) FROM t WHERE x &lt;&gt; 5</code> sorgusunda <code>x</code> değeri NULL olan satırlar ne olur?</p>', ['Sayılır, çünkü NULL 5 değildir', 'Sayılmaz, çünkü karşılaştırmanın sonucu “bilinmiyor”dur', 'Sorgu hata verir', 'Yalnızca SQL Server\'da sayılır'], 1, 'NULL ile yapılan her karşılaştırmanın sonucu “bilinmiyor”dur; WHERE yalnızca “doğru” olan satırları geçirir.'),
     sq('<code>raw_signups</code> tablosunda şehri tam olarak <b>\'İstanbul\'</b> olmayan kayıtların sayısını, şehri NULL olanlar <b>dahil</b> olacak şekilde getir. Tek değer: <code>adet</code>.',
       "SELECT COUNT(*) AS adet FROM raw_signups WHERE city <> 'İstanbul' OR city IS NULL;",
-      { hint: '<> tek başına NULL satırları kaçırır; OR city IS NULL ekle ya da programın NULL güvenli karşılaştırmasını kullan.', why: 'Sonuca şehri boş ve NULL olan kayıtlar da girdi.' }),
+      { hint: '<> tek başına NULL satırları kaçırır; OR city IS NULL ekle ya da SQL türünün NULL güvenli karşılaştırmasını kullan.', why: 'Sonuca şehri boş ve NULL olan kayıtlar da girdi.' }),
     sq('Departmanı <b>1 olmayan</b> çalışanları getir; departmanı hiç olmayan (NULL) çalışan da listede olsun: <code>emp_id</code>, <code>first_name</code>, <code>dept_id</code>.',
       'SELECT emp_id, first_name, dept_id FROM employees WHERE dept_id IS DISTINCT FROM 1;',
       { solv: { mysql: 'SELECT emp_id, first_name, dept_id FROM employees WHERE NOT (dept_id <=> 1);', oracle: 'SELECT emp_id, first_name, dept_id FROM employees WHERE DECODE(dept_id, 1, 0, 1) = 1;' }, hint: 'IS DISTINCT FROM 1 (MySQL: NOT (dept_id <=> 1), Oracle: DECODE) ya da dept_id <> 1 OR dept_id IS NULL.', why: 'Genel Müdür\'ün departmanı NULL olduğu için <> 1 onu kaçırırdı.' }),
@@ -130,7 +130,7 @@ after('having', [{
 <h2>Ne işe yarar?</h2>
 <p>“Her departmanın çalışanlarını tek satırda listele” gibi raporlarda, gruptaki değerleri bir metinde birleştiren toplama fonksiyonu kullanılır. COUNT veya SUM gibi çalışır; yalnızca sonuç sayı değil metindir.</p>
 <table>
-<tr><th>Program</th><th>Fonksiyon</th><th>Sıralı yazım</th></tr>
+<tr><th>SQL türü</th><th>Fonksiyon</th><th>Sıralı yazım</th></tr>
 <tr><td>SQL Server 2017+</td><td><code>STRING_AGG(ad, ', ')</code></td><td><code>STRING_AGG(ad, ', ') WITHIN GROUP (ORDER BY ad)</code></td></tr>
 <tr><td>PostgreSQL, BigQuery</td><td><code>STRING_AGG(ad, ', ')</code></td><td><code>STRING_AGG(ad, ', ' ORDER BY ad)</code></td></tr>
 <tr><td>MySQL</td><td><code>GROUP_CONCAT(ad SEPARATOR ', ')</code></td><td><code>GROUP_CONCAT(ad ORDER BY ad SEPARATOR ', ')</code></td></tr>
@@ -153,7 +153,7 @@ ${CODE("SELECT d.name AS departman, GROUP_CONCAT(e.first_name, ', ' ORDER BY e.h
 </ul>
 <h2>Uzunluk sınırları</h2>
 <table>
-<tr><th>Program</th><th>Sınır</th><th>Çözüm</th></tr>
+<tr><th>SQL türü</th><th>Sınır</th><th>Çözüm</th></tr>
 <tr><td>MySQL</td><td><code>group_concat_max_len</code> varsayılan 1024 bayt; aşan kısım <b>sessizce kesilir</b></td><td><code>SET SESSION group_concat_max_len = 100000;</code></td></tr>
 <tr><td>Oracle</td><td>VARCHAR2 sınırı (4000 bayt) aşılırsa hata</td><td><code>LISTAGG(ad, ', ' ON OVERFLOW TRUNCATE)</code> (12.2+)</td></tr>
 <tr><td>SQL Server</td><td>Girdi NVARCHAR(4000) ise sonuç 8000 bayta sığmalı</td><td><code>STRING_AGG(CAST(ad AS NVARCHAR(MAX)), ', ')</code></td></tr>
@@ -169,7 +169,7 @@ ${CODE("SELECT d.name AS departman, GROUP_CONCAT(e.first_name, ', ' ORDER BY e.h
         mysql: "SELECT dept_id, GROUP_CONCAT(first_name ORDER BY hire_date SEPARATOR ', ') AS calisanlar FROM employees WHERE dept_id IS NOT NULL GROUP BY dept_id;",
         oracle: "SELECT dept_id, LISTAGG(first_name, ', ') WITHIN GROUP (ORDER BY hire_date) AS calisanlar FROM employees WHERE dept_id IS NOT NULL GROUP BY dept_id;",
         bq: "SELECT dept_id, STRING_AGG(first_name, ', ' ORDER BY hire_date) AS calisanlar FROM employees WHERE dept_id IS NOT NULL GROUP BY dept_id;" },
-        hint: 'Programının birleştirme fonksiyonunu ders tablosundan bul; sıralamayı hire_date ile ver.' }),
+        hint: 'SQL türünün birleştirme fonksiyonunu ders tablosundan bul; sıralamayı hire_date ile ver.' }),
     sq('Her kategori için ürün adlarını <b>fiyata göre pahalıdan ucuza</b> sıralayıp <code> | </code> ayracıyla birleştir: <code>category</code>, <code>urunler</code>.',
       "SELECT category, GROUP_CONCAT(name, ' | ' ORDER BY price DESC, product_id) AS urunler FROM products GROUP BY category;",
       { solv: {
@@ -207,7 +207,7 @@ ${CODE("SELECT c.customer_id, s.order_id, s.order_date\nFROM customers c\nCROSS 
   oracle: "SELECT c.customer_id, s.order_id, s.order_date\nFROM customers c\nCROSS APPLY (\n  SELECT o.order_id, o.order_date\n  FROM orders o\n  WHERE o.customer_id = c.customer_id\n  ORDER BY o.order_date DESC\n  FETCH FIRST 2 ROWS ONLY\n) s\nWHERE c.customer_id <= 3\nORDER BY c.customer_id, s.order_date DESC;"
 }, { base: 'pg' })}
 <table>
-<tr><th>Program</th><th>İç birleşim</th><th>Dış birleşim (eşi olmayan da kalsın)</th></tr>
+<tr><th>SQL türü</th><th>İç birleşim</th><th>Dış birleşim (eşi olmayan da kalsın)</th></tr>
 <tr><td>PostgreSQL 9.3+, MySQL 8.0.14+</td><td><code>CROSS JOIN LATERAL (...) AS s</code></td><td><code>LEFT JOIN LATERAL (...) AS s ON TRUE</code></td></tr>
 <tr><td>SQL Server</td><td><code>CROSS APPLY (...) AS s</code></td><td><code>OUTER APPLY (...) AS s</code></td></tr>
 <tr><td>Oracle 12c+</td><td><code>CROSS APPLY</code> veya <code>CROSS JOIN LATERAL</code></td><td><code>OUTER APPLY</code></td></tr>
@@ -221,7 +221,7 @@ ${CODE("SELECT d.name, s.calisan\nFROM departments d\nLEFT JOIN LATERAL (\n  SEL
   oracle: "SELECT d.name, s.calisan\nFROM departments d\nOUTER APPLY (\n  SELECT COUNT(*) AS calisan\n  FROM employees e\n  WHERE e.dept_id = d.dept_id\n) s;"
 }, { base: 'pg' })}
 <h2>Pencere fonksiyonuyla karşılaştırma</h2>
-<p>Aynı “her gruptan ilk N” sorusu ROW_NUMBER ile de çözülür ve her programda çalışır:</p>
+<p>Aynı “her gruptan ilk N” sorusu ROW_NUMBER ile de çözülür ve her SQL türünde çalışır:</p>
 <pre class="code">WITH s AS (
   SELECT customer_id, order_id, order_date,
          ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date DESC) AS rn
@@ -233,7 +233,7 @@ WHERE rn <= 2 AND customer_id <= 3
 ORDER BY customer_id, order_date DESC;</pre>
 <table>
 <tr><th></th><th>ROW_NUMBER</th><th>LATERAL / APPLY</th></tr>
-<tr><td>Taşınabilirlik</td><td>Her programda</td><td>BigQuery'de yok</td></tr>
+<tr><td>Taşınabilirlik</td><td>Her SQL türünde</td><td>BigQuery'de yok</td></tr>
 <tr><td>Az sayıda dış satır, büyük iç tablo</td><td>Tüm tabloyu numaralandırır</td><td>İndeks varsa her dış satır için birkaç satır okur; çok daha hızlı olabilir</td></tr>
 <tr><td>Satır başına fonksiyon çağırmak</td><td>Uygun değil</td><td>Tablo döndüren fonksiyonları (STRING_SPLIT, OPENJSON, jsonb_array_elements) satır başına çağırmak için doğal yol</td></tr>
 </table>
@@ -261,7 +261,7 @@ ORDER BY customer_id, order_date DESC;</pre>
         oracle: 'SELECT d.name, s.calisan, s.ort_maas FROM departments d OUTER APPLY (SELECT COUNT(*) AS calisan, ROUND(AVG(e.salary)) AS ort_maas FROM employees e WHERE e.dept_id = d.dept_id) s;',
         tsql: 'SELECT d.name, s.calisan, s.ort_maas FROM departments d OUTER APPLY (SELECT COUNT(*) AS calisan, ROUND(AVG(e.salary), 0) AS ort_maas FROM employees e WHERE e.dept_id = d.dept_id) AS s;' },
         hint: 'Toplama yapan alt sorgu her zaman bir satır döndürür; çalışanı olmayan departmanda COUNT(*) 0, AVG NULL olur.' }),
-    mc('<p>“Her müşterinin son 3 siparişi” sorgusunu BigQuery\'de yazman gerekiyor. Hangi yöntem kullanılır?</p>', ['CROSS APPLY', 'LEFT JOIN LATERAL ... ON TRUE', 'ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date DESC) ile numaralandırıp rn <= 3 filtrelemek', 'SELECT listesinde ilişkili alt sorgu'], 2, 'BigQuery FROM içinde ilişkili alt sorguyu desteklemez; pencere fonksiyonu her programda çalışan yoldur (BigQuery\'de QUALIFY ile daha da kısa yazılır).')
+    mc('<p>“Her müşterinin son 3 siparişi” sorgusunu BigQuery\'de yazman gerekiyor. Hangi yöntem kullanılır?</p>', ['CROSS APPLY', 'LEFT JOIN LATERAL ... ON TRUE', 'ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date DESC) ile numaralandırıp rn <= 3 filtrelemek', 'SELECT listesinde ilişkili alt sorgu'], 2, 'BigQuery FROM içinde ilişkili alt sorguyu desteklemez; pencere fonksiyonu her SQL türünde çalışan yoldur (BigQuery\'de QUALIFY ile daha da kısa yazılır).')
   ]
 }]);
 
@@ -308,7 +308,7 @@ after('stil', [{
       { hint: "Koşullu sayım: SUM(CASE WHEN email LIKE '%@gmail.com' THEN 1 ELSE 0 END)." }),
     sq('<b>Stok uyarısı.</b> Stoğu bilinmeyen (NULL) <b>ya da</b> 20\'nin altında olan ürünlerden fiyatı en yüksek 5 tanesini getir: <code>name</code>, <code>category</code>, <code>price</code>, <code>stock</code>. Fiyata göre azalan sırala.',
       'SELECT name, category, price, stock FROM products WHERE stock IS NULL OR stock < 20 ORDER BY price DESC, product_id LIMIT 5;',
-      { ord: true, hint: 'NULL bir karşılaştırmada yakalanmaz; stock IS NULL OR stock < 20 yaz. İlk 5 satır için programının yazımını kullan (LIMIT / TOP / FETCH FIRST).' })
+      { ord: true, hint: 'NULL bir karşılaştırmada yakalanmaz; stock IS NULL OR stock < 20 yaz. İlk 5 satır için SQL türünün yazımını kullan (LIMIT / TOP / FETCH FIRST).' })
   ]
 }]);
 
@@ -344,7 +344,7 @@ add('right-full-join',
     { hint: 'COUNT(*) yerine COUNT(e.emp_id) yaz; eşi olmayan satırda emp_id NULL olduğu için 0 sayılır.' }),
   sq('Tüm çalışanları ve tüm departmanları FULL OUTER JOIN ile birleştir ve kaç satırın eşleştiğini, kaçının yalnızca bir tarafta kaldığını say: <code>durum</code> (\'eslesen\', \'departmansiz_calisan\', \'calisansiz_departman\'), <code>adet</code>.',
     "SELECT CASE WHEN e.emp_id IS NOT NULL AND d.dept_id IS NOT NULL THEN 'eslesen' WHEN d.dept_id IS NULL THEN 'departmansiz_calisan' ELSE 'calisansiz_departman' END AS durum, COUNT(*) AS adet FROM employees e FULL OUTER JOIN departments d ON d.dept_id = e.dept_id GROUP BY CASE WHEN e.emp_id IS NOT NULL AND d.dept_id IS NOT NULL THEN 'eslesen' WHEN d.dept_id IS NULL THEN 'departmansiz_calisan' ELSE 'calisansiz_departman' END;",
-    { dl: ['tsql', 'pg', 'oracle', 'sqlite'], hint: 'MySQL ve BigQuery dışındaki programlarda FULL OUTER JOIN vardır. Durumu CASE ile belirle.' }));
+    { dl: ['tsql', 'pg', 'oracle', 'sqlite'], hint: 'MySQL ve BigQuery dışındaki SQL türlerinde FULL OUTER JOIN vardır. Durumu CASE ile belirle.' }));
 
 add('cte',
   sq('İki CTE kullan: birincisi müşteri başına teslim edilen sipariş sayısını, ikincisi bu sayıların ortalamasını hesaplasın. Ortalamanın üstünde teslim edilmiş siparişi olan müşteri sayısını getir: <code>musteri</code>.',
@@ -417,7 +417,7 @@ add('an-funnel',
 add('an-rfm',
   sq('RFM\'in <b>R</b> (yakınlık) bileşeni: teslim edilmiş siparişi olan her müşteri için referans tarih 2025-01-01\'e göre son siparişten bu yana geçen gün sayısını hesapla ve müşterileri NTILE(4) ile dört dilime ayır (1 = en yeni). Her dilimdeki müşteri sayısını ve ortalama gün sayısını (tam sayı) getir: <code>r_dilim</code>, <code>musteri</code>, <code>ort_gun</code>.',
     "WITH m AS (SELECT customer_id, julianday('2025-01-01') - julianday(MAX(order_date)) AS gun FROM orders WHERE status = 'delivered' GROUP BY customer_id), r AS (SELECT customer_id, gun, NTILE(4) OVER (ORDER BY gun, customer_id) AS r_dilim FROM m) SELECT r_dilim, COUNT(*) AS musteri, ROUND(AVG(gun)) AS ort_gun FROM r GROUP BY r_dilim ORDER BY r_dilim;",
-    { ord: true, hint: 'Gün farkı: programının tarih farkı fonksiyonu. NTILE(4) OVER (ORDER BY gun) ile en yeni müşteriler 1. dilime düşer.' }),
+    { ord: true, hint: 'Gün farkı: SQL türünün tarih farkı fonksiyonu. NTILE(4) OVER (ORDER BY gun) ile en yeni müşteriler 1. dilime düşer.' }),
   sq('RFM\'in <b>F</b> (sıklık) bileşeni: teslim edilmiş sipariş sayısına göre müşterileri üç gruba ayır: 1 sipariş <b>\'Tek\'</b>, 2–3 sipariş <b>\'Ara sıra\'</b>, 4 ve üzeri <b>\'Sadık\'</b>. Her gruptaki müşteri sayısını getir: <code>grup</code>, <code>musteri</code>.',
     "WITH m AS (SELECT customer_id, COUNT(*) AS n FROM orders WHERE status = 'delivered' GROUP BY customer_id) SELECT CASE WHEN n = 1 THEN 'Tek' WHEN n <= 3 THEN 'Ara sıra' ELSE 'Sadık' END AS grup, COUNT(*) AS musteri FROM m GROUP BY CASE WHEN n = 1 THEN 'Tek' WHEN n <= 3 THEN 'Ara sıra' ELSE 'Sadık' END;",
     { hint: 'Önce müşteri başına teslim edilmiş sipariş sayısını hesapla, sonra CASE ile grupla.' }));
@@ -470,7 +470,7 @@ add('de-kalite',
   sq('Bir iş kuralı testi yaz. Kural: “Her ürünün fiyatı maliyetinin en az 1,5 katı olmalı; fiyat ve maliyet sıfırdan büyük olmalı.” Kuralı <b>ihlal eden</b> ürünleri getir (test geçseydi sorgu sıfır satır döndürürdü): <code>product_id</code>, <code>name</code>, <code>price</code>, <code>cost</code>.',
     'SELECT product_id, name, price, cost FROM products WHERE price < cost * 1.5 OR price <= 0 OR cost <= 0;',
     { hint: 'Kuralın tersini WHERE ile yaz: price < cost * 1.5 OR price <= 0 OR cost <= 0.', why: 'Bu ürünler kuralı ihlal ediyor. Gerçek bir veri hattında bu test başarısız olur ve ekip uyarılır.' }));
-/* Oracle boş metni NULL saklar; bu yüzden tam tekrar sayısı programdan bağımsız bir kontrolle ölçülür */
+/* Oracle boş metni NULL saklar; bu yüzden tam tekrar sayısı SQL türünden bağımsız bir kontrolle ölçülür */
 { const e = (LM('de-dedup') || { ex: [] }).ex[1]; if (e && e.check) e.check = 'SELECT COUNT(DISTINCT id) AS kimlik, COUNT(*) - (SELECT COUNT(*) FROM (SELECT DISTINCT id, full_name, email, city, signup_date FROM raw_signups) x) AS fazla FROM raw_signups'; }
 
 add('de-dedup',
@@ -554,9 +554,9 @@ add('oracle-ozel',
     "SELECT DECODE(status, 'delivered', 'Teslim', 'cancelled', 'İptal', 'Diğer') AS durum, COUNT(*) AS siparis FROM orders GROUP BY DECODE(status, 'delivered', 'Teslim', 'cancelled', 'İptal', 'Diğer');",
     { base: 'oracle', dl: ['oracle'], hint: 'DECODE(sütun, değer1, sonuç1, değer2, sonuç2, varsayılan). Oracle\'da GROUP BY içinde SELECT takma adı kullanılamaz; ifadeyi tekrar yaz.' }));
 
-/* ======================= Patikalar ======================= */
+/* ======================= Öğrenme yolları ======================= */
 const PA = {}; (window.SQLP_PATHS || []).forEach(p => PA[p.id] = p);
-/* Bağlantı dersi patikada yoksa ekleme yapılmaz (sona eklenip sırayı bozmasın) */
+/* Bağlantı dersi öğrenme yolunda yoksa ekleme yapılmaz (sona eklenip sırayı bozmasın) */
 const ins = (pid, afterId, ids) => { const p = PA[pid]; if (!p) return; ids = ids.filter(x => !p.lessons.includes(x)); const i = p.lessons.indexOf(afterId); if (i < 0) return; p.lessons.splice(i + 1, 0, ...ids); };
 const move = (pid, id, afterId) => { const p = PA[pid]; if (!p) return; const i = p.lessons.indexOf(id); if (i >= 0) p.lessons.splice(i, 1); ins(pid, afterId, [id]); };
 ['temel', 'analist', 'bi', 'sertifika', 'tsql', 'bilimci', 'yz'].forEach(pid => {
@@ -574,7 +574,7 @@ ins('tsql', 'ts-apply', ['lateral']);
 ins('muhendis', 'kosullu', ['null-guvenli']);
 ins('backend', 'coalesce', ['null-guvenli', 'like-escape']);
 if (PA.temel && PA.temel.comp) PA.temel.comp.push({ t: 'Temel bitirme projesi', d: 'Tek tabloyla altı soruluk bir yönetici raporu', l: ['proje-temel'] });
-/* Sertifika patikasında DML artık temel bölümünde */
+/* Sertifika öğrenme yolunda DML artık temel bölümünde */
 move('sertifika', 'dml', 'coalesce');
 
 /* ======================= Alıştırma bankası: zayıf konular ======================= */

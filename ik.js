@@ -1,5 +1,5 @@
 /* Kesit SQL — Pusula A.Ş. İnsan Kaynakları veri seti (hayali; deterministik üretim)
-   2019–2024 arası yaklaşık 1.900 çalışanın işe giriş, görev, maaş, performans, izin, işe alım, anket ve eğitim kayıtları.
+   2019–2024 arası 2.199 çalışanın işe giriş, görev, maaş, performans, izin, işe alım, anket ve eğitim kayıtları.
    İçine gerçekçi örüntüler yerleştirilmiştir: ilk yılda yüksek ayrılma, bant altı maaş ve zayıf yönetici puanıyla artan
    gönüllü ayrılma, seviye karışımından doğan ham ücret farkı, Pazartesi hastalık izni yığılması, referans kaynağının kalitesi. */
 (function (root) {
