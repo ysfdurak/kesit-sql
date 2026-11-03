@@ -1,0 +1,14 @@
+{
+ "ders": 40,
+ "tasma": [],
+ "cozumKabul": 136,
+ "cozumRed": [],
+ "yanlisRed": 199,
+ "yanlisGecti": [],
+ "mc": 80,
+ "mcSorun": [],
+ "kutu": 28,
+ "kutuHata": [],
+ "plan": 80,
+ "hata": []
+}

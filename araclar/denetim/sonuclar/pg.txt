@@ -1,4 +1,4 @@
-toplam 1591 { ayni: 1584, pgHata: 2, fark: 5 }
+toplam 1670 { ayni: 1663, pgHata: 2, fark: 5 }
 bilinen fark 7 gereksiz bilinen kayit 0 
 BILINMEYEN 0
-sure 117s
+sure 119s

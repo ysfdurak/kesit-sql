@@ -1,23 +1,8 @@
-hicbirPatikadaDegil | tarih (A1, SQL'in Hikayesi)
-patikaSeviyeGeriDonus | temel: 1 yerde 2+ seviye geri
-patikaSeviyeGeriDonus | tsql: 3 yerde 2+ seviye geri
-patikaSeviyeGeriDonus | analist: 2 yerde 2+ seviye geri
-patikaSeviyeGeriDonus | bilimci: 1 yerde 2+ seviye geri
-patikaSeviyeGeriDonus | muhendis: 1 yerde 2+ seviye geri
-patikaSeviyeGeriDonus | uzman: 2 yerde 2+ seviye geri
-patikaSeviyeGeriDonus | bi: 1 yerde 2+ seviye geri
-patikaSeviyeGeriDonus | is-analisti: 1 yerde 2+ seviye geri
-patikaSeviyeGeriDonus | dba: 3 yerde 2+ seviye geri
-patikaSeviyeGeriDonus | backend: 3 yerde 2+ seviye geri
-patikaSeviyeGeriDonus | yz: 1 yerde 2+ seviye geri
-patikaSeviyeGeriDonus | sertifika: 4 yerde 2+ seviye geri
-patikaSeviyeGeriDonus | mulakat: 1 yerde 2+ seviye geri
-ayniCozumluPratik | t215 = t039
-ayniCozumluPratik | t216 = t047
-ayniCozumluPratik | o221 = o072
-ayniCozumluPratik | o228 = o111
-ayniCozumluPratik | o229 = o102
-ayniCozumluPratik | i230 = o114
-ayniCozumluPratik | i231 = i163
-ayniCozumluPratik | i232 = i166
-sinavAyniSecenek | z071#64
+dogru sik konum dagilimi (A..E): [ 171, 489, 95, 20, 0 ]
+dogru sik en uzun olan: 203 / 775
+{
+  hicbirPatikadaDegil: 1,
+  patikaSeviyeGeriDonus: 13,
+  ayniCozumluPratik: 8,
+  sinavAyniSecenek: 1
+}

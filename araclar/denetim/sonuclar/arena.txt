@@ -52,6 +52,13 @@ aksam-payi rows=3 | Kebap/50.4 ; Vegan/50.2
 test no effect (bilinçli olabilir) es-zamanli 0 Uç uca eklenen teslimatlar
 es-zamanli rows=3 | 47/18 ; 18/13
 sadakat-dususu rows=1 | 28
+test no effect (bilinçli olabilir) opt-ay-raporu 1 Sonraki ayın ilk saniyesinde işlem
+opt-ay-raporu rows=8 | atm/250 ; faiz/118
+opt-son-islem rows=849 | 100001/2024-12-22 13:12:11 ; 100002/2024-12-25 22:19:11
+opt-derin-sayfa rows=10 | 3166/2024-11-15 11:49:58 ; 3165/2024-11-14 23:58:28
+opt-distinct rows=135 | 1/Kayseri ; 2/İstanbul
+opt-net-akis rows=5 | Alsancak Çarşı/-708 ; Alsancak Meydan/-674
+opt-fanout rows=44 | 1/122/2039 ; 2/122/2023
 ik-ayrilan rows=3 | Çağrı Merkezi/36 ; Mağaza Operasyonları/31
 ik-ilk-yil rows=1 | 17.1
 ik-bant-alti rows=11 | Mağaza Operasyonları/53 ; Yazılım Geliştirme/43
@@ -87,6 +94,10 @@ pred t17 2199 | 1306 | 6618 | 7003
 pred t18 107879 | 108195 | 116517 | 8322
 pred t19 34.84 | 34.75 | 53.24 | 40.49
 pred t20 8498 | 1407 | 2199 | 11352
+pred o01 13283 | 11462 | 9150 | 1821
+pred o02 3397 | 3590 | 3311 | 42284
+pred o03 0 | 20 | 27 | 1
+pred o04 849 | 500 | 500 | 42284
 pz b01 6
 pz b02 6
 pz b03 27
@@ -102,6 +113,9 @@ pz b12 12
 pz b13 12
 pz b14 1
 pz b15 5
+pz o01 10
+pz o02 8
+pz o03 62
 det kayip-kargo tsql 4471 | Kaan Aydemir | 100 | 65 | 06 ZT 4410 | Tolga Sarp
 det kayip-kargo pg 4471 | Kaan Aydemir | 100 | 65 | 06 ZT 4410 | Tolga Sarp
 det kayip-kargo mysql 4471 | Kaan Aydemir | 100 | 65 | 06 ZT 4410 | Tolga Sarp

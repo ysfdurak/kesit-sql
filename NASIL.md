@@ -88,7 +88,7 @@ node run.js
 - Her dersin her SQL alıştırmasını, izin verilen her SQL türünde çalıştırır.
 - Örnek çözümün hatasız çalıştığını, beklenen sonucu verdiğini ve görevin yöntem kurallarını (`must`, `mustNot`) geçtiğini denetler.
 - Sonucu `sql_audit.json` dosyasına yazar.
-- Son temiz sonuç: `calistirilan 9349`, hata yok.
+- Son temiz sonuç: `calistirilan 9800`, hata yok.
 - Altındaki `orderByVarOrdYok` ve `ordAmaOrderByYok` satırları sıralama uyarısıdır, hata değildir (`sonuclar/run.txt`).
 
 Daraltmak için:
