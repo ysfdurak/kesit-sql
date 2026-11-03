@@ -1,5 +1,5 @@
 <!doctype html><html lang="tr"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Kesit SQL: sıfırdan ileri seviyeye ücretsiz, Türkçe SQL eğitimi. Kurulum ve hesap yok; tarayıcında çalışan bir SQL veritabanıyla 247 ders, 1.496 otomatik denetlenen alıştırma, 6 SQL türü.">
+<meta name="description" content="Kesit SQL: sıfırdan ileri seviyeye ücretsiz, Türkçe SQL eğitimi. Kurulum ve hesap yok; tarayıcında çalışan bir SQL veritabanıyla 257 ders, 1.595 otomatik denetlenen alıştırma, 6 SQL türü.">
 <meta name="theme-color" content="#D3352C">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
@@ -9,7 +9,7 @@
 <meta property="og:locale" content="tr_TR">
 <meta property="og:site_name" content="Kesit SQL">
 <meta property="og:title" content="Kesit SQL: sıfırdan ileri seviyeye Türkçe SQL">
-<meta property="og:description" content="Kurulum yok, hesap yok. Tarayıcında çalışan bir SQL veritabanıyla 247 ders, 1.496 alıştırma ve 6 SQL türü.">
+<meta property="og:description" content="Kurulum yok, hesap yok. Tarayıcında çalışan bir SQL veritabanıyla 257 ders, 1.595 alıştırma ve 6 SQL türü.">
 <meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png">
 <meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/">
 <meta name="twitter:card" content="summary_large_image"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}.doors{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
@@ -576,6 +576,7 @@ button.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink);
 <script src="c33.js"></script>
 <script src="c34.js"></script>
 <script src="c35.js"></script>
+<script src="c36.js"></script>
 <script src="ipuclari.js"></script>
 <script src="arena-data.js"></script>
 <script src="config.js"></script>
@@ -606,7 +607,7 @@ const COLMETA = window.SQLP_COLMETA || {}; const TABLES = Object.keys(COLMETA);
 const lvOrder = id => LEVELS.findIndex(l=>l.id===id);
 const lvName = id => (LEVELS[lvOrder(id)]||{}).name || id;
 const lvBadge = id => '<span class="lv lv-'+id+'">'+lvName(id)+'</span>';
-const EXTRA_MODS = ['Veri Analisti','Veri Bilimi','Veri Mühendisliği','Mülakat Hazırlığı','SQL Türlerine Özgü','İş Zekâsı ve Raporlama','Veritabanı Yönetimi (DBA)','Uygulama Geliştirme','Vaka Çalışmaları','Yapay Zekâ ile SQL','BigQuery ve Bulut Veri Ambarları','Sertifika Hazırlık','Alıştırma Kampı','Bitirme Projeleri','Kanat Havayolları','Büyük Sorgular','İK Analitiği','Büyük Veriyle Çalışmak'];
+const EXTRA_MODS = ['Veri Analisti','BT İş Analizi','Veri Bilimi','Veri Mühendisliği','Mülakat Hazırlığı','SQL Türlerine Özgü','İş Zekâsı ve Raporlama','Veritabanı Yönetimi (DBA)','Uygulama Geliştirme','Vaka Çalışmaları','Yapay Zekâ ile SQL','BigQuery ve Bulut Veri Ambarları','Sertifika Hazırlık','Alıştırma Kampı','Bitirme Projeleri','Kanat Havayolları','Büyük Sorgular','İK Analitiği','Büyük Veriyle Çalışmak'];
 (function hints(){ const dc=[], tc=[], all=[], dt=[]; for(const t of TABLES) for(const [c,ty] of COLMETA[t]){ all.push(c); if(/date/.test(ty)) dc.push(c); if(ty==='datetime') dt.push(c); if(/^text/.test(ty)) tc.push(c); } DX.setSchemaHints(dc, tc, all, dt); })();
 
 /* ---------- Depolama ---------- */
