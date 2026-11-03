@@ -256,6 +256,56 @@ CREATE INDEX ix_bank_txns_account ON bank_txns (account_id);
       t = new Date(t.getTime() + int(20, 900) * 1000);
     }
   }
+  /* Huni fazla temiz kalmasın: tekrar ziyaret, tekrar sayfa ve sepet olayı, birkaç sıra dışı zaman ve çift gönderim.
+     Ayrı üreteç (RW): R akışı kaymaz. Kullanıcı başına ulaşılan en ileri huni adımı ve kullanıcı kümesi değişmez. */
+  {
+    const RW = (function (seed) { return function () { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; })(20241001);
+    const ri = (a, b) => a + Math.floor(RW() * (b - a + 1));
+    const adim = ['visit','product_view','add_to_cart','checkout','purchase'];
+    const BIT = Date.UTC(2024, 10, 29, 23, 59, 0), kul = new Map();
+    ev.forEach(e => { if (!kul.has(e[1])) kul.set(e[1], []); kul.get(e[1]).push({ tur: e[2], t: new Date(e[3].replace(' ', 'T') + 'Z').getTime(), dev: e[4] }); });
+    const us = [...kul.keys()];
+    const yeni = [];
+    for (const u of us) {
+      const ana = kul.get(u), enIleri = ana.length - 1, dev = ana[0].dev, ek = [];
+      /* Aynı oturumda tekrar: ürün sayfası ve sepet olayı (ikinci ürün), ödeme denemesi */
+      const buOturum = [];
+      for (const o of ana) {
+        buOturum.push(o);
+        if (o.tur === 'product_view') { let k = RW() < .55 ? ri(1, 3) : 0, t = o.t; while (k-- > 0) { t += ri(15, 120) * 1000; buOturum.push({ tur: 'product_view', t, dev }); } }
+        if (o.tur === 'add_to_cart' && RW() < .22) buOturum.push({ tur: 'add_to_cart', t: o.t + ri(10, 90) * 1000, dev });
+        if (o.tur === 'checkout' && RW() < .12) buOturum.push({ tur: 'checkout', t: o.t + ri(30, 150) * 1000, dev });
+      }
+      /* Sonraki adımlar tekrar olaylarından sonra gelsin */
+      buOturum.sort((a, b) => adim.indexOf(a.tur) - adim.indexOf(b.tur) || a.t - b.t);
+      let son = 0; for (const o of buOturum) { if (o.t <= son) o.t = son + ri(10, 60) * 1000; son = o.t; }
+      /* Tekrar ziyaretler: kullanıcının daha önce ulaştığı adımı geçmez; satın alma tekrarlanmaz */
+      const tekrar = RW() < .38 ? ri(1, 3) : 0; let t = son;
+      for (let k = 0; k < tekrar; k++) {
+        t += ri(3 * 3600, 9 * 86400) * 1000;
+        if (t > BIT) break;
+        ek.push({ tur: 'visit', t, dev }); let c = t;
+        for (let s = 1; s <= Math.min(enIleri, 3); s++) {
+          const gec = s === 1 ? .7 : .35; if (RW() > gec) break;
+          c += ri(20, 400) * 1000; if (c > BIT) break;
+          ek.push({ tur: adim[s], t: c, dev });
+          if (s === 1) { let m = ri(0, 2); while (m-- > 0) { c += ri(15, 120) * 1000; if (c < BIT) ek.push({ tur: 'product_view', t: c, dev }); } }
+        }
+        t = c;
+      }
+      yeni.push({ u, ana: buOturum, ek });
+    }
+    /* Bilerek: tam 24 kullanıcıda istemci saati kayar, iki ardışık huni adımının zamanı yer değiştirir */
+    const huni = yeni.filter(x => x.ana.length >= 3); const kay = []; while (kay.length < 24) { const x = huni[ri(0, huni.length - 1)]; if (!kay.includes(x)) kay.push(x); }
+    kay.forEach(x => { const A = x.ana; let i = 0; for (let g = 0; g < 200; g++) { i = ri(0, A.length - 2); if (A[i].tur !== A[i + 1].tur) break; } const tt = A[i].t; A[i].t = A[i + 1].t; A[i + 1].t = tt; });
+    ev.length = 0; let eid = 1; const cift = [];
+    yeni.forEach(x => { x.ana.concat(x.ek).forEach(o => { ev.push([eid++, x.u, o.tur, tstr(new Date(o.t)), o.dev]); }); });
+    /* Bilerek: tam 40 olay iki kez gönderilmiş (aynı kullanıcı, tür, zaman, cihaz; yeni event_id). 8 tanesi purchase */
+    const pur = ev.filter(e => e[2] === 'purchase'), dig = ev.filter(e => e[2] !== 'purchase'); const sec = (L, n) => { const o = []; while (o.length < n) { const e = L[ri(0, L.length - 1)]; if (!o.includes(e)) o.push(e); } return o; };
+    sec(pur, 8).concat(sec(dig, 32)).forEach(e => cift.push(e));
+    cift.sort((a, b) => a[0] - b[0]);
+    const say = ev.length; cift.forEach((e, i) => ev.push([say + i + 1, e[1], e[2], e[3], e[4]]));
+  }
   sql += ins('web_events', ['event_id','user_id','event_type','event_time','device'], ev);
 
   // a/b test
@@ -364,7 +414,7 @@ CREATE INDEX ix_bank_txns_account ON bank_txns (account_id);
     products: 'Ürün kataloğu; price satış, cost maliyet fiyatı',
     orders: 'Siparişler (2022–2024); status: delivered, shipped, cancelled, returned',
     order_items: 'Sipariş satırları; ciro = quantity * unit_price * (1 - discount)',
-    web_events: 'Web olayları (Ekim–Kasım 2024): visit → product_view → add_to_cart → checkout → purchase',
+    web_events: 'Web olayları (Ekim–Kasım 2024): visit → product_view → add_to_cart → checkout → purchase. Kullanıcı aynı adımı tekrar edebilir; 40 olay iki kez gönderilmiştir, 24 kullanıcıda iki adımın zamanı yer değiştirmiştir',
     ab_test: 'A/B testi sonuçları: variant A/B, converted 0/1, revenue',
     raw_signups: 'Kirli kayıt verisi: boşluk, büyük/küçük harf, tekrar, karışık tarih biçimi',
     price_updates: 'Ürün fiyat güncellemeleri (artımlı yükleme ve SCD dersleri için)',
