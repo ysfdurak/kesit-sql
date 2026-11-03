@@ -9,7 +9,7 @@ Bu dal (`kaynak`), yayındaki sitenin (`main` dalı) bütün dosyalarını ve bu
 | `index.html` | Uygulama: arayüz, yönlendirme, ilerleme kaydı. Betikleri sırayla yükler. |
 | `db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js` | Veri setleri: e-ticaret ve banka, havayolu, yemek teslimatı, İK, bisiklet paylaşımı. |
 | `dialect.js` | SQL Server, PostgreSQL, MySQL, Oracle ve BigQuery yazımını SQLite'a çeviren katman. |
-| `c1.js` … `c36.js`, `cx.js` | Dersler, öğrenme yolları, pratik görevleri, sınavlar. Sonra yüklenen dosya öncekileri yerinde değiştirebilir. `c35.js` son düzeltme katmanıdır: yol sırası, seviye testi, yöntem kuralları, yeni dersler. `c36.js` BT İş Analisti yolu ve onun on dersidir; metindeki sayılar `SQLP_BA_SAYI` nesnesinden gelir, `ba_sayilar.js` denetler. |
+| `c1.js` … `c36.js`, `cx.js` | Dersler, öğrenme yolları, pratik görevleri, sınavlar. Sonra yüklenen dosya öncekileri yerinde değiştirebilir. `c35.js` son düzeltme katmanıdır: yol sırası, seviye testi, yöntem kuralları, yeni dersler. `c36.js` BT İş Analisti yolu ve onun on bir dersidir; metindeki sayılar `SQLP_BA_SAYI` nesnesinden gelir, `ba_sayilar.js` denetler. |
 | `ipuclari.js` | Alıştırma ipuçları. `araclar/denetim/ipucu_uret.js` üretir; elle yazılanlar `araclar/denetim/ipucu_elle.json` içinde. |
 | `bilinen-sinirlar.js` | Veri setleri sayfasındaki “Bilerek bırakılanlar ve bilinen sınırlamalar” metinleri. |
 | `arena-data.js` | SQL Arena: meydan okumalar, dedektif vakaları, tahmin, bulmaca. |
@@ -87,7 +87,7 @@ node run.js
 - Her dersin her SQL alıştırmasını, izin verilen her SQL türünde çalıştırır.
 - Örnek çözümün hatasız çalıştığını, beklenen sonucu verdiğini ve görevin yöntem kurallarını (`must`, `mustNot`) geçtiğini denetler.
 - Sonucu `sql_audit.json` dosyasına yazar.
-- Son temiz sonuç: `calistirilan 9313`, hata yok.
+- Son temiz sonuç: `calistirilan 9349`, hata yok.
 - Altındaki `orderByVarOrdYok` ve `ordAmaOrderByYok` satırları sıralama uyarısıdır, hata değildir (`sonuclar/run.txt`).
 
 Daraltmak için:
@@ -101,7 +101,7 @@ PROG=1 node run.js               # ilerlemeyi yazdır
 ```bash
 node boxes.js            # FILTER ile daraltılabilir
 ```
-Konu anlatımlarındaki çalıştırılabilir örnekleri bütün SQL türlerinde çalıştırır. Son temiz sonuç: `kutu 533 calistirma 2502 hata 0`.
+Konu anlatımlarındaki çalıştırılabilir örnekleri bütün SQL türlerinde çalıştırır. Son temiz sonuç: `kutu 536 calistirma 2520 hata 0`.
 
 ### 3. SQL Arena
 ```bash
@@ -136,7 +136,7 @@ node pg_denetim.mjs              # FILTER='^ik-' ile daraltılır
 - Her çözüm dış bir işlem içinde çalışıp geri alınır. Kendi `BEGIN`/`COMMIT` komutları kayıt noktasına çevrilir, veri kalıcı değişmez.
 - İlk çalıştırmada veritabanını kurar ve `pg_taban.tgz` olarak saklar (`base.sqlite` yenilenince kendini yeniler). Tam tur yaklaşık 3 dakika.
 - 45 saniyeyi aşan sorgu `zamanasimi` diye yazılır. Tüm sonuç `pg_audit.json` dosyasındadır.
-- Gerekçesi yazılı farklar `pg_bilinen.json` dosyasındadır. Temiz sonuç: `BILINMEYEN 0` ve `gereksiz bilinen kayit 0` (son tur: 1.585 çözüm, 1.578 aynı, 7 bilinen; `sonuclar/pg.txt`).
+- Gerekçesi yazılı farklar `pg_bilinen.json` dosyasındadır. Temiz sonuç: `BILINMEYEN 0` ve `gereksiz bilinen kayit 0` (son tur: 1.591 çözüm, 1.584 aynı, 7 bilinen; `sonuclar/pg.txt`).
 - Yapısal denetimi SQLite kataloğuna bakan DDL görevlerinde (pragma_table_info) yalnız DDL'in çalıştığı sınanır.
 - Tarih türü ile yapılan sıralamalar ve yerel ayara bağlı `UPPER`/`LOWER` farkı karşılaştırmada i/İ/ı/I harfleri eşit sayılarak ele alınır.
 
@@ -190,6 +190,9 @@ node a11y.js               # ana sayfalardaki tıklanabilir öğelerin taraması
 
 ### Tek seferlik betikler
 `t1`–`t7`, `err*`, `dx*`, `probe*`, `dump*`, `smoke`–`smoke7`, `*_c30`–`*_c33`, `fix_test` ve benzerleri belirli bir hatayı ya da içerik partisini incelemek için yazıldı. Örnek olarak tutuluyorlar; eski bir duruma göre yazılmış olabilirler.
+
+### Süre tahmini
+Ders ve yol süreleri `index.html` içindeki `sureDk`, `dkAralik`, `saatAralik` ile hesaplanır: okuma (600 karakter/dk, en az 3 dk) + SQL görevi başına 2-3 dk + çoktan seçmeli başına 0,5-1 dk. Üç uygulamada aynı formül. Ölçülmüş değildir; ders dosyasındaki `min` alanı ekranda kullanılmaz. Pilotla ölçüm yapılırsa katsayılar burada değişir.
 
 ## Yayına alma
 Site `main` dalından sunulur. `main` dalına **yalnız aşağıdaki dosyalar** gider; `araclar/` ve `NASIL.md` gitmez.
