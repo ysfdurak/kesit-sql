@@ -9,7 +9,7 @@ Bu dal (`kaynak`), yayındaki sitenin (`main` dalı) bütün dosyalarını ve bu
 | `index.html` | Uygulama: arayüz, yönlendirme, ilerleme kaydı. Betikleri sırayla yükler. |
 | `db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js` | Veri setleri: e-ticaret ve banka, havayolu, yemek teslimatı, İK, bisiklet paylaşımı. |
 | `dialect.js` | SQL Server, PostgreSQL, MySQL, Oracle ve BigQuery yazımını SQLite'a çeviren katman. |
-| `c1.js` … `c35.js`, `cx.js` | Dersler, öğrenme yolları, pratik görevleri, sınavlar. Sonra yüklenen dosya öncekileri yerinde değiştirebilir. `c35.js` son düzeltme katmanıdır: yol sırası, seviye testi, yöntem kuralları, yeni dersler. |
+| `c1.js` … `c36.js`, `cx.js` | Dersler, öğrenme yolları, pratik görevleri, sınavlar. Sonra yüklenen dosya öncekileri yerinde değiştirebilir. `c35.js` son düzeltme katmanıdır: yol sırası, seviye testi, yöntem kuralları, yeni dersler. `c36.js` BT İş Analisti yolu ve onun on dersidir; metindeki sayılar `SQLP_BA_SAYI` nesnesinden gelir, `ba_sayilar.js` denetler. |
 | `ipuclari.js` | Alıştırma ipuçları. `araclar/denetim/ipucu_uret.js` üretir; elle yazılanlar `araclar/denetim/ipucu_elle.json` içinde. |
 | `bilinen-sinirlar.js` | Veri setleri sayfasındaki “Bilerek bırakılanlar ve bilinen sınırlamalar” metinleri. |
 | `arena-data.js` | SQL Arena: meydan okumalar, dedektif vakaları, tahmin, bulmaca. |
@@ -87,7 +87,7 @@ node run.js
 - Her dersin her SQL alıştırmasını, izin verilen her SQL türünde çalıştırır.
 - Örnek çözümün hatasız çalıştığını, beklenen sonucu verdiğini ve görevin yöntem kurallarını (`must`, `mustNot`) geçtiğini denetler.
 - Sonucu `sql_audit.json` dosyasına yazar.
-- Son temiz sonuç: `calistirilan 9001`, hata yok.
+- Son temiz sonuç: `calistirilan 9313`, hata yok.
 - Altındaki `orderByVarOrdYok` ve `ordAmaOrderByYok` satırları sıralama uyarısıdır, hata değildir (`sonuclar/run.txt`).
 
 Daraltmak için:
@@ -101,7 +101,7 @@ PROG=1 node run.js               # ilerlemeyi yazdır
 ```bash
 node boxes.js            # FILTER ile daraltılabilir
 ```
-Konu anlatımlarındaki çalıştırılabilir örnekleri bütün SQL türlerinde çalıştırır. Son temiz sonuç: `kutu 520 calistirma 2424 hata 0`.
+Konu anlatımlarındaki çalıştırılabilir örnekleri bütün SQL türlerinde çalıştırır. Son temiz sonuç: `kutu 533 calistirma 2502 hata 0`.
 
 ### 3. SQL Arena
 ```bash
@@ -117,11 +117,16 @@ node static.js
 - Çıktı uyarı listesidir.
 - Son durumda bilinen ve kabul edilmiş uyarılar: `hicbirPatikadaDegil: 1`, `patikaSeviyeGeriDonus: 12`, `ayniCozumluPratik: 8`, `sinavAyniSecenek: 1`. Bu sayılar artarsa bak. Ayrıntılı liste `static.txt` dosyasına yazılır (son hali: `sonuclar/static.txt`).
 
+### 4a. BT İş Analisti sayıları
+```bash
+node ba_sayilar.js   # c36.js metnindeki sayıları veritabanından yeniden hesaplar. Beklenen: fark 0
+```
+
 ### 4b. Önkoşul taraması
 ```bash
 node onkosul.js
 ```
-Her öğrenme yolunda çözümü, anlatılmamış yapı isteyen dersleri listeler. Rol yollarında beklenen: `temel`, `analist`, `bilimci`, `muhendis`, `bi`, `backend` 0; `tsql` ve `dba` 1 (`ts-giris` giriş dersi). Konu ve sertifika yolları temelleri bildiğini varsayar. İleri görev işaretli alıştırmalar sayılmaz.
+Her öğrenme yolunda çözümü, anlatılmamış yapı isteyen dersleri listeler. Rol yollarında beklenen: `temel`, `analist`, `is-analisti`, `bilimci`, `muhendis`, `bi`, `backend` 0; `tsql` ve `dba` 1 (`ts-giris` giriş dersi). Konu ve sertifika yolları temelleri bildiğini varsayar. İleri görev işaretli alıştırmalar sayılmaz.
 
 ### 5. Gerçek PostgreSQL denetimi
 ```bash
@@ -131,7 +136,7 @@ node pg_denetim.mjs              # FILTER='^ik-' ile daraltılır
 - Her çözüm dış bir işlem içinde çalışıp geri alınır. Kendi `BEGIN`/`COMMIT` komutları kayıt noktasına çevrilir, veri kalıcı değişmez.
 - İlk çalıştırmada veritabanını kurar ve `pg_taban.tgz` olarak saklar (`base.sqlite` yenilenince kendini yeniler). Tam tur yaklaşık 3 dakika.
 - 45 saniyeyi aşan sorgu `zamanasimi` diye yazılır. Tüm sonuç `pg_audit.json` dosyasındadır.
-- Gerekçesi yazılı farklar `pg_bilinen.json` dosyasındadır. Temiz sonuç: `BILINMEYEN 0` ve `gereksiz bilinen kayit 0` (son tur: 1.533 çözüm, 1.526 aynı, 7 bilinen; `sonuclar/pg.txt`).
+- Gerekçesi yazılı farklar `pg_bilinen.json` dosyasındadır. Temiz sonuç: `BILINMEYEN 0` ve `gereksiz bilinen kayit 0` (son tur: 1.585 çözüm, 1.578 aynı, 7 bilinen; `sonuclar/pg.txt`).
 - Yapısal denetimi SQLite kataloğuna bakan DDL görevlerinde (pragma_table_info) yalnız DDL'in çalıştığı sınanır.
 - Tarih türü ile yapılan sıralamalar ve yerel ayara bağlı `UPPER`/`LOWER` farkı karşılaştırmada i/İ/ı/I harfleri eşit sayılarak ele alınır.
 
@@ -189,7 +194,7 @@ node a11y.js               # ana sayfalardaki tıklanabilir öğelerin taraması
 ## Yayına alma
 Site `main` dalından sunulur. `main` dalına **yalnız aşağıdaki dosyalar** gider; `araclar/` ve `NASIL.md` gitmez.
 
-Site dosyaları (tam liste): `index.html`, `db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js`, `dialect.js`, `c1.js` … `c35.js`, `cx.js`, `ipuclari.js`, `arena-data.js`, `config.js`, `bilinen-sinirlar.js`, `belge.js`, `sw.js`, `base-<özet>.b64.txt`, `manifest.webmanifest`, `favicon.svg`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, `og.png`, `vendor/`, `ekran/`, `README.md`, `LICENSE`, `LICENSE-ICERIK.md`, `.nojekyll`.
+Site dosyaları (tam liste): `index.html`, `db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js`, `dialect.js`, `c1.js` … `c36.js`, `cx.js`, `ipuclari.js`, `arena-data.js`, `config.js`, `bilinen-sinirlar.js`, `belge.js`, `sw.js`, `base-<özet>.b64.txt`, `manifest.webmanifest`, `favicon.svg`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, `og.png`, `vendor/`, `ekran/`, `README.md`, `LICENSE`, `LICENSE-ICERIK.md`, `.nojekyll`.
 
 Eski sürümden kaldırılacaklar: `hesap.js`, `hesap-secenegi/`, `YAYIN.md`.
 

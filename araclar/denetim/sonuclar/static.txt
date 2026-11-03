@@ -6,6 +6,7 @@ patikaSeviyeGeriDonus | bilimci: 1 yerde 2+ seviye geri
 patikaSeviyeGeriDonus | muhendis: 1 yerde 2+ seviye geri
 patikaSeviyeGeriDonus | uzman: 2 yerde 2+ seviye geri
 patikaSeviyeGeriDonus | bi: 1 yerde 2+ seviye geri
+patikaSeviyeGeriDonus | is-analisti: 1 yerde 2+ seviye geri
 patikaSeviyeGeriDonus | dba: 3 yerde 2+ seviye geri
 patikaSeviyeGeriDonus | backend: 3 yerde 2+ seviye geri
 patikaSeviyeGeriDonus | yz: 1 yerde 2+ seviye geri

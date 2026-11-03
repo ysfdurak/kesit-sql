@@ -1,4 +1,4 @@
-calistirilan 9001 oge 1760 { orderByVarOrdYok: 17, ordAmaOrderByYok: 4 }
+calistirilan 9313 oge 1812 { orderByVarOrdYok: 17, ordAmaOrderByYok: 4 }
 {}
 (node:9476) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 exit listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
 (Use `node --trace-warnings ...` to show where the warning was created)

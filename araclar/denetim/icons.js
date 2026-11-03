@@ -16,7 +16,7 @@ const font="@font-face{font-family:'BG';src:url(vendor/fonts/bricolage-grotesque
   '<div style="position:absolute;left:84px;top:72px;display:flex;align-items:center;gap:18px"><div style="width:64px;height:64px">'+svg.replace('<svg ','<svg width="64" height="64" ')+'</div><div style="font:800 46px BG">Kesit <span style="color:#D3352C">SQL</span></div></div>'+
   '<div style="position:absolute;left:84px;top:200px;font:800 70px/1.05 BG;letter-spacing:-.02em;max-width:900px">Sıfırdan ileri seviyeye<br><span style="color:#D3352C">Türkçe SQL</span></div>'+
   '<div style="position:absolute;left:84px;top:378px;font:400 28px PX;color:#5A6576">Kurulum yok, hesap yok. Tarayıcında gerçek bir veritabanı.</div>'+
-  '<div style="position:absolute;left:84px;top:450px;display:flex;gap:16px">'+[['247','ders'],['1.496','alıştırma'],['6','SQL türü'],['6','veri seti']].map(([a,b])=>'<div style="background:#F1F3F6;border-radius:14px;padding:16px 22px"><div style="font:800 34px BG;color:#3866D1">'+a+'</div><div style="font:400 20px PX;color:#5A6576">'+b+'</div></div>').join('')+'</div>'+
+  '<div style="position:absolute;left:84px;top:450px;display:flex;gap:16px">'+[['257','ders'],['1.595','alıştırma'],['6','SQL türü'],['6','veri seti']].map(([a,b])=>'<div style="background:#F1F3F6;border-radius:14px;padding:16px 22px"><div style="font:800 34px BG;color:#3866D1">'+a+'</div><div style="font:400 20px PX;color:#5A6576">'+b+'</div></div>').join('')+'</div>'+
   '<div style="position:absolute;right:84px;bottom:56px;font:400 20px PX;color:#8A94A3">Ücretsiz · açık kaynak</div></div>';
  await shot(1200,630,og,'og.png');
  fs.unlinkSync(D+'_tmp_shot.html'); await b.close(); })();

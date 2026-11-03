@@ -1,3 +1,3 @@
-kutu 520 calistirma 2424 hata 0
+kutu 533 calistirma 2502 hata 0
 {}
 
