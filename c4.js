@@ -218,8 +218,19 @@ ORDER BY t.kohort;</pre>
   title: 'Dönüşüm hunisi (funnel) analizi',
   sum: 'Ziyaretten satın almaya her adımda kaç kullanıcı kaybediliyor?',
   body: `
+<h2>Ham olay kullanıcı değildir</h2>
+<p><code>web_events</code> adımları: <code>visit → product_view → add_to_cart → checkout → purchase</code>. Kullanıcı siteye yeniden gelir, aynı sayfaya tekrar bakar, sepete ikinci ürünü ekler. Üstelik izleme kodu bazı olayları iki kez gönderir. Bu yüzden ham sayım huniyi şişirir: 1.005 <code>visit</code> satırı 600 kullanıcıdan, 75 <code>purchase</code> satırı 67 kullanıcıdan gelir.</p>
+<pre class="code">SELECT event_type, COUNT(*) AS olay, COUNT(DISTINCT user_id) AS kullanici
+FROM web_events
+GROUP BY event_type;</pre>
+<p>Çift gönderimi bulmak için aynı kullanıcı, tür, zaman ve cihazda birden fazla satır ara. Bu veride tam 40 fazla satır var, 8'i <code>purchase</code>. Satın alma adedi raporlarken bunları ayıkla:</p>
+<pre class="code">SELECT SUM(adet - 1) AS fazla_satir
+FROM (SELECT user_id, event_type, event_time, device, COUNT(*) AS adet
+      FROM web_events
+      GROUP BY user_id, event_type, event_time, device
+      HAVING COUNT(*) &gt; 1) t;</pre>
 <h2>Huni adımları</h2>
-<p><code>web_events</code>: <code>visit → product_view → add_to_cart → checkout → purchase</code>. Her adıma ulaşan <b>farklı kullanıcı</b> sayısını say:</p>
+<p>Her adıma ulaşan <b>farklı kullanıcı</b> sayısını say:</p>
 <pre class="code">SELECT
   COUNT(DISTINCT CASE WHEN event_type = 'visit' THEN user_id END) AS ziyaret,
   COUNT(DISTINCT CASE WHEN event_type = 'product_view' THEN user_id END) AS urun_gor,
@@ -239,11 +250,11 @@ SELECT sira, event_type, kullanici,
        ROUND(100.0 * kullanici / LAG(kullanici) OVER (ORDER BY sira), 1) AS onceki_adima_gore,
        ROUND(100.0 * kullanici / FIRST_VALUE(kullanici) OVER (ORDER BY sira), 1) AS basa_gore
 FROM adim ORDER BY sira;</pre>
-<div class="note"><b>Sıralı huni</b>Gerçek analizde kullanıcının adımları <b>doğru sırada</b> yapması da kontrol edilir (ör. checkout zamanı add_to_cart'tan sonra olmalı). Bunun için her adımın ilk zamanını MIN ile alıp karşılaştırırsın.</div>
+<div class="note"><b>Sıralı huni</b>Gerçek analizde adımların <b>doğru sırada</b> yapıldığı da kontrol edilir. Bunun için her adımın ilk zamanını MIN ile alıp karşılaştırırsın. Bu veride 24 kullanıcıda istemci saati kaydığı için iki adımın zamanı yer değiştirmiştir; örneğin 17 kullanıcının ilk ürün görüntülemesi ilk ziyaretinden önce görünür. Bu satırları silme: say, raporla, sırayı <code>event_id</code> ile de karşılaştır.</div>
 `,
   ex: [
     { t: 'sql', q: '<p>Cihaz (<code>device</code>) bazında, ziyaret eden kullanıcıların yüzde kaçının <b>satın aldığını</b> hesapla (1 basamak): <code>device</code>, <code>ziyaret</code>, <code>satin_alma</code>, <code>donusum</code>.</p>', sol: "SELECT device, COUNT(DISTINCT CASE WHEN event_type = 'visit' THEN user_id END) AS ziyaret, COUNT(DISTINCT CASE WHEN event_type = 'purchase' THEN user_id END) AS satin_alma, ROUND(100.0 * COUNT(DISTINCT CASE WHEN event_type = 'purchase' THEN user_id END) / COUNT(DISTINCT CASE WHEN event_type = 'visit' THEN user_id END), 1) AS donusum FROM web_events GROUP BY device;" },
-    { t: 'sql', q: '<p>Sepete ekleyip (<code>add_to_cart</code>) <b>satın almayan</b> kullanıcı sayısını bul. Tek değer.</p>', sol: "SELECT COUNT(DISTINCT user_id) FROM web_events w WHERE event_type = 'add_to_cart' AND NOT EXISTS (SELECT 1 FROM web_events p WHERE p.user_id = w.user_id AND p.event_type = 'purchase');" }
+    { t: 'sql', q: '<p>Sıra denetimi: ilk ürün görüntülemesi (<code>product_view</code>) ilk ziyaretinden (<code>visit</code>) <b>önce</b> görünen kullanıcı sayısını bul. Tek değer: <code>kullanici</code>.</p>', sol: "WITH k AS (SELECT user_id, MIN(CASE WHEN event_type = 'visit' THEN event_time END) AS ziyaret, MIN(CASE WHEN event_type = 'product_view' THEN event_time END) AS urun FROM web_events GROUP BY user_id) SELECT COUNT(*) AS kullanici FROM k WHERE urun < ziyaret;", hint: 'Her adımın ilk zamanını kullanıcı başına MIN(CASE WHEN ...) ile tek satıra çek, sonra iki sütunu karşılaştır.' }
   ]
 },
 {

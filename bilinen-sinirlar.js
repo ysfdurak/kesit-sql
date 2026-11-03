@@ -4,13 +4,14 @@ window.KESIT_SINIRLAR = {
  "market": {
   "bilerek": [
    "raw_signups (52 satır) kirli bırakıldı: boşluk, büyük ve küçük harf karışıklığı, tekrar ve karışık tarih biçimi temizlik pratiği içindir.",
-   "2023 satışlarının birim fiyatı liste fiyatının %10 altındadır (550 satış satırı); 2022 ve 2024 satışları liste fiyatındadır. Üreteçte bilinçli, ama gerçek bir fiyat politikası gibi yorumlama."
+   "2023 satışlarının birim fiyatı liste fiyatının %10 altındadır (550 satış satırı); 2022 ve 2024 satışları liste fiyatındadır. Üreteçte bilinçli, ama gerçek bir fiyat politikası gibi yorumlama.",
+   "web_events içinde tam 40 olay iki kez gönderilmiştir (aynı kullanıcı, tür, zaman ve cihaz; 8'i purchase). 24 kullanıcıda istemci saati kaymış, iki huni adımının zamanı yer değiştirmiştir; 17 kullanıcının ilk ürün görüntülemesi ilk ziyaretinden önce görünür. Tekilleştirme ve sıra denetimi içindir: silmeden say ve raporla."
   ],
   "sinir": [
    "Kesit SQL ile Kesit Power BI aynı şirketi ve aynı siparişleri kullanır: sipariş, müşteri, ürün, adet ve tarih aynı, ciro iki tarafta da 1.346.189,85. Power BI modeli hedef, gider, talep, tedarik ve proje tablolarıyla zenginleştirildi. Kesit Python ikisini de ayrı veri seti olarak verir: Anadolu Market ve Anadolu Market (Power BI modeli).",
-   "İki model birebir aynı değildir. Ürün stoğu 40 üründe de farklıdır (toplam 5.682 ve 311). web_events (1.412 satır) ile WebOlaylari (2.019 satır) ayrı verilerdir. 28-31 Aralık 2024'teki 8 satış satırının durumu farklıdır (delivered 1.269, shipped 120; Teslim Edildi 1.261, Kargoda 128). Departman sayısı 7 ve 8'dir.",
+   "İki model birebir aynı değildir. Ürün stoğu 40 üründe de farklıdır (toplam 5.682 ve 311). web_events (2.819 satır) ile WebOlaylari (2.019 satır) ayrı verilerdir. 28-31 Aralık 2024'teki 8 satış satırının durumu farklıdır (delivered 1.269, shipped 120; Teslim Edildi 1.261, Kargoda 128). Departman sayısı 7 ve 8'dir.",
    "order_id kronolojik değildir: siparişler müşteriye göre yazıldığı için ardışık 909 geçişin 120'sinde tarih geri gider. Son siparişi en büyük numaradan değil, tarihten bul.",
-   "web_events fazla temizdir: 600 kullanıcının her biri her olay türünde en çok bir kez görünür, huni sırası hiç bozulmaz. Tekilleştirme ve sıra tuzakları burada görünmez; gerçek veride bekle."
+   "web_events'te tekrar ziyaret ve tekrar olay vardır (2.819 satır, 600 kullanıcı), oturum numarası yoktur. Huni tekil kullanıcıyla sayılır: 600, 453, 183, 109, 67. Bu tablo orders ile bağlı değildir: kullanıcı numaraları müşteri numaralarıyla eşleşmez."
   ]
  },
  "bank": {
@@ -30,9 +31,10 @@ window.KESIT_SINIRLAR = {
    "62 iptal seferde gerçek zamanlar, 9 yön değiştiren seferde gerçek varış boştur."
   ],
   "sinir": [
-   "Uçak ataması rastgeledir: iptaller dışında 3.111 seferin 632'si aynı uçağın başka bir seferiyle zaman olarak çakışır. Örnek: TC-KMA, 16 Eylül 06:00'da iki ayrı rotada.",
-   "Rotasyon bitişik değildir: ardışık 3.158 geçişin yalnız 741'inde (%23) uçak son indiği yerden kalkar.",
-   "Bu yüzden uçak rotasyonu, dönüş süresi ve rötar zinciri dersleri yöntemi gösterir; çıkan sayılar gerçek filo analizi değildir. gec_gelen_ucak nedeni (510 kayıt) uçak takibiyle doğrulanamaz.",
+   "Uçak zinciri iki tabloyla tamamlanır: hv_flights yanında 443 boş konumlandırma uçuşu hv_repositioning tablosundadır (719 saat, yolcu uçuşlarının blok saatinin %11'i). Sefer saatleri 15 uçak için dengesizdir, bu kadar boş uçuş gerçek bir havayolu için yüksektir. Yalnız hv_flights'a bakarsan 433 kopukluk görürsün, iptaller dahil 502.",
+   "Yön değiştiren 9 seferden sonra uçağın hedefe dönüşü kayıtlı değildir; uçak, sonraki seferinden önce en az 4 saat o havalimanına dönmüş sayılır.",
+   "İptal seferin uçağı planlanan uçaktır, uçağı taşımaz. 62 iptalin 32'sinde planlanan uçak kalkış saatinde başka havalimanındadır.",
+   "gec_gelen_ucak (342 satır) yalnız aynı uçağın önceki seferi en az 15 dakika geç indiyse yazılır. Filo seyrek uçtuğu için önceki iniş ile planlanan kalkış arası medyan 472 dakikadır; uçağın planlanan saatte gerçekten hazır olmadığı satır 12'dir. Rötar zinciri ölçülebilir ama nedensellik zayıftır: önceki sefer geç indiyse sonraki sefer %48,0, zamanında indiyse %32,6 oranında geç kalkar.",
    "Aynı seferde aynı koltuğa iki geçerli rezervasyon düşen 20 sefer-koltuk çifti var."
   ]
  },
@@ -60,15 +62,16 @@ window.KESIT_SINIRLAR = {
  },
  "bisiklet": {
   "bilerek": [
-   "116.517 yolculuğun 316'sı kapanmamıştır: bitiş istasyonu, bitiş zamanı, mesafe ve ücret boştur.",
+   "116.517 yolculuğun 316'sı kapanmamıştır: bitiş istasyonu, bitiş zamanı, mesafe ve ücret boştur. Bisikleti saha ekibi 9-83 saat içinde toplar; bu hareket bk_rebalancing'de from_station = başlangıç istasyonu ile görünür.",
+   "Tam 25 çift yolculukta aynı bisiklet aynı anda iki yolculukta görünür (4'ü 1-3 Haziran arasında). Kayıt hatasıdır, veri kalitesi pratiği içindir; konum zincirini bozmaz.",
    "Doğum yılı ve cinsiyet bazı kullanıcılarda boştur."
   ],
   "sinir": [
-   "Bisiklet ataması rastgeledir: her bisikletin yolculukları sıralanınca 18.493 yolculuk önceki yolculuk bitmeden başlar. Power BI paketi bunu veri kalitesi örneği olarak da kullanır.",
-   "700 bisikletin yalnız 300'ü yolculuklarda geçer.",
-   "Yolculukların %98,5'i bisikletin son bıraktığı istasyondan başlamaz; bisiklet konumu izlenmemiştir.",
-   "Bakım yapaydır: her bisiklete tam 2 kayıt düşer (1.400 kayıt, hiç yola çıkmayan 400 bisiklet dahil) ve bakım açıkken başlayan 8.455 yolculuk görünür.",
-   "İstasyon net akışı hesaplanabilir ama fiziksel anlamı yoktur: konum zinciri tutmadığı için dengeleme ve kamyon rotası kararı bu veriden çıkarılamaz. Bu dersler ve görevler yöntemi öğretir."
+   "Bisiklet son bıraktığı istasyondan kalkar ve bakımdayken yola çıkmaz; bu, kamyonet taşımalarıyla birlikte geçerlidir: bk_rebalancing 28.180 satır, 7.422 yük, yük başına ortalama 3,8 bisiklet (2.039 yük tek bisiklet). Benzetim günde iki turla çalışır ve talebi önceden bilir, gerçek bir operasyon bu kadar isabetli olmaz.",
+   "Kullanıcı hiç boş istasyonla karşılaşmaz: bisiklet bulamadığı için başlamayan yolculuk veride yoktur, karşılanmayan talep ölçülemez.",
+   "700 bisikletin hepsi yola çıkar (bisiklet başına en az 44, medyan 168, en çok 219 yolculuk). Aynı anda yolda en çok 101 bisiklet olur, geri kalanı istasyonda bekler. Günde iki turla filo 660'a indiğinde elektrikliler yetmez, çünkü tip korunur.",
+   "Kısa süreli yuva taşması vardır: 349 anda istasyondaki bisiklet sayısı yuva sayısını aşar (bakımdaki bisiklet yuva tutmaz).",
+   "Bakım 1.400 kayıttır, 690 bisiklete 1-6 kayıt düşer, yolculuk sayısıyla ilişkisi zayıftır (korelasyon 0,32). 60 kayıt açıktır, bu bisikletler dönem sonuna kadar servis dışıdır."
   ]
  }
 };
