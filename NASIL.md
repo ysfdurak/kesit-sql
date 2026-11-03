@@ -9,7 +9,8 @@ Bu dal (`kaynak`), yayındaki sitenin (`main` dalı) bütün dosyalarını ve bu
 | `index.html` | Uygulama: arayüz, yönlendirme, ilerleme kaydı. Betikleri sırayla yükler. |
 | `db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js` | Veri setleri: e-ticaret ve banka, havayolu, yemek teslimatı, İK, bisiklet paylaşımı. |
 | `dialect.js` | SQL Server, PostgreSQL, MySQL, Oracle ve BigQuery yazımını SQLite'a çeviren katman. |
-| `c1.js` … `c36.js`, `cx.js` | Dersler, öğrenme yolları, pratik görevleri, sınavlar. Sonra yüklenen dosya öncekileri yerinde değiştirebilir. `c35.js` son düzeltme katmanıdır: yol sırası, seviye testi, yöntem kuralları, yeni dersler. `c36.js` BT İş Analisti yolu ve onun on bir dersidir; metindeki sayılar `SQLP_BA_SAYI` nesnesinden gelir, `ba_sayilar.js` denetler. |
+| `c1.js` … `c38.js`, `cx.js` | Dersler, öğrenme yolları, pratik görevleri, sınavlar. Sonra yüklenen dosya öncekileri yerinde değiştirebilir. `c35.js` son düzeltme katmanıdır: yol sırası, seviye testi, yöntem kuralları, yeni dersler. `c36.js` BT İş Analisti yolu ve onun on bir dersidir; metindeki sayılar `SQLP_BA_SAYI` nesnesinden gelir, `ba_sayilar.js` denetler. `c37.js` Sorgu Optimizasyonu dersleri, `c38.js` mevcut performans derslerinin genişletilmesi, yeni bitirme projeleri (`opt-proje`, `bv-proje`, `ai-proje`), `op*` pratik görevleri, sözlük ve yol bağlantılarıdır. |
+| `plan-ciktilari.js` | Derslerdeki PostgreSQL plan çıktıları. Üretilen dosya: `araclar/denetim/opt_cikti.mjs` PGlite ile çalıştırır, sorgular `opt_sorgular.json` içinde. Elle düzenlenmez. |
 | `ipuclari.js` | Alıştırma ipuçları. `araclar/denetim/ipucu_uret.js` üretir; elle yazılanlar `araclar/denetim/ipucu_elle.json` içinde. |
 | `bilinen-sinirlar.js` | Veri setleri sayfasındaki “Bilerek bırakılanlar ve bilinen sınırlamalar” metinleri. |
 | `arena-data.js` | SQL Arena: meydan okumalar, dedektif vakaları, tahmin, bulmaca. |
@@ -101,7 +102,7 @@ PROG=1 node run.js               # ilerlemeyi yazdır
 ```bash
 node boxes.js            # FILTER ile daraltılabilir
 ```
-Konu anlatımlarındaki çalıştırılabilir örnekleri bütün SQL türlerinde çalıştırır. Son temiz sonuç: `kutu 538 calistirma 2532 hata 0`.
+Konu anlatımlarındaki çalıştırılabilir örnekleri bütün SQL türlerinde çalıştırır. Son temiz sonuç: `kutu 569 calistirma 2633 hata 0`.
 
 ### 3. SQL Arena
 ```bash
@@ -122,6 +123,18 @@ node static.js
 node ba_sayilar.js   # c36.js metnindeki sayıları veritabanından yeniden hesaplar. Beklenen: fark 0
 ```
 
+### 4c. Sorgu Optimizasyonu denetimi
+Alıştırmalarda iki ek alan vardır. `plan`: sonuç doğru olduktan sonra sorgunun SQLite planına bakılır (`dialect.js` içinde `planFail`). Alanları: `setup` (gizli hazırlık, ör. indeks), `q` (sabit sorgu; yoksa cevabın son SELECT'i), `must`, `not` (düzenli ifade), `msg`. `ynl`: reddedilmesi gereken yanlış cevaplar; arayüzde kullanılmaz, yalnız denetim içindir.
+```bash
+node opt_denetim.js          # Beklenen: COZUM_RED 0, GECEN_YANLIS 0, SAYI_FARK 0, YANLISSIZ 0. Dakikalar sürer; FILTER='^opt-' ile daraltılır
+node opt_cikti.mjs --denetle # plan-ciktilari.js ile gerçek motoru karşılaştırır. Beklenen: FARK 0
+node opt_cikti.mjs           # sorgu değişince dosyayı yeniden üretir
+```
+- `opt_denetim.js`, `plan` ya da `ynl` alanı olan bütün ders, pratik ve Arena görevlerinde çözümü her izin verilen SQL türünde, yanlış cevapları temel türünde çalıştırır. Metindeki veri sayılarını (`SQLP_OPT_SAYI`) veritabanından yeniden hesaplar.
+- PGlite'ın varsayılanı `enable_seqscan = off`'tur. `opt_cikti.mjs` bunu açar, yoksa planlar gerçek bir PostgreSQL'e benzemez. `VACUUM ANALYZE` çalıştırır, sorguyu iki kez çalıştırıp ikinciyi yazar ve planlama satırlarını atar.
+- SQL Server, MySQL, Oracle ve BigQuery için plan çıktısı yazılmaz. Bu ürünlerin bilgileri resmî belgeden alınmıştır.
+- Tarayıcıda: kökü 8811 portunda sun, `qa` içinde `NODE_PATH=$(npm root -g) node opt_tarayici.js`. 1280 ve 390 genişlikte dersleri açar, doğru cevabın kabul edildiğini, yanlışların reddedildiğini sınar.
+
 ### 4b. Önkoşul taraması
 ```bash
 node onkosul.js
@@ -136,7 +149,7 @@ node pg_denetim.mjs              # FILTER='^ik-' ile daraltılır
 - Her çözüm dış bir işlem içinde çalışıp geri alınır. Kendi `BEGIN`/`COMMIT` komutları kayıt noktasına çevrilir, veri kalıcı değişmez.
 - İlk çalıştırmada veritabanını kurar ve `pg_taban.tgz` olarak saklar (`base.sqlite` yenilenince kendini yeniler). Tam tur yaklaşık 3 dakika.
 - 45 saniyeyi aşan sorgu `zamanasimi` diye yazılır. Tüm sonuç `pg_audit.json` dosyasındadır.
-- Gerekçesi yazılı farklar `pg_bilinen.json` dosyasındadır. Temiz sonuç: `BILINMEYEN 0` ve `gereksiz bilinen kayit 0` (son tur: 1.591 çözüm, 1.584 aynı, 7 bilinen; `sonuclar/pg.txt`).
+- Gerekçesi yazılı farklar `pg_bilinen.json` dosyasındadır. Temiz sonuç: `BILINMEYEN 0` ve `gereksiz bilinen kayit 0` (son tur: 1.670 çözüm, 1.663 aynı, 7 bilinen; `sonuclar/pg.txt`).
 - Yapısal denetimi SQLite kataloğuna bakan DDL görevlerinde (pragma_table_info) yalnız DDL'in çalıştığı sınanır.
 - Tarih türü ile yapılan sıralamalar ve yerel ayara bağlı `UPPER`/`LOWER` farkı karşılaştırmada i/İ/ı/I harfleri eşit sayılarak ele alınır.
 
@@ -197,13 +210,13 @@ Ders ve yol süreleri `index.html` içindeki `sureDk`, `dkAralik`, `saatAralik` 
 ## Yayına alma
 Site `main` dalından sunulur. `main` dalına **yalnız aşağıdaki dosyalar** gider; `araclar/` ve `NASIL.md` gitmez.
 
-Site dosyaları (tam liste): `index.html`, `db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js`, `dialect.js`, `c1.js` … `c36.js`, `cx.js`, `ipuclari.js`, `arena-data.js`, `config.js`, `bilinen-sinirlar.js`, `belge.js`, `sw.js`, `base-<özet>.b64.txt`, `manifest.webmanifest`, `favicon.svg`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, `og.png`, `vendor/`, `ekran/`, `README.md`, `LICENSE`, `LICENSE-ICERIK.md`, `.nojekyll`.
+Site dosyaları (tam liste): `index.html`, `db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js`, `dialect.js`, `c1.js` … `c38.js`, `cx.js`, `plan-ciktilari.js`, `ipuclari.js`, `arena-data.js`, `config.js`, `bilinen-sinirlar.js`, `belge.js`, `sw.js`, `base-<özet>.b64.txt`, `manifest.webmanifest`, `favicon.svg`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, `og.png`, `vendor/`, `ekran/`, `README.md`, `LICENSE`, `LICENSE-ICERIK.md`, `.nojekyll`.
 
 Eski sürümden kaldırılacaklar: `hesap.js`, `hesap-secenegi/`, `YAYIN.md`.
 
 ```bash
 git checkout main
-git checkout kaynak -- index.html db.js hv.js lk.js ik.js bk.js dialect.js c[0-9]*.js cx.js ipuclari.js arena-data.js config.js bilinen-sinirlar.js belge.js sw.js manifest.webmanifest favicon.svg apple-touch-icon.png icon-192.png icon-512.png icon-512-maskable.png og.png vendor ekran README.md LICENSE LICENSE-ICERIK.md .nojekyll base-*.b64.txt
+git checkout kaynak -- index.html db.js hv.js lk.js ik.js bk.js dialect.js c[0-9]*.js cx.js plan-ciktilari.js ipuclari.js arena-data.js config.js bilinen-sinirlar.js belge.js sw.js manifest.webmanifest favicon.svg apple-touch-icon.png icon-192.png icon-512.png icon-512-maskable.png og.png vendor ekran README.md LICENSE LICENSE-ICERIK.md .nojekyll base-*.b64.txt
 git rm -r --ignore-unmatch hesap.js hesap-secenegi YAYIN.md
 git rm --cached --ignore-unmatch base-<eski-özet>.b64.txt   # veritabanı yenilendiyse eskisini kaldır
 git commit -m "..." && git push origin main
