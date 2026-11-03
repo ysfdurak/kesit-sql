@@ -127,10 +127,12 @@ node ba_sayilar.js   # c36.js metnindeki sayıları veritabanından yeniden hesa
 Alıştırmalarda iki ek alan vardır. `plan`: sonuç doğru olduktan sonra sorgunun SQLite planına bakılır (`dialect.js` içinde `planFail`). Alanları: `setup` (gizli hazırlık, ör. indeks), `q` (sabit sorgu; yoksa cevabın son SELECT'i), `must`, `not` (düzenli ifade), `msg`. `ynl`: reddedilmesi gereken yanlış cevaplar; arayüzde kullanılmaz, yalnız denetim içindir.
 ```bash
 node opt_denetim.js          # Beklenen: COZUM_RED 0, GECEN_YANLIS 0, SAYI_FARK 0, YANLISSIZ 0. Dakikalar sürer; FILTER='^opt-' ile daraltılır
+YALNIZ_YAPI=1 node opt_denetim.js  # yalnız şık dengesi ve yol sırası, saniyeler sürer. Beklenen: SIVRI 0, SIRA_HATA 0
 node opt_cikti.mjs --denetle # plan-ciktilari.js ile gerçek motoru karşılaştırır. Beklenen: FARK 0
 node opt_cikti.mjs           # sorgu değişince dosyayı yeniden üretir
 ```
 - `opt_denetim.js`, `plan` ya da `ynl` alanı olan bütün ders, pratik ve Arena görevlerinde çözümü her izin verilen SQL türünde, yanlış cevapları temel türünde çalıştırır. Metindeki veri sayılarını (`SQLP_OPT_SAYI`) veritabanından yeniden hesaplar.
+- Şık dengesi: `c37.js` ve `c38.js` çoktan seçmelilerinde (`dn` alanı) doğru şık en uzun olan pay %15 ile %35 arasında, en kısa olan en çok %35 olmalı; diğerlerinden belirgin sivrilen şık hata sayılır. Yol sırası: `opt-*` dersleri indeks ve plan okuma dersinden sonra gelmeli.
 - PGlite'ın varsayılanı `enable_seqscan = off`'tur. `opt_cikti.mjs` bunu açar, yoksa planlar gerçek bir PostgreSQL'e benzemez. `VACUUM ANALYZE` çalıştırır, sorguyu iki kez çalıştırıp ikinciyi yazar ve planlama satırlarını atar.
 - SQL Server, MySQL, Oracle ve BigQuery için plan çıktısı yazılmaz. Bu ürünlerin bilgileri resmî belgeden alınmıştır.
 - Tarayıcıda: kökü 8811 portunda sun, `qa` içinde `NODE_PATH=$(npm root -g) node opt_tarayici.js`. 1280 ve 390 genişlikte dersleri açar, doğru cevabın kabul edildiğini, yanlışların reddedildiğini sınar.

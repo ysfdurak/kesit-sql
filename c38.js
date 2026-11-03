@@ -13,7 +13,7 @@ const PG = k => { const x = PLAN.q[k]; return nor((x.kur ? x.kur + ';\n' : '') +
 const trn = n => Number(n).toLocaleString('tr-TR');
 const B = k => trn(PLAN.q[k].cikti.match(/shared hit=(\d+)/)[1]);
 const GER = k => PLAN.q[k].cikti.match(/actual rows=(\d+)/g).map(x => x.match(/\d+/)[0]);
-const mc = (q, o, a, why) => ({ t: 'mc', q: '<p>' + q + '</p>', o, a, why });
+const mc = (q, o, a, why) => ({ t: 'mc', q: '<p>' + q + '</p>', o, a, why, dn: 1 }); /* dn: şık dengesi opt_denetim.js ile denetlenir */
 const sq = (q, sol, hint, x) => Object.assign({ t: 'sql', q: '<p>' + q + '</p>', sol, hint }, x || {});
 const SQLITE = { base: 'sqlite', dl: ['sqlite'] };
 const IDX = ['sqlite', 'tsql', 'pg', 'mysql', 'oracle'];
@@ -71,7 +71,7 @@ LM('index').ex.push(
     'Eşitlik sütunu önce, aralık sütunu sonra.',
     { nr: 1, dl: IDX, plan: { q: "SELECT COUNT(*) FROM orders WHERE status = 'delivered' AND order_date >= '2024-11-01'", must: 'status=\\? AND order_date>\\?', msg: 'Planın parantezinde hem status=? hem order_date>? görünmeli.' },
       ynl: ['CREATE INDEX ix_y ON orders (order_date, status);', 'CREATE INDEX ix_y ON orders (status);', 'CREATE INDEX ix_y ON orders (order_date);'] }),
-  mc("Planda <code>SEARCH orders USING INDEX ix (status=?)</code> yazıyor. Koşul <code>status = 'delivered' AND order_date &gt;= '2024-11-01'</code>. Ne anlarsın?", ['İki koşul da indeksle aranıyor', 'İndeks yalnız durumla daralıyor; tarih koşulu her satır okunduktan sonra süzülüyor', 'Sorgu tabloyu baştan sona tarıyor', 'Tarih koşulu sonucu etkilemiyor'], 1, 'Parantez aramada kullanılan sütunları söyler. Tarih orada yoksa satırlar okunup sonra elenir. (status, order_date) indeksi ikisini birlikte arar.')
+  mc("Planda <code>SEARCH orders USING INDEX ix (status=?)</code> yazıyor. Koşul <code>status = 'delivered' AND order_date &gt;= '2024-11-01'</code>. Ne anlarsın?", ['İki koşul da indeks içinde aranıyor, tabloya gerek kalmıyor', 'İndeks yalnız durumla daralıyor, tarih koşulu sonradan süzülüyor', 'Tablonun tamamı taranıyor, indeks yalnız sıralama için', 'Tarih koşulu planı etkilemediği için motor onu yok sayıyor'], 1, 'Parantez aramada kullanılan sütunları söyler. Tarih orada yoksa satırlar okunup sonra elenir. (status, order_date) indeksi ikisini birlikte arar.')
 );
 
 /* ------------------------------------------------------------------ performans: kontrol listesi */
@@ -100,7 +100,7 @@ LM('performans').ex.push(
     'SELECT account_id, COUNT(*) AS adet FROM bank_txns GROUP BY account_id;',
     'İndekste olmayan sütun istemezsen tabloya gidilmez.',
     { plan: { must: 'COVERING INDEX', not: 'TEMP B-TREE', msg: 'Plan COVERING INDEX göstermeli. Gereksiz sütunu çıkar.' }, ynl: ['SELECT account_id, COUNT(*) AS adet, MAX(channel) AS k FROM bank_txns GROUP BY account_id;'] }),
-  mc('Planda <code>Sort</code> en pahalı adım, sorgu <code>SELECT * ... ORDER BY tarih</code> ve yalnız iki sütun kullanılıyor. Hangi sıra en mantıklı?', ['Önce sütunları daralt, sonra sıralama sütununa indeks düşün, sonra yeniden ölç', 'Önce RAM artır, sonra planı oku', 'Önce ORDER BY kaldır, sonucun sırasını uygulama düzeltsin', 'Önce DISTINCT ekle, satır azalsın'], 0, 'Ucuz olan önce: sütun daraltmak sıralamanın belleğini küçültür. İndeks sıralamayı tamamen kaldırabilir. Sonra ölç.')
+  mc('Planda <code>Sort</code> en pahalı adım, sorgu <code>SELECT * ... ORDER BY tarih</code> ve yalnız iki sütun kullanılıyor. Hangi sıra en mantıklı?', ['Sütunları daralt, sıralama indeksi düşün, yeniden ölç', 'Önce belleği artır, sonra planı okuyup sonucu yorumla', 'ORDER BY\'ı kaldır, sırayı uygulama tarafında düzelt, sonra ölç', 'DISTINCT ekleyip satırı azalt, sonra sıralamayı yeniden dene'], 0, 'Ucuz olan önce: sütun daraltmak sıralamanın belleğini küçültür. İndeks sıralamayı tamamen kaldırabilir. Sonra ölç.')
 );
 
 /* ------------------------------------------------------------------ be-sayfalama: gerçek çıktı ve plan */
@@ -128,7 +128,7 @@ LM('be-sayfalama').ex.push(
     "SELECT order_id, placed_at FROM lk_orders WHERE placed_at < '2024-11-15 12:00:00' OR (placed_at = '2024-11-15 12:00:00' AND order_id < 3000) ORDER BY placed_at DESC, order_id DESC LIMIT 5;",
     'İki koşul: daha eski zaman ya da aynı zaman ve daha küçük numara.',
     { ord: true, mustNot: NOOFF, ynl: ["SELECT order_id, placed_at FROM lk_orders WHERE order_id < 3000 ORDER BY placed_at DESC, order_id DESC LIMIT 5;", "SELECT order_id, placed_at FROM lk_orders WHERE placed_at > '2024-11-15 12:00:00' ORDER BY placed_at DESC, order_id DESC LIMIT 5;", "SELECT order_id, placed_at FROM lk_orders ORDER BY placed_at DESC, order_id DESC LIMIT 5;"] }),
-  mc('Yönetim panelinde 400 satırlık tablo sayfalanıyor, kullanıcılar "sayfa 7" düğmesine basıyor. Ne yaparsın?', ['Hemen keyset\'e geçerim, OFFSET her zaman kötüdür', 'OFFSET yeterlidir; keyset sayfaya atlamayı zorlaştırır, bu küçük tablo için kazancı yok', 'Tüm tabloyu uygulamaya çekerim', 'İndeksleri silerim'], 1, 'Keyset derin sayfa ve büyük tablo içindir. Küçük tabloda sayfaya atlamayı kaybetmek kazançtan büyüktür. Bu da ölçüme dayanan bir karardır.')
+  mc('Yönetim panelinde 400 satırlık tablo sayfalanıyor, kullanıcılar "sayfa 7" düğmesine basıyor. Ne yaparsın?', ['Hemen keyset\'e geçerim, çünkü OFFSET derin sayfada yavaşlar', 'OFFSET\'te kalırım; bu boyutta keyset kazandırmaz', 'Tabloyu uygulamaya çeker, sayfalamayı orada yaparım', 'Sayfa numarası için ayrı bir özet tablo kurarım'], 1, 'Keyset derin sayfa ve büyük tablo içindir. Küçük tabloda sayfaya atlamayı kaybetmek kazançtan büyüktür. Bu da ölçüme dayanan bir karardır.')
 );
 
 /* ------------------------------------------------------------------ de-partition: gerçek bölüm eleme */
@@ -153,8 +153,8 @@ ${PG('pg-bolum-alt')}
 </ul>
 <p>SQLite'ın bölümleme özelliği yok. Bu yüzden görevlerde mantığı aralık koşulu ve indeksle çalıştırıyoruz, gerçek bölüm davranışını yukarıdaki çıktılardan okuyoruz.</p>`;
 LM('de-partition').ex.push(
-  mc('Çeyreklere bölünmüş tabloda <code>WHERE EXTRACT(MONTH FROM txn_time) = 11</code> planı dört bölümü de tarıyor. Düzeltme hangisi?', ["<code>WHERE txn_time &gt;= '2024-11-01' AND txn_time &lt; '2024-12-01'</code>", 'Sorguya <code>LIMIT</code> eklemek', 'Bölüm sayısını artırmak', 'Sorguyu CTE içine almak'], 0, 'Bölüm sütunu yalın ve sınırlar sabit olunca motor tek bölümü okur. LIMIT ve CTE okunan bölümü değiştirmez. Bölüm artırmak yazımı düzeltmez.'),
-  mc('PostgreSQL planında üç bölümün altında <code>(never executed)</code> yazıyor. Anlamı nedir?', ['Sorgu hata verdi, o bölümler bozuk', 'Çalışma anında elendiler, hiç okunmadılar', 'Bölümler boş', 'Tahmin hesaplanamadı'], 1, 'Değer çalışma anında belli olunca PostgreSQL gereksiz bölümleri yürütmez. Bu BigQuery gibi her motorda geçerli değildir.'),
+  mc('Çeyreklere bölünmüş tabloda <code>WHERE EXTRACT(MONTH FROM txn_time) = 11</code> planı dört bölümü de tarıyor. Düzeltme hangisi?', ['<code>WHERE txn_time &gt;= \'2024-11-01\' AND txn_time &lt; \'2024-12-01\'</code>', '<code>WHERE EXTRACT(MONTH FROM txn_time) = 11 LIMIT 100</code>', '<code>WHERE CAST(txn_time AS DATE) BETWEEN \'2024-11-01\' AND \'2024-11-30\'</code>', '<code>WITH t AS (SELECT * FROM tx_bolum) SELECT * FROM t WHERE EXTRACT(MONTH FROM txn_time) = 11</code>'], 0, 'Bölüm sütunu yalın ve sınırlar sabit olunca motor tek bölümü okur. LIMIT ve CTE okunan bölümü değiştirmez. CAST ise sütunu yine sarar.'),
+  mc('PostgreSQL planında üç bölümün altında <code>(never executed)</code> yazıyor. Anlamı nedir?', ['Sorgu o bölümlerde hata verdi, bölümler bozuk', 'Çalışma anında elendiler, hiç okunmadılar', 'Bölümler boş olduğu için tarama sıfır satır döndü', 'Tahmin hesaplanamadı, plan yarıda kaldı'], 1, 'Değer çalışma anında belli olunca PostgreSQL gereksiz bölümleri yürütmez. Bu BigQuery gibi her motorda geçerli değildir.'),
   mc("BigQuery'de bölüm sütunu <code>event_date</code>. Hangisi tam taramaya yol açar?", ["<code>WHERE event_date = '2024-12-01' AND user_id = 42</code>", "<code>WHERE event_date = '2024-12-01' OR user_id = 42</code>", "<code>WHERE event_date &gt;= '2024-12-01'</code>", "<code>WHERE event_date BETWEEN '2024-12-01' AND '2024-12-07'</code>"], 1, 'Belgeye göre bölüm koşulu AND ile bağlanmalıdır. OR ile başka sütuna bağlanırsa eleme yapılmaz.')
 );
 
@@ -246,7 +246,7 @@ ${box(ESKI + ';')}
       'EXPLAIN QUERY PLAN ' + inl(ESKI) + ';',
       'Rapor başına <code>EXPLAIN QUERY PLAN</code>.',
       Object.assign({ start: 'EXPLAIN QUERY PLAN\n' + ESKI + ';', ynl: [inl(ESKI) + ';', 'EXPLAIN QUERY PLAN ' + inl(YENI) + ';'] }, SQLITE)),
-    mc('Planda iki kez <code>CORRELATED SCALAR SUBQUERY</code>, altlarında <code>CORRELATED LIST SUBQUERY</code> ve <code>SCAN a</code>, sonda <code>USE TEMP B-TREE FOR DISTINCT</code> var. En büyük şüpheli hangisi?', ['DISTINCT; kaldırınca her şey çözülür', 'Her müşteri ve hesap satırı için iki kez çalışan alt sorgular; her seferinde hesap tablosu da taranıyor', 'ROUND fonksiyonu', 'Sütun sayısı'], 1, 'Alt sorgular birleştirme çoğaltmasından sonraki her satırda iki kez çalışır ve içlerinde tarih fonksiyonla süzülür. DISTINCT ise bu çoğaltmayı örten ikinci sorundur.'),
+    mc('Planda iki kez <code>CORRELATED SCALAR SUBQUERY</code>, altlarında <code>CORRELATED LIST SUBQUERY</code> ve <code>SCAN a</code>, sonda <code>USE TEMP B-TREE FOR DISTINCT</code> var. En büyük şüpheli hangisi?', ['DISTINCT; kaldırınca bütün yavaşlık çözülür', 'Her satırda iki kez çalışan ilişkili alt sorgu ve taramalar', 'ROUND fonksiyonu; her satırda yeniden hesaplanıyor', 'Sonuçtaki dört sütunun genişliği ve sıralanması'], 1, 'Alt sorgular birleştirme çoğaltmasından sonraki her satırda iki kez çalışır ve içlerinde tarih fonksiyonla süzülür. DISTINCT ise bu çoğaltmayı örten ikinci sorundur.'),
     sq('<b>Adım 4.</b> Çekirdek sorguyu yaz: Aralık 2024 kart harcamaları, müşteri başına <code>customer_id</code>, <code>islem</code>, <code>toplam</code> (tam sayı). Tarih sütunu fonksiyona girmesin (<code>txn_time</code> indeksi bu adımda hazır).',
       inl(AY_YENI) + ';',
       "Yarı açık aralık, sonra müşteri başına <code>GROUP BY</code>.",
@@ -266,8 +266,8 @@ ${box(ESKI + ';')}
       inl('SELECT (SELECT COUNT(*) FROM (' + ESKI + ' EXCEPT ' + YENI + ') x) AS eskide_fazla, (SELECT COUNT(*) FROM (' + YENI + ' EXCEPT ' + ESKI + ') y) AS yenide_fazla;'),
       'Her yön için bir <code>EXCEPT</code>, ikisini de say.',
       { must: [{ re: '\\bEXCEPT\\b|\\bMINUS\\b', msg: 'Görev farkı EXCEPT ile hesaplamanı istiyor.' }], ynl: ['SELECT 0 AS eskide_fazla, 0 AS yenide_fazla FROM bank_customers;', 'SELECT 0 AS eskide_fazla, 0 AS yenide_fazla;'] }),
-    mc('Rapor ayda bir çalışıyor. <code>bank_txns</code> gün boyu yazılıyor. Dört sütunlu kapsayan indeks için en dengeli karar hangisi?', ['Ne olursa olsun ekle, rapor hızlanacak', 'Önce yeniden yazımı al; indeksi yazma bedeliyle tart, gerekirse raporu özet tablo ya da rapor kopyasında çalıştır', 'Yazmaları raporda durdur', 'Bütün indeksleri kaldırıp yeniden yazıma güven'], 1, 'Yazım düzeltmesi bedelsizdir, önce o alınır. Ayda bir çalışan rapor için her yazmaya binen indeks pahalı olabilir. Bu tartıyı ölçümle yap.'),
-    mc('Yöneticiye yazılacak en dürüst özet hangisi?', ['"Rapor kesinlikle 100 kat hızlandı."', '"Sonuç değişmedi (iki yönlü fark 0). Alt sorgular kalktı, tarih filtresi arama yapıyor. Süre kazancını üretimde ölçeceğiz, indeks için yazma etkisini de izleyeceğiz."', '"Sorgu artık modern SQL ile yazıldı."', '"İndeks eklendi, sorun bitti."'], 1, 'Kanıtladığını söyle, ölçmediğini söyleme. Tarayıcı süresini üretime taşımak yanıltır.')
+    mc('Rapor ayda bir çalışıyor. <code>bank_txns</code> gün boyu yazılıyor. Dört sütunlu kapsayan indeks için en dengeli karar hangisi?', ['Ne olursa olsun ekle, rapor hızlanacaksa bedeli önemsiz', 'Önce yazımı düzelt, indeksi yazma bedeliyle tart', 'Rapor çalışırken bütün yazmaları kısa süreliğine durdur', 'Bütün indeksleri kaldırıp yalnız yeniden yazıma güven'], 1, 'Yazım düzeltmesi bedelsizdir, önce o alınır. Ayda bir çalışan rapor için her yazmaya binen indeks pahalı olabilir; özet tablo ya da rapor kopyası da seçenektir. Bu tartıyı ölçümle yap.'),
+    mc('Yöneticiye yazılacak en dürüst özet hangisi?', ['"Rapor kesinlikle 100 kat hızlandı; sonuçlar da büyük olasılıkla aynı."', '"Sonuç aynı, iki yönlü fark 0. Süre kazancını üretimde ölçeceğiz."', '"Sorgu modern SQL ile yeniden yazıldı, artık sorun çıkarması beklenmez."', '"İndeks eklendi, tarayıcıda çok hızlandı, üretimde de aynı olacaktır."'], 1, 'Kanıtladığını söyle, ölçmediğini söyleme. Tarayıcı süresini üretime taşımak yanıltır.')
   ] });
 
 /* ------------------------------------------------------------------ Bitirme: Pedal İzmir kamyonet */
@@ -343,7 +343,7 @@ k AS (SELECT strftime('%H', moved_at) AS h, SUM(CASE WHEN to_station = 12 THEN 1
 SELECT d.dilim, COALESCE((SELECT SUM(y.n) FROM y WHERE y.h >= d.bas AND y.h < d.bit), 0) AS yolculuk_net, COALESCE((SELECT SUM(k.n) FROM k WHERE k.h >= d.bas AND k.h < d.bit), 0) AS kamyon_net FROM d ORDER BY d.dilim;`),
       'Önce saat başına iki özet, sonra dilim tablosuna göre topla. Hem başlangıcı hem bitişi 12 olan yolculuk neti değiştirmez.',
       Object.assign({ ord: true, ynl: ["SELECT '1-gece' AS dilim, 0 AS yolculuk_net, 0 AS kamyon_net;", "SELECT strftime('%H', started_at) AS dilim, COUNT(*) AS yolculuk_net, 0 AS kamyon_net FROM bk_trips WHERE start_station = 12 GROUP BY 1 ORDER BY 1;"] }, SQLITE)),
-    mc('Önceki sonuçta Alsancak Çarşı en çok öğleden akşama kadar bisiklet kaybediyor. Kamyonet ise gece ve öğlen dilimlerinde geliyor, akşam dilimine hiç taşıma yok. Bu ne düşündürür?', ['Kamyonet tamamen gereksiz', 'Akşam kaybı ertesi geceye kadar karşılanmıyor olabilir; akşam zirvesinde boş kalma süresi ölçülmeli', 'Veri hatalı olmalı, çünkü zamanlar eşleşmiyor', 'Sorun yalnız sabahtır'], 1, 'Toplamda dengelenmesi, gün içinde hiç boş kalmadığı anlamına gelmez. Bu veride anlık doluluk yok; bu yüzden öneri "ölçülmeli" der, kesin hüküm vermez.'),
+    mc('Önceki sonuçta Alsancak Çarşı en çok öğleden akşama kadar bisiklet kaybediyor. Kamyonet ise gece ve öğlen dilimlerinde geliyor, akşam dilimine hiç taşıma yok. Bu ne düşündürür?', ['Kamyonet bu istasyonda tamamen gereksiz, taşıma kaldırılabilir', 'Akşam kaybı geceye kadar karşılanmıyor olabilir; ölçülmeli', 'Zamanlar eşleşmediğine göre veri hatalı olmalı', 'Asıl sorun sabahtır, taşımalar sabaha alınmalıdır'], 1, 'Toplamda dengelenmesi, gün içinde hiç boş kalmadığı anlamına gelmez. Bu veride anlık doluluk yok; bu yüzden öneri "ölçülmeli" der, kesin hüküm vermez.'),
     sq('<b>Adım 7.</b> Kamyonet taşımalarının aynı ilçe içinde kalan payı. Tek satırda: <code>toplam</code>, <code>ayni_ilce</code>, <code>pay</code> (%, 1 basamak).',
       'SELECT COUNT(*) AS toplam, SUM(CASE WHEN f.district = t.district THEN 1 ELSE 0 END) AS ayni_ilce, ROUND(100.0 * SUM(CASE WHEN f.district = t.district THEN 1 ELSE 0 END) / COUNT(*), 1) AS pay FROM bk_rebalancing r JOIN bk_stations f ON f.station_id = r.from_station JOIN bk_stations t ON t.station_id = r.to_station;',
       'İstasyon tablosunu iki kez, farklı takma adlarla bağla.',
@@ -356,7 +356,7 @@ SELECT d.dilim, COALESCE((SELECT SUM(y.n) FROM y WHERE y.h >= d.bas AND y.h < d.
       inl(NETK + ` SELECT CASE WHEN net / 92.0 / capacity <= -0.25 THEN 'kamyonete bağımlı' WHEN net / 92.0 / capacity >= 0.25 THEN 'sürekli dolan' ELSE 'dengeli' END AS sinif, COUNT(*) AS istasyon, SUM(ABS(kamyon)) AS tasima FROM a GROUP BY CASE WHEN net / 92.0 / capacity <= -0.25 THEN 'kamyonete bağımlı' WHEN net / 92.0 / capacity >= 0.25 THEN 'sürekli dolan' ELSE 'dengeli' END ORDER BY tasima DESC;`),
       'Aynı <code>CASE</code> hem seçimde hem gruplamada.',
       { ord: true, start: NETK + `\n-- a tablosu hazır: station_id, name, district, capacity, net, kamyon\nSELECT\n  FROM a;`, ynl: [inl(NETK + ` SELECT CASE WHEN net <= -0.25 THEN 'kamyonete bağımlı' WHEN net >= 0.25 THEN 'sürekli dolan' ELSE 'dengeli' END AS sinif, COUNT(*) AS istasyon, SUM(ABS(kamyon)) AS tasima FROM a GROUP BY 1 ORDER BY tasima DESC;`)] }),
-    mc('Önceki adımlara göre operasyon müdürüne en sağlam öneri hangisi?', ['Kamyonetleri %50 azalt, veriye göre sorun çıkmaz', 'Baskısı yüksek istasyonlarda kamyoneti koru ya da kapasiteyi incele; dengeli sınıftaki ilçe içi taşımalarda fiyat teşviki pilotu yap; azalma oranını varsayım olarak yaz ve pilotta ölç', 'Bütün taşımaları geceye al', 'En çok yolculuk yapılan istasyonları kapat'], 1, 'Karar sınıflara dayanıyor ve varsayımı açıkça söylüyor. Veride maliyet ve anlık doluluk olmadığı için kesin tasarruf rakamı vermek yanıltıcı olur.')
+    mc('Önceki adımlara göre operasyon müdürüne en sağlam öneri hangisi?', ['Kamyonetleri %50 azalt, karşılama oranı yüksek olduğu için sorun çıkmaz', 'Baskılı istasyonu koru, ilçe içinde teşvik pilotu yap, etkiyi ölç', 'Bütün taşımaları geceye alıp gündüz kamyonet kullanımını bitir', 'Baskısı en yüksek istasyonları kapatıp talebi komşulara yönlendir'], 1, 'Karar sınıflara dayanıyor: baskılı istasyonda kamyonet korunur, dengeli sınıftaki ilçe içi taşımada pilot yapılır, azalma oranı varsayım olarak yazılır. Veride maliyet ve anlık doluluk olmadığı için kesin tasarruf rakamı vermek yanıltıcı olur.')
   ] });
 
 /* ------------------------------------------------------------------ Bitirme: YZ çıktısını doğrulama */
@@ -398,7 +398,7 @@ ${box(YZ_TASLAK + ';')}
 <tr><td>Düzeltme</td><td>Liste düzeldi</td><td>İş kuralı yazılı</td><td>Tek tanım görünüme alındı</td></tr>
 <tr><td>Karar</td><td>Liste gönderildi</td><td>Etkilenenler söylendi</td><td>İnsan onayı ve veri paylaşım kuralı belirlendi</td></tr></table>`,
   ex: [
-    mc('Asistana sorudan önce hangi bilgi verilseydi bu hatalar en çok azalırdı?', ['Şirketin kuruluş yılı', 'Şema, tablo ilişkileri ve iş kuralları: teslim tanımı, 45 dakika sınırı, kurye kimliği', 'Tablolardaki bütün müşteri adları ve adresleri', 'Yalnız "dikkatli yaz" uyarısı'], 1, 'Model eksik tanımı tahminle doldurur. Şema ve kural yeterlidir, kişisel veriyi paylaşmak gerekmez.'),
+    mc('Asistana sorudan önce hangi bilgi verilseydi bu hatalar en çok azalırdı?', ['Şirketin kuruluş yılı ve faaliyet gösterdiği şehirler', 'Şema, tablo ilişkileri ve teslim tanımı gibi iş kuralları', 'Tablolardaki bütün müşteri adları ve adresleri', 'Yalnız "dikkatli yaz, hata yapma" uyarısı'], 1, 'Model eksik tanımı tahminle doldurur. Şema ve kural yeterlidir, kişisel veriyi paylaşmak gerekmez.'),
     sq('<b>Adım 2.</b> Fan-out kontrolü. Taslak <code>lk_order_lines</code> ile birleşiyor. Tek satırda: teslim edilen sipariş sayısı (<code>siparis</code>) ve taslağın aynı siparişlerde saydığı satır (<code>taslak_satir</code>).',
       "SELECT (SELECT COUNT(*) FROM lk_orders WHERE status = 'teslim') AS siparis, (SELECT COUNT(*) FROM lk_orders o JOIN lk_order_lines l ON l.order_id = o.order_id WHERE o.status = 'teslim') AS taslak_satir;",
       'İki sayım, biri kalemlerle birleşmiş.',
@@ -428,8 +428,8 @@ ${box(YZ_TASLAK + ';')}
       `CREATE VIEW v_kurye_performans AS SELECT o.courier_id, COUNT(*) AS teslimat, ROUND(100.0 * SUM(CASE WHEN ${SN} <= 2700 THEN 1 ELSE 0 END) / COUNT(*), 1) AS oran FROM lk_orders o WHERE o.status = 'teslim' GROUP BY o.courier_id; SELECT COUNT(*) AS prim_alan FROM v_kurye_performans WHERE teslimat >= 100 AND oran >= 85;`,
       'Önce <code>CREATE VIEW</code>, sonra görünümden say.',
       { must: [{ re: '\\bv_kurye_performans\\b', msg: 'Sonuç görünümden okunmalı.' }], ynl: [`SELECT COUNT(*) AS prim_alan FROM lk_couriers;`, `CREATE VIEW v_kurye_performans AS SELECT o.courier_id, COUNT(*) AS teslimat, ROUND(100.0 * SUM(CASE WHEN ${SN} <= 2700 THEN 1 ELSE 0 END) / COUNT(*), 1) AS oran FROM lk_orders o GROUP BY o.courier_id; SELECT COUNT(*) AS prim_alan FROM v_kurye_performans WHERE teslimat >= 100 AND oran >= 85;`] }),
-    mc('Liste doğrulandı. Müdüre ne önerirsin?', ['Asistanın ilk listesini gönderelim, fark küçük', 'Doğru listeyi gönderelim; kuralı ve görünümü yazılı tutalım; para etkili çıktıda yapay zekâ taslağı insan onayı ve sağlama olmadan kullanılmasın', 'Primi bu ay iptal edelim', 'Asistanı tamamen yasaklayalım'], 1, 'Araç hızlıdır, sorumluluk insandadır. Doğru liste, tek tanım ve onay adımı sorunu kökten çözer.'),
-    mc('Asistana soru sorarken hangisi kişisel veri açısından doğrudur?', ['Doğruluk için kurye ad, telefon ve adreslerini paylaşmak', 'Şema, sütun açıklaması ve iş kuralını paylaşmak; kişisel veriyi paylaşmamak ya da maskelemek', 'Tüm tabloyu dosya olarak yüklemek', 'Parolaları da eklemek'], 1, 'Sorgu yazdırmak için satırlara gerek yoktur. Paylaşılacak veri kurum politikası ve KVKK ile sınırlıdır.')
+    mc('Liste doğrulandı. Müdüre ne önerirsin?', ['Asistanın ilk listesini gönderelim, fark küçük sayılır', 'Doğru liste gitsin; para etkili çıktı onaysız kullanılmasın', 'Liste tartışmalı olduğu için primi bu ay iptal edelim', 'Asistanı bütün ekiplerde kalıcı olarak yasaklayalım ve elle yazalım'], 1, 'Araç hızlıdır, sorumluluk insandadır. Doğru liste, tek tanım ve onay adımı sorunu kökten çözer.'),
+    mc('Asistana soru sorarken hangisi kişisel veri açısından doğrudur?', ['Doğruluk için kurye ad, telefon ve adreslerini paylaşmak', 'Şema ve iş kuralını paylaşmak, kişisel veriyi paylaşmamak', 'Tüm tabloyu dosya olarak yükleyip sütunları seçtirmek', 'Bağlantı için veritabanı parolasını da eklemek ki denesin'], 1, 'Sorgu yazdırmak için satırlara gerek yoktur. Paylaşılacak veri kurum politikası ve KVKK ile sınırlıdır.')
   ] });
 
 /* ------------------------------------------------------------------ Pratik: Sorgu optimizasyonu */
@@ -552,9 +552,9 @@ insAfter('bi', 'performans', ['opt-toplama']);
 optEkle('bi', ['opt-indeks', 'opt-join', 'opt-secicilik', 'opt-yanlis', 'opt-proje']);
 compEkle('bi', 'Performans ve uygulama', ['opt-olc', 'opt-plan', 'opt-toplama']);
 const tsPlanVar = PA.tsql.lessons.includes('ts-plan') ? 'ts-plan' : 'index';
-insAfter('tsql', tsPlanVar, ['opt-olc', 'opt-secicilik', 'opt-turler']);
-optEkle('tsql', ['opt-plan', 'opt-tur', 'opt-indeks', 'opt-join', 'opt-yanlis', 'opt-proje']);
-compEkle('tsql', 'Performans ve güvenlik', ['opt-olc', 'opt-secicilik', 'opt-turler']);
+insAfter('tsql', tsPlanVar, ['opt-olc', 'opt-plan', 'opt-secicilik', 'opt-turler']);
+optEkle('tsql', ['opt-tur', 'opt-indeks', 'opt-join', 'opt-yanlis', 'opt-proje']);
+compEkle('tsql', 'Performans ve güvenlik', ['opt-olc', 'opt-plan', 'opt-secicilik', 'opt-turler']);
 insAfter('backend', 'sargable', ['opt-plan', 'opt-indeks']);
 insAfter('backend', 'performans', ['opt-join']);
 optEkle('backend', ['opt-olc', 'opt-secicilik', 'opt-yanlis']);
@@ -568,9 +568,9 @@ optEkle('buyuk-veri', ['opt-plan', 'opt-indeks', 'opt-toplama']);
 window.SQLP_PATHS.splice(window.SQLP_PATHS.findIndex(p => p.id === 'uzman') + 1, 0, {
   id: 'optimizasyon', name: 'Sorgu Optimizasyonu', short: 'OPT', color: '#B45309', kind: 'konu',
   desc: 'Yavaş sorguyu ölçmek, planını okumak, yeniden yazmak ve doğru indeksi seçmek. Mülakat soruları ve bitirme projesiyle.',
-  long: 'JOIN, alt sorgu, CTE ve pencere fonksiyonlarını bildiğini varsayar. Analist ve mühendis olarak yavaş bir sorguyla karşılaştığında tahminle değil ölçümle ilerlemeyi öğrenirsin. Uygulama motoru SQLite olduğu için görevlerde plan denetimi SQLite üzerinden yapılır; PostgreSQL planları aynı veriyle gerçek motordan üretilmiştir. SQL Server, MySQL, Oracle ve BigQuery konuları resmî belgelere dayanır ve burada çalıştırılmaz.',
+  long: 'JOIN, alt sorgu, CTE ve pencere fonksiyonlarını bildiğini varsayar. İndeksi ve plan okumayı baştan öğretir. Analist ve mühendis olarak yavaş bir sorguyla karşılaştığında tahminle değil ölçümle ilerlemeyi öğrenirsin. Uygulama motoru SQLite olduğu için görevlerde plan denetimi SQLite üzerinden yapılır; PostgreSQL planları aynı veriyle gerçek motordan üretilmiştir. SQL Server, MySQL, Oracle ve BigQuery konuları resmî belgelere dayanır ve burada çalıştırılmaz.',
   skills: ['Temel ölçüm', 'Plan okuma', 'Sargable yazım', 'Bileşik ve kapsayan indeks', 'Seçicilik ve istatistik', 'Keyset sayfalama', 'Bölüm eleme', 'Parametre koklama'],
-  lessons: ['opt-olc', 'index', 'opt-plan', 'sargable', 'opt-tur', 'opt-indeks', 'opt-secicilik', 'performans-lab', 'opt-join', 'be-sayfalama', 'opt-toplama', 'performans', 'de-partition', 'bq-maliyet', 'opt-turler', 'opt-yanlis', 'mk-opt', 'opt-proje'],
+  lessons: ['index', 'opt-olc', 'opt-plan', 'sargable', 'opt-tur', 'opt-indeks', 'opt-secicilik', 'performans-lab', 'opt-join', 'be-sayfalama', 'opt-toplama', 'performans', 'de-partition', 'bq-maliyet', 'opt-turler', 'opt-yanlis', 'mk-opt', 'opt-proje'],
   opt: ['ts-index', 'ts-plan', 'bv-plan', 'dba-bakim'],
   comp: [
     { t: 'Yöntem', d: 'Ölç, planı oku, tek değişiklik, sağla', l: ['opt-olc', 'opt-plan', 'performans'] },

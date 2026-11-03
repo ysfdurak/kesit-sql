@@ -3,7 +3,8 @@
 // 2) "ynl" alanındaki her yanlış cevap reddedilir (sonuç farkı, yöntem kuralı ya da plan kuralıyla). Sebep "hata" ise cevap hiç çalışmamıştır; kasıtlı değilse yazım yanlışıdır.
 // 3) SQLP_OPT_SAYI içindeki her sayı veritabanından yeniden hesaplanır.
 // Kapsam: ynl ya da plan alanı olan bütün ders, pratik ve Arena görevleri; opt-, -proje dersleri için yanlış cevabı olmayan SQL görevi listelenir.
-// Çalıştırma: node opt_denetim.js   Beklenen: GECEN_YANLIS 0, COZUM_RED 0, SAYI_FARK 0, YANLISSIZ 0
+// 4) Şık dengesi: doğru şık en uzun olan pay %15 ile %35 arası (ters ipucu da olmasın), en kısa olan en çok %35, belirgin sivrilen şık yok. 5) Yol sırası: indeks ve plan okuma önce.
+// Çalıştırma: node opt_denetim.js   Beklenen: GECEN_YANLIS 0, COZUM_RED 0, SAYI_FARK 0, YANLISSIZ 0, SIVRI 0, SIRA_HATA 0. Yalnız 4 ve 5 için: YALNIZ_YAPI=1
 const c=require('./load.js'); const fs=require('fs'); const initSqlJs=require('sql.js/dist/sql-asm.js');
 require('vm').runInContext(fs.readFileSync(require('./yol.js').ROOT+'arena-data.js','utf8'),c);
 const DX=c.SQLP_DIALECT, DIDS=DX.DIALECTS.map(d=>d.id);
@@ -11,6 +12,13 @@ const DX=c.SQLP_DIALECT, DIDS=DX.DIALECTS.map(d=>d.id);
 const FL=process.env.FILTER?new RegExp(process.env.FILTER):null;
 const norm=v=>{ if(v===null||v===undefined) return '∅'; if(typeof v==='number') return String(Math.round(v*100)/100); if(typeof v==='string'){ const t=v.trim(); if(t!==''&&/^-?\d+(\.\d+)?$/.test(t)) return String(Math.round(+t*100)/100); return v;} return String(v); };
 function esit(u,s,ord){ if(!s) return true; if(!u) return false; if(u.columns.length!==s.columns.length||u.values.length!==s.values.length) return false; const A=u.values.map(r=>r.map(norm).join('␟')),B=s.values.map(r=>r.map(norm).join('␟')); if(ord&&A.every((x,i)=>x===B[i])) return true; return [...A].sort().join('\n')===[...B].sort().join('\n'); }
+// Şık dengesi: doğru şık en uzun ya da en kısa olmak ipucu vermesin. Kapsam: c37.js ve c38.js çoktan seçmelileri (dn alanı).
+const SIK=(()=>{ const vis=x=>String(x).replace(/<[^>]+>/g,'').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').trim().length; let n=0,uzun=0,kisa=0; const sivri=[];
+  c.SQLP_LESSONS.forEach(l=>(l.ex||[]).forEach((e,i)=>{ if(e.t!=='mc'||!e.dn) return; n++; const u=e.o.map(vis), d=u[e.a], ob=u.filter((_,j)=>j!==e.a), mx=Math.max(...ob), mn=Math.min(...ob); if(d>mx) uzun++; if(d<mn) kisa++; if(d>mx*1.25||(mn>=12&&d<mn*0.6)) sivri.push(l.id+'#'+(i+1)+' '+u.join('/')); }));
+  const pu=n?Math.round(100*uzun/n):0, pk=n?Math.round(100*kisa/n):0; console.log('sik',n,'dogru_en_uzun',uzun,'%'+pu,'dogru_en_kisa',kisa,'%'+pk,'SIVRI',sivri.length); sivri.forEach(x=>console.log('  sivri',x)); return (pu>35||pu<15||pk>35||sivri.length)?1:0; })();
+// Önkoşul: indeks ve plan okuma, onları kullanan optimizasyon derslerinden önce gelmeli (çekirdek sıra).
+const SIRA=(()=>{ const hata=[]; const ONCE={'opt-olc':['index','ts-index'],'opt-tur':['opt-plan'],'opt-indeks':['opt-plan'],'opt-secicilik':['opt-plan'],'opt-join':['opt-plan'],'opt-toplama':['opt-plan'],'opt-turler':['opt-plan'],'opt-yanlis':['opt-plan'],'opt-proje':['opt-plan','opt-indeks']}; c.SQLP_PATHS.forEach(p=>p.lessons.forEach((id,i)=>{ const g=ONCE[id]; if(!g) return; const yok=id==='opt-proje'?g.filter(x=>{const k=p.lessons.indexOf(x);return k<0||k>i;}):(g.some(x=>{const k=p.lessons.indexOf(x);return k>=0&&k<i;})?[]:g); if(yok.length) hata.push(p.id+': '+id+' önce '+yok.join('/')); })); console.log('SIRA_HATA',hata.length); hata.forEach(x=>console.log('  ',x)); return hata.length?1:0; })();
+if(process.env.YALNIZ_YAPI) process.exit(SIK||SIRA);
 initSqlJs().then(SQL=>{
   const BASE=require('./base.js')(SQL,c);
   const fresh=()=>{ const db=new SQL.Database(BASE); c.SQLP_REGISTER(db); DX.register(db); return db; };
@@ -34,5 +42,5 @@ initSqlJs().then(SQL=>{
   let fark=0; const SAY=c.SQLP_OPT_SAYI||[]; for(const s of SAY){ const db=fresh(); let got; try{ got=db.exec(s.sql)[0].values[0][0]; }catch(er){ got='HATA '+er.message; } db.close(); const a=norm(got),b=norm(s.deger); if(a!==b){ fark++; console.log('SAYI FARK',s.ad,'metin',b,'veri',a); } }
   if(!FL&&yanlissiz.length) console.log('Yanlış cevabı olmayan:',yanlissiz.join(' '));
   console.log('cozum',cozum,'COZUM_RED',red,'yanlis',yanlis,'GECEN_YANLIS',gecen,'sebep',JSON.stringify(sebepler),'sayi',SAY.length,'SAYI_FARK',fark,'YANLISSIZ',FL?'-':yanlissiz.length);
-  process.exit(gecen||red||fark?1:0);
+  process.exit(gecen||red||fark||SIK||SIRA?1:0);
 });

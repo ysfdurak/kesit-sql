@@ -1,8 +1,7 @@
+sik 57 dogru_en_uzun 12 %21 dogru_en_kisa 9 %16 SIVRI 0
+SIRA_HATA 0
 hata ile red opt-secicilik#4 no such table: sqlite_stat1 | CREATE INDEX ix_tip ON bank_txns (txn_type); SELECT idx, stat FROM sqlite_stat1 WHERE idx = 'ix_tip';
-YAVAS 8919 ms pg SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
-YAVAS 8863 ms mysql SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
-YAVAS 9837 ms oracle SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
-YAVAS 17808 ms sqlite SELECT s.name, (SELECT COUNT(*) FROM bk_trips t WHERE t.end_station = s.station_id) - (SEL
-YAVAS 17532 ms sqlite SELECT s.name, (SELECT COUNT(*) FROM bk_trips t WHERE t.end_station = s.station_id) - (SEL
-cozum 556 COZUM_RED 0 yanlis 213 GECEN_YANLIS 0 sebep {"plan":74,"yontem":21,"sonuc":116,"hata":1,"gizliTest":1} sayi 6 SAYI_FARK 0 YANLISSIZ 0
-0
+YAVAS 6406 ms sqlite SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
+YAVAS 35026 ms sqlite SELECT s.name, (SELECT COUNT(*) FROM bk_trips t WHERE t.end_station = s.station_id) - (SEL
+YAVAS 29969 ms sqlite SELECT s.name, (SELECT COUNT(*) FROM bk_trips t WHERE t.end_station = s.station_id) - (SEL
+cozum 112 COZUM_RED 0 yanlis 213 GECEN_YANLIS 0 sebep {"plan":74,"yontem":21,"sonuc":116,"hata":1,"gizliTest":1} sayi 6 SAYI_FARK 0 YANLISSIZ 0
