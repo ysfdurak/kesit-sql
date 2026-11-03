@@ -374,7 +374,7 @@ ORDER BY status, adet DESC;</pre>
 FROM orders
 GROUP BY yil
 ORDER BY yil;</pre>
-<div class="note"><b>Takma adla gruplama</b>SQLite, MySQL ve PostgreSQL GROUP BY içinde SELECT takma adını kabul eder; SQL Server ve Oracle etmez, ifadeyi tekrar yazman gerekir.</div>
+<div class="note"><b>Takma adla gruplama</b>SQLite, MySQL ve PostgreSQL GROUP BY içinde SELECT takma adını kabul eder; SQL Server ve 23ai öncesi Oracle etmez, ifadeyi tekrar yazman gerekir.</div>
 `,
   ex: [
     { t: 'sql', q: '<p>Her <b>şehirdeki müşteri sayısını</b> bul: <code>city</code>, sayı.</p>', sol: 'SELECT city, COUNT(*) FROM customers GROUP BY city;' },

@@ -816,7 +816,6 @@ function lint(sql, d) {
       if (isW(t, 'FETCH')) return err('FETCH', 'BigQuery\'de LIMIT n OFFSET m kullanılır.');
       if (isW(t, 'RETURNING') || isW(t, 'CONFLICT')) return err(t.v, 'BigQuery\'de RETURNING ve ON CONFLICT yoktur; upsert için MERGE kullan.');
       if (t.k === 'tmp' || (t.k === 'var' && !t.v.startsWith('@@'))) return err(t.v, 'Değişkenler ve # geçici tablolar bu taklit katmanında yalnızca SQL Server modunda desteklenir. (BigQuery\'de @parametre ve DECLARE betikleri vardır.)');
-      if (t.k === 'q' && t.v[0] === '"') return err(t.v, 'BigQuery\'de çift tırnak metin sabitidir; tanımlayıcılar `ters tırnak` ile yazılır.');
       if (isW(t, 'CREATE') && (isW(T[i + 1], 'INDEX') || (isW(T[i + 1], 'UNIQUE') && isW(T[i + 2], 'INDEX')))) return new DErr('Syntax error: Unexpected identifier "INDEX"', 'BigQuery\'de klasik indeks yoktur. Büyük tablolarda PARTITION BY (tarih) ve CLUSTER BY (sık filtrelenen sütunlar) kullanılır.');
       if (isW(t, 'CREATE') && (isW(T[i + 1], 'TRIGGER') || (isW(T[i + 1], 'OR') && isW(T[i + 3], 'TRIGGER')))) return new DErr('Syntax error: Unexpected identifier "TRIGGER"', 'BigQuery\'de trigger yoktur; değişiklikler zamanlanmış sorgular veya Dataform/dbt ile işlenir.');
       if (isW(t, 'CHECK') && isP(T[i + 1], '(')) return new DErr('CHECK constraints are not supported', 'BigQuery CHECK kısıtını desteklemez; doğrulamayı sorgu veya veri kalite testleriyle yap.');
@@ -1771,6 +1770,8 @@ function revBqNames(sql) {
   for (let i = 0; i < T.length; i++) {
     const t = T[i];
     if (t.k === 'q' && t.v[0] === '`') { const parts = t.v.slice(1, -1).split('.'); out.push({ k: 'w', v: parts[parts.length - 1], u: parts[parts.length - 1].toUpperCase() }); continue; }
+    /* GoogleSQL'de çift tırnak metin sabitidir; tanımlayıcı ters tırnakla yazılır */
+    if (t.k === 'q' && t.v[0] === '"') { out.push({ k: 's', v: "'" + t.v.slice(1, -1).replace(/""/g, '"').replace(/'/g, "''") + "'" }); continue; }
     if (t.k === 'q' && t.v[0] === '[') {
       const m = t.v.match(/^\[\s*(SAFE_)?(OFFSET|ORDINAL)\s*\(\s*([\s\S]+?)\s*\)\s*\]$/i);
       if (m) {
@@ -2103,7 +2104,7 @@ function friendly(e, d) {
   if (e instanceof DErr) return { message: m, hint: e.hint };
   if ((mm = m.match(/no such table: (?:\w+\.)?(\S+)/))) return { message: V.table(mm[1].replace(/^tmp_/, '#')), hint: 'Tablo adını kontrol et; tablolar Veri Seti sayfasında listeleniyor.' };
   if ((mm = m.match(/no such column: (\S+)/))) return { message: V.col(mm[1]), hint: 'Sütun adını ve hangi tabloya ait olduğunu kontrol et.' };
-  if ((mm = m.match(/no such function: (\S+)/))) return { message: V.fn(mm[1].replace(/_$/, '')), hint: 'Bu fonksiyon seçili programda yok ya da adı farklı.' };
+  if ((mm = m.match(/no such function: (\S+)/))) return { message: V.fn(mm[1].replace(/_$/, '')), hint: 'Bu fonksiyon seçili SQL türünde yok ya da adı farklı.' };
   if ((mm = m.match(/near "([^"]*)": syntax error/))) return { message: V.syntax(mm[1]), hint: 'Virgül, parantez ve anahtar kelime sırasını kontrol et.' };
   if (/incomplete input/.test(m)) return { message: d === 'tsql' ? "Msg 102, Level 15: Incorrect syntax near the end of input." : d === 'oracle' ? 'ORA-00921: unexpected end of SQL command' : d === 'pg' ? 'ERROR: syntax error at end of input' : d === 'mysql' ? "ERROR 1064 (42000): ... near '' at end of input" : m, hint: 'Sorgu yarım kalmış: kapanmayan parantez veya tırnak olabilir.' };
   if ((mm = m.match(/ambiguous column name: (\S+)/))) return { message: d === 'tsql' ? `Msg 209, Level 16: Ambiguous column name '${mm[1]}'.` : d === 'pg' ? `ERROR: column reference "${mm[1]}" is ambiguous` : d === 'oracle' ? 'ORA-00918: column ambiguously defined' : d === 'mysql' ? `ERROR 1052 (23000): Column '${mm[1]}' in field list is ambiguous` : m, hint: 'Sütun birden fazla tabloda var; başına tablo takma adını ekle (ör. o.' + mm[1] + ').' };
