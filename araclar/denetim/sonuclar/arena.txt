@@ -20,12 +20,13 @@ gece-atm rows=1 | 240
 harcama-sicramasi rows=203 | 100004/7230/18243 ; 100005/5572/12180
 yogun-meydan rows=3 | IST/2284 ; ESB/556
 zamaninda rows=5 | 20/85/48.2 ; 39/70/48.6
-gecikme-nedeni rows=5 | gec_gelen_ucak/26420/36.6 ; hava/21570/29.9
+gecikme-nedeni rows=5 | hava/23534/32.6 ; gec_gelen_ucak/17995/24.9
 mil-krali rows=5 | 242/Ebru Özdemir/29322 ; 842/İlker Özkan/28088
-yer-suresi rows=1 | 528
+test no effect (bilinçli olabilir) yer-suresi 1 İptaller arttı
+yer-suresi rows=1 | 0
 aktarma rows=1 | 3
 kapasite rows=5 | A320neo/5/900 ; A321neo/3/660
-tam-dolu rows=9 | 24/20 ; 23/16
+tam-dolu rows=9 | 37/22 ; 24/21
 sepet-boyu rows=1 | 1.78
 kanal-pivot rows=3 | 2022/21/32/11 ; 2023/118/142/49
 segment-degeri rows=3 | Premium/33/12958 ; Kurumsal/32/8805
@@ -40,7 +41,7 @@ sube-sehir rows=8 | İstanbul/4/2005 ; Ankara/2/2006
 test no effect (bilinçli olabilir) gidis-donus 0 Tek yönlü yeni rotalar
 gidis-donus rows=22 | ADA/IST ; ADB/ESB
 sinif-geliri rows=3 | Eko/4042305/46.7 ; EkoFlex/2423750/28
-gecikme-zinciri rows=3 | TC-KMA/62 ; TC-KBC/56
+gecikme-zinciri rows=3 | TC-KBA/49 ; TC-KMA/47
 kurye-yildiz rows=1 | Serdar Yalın/71
 bos-kurye rows=1 | 0
 sepet-esigi rows=1 | 7
@@ -60,7 +61,7 @@ test no effect (bilinçli olabilir) ik-dolum-suresi 0 İptal edilen talepler tar
 ik-dolum-suresi rows=3 | Veri ve Analitik/52.4 ; BT Altyapı/48.4
 bk-baslangic rows=5 | Alsancak Çarşı/4257 ; Alsancak Meydan/4157
 test no effect (bilinçli olabilir) bk-kayip 0 Aynı bisiklet iki kez kayıp
-bk-kayip rows=1 | 9
+bk-kayip rows=1 | 253
 test no effect (bilinçli olabilir) bk-elektrik 1 Ayın son gecesi
 bk-elektrik rows=1 | 24.9
 bk-sadik rows=1 | 4259

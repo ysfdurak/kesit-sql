@@ -1,0 +1,50 @@
+== Kanat Havayolları
+  uçak ışınlanması (uçuş + konumlandırma zinciri): 0 (beklenen 0)
+  aynı uçak aynı anda (gerçek zaman): 0 (beklenen 0)
+  dönüş süresi ihlali, gerçek (iç 35, dış 60 dk): 0 (beklenen 0)
+  dönüş süresi ihlali, plan: 0 (beklenen 0)
+  yolcu > koltuk: 0 (beklenen 0)
+  Dubai seferi A330 dışında: 0 (beklenen 0)
+  A330 iç hatta: 0 (beklenen 0)
+  planlanan aralıkları çakışan ardışık sefer (iptaller dahil): 0 (beklenen 0)
+  yalnız hv_flights ile kopukluk, iptaller dahil (bilgi): 502
+  yalnız hv_flights ile kopukluk, iptaller hariç (bilgi; konumlandırmayla kapanır): 433
+  konumlandırma uçuşu (bilgi): 443
+  konumlandırma blok saati (bilgi): 719
+  iptal sefer: planlanan uçak kalkış anında başka yerde (bilgi; iptal nedeni olabilir): 32
+  gec_gelen_ucak var ama önceki sefer zamanında indi: 0 (beklenen 0)
+  gec_gelen_ucak satırı (bilgi): 342
+    bunlardan uçak planlanan kalkışa hazır değildi (bilgi): 12
+    önceki iniş ile planlanan kalkış arası, medyan dk (bilgi): 472
+  önceki sefer geç indiyse sonraki de >=15 dk geç kalkar, % (bilgi): 48.0
+  önceki sefer zamanında indiyse sonraki >=15 dk geç kalkar, % (bilgi): 32.6
+== Pedal İzmir
+  bisiklet ışınlanması (yolculuk + dengeleme zinciri): 0 (beklenen 0)
+  aynı bisiklet aynı anda, çakışan çift (bilerek): 25 (beklenen 25)
+    1-3 Haziran penceresindeki çift (bilgi): 4
+  bakım açıkken başlayan yolculuk: 0 (beklenen 0)
+  yolculuk sürerken dengeleme: 0 (beklenen 0)
+  kapanmamış yolculuk: 316 (beklenen 316)
+  kapanmamış yolculuktan sonra bisiklet toplanmadan kullanıldı: 0 (beklenen 0)
+  ortalama hız km/s (elektrikli hızlı kalmalı, bilgi): [('elektrikli', 12.3), ('klasik', 9.2)]
+  bisiklet tipine aykırı hızda yolculuk: 0 (beklenen 0)
+  kullanılan bisiklet (bilgi): 700
+  bisiklet başına yolculuk en az/medyan/en çok (bilgi): (44, 168, 219)
+  100 yolculuğun altında kalan bisiklet (bilgi): 13
+  bakım kaydı: 1400 (beklenen 1400)
+  bakım gören bisiklet / bisiklet başına en çok (bilgi): (690, 6)
+  yolculuk ile bakım sayısı korelasyonu (bilgi): 0.32
+  açık bakım kaydı (bilgi): 60
+  dengeleme satırı / kamyonet yükü (bilgi): (28180, 7422)
+  tek bisikletlik yük (bilgi): 2039
+  yuva sayısını aşan bitiş anı (bilgi; bakımdaki bisiklet yuva tutmaz): 349
+  istasyon net akışı en düşük/en yüksek (bilgi): (-708, 616)
+== Anadolu Market web_events
+  satır / kullanıcı (bilgi): (2819, 600)
+  kullanıcı: 600 (beklenen 600)
+  çift gönderilen olay (bilerek): 40 (beklenen 40)
+    bunlardan purchase: 8 (beklenen 8)
+  event_id sırasında zamanı geri giden kullanıcı (bilerek): 24 (beklenen 24)
+  huni tekil kullanıcı (bilgi): [('visit', 600), ('product_view', 453), ('add_to_cart', 183), ('checkout', 109), ('purchase', 67)]
+  huni ham olay (bilgi): [('visit', 1005), ('product_view', 1370), ('add_to_cart', 243), ('checkout', 126), ('purchase', 75)]
+SORUN 0 

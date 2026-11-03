@@ -101,7 +101,7 @@ PROG=1 node run.js               # ilerlemeyi yazdır
 ```bash
 node boxes.js            # FILTER ile daraltılabilir
 ```
-Konu anlatımlarındaki çalıştırılabilir örnekleri bütün SQL türlerinde çalıştırır. Son temiz sonuç: `kutu 536 calistirma 2520 hata 0`.
+Konu anlatımlarındaki çalıştırılabilir örnekleri bütün SQL türlerinde çalıştırır. Son temiz sonuç: `kutu 538 calistirma 2532 hata 0`.
 
 ### 3. SQL Arena
 ```bash
@@ -214,11 +214,22 @@ GitHub Pages bir iki dakika içinde güncellenir.
 `sw.js` ağ öncelikli çalışır; ziyaretçiler yeni sürümü bir sonraki açılışta alır. Önbellek biçimini değiştirirsen `CACHE` sabitinin sürümünü artır; eski önbellek etkinleşmede silinir. Yeni `base-*.b64.txt` alınınca eskisi önbellekten çıkar.
 
 ## Ortak veri setleri
-Ilgaz Bank, Kanat Havayolları, Lezzet Kurye, Pusula İK ve Pedal İzmir üç uygulamada satır satır aynıdır. Kaynak bu depodaki üreteçlerdir (`db.js` içindeki banka bölümü, `hv.js`, `lk.js`, `ik.js`, `bk.js`); diğer iki depo bunlardan türer:
+Ilgaz Bank, Kanat Havayolları, Lezzet Kurye, Pusula İK ve Pedal İzmir üç uygulamada satır satır aynıdır; SQL'in Anadolu Market `web_events` tablosu Python `anadolu_market` ile aynıdır (Power BI `WebOlaylari` ayrı veridir). Kaynak bu depodaki üreteçlerdir (`db.js` içindeki banka bölümü, `hv.js`, `lk.js`, `ik.js`, `bk.js`); diğer iki depo bunlardan türer:
 1. Burada üreteci değiştir, `node make_base.js`.
-2. Kesit Power BI: dosyayı `scratchpad/sqlsrc/` içine kopyala, `scratchpad/ds` içinde `node seed.js <sqlsrc yolu>`, `python3 mk.py`, SQLite kopyalarını `kur.sh`'taki gibi üret, `node build/vdpack.js`, `.b64.txt` kopyalarını yenile.
-3. Kesit Python: değişen CSV'leri Power BI `ds/csv` klasöründen BOM'suz kopyala, `data/manifest.json` içinde satır ve bayt sayılarını güncelle (`name` alanlarına dokunma).
+2. Kesit Power BI: dosyayı `scratchpad/sqlsrc/` içine kopyala, `scratchpad/ds` içinde `node seed.js <sqlsrc yolu>`, `python3 mk.py`, SQLite kopyalarını `kur.sh`'taki gibi üret, `node build/vdpack.js`, `.b64.txt` kopyalarını yenile. Yeni tablo eklendiyse `vd_*.js` içindeki `tables` listesine de ekle; pakette yalnız o liste çıkar.
+3. Kesit Python: değişen CSV'leri Power BI `ds/csv` klasöründen BOM'suz kopyala (`web_events.csv` dahil, `ds/csv/db` altında), `data/manifest.json` içinde satır ve bayt sayılarını güncelle (`name` alanlarına dokunma; yeni tabloya `cols` ve `note` da yaz).
 
-Üreteçte mevcut rastgele üreteci (`R`, `B`) tüketen çağrıların sırasını değiştirme: diğer bütün veriler kayar. Düzeltmeleri rastgele sayı tüketmeyen son işlem olarak ya da ayrı üreteçle ekle (`lk.js` yorum metinleri `RY` ile seçilir).
+Üreteçte mevcut rastgele üreteci (`R`, `B`) tüketen çağrıların sırasını değiştirme: diğer bütün veriler kayar. Düzeltmeleri rastgele sayı tüketmeyen son işlem olarak ya da ayrı üreteçle ekle (`lk.js` yorum metinleri `RY`, `db.js` web olayları `RW` ile seçilir).
+
+### Uçak ve bisiklet ataması
+`hv.js` ve `bk.js` içindeki `ATAMA` blokları üretilmiş veridir, elle düzenlenmez. Sefer ya da yolculuk saatleri değişirse yeniden hesapla (scipy gerekir, sonuç deterministiktir; `base.sqlite` tabanı atamadan bağımsız sütunlar için okunur):
+```bash
+python3 veri_atama_hv.py base.sqlite /tmp/hv_atama.json      # 15 uçağa sefer, hv_repositioning, gec_gelen_ucak düzeltmesi
+node i_esleme.js                                              # trip_id -> üreteç sırası: /tmp/bk_imap.json
+python3 veri_atama_bk.py base.sqlite /tmp/bk_imap.json /tmp/bk_atama.json   # bisiklet, bk_rebalancing, bk_maintenance, 25 bilinçli çakışma
+node veri_gom.js /tmp/hv_atama.json /tmp/bk_atama.json && node make_base.js
+python3 veri_tutarlilik.py                                    # Beklenen: SORUN 0
+```
+`veri_tutarlilik.py` uçak ve bisiklet ışınlanmasını, çakışmayı, dönüş süresini, bakımda yolculuğu ve bilerek bırakılan izlerin sayısını denetler. Yeni tablolar: `hv_repositioning` (Kanat), `bk_rebalancing` (Pedal).
 
 Veride bilerek bırakılanlar ve bilinen sınırlamalar `bilinen-sinirlar.js` içindedir; metin üç uygulamada aynıdır, sayılar değişirse üçünü birden güncelle.
