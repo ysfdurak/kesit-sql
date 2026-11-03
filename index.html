@@ -1,5 +1,5 @@
 <!doctype html><html lang="tr"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Kesit SQL: sıfırdan ileri seviyeye ücretsiz, Türkçe SQL eğitimi. Kurulum ve hesap yok; tarayıcında çalışan bir SQL veritabanıyla 247 ders, 1.496 otomatik denetlenen alıştırma, 6 SQL türü.">
+<meta name="description" content="Kesit SQL: sıfırdan ileri seviyeye ücretsiz, Türkçe SQL eğitimi. Kurulum ve hesap yok; tarayıcında çalışan bir SQL veritabanıyla 258 ders, 1.620 otomatik denetlenen alıştırma, 6 SQL türü.">
 <meta name="theme-color" content="#D3352C">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
@@ -9,7 +9,7 @@
 <meta property="og:locale" content="tr_TR">
 <meta property="og:site_name" content="Kesit SQL">
 <meta property="og:title" content="Kesit SQL: sıfırdan ileri seviyeye Türkçe SQL">
-<meta property="og:description" content="Kurulum yok, hesap yok. Tarayıcında çalışan bir SQL veritabanıyla 247 ders, 1.496 alıştırma ve 6 SQL türü.">
+<meta property="og:description" content="Kurulum yok, hesap yok. Tarayıcında çalışan bir SQL veritabanıyla 258 ders, 1.620 alıştırma ve 6 SQL türü.">
 <meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png">
 <meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/">
 <meta name="twitter:card" content="summary_large_image"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}.doors{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
@@ -576,6 +576,7 @@ button.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink);
 <script src="c33.js"></script>
 <script src="c34.js"></script>
 <script src="c35.js"></script>
+<script src="c36.js"></script>
 <script src="ipuclari.js"></script>
 <script src="arena-data.js"></script>
 <script src="config.js"></script>
@@ -606,7 +607,7 @@ const COLMETA = window.SQLP_COLMETA || {}; const TABLES = Object.keys(COLMETA);
 const lvOrder = id => LEVELS.findIndex(l=>l.id===id);
 const lvName = id => (LEVELS[lvOrder(id)]||{}).name || id;
 const lvBadge = id => '<span class="lv lv-'+id+'">'+lvName(id)+'</span>';
-const EXTRA_MODS = ['Veri Analisti','Veri Bilimi','Veri Mühendisliği','Mülakat Hazırlığı','SQL Türlerine Özgü','İş Zekâsı ve Raporlama','Veritabanı Yönetimi (DBA)','Uygulama Geliştirme','Vaka Çalışmaları','Yapay Zekâ ile SQL','BigQuery ve Bulut Veri Ambarları','Sertifika Hazırlık','Alıştırma Kampı','Bitirme Projeleri','Kanat Havayolları','Büyük Sorgular','İK Analitiği','Büyük Veriyle Çalışmak'];
+const EXTRA_MODS = ['Veri Analisti','BT İş Analizi','Veri Bilimi','Veri Mühendisliği','Mülakat Hazırlığı','SQL Türlerine Özgü','İş Zekâsı ve Raporlama','Veritabanı Yönetimi (DBA)','Uygulama Geliştirme','Vaka Çalışmaları','Yapay Zekâ ile SQL','BigQuery ve Bulut Veri Ambarları','Sertifika Hazırlık','Alıştırma Kampı','Bitirme Projeleri','Kanat Havayolları','Büyük Sorgular','İK Analitiği','Büyük Veriyle Çalışmak'];
 (function hints(){ const dc=[], tc=[], all=[], dt=[]; for(const t of TABLES) for(const [c,ty] of COLMETA[t]){ all.push(c); if(/date/.test(ty)) dc.push(c); if(ty==='datetime') dt.push(c); if(/^text/.test(ty)) tc.push(c); } DX.setSchemaHints(dc, tc, all, dt); })();
 
 /* ---------- Depolama ---------- */
@@ -709,6 +710,10 @@ const NAVG=[
   ['Kariyer',[['mulakat','Mülakat','chat'],['projeler','Bitirme projeleri','flag'],['belgeler','Belgelerim','award']]],
   ['Referans',[['data','Veri setleri','data'],['hatalar','Sık hatalar','warn'],['dict','Sözlük','dict']]]
 ];
+/* Süre tahmini (üç uygulamada aynı formül): okuma + kod görevi başına 2-3 dk + çoktan seçmeli başına 0,5-1 dk. Ölçülmüş değil; ekranda aralık ve "tahmin" olarak görünür. */
+function sureDk(l) { if (l._sr) return l._sr; const ch = String(l.body || '').replace(/<[^>]+>/g, '').length, ex = (l.ex || []).filter(e => e), kolay = ex.filter(e => e.t === 'mc').length, kod = ex.length - kolay, r = Math.max(3, ch / 600); return (l._sr = [r + 2 * kod + .5 * kolay, r + 3 * kod + kolay]); }
+function dkAralik(l) { const [a, b] = sureDk(l); if (b < 90) return Math.max(5, Math.floor(a / 5) * 5) + '-' + Math.ceil(b / 5) * 5 + ' dk'; const y = x => (Math.round(x / 30) / 2).toLocaleString('tr-TR'); return y(a) + '-' + y(b) + ' saat'; }
+function saatAralik(ls) { if (!ls.length) return '0 dk'; const a = ls.reduce((s, l) => s + sureDk(l)[0], 0) / 60, b = ls.reduce((s, l) => s + sureDk(l)[1], 0) / 60; if (b < 1) return 'yaklaşık ' + Math.max(5, Math.floor(a * 12) * 5) + '-' + Math.ceil(b * 12) * 5 + ' dk'; const st = b < 10 ? 1 : 5, lo = Math.max(1, Math.floor(a / st) * st), hi = Math.ceil(b / st) * st; return 'yaklaşık ' + lo + '-' + (hi > lo ? hi : lo + st) + ' saat'; }
 const NAVB=[['profile','Profil','user'],['hakkinda','Hakkında','info']];
 const NAVTITLE={}; NAVG.forEach(g=>g[1].forEach(n=>NAVTITLE[n[0]]=n[1])); NAVB.forEach(n=>NAVTITLE[n[0]]=n[1]);
 
@@ -887,7 +892,7 @@ function viewHome(){
   h+=(P.dialectChosen?'<span class="muted" style="font-size:.85rem">SQL türü: <b>'+DNAME[P.dialect]+'</b> · <button class="btn ghost sm" style="padding:0" data-act="rechoose">Değiştir</button></span>':'')+'</div>';
   h+='<div class="panel today"><div class="sec-head"><h3>Bugün</h3><span class="muted" style="font-size:.85rem">Günlük hedef '+DAILY_GOAL+' XP</span></div><div class="bar"><i style="width:'+Math.min(100,td/DAILY_GOAL*100)+'%"></i></div>';
   h+='<div class="kpis"><div class="kpi"><b>'+P.xp+'</b><span>toplam XP</span></div><div class="kpi"><b>'+st+'</b><span>gün seri</span></div><div class="kpi"><b>'+done+'</b><span>biten ders</span></div></div>';
-  if(nx && !welcoming) h+='<div class="continue">'+lvBadge(nx.L)+'<div class="grow"><b>'+esc(nx.title)+'</b><span class="muted" style="font-size:.85rem">'+esc(nx.mod)+' · ~'+(nx.min||10)+' dk</span></div><button class="btn sm" data-lesson="'+nx.id+'"'+(goal?' data-ctx="'+goal.id+'"':'')+'>Aç</button></div>';
+  if(nx && !welcoming) h+='<div class="continue">'+lvBadge(nx.L)+'<div class="grow"><b>'+esc(nx.title)+'</b><span class="muted" style="font-size:.85rem">'+esc(nx.mod)+' · '+dkAralik(nx)+'</span></div><button class="btn sm" data-lesson="'+nx.id+'"'+(goal?' data-ctx="'+goal.id+'"':'')+'>Aç</button></div>';
   if(due) h+='<div class="continue" style="border-style:solid">'+ICON.refresh.replace('<svg','<svg width="22" height="22" style="color:var(--warn);flex:none"')+'<div class="grow"><b>'+due+' alıştırma tekrar bekliyor</b><span class="muted" style="font-size:.85rem">Aralıklı tekrar, öğrendiğini kalıcı yapar.</span></div><button class="btn sm" data-go="review">Tekrar et</button></div>';
   if(goal){ const gp=pct(goal.lessons); h+='<button class="continue" data-go="path" data-id="'+goal.id+'" style="background:none;text-align:left;cursor:pointer"><span class="ic" style="background:'+goal.color+';min-width:34px;height:34px;font-size:.75rem">'+goal.short+'</span><span class="grow"><b>Hedef: '+esc(goal.name)+'</b><span class="bar" style="display:block;margin-top:6px"><i style="width:'+gp+'%;background:'+goal.color+'"></i></span></span><span class="muted num" style="font-size:.85rem">%'+gp+'</span></button>'; }
   h+=((done>=10 && done-(P.bkDone||0)>=10 ? '<div class="continue" style="border-style:solid"><div class="grow"><b>İlerlemeni yedekle</b><span class="muted" style="font-size:.85rem">'+done+' ders bitirdin. İlerlemen bu tarayıcıda; küçük bir dosyaya kaydedersen kaybolmaz, başka cihazda da devam edersin.</span></div><button class="btn sm" data-act="exp">Dosyaya kaydet</button></div>' : '<span class="muted" style="font-size:.8rem">İlerlemen bu tarayıcıda saklanır. <button class="btn ghost sm" style="padding:0" data-go="profile">Yedekleme</button></span>'))+'</div></section>';
@@ -904,7 +909,7 @@ function viewHome(){
 }
 function pathCard(p){
   const ids=p.lessons.filter(id=>LMAP[id]), pc=pct(ids);
-  return '<button class="pcard" data-go="path" data-id="'+p.id+'"><span class="row" style="justify-content:space-between"><span class="ic" style="background:'+p.color+'">'+p.short+'</span><span class="chip">'+ids.length+' ders</span></span><h3>'+esc(p.name)+'</h3><p>'+esc(p.desc)+'</p><span class="bar"><i style="width:'+pc+'%;background:'+p.color+'"></i></span><span class="foot"><span>%'+pc+' tamamlandı</span><span>~'+Math.round(ids.reduce((a,id)=>a+(LMAP[id].min||10),0)/60)+' saat</span></span></button>';
+  return '<button class="pcard" data-go="path" data-id="'+p.id+'"><span class="row" style="justify-content:space-between"><span class="ic" style="background:'+p.color+'">'+p.short+'</span><span class="chip">'+ids.length+' ders</span></span><h3>'+esc(p.name)+'</h3><p>'+esc(p.desc)+'</p><span class="bar"><i style="width:'+pc+'%;background:'+p.color+'"></i></span><span class="foot"><span>%'+pc+' tamamlandı</span><span title="Tahmin: okuma ve alıştırmalar dahil">'+saatAralik(ids.map(id=>LMAP[id]))+'</span></span></button>';
 }
 function viewPaths(){
   const roles=PATHS.filter(p=>p.kind==='rol'), rest=PATHS.filter(p=>p.kind==='konu'), certs=PATHS.filter(p=>p.kind==='sertifika');
@@ -995,7 +1000,7 @@ function viewLesson(){
   P.last=l.id; save();
   const ex=l.ex||[];
   let h='<div class="wrap" style="gap:18px"><div class="lhead"><div class="crumbs">'+(S.ctx&&PMAP[S.ctx]?'<button data-go="path" data-id="'+S.ctx+'">'+esc(PMAP[S.ctx].name)+(PMAP[S.ctx].lessons.indexOf(l.id)>=0?' '+(PMAP[S.ctx].lessons.indexOf(l.id)+1)+'/'+PMAP[S.ctx].lessons.length:'')+'</button>':'<button data-go="curr">Dersler</button>')+'<span>/</span>'+lvBadge(l.L)+'<span>'+esc(l.mod)+'</span></div>';
-  h+='<div class="row" style="justify-content:space-between;align-items:end"><h1 style="font-size:clamp(1.5rem,3.4vw,2.1rem)">'+esc(l.title)+'</h1><span class="muted" style="font-size:.85rem">~'+(l.min||10)+' dk · SQL türü: <b>'+DNAME[P.dialect]+'</b> · <button class="btn ghost sm" style="padding:0" data-act="feedback" data-ders="'+esc(l.title+' ('+l.id+(S.step?' #'+S.step:'')+')')+'">Geri bildirim</button></span></div>';
+  h+='<div class="row" style="justify-content:space-between;align-items:end"><h1 style="font-size:clamp(1.5rem,3.4vw,2.1rem)">'+esc(l.title)+'</h1><span class="muted" style="font-size:.85rem" title="Tahmin: okuma ve alıştırmalar dahil">'+dkAralik(l)+' · SQL türü: <b>'+DNAME[P.dialect]+'</b> · <button class="btn ghost sm" style="padding:0" data-act="feedback" data-ders="'+esc(l.title+' ('+l.id+(S.step?' #'+S.step:'')+')')+'">Geri bildirim</button></span></div>';
   h+='<div class="steps"><button data-step="0" aria-current="'+(S.step===0)+'" class="'+(P.seen[l.id]?'done':'')+'">Konu</button>'+ex.map((e,i)=>'<button data-step="'+(i+1)+'" aria-current="'+(S.step===i+1)+'" class="'+(P.ex[exKey(l,i)]?'done':'')+(e.adv?' adv':'')+'" aria-label="Alıştırma '+(i+1)+(e.adv?' (ileri görev)':'')+'">'+(i+1)+'</button>').join('')+'</div></div>';
   if(S.step===0){
     const used=tablesIn(l.body+' '+ex.map(e=>e.sol||'').join(' '));
@@ -1262,6 +1267,7 @@ function viewAbout(){
   const C=window.KESIT_CONFIG||{}, A=C.author||{}; const totalEx=LESSONS.reduce((a,l)=>a+(l.ex||[]).length,0);
   const link=(u,t)=>u?'<a class="btn sm" href="'+esc(u)+'" target="_blank" rel="noopener">'+t+'</a>':'';
   let h='<div class="wrap" style="max-width:860px;gap:18px"><div><h1>Hakkında</h1><p class="muted" style="max-width:68ch;margin:6px 0 0">Kesit SQL, sıfırdan ileri seviyeye ücretsiz Türkçe SQL eğitimidir. Kurulum yok, hesap yok: tarayıcında gerçek bir veritabanıyla çalışırsın, yazdığın her sorgu anında denetlenir.</p></div>';
+  h+='<p class="muted" style="max-width:68ch;margin:0;font-size:.88rem">Süreler tahmindir: okuma, kod görevi başına 2-3 dakika ve çoktan seçmeli soru başına 0,5-1 dakikadan hesaplanır. Ölçülmüş değildir; hızın farklı olabilir.</p>';
   h+='<div class="stat-grid"><div class="kpi"><b>'+LESSONS.length+'</b><span>ders</span></div><div class="kpi"><b>'+num(totalEx)+'</b><span>alıştırma</span></div><div class="kpi"><b>'+PRACTICE.length+'</b><span>pratik görevi</span></div><div class="kpi"><b>6</b><span>SQL türü · 6 veri seti</span></div></div>';
   if(A.name){ h+='<section class="panel about-card"><div class="sec-head"><h3>Yapan</h3></div><p style="margin:0"><b style="font-size:1.1rem">'+esc(A.name)+'</b>'+(A.title?'<br><span class="muted">'+esc(A.title)+'</span>':'')+'</p>'+(A.bio?'<p style="margin:0">'+esc(A.bio)+'</p>':'')+'<div class="row" style="gap:8px">'+link(A.linkedin,'LinkedIn')+link(A.github,'GitHub')+link(A.repo,'Kaynak kod')+'</div></section>'; }
   if(C.story) h+='<section class="panel about-card"><div class="sec-head"><h3>Nasıl yapıldı</h3></div><p style="margin:0">'+esc(C.story)+'</p></section>';
@@ -2088,7 +2094,7 @@ function answerMC(i, btn){
   const {l,e,k}=LS; const box=$('#mc');
   box.querySelectorAll('button').forEach(b=>b.classList.remove('wrong'));
   if(i===e.a){ btn.classList.add('right'); const first=!P.ex[k]; P.ex[k]=1; if(first) addXP(5); LS.tries++; const extra=solvedHook(k, LS.tries===1); $('#mcFb').innerHTML='<div class="msg ok"><b>Doğru!'+(first?' +5 XP':'')+'</b>'+(e.why||'')+extra+'</div>'; afterSolve(l); }
-  else { LS.tries++; btn.classList.add('wrong'); $('#mcFb').innerHTML='<div class="msg err"><b>Tekrar dene</b>'+(e.miss||'Bu seçenek doğru değil. Konu anlatımına dönüp tekrar bakabilirsin.')+'</div>'; }
+  else { LS.tries++; btn.classList.add('wrong'); $('#mcFb').innerHTML='<div class="msg err"><b>Tekrar dene</b>'+(e.miss||(LS.tries>=2&&e.why?e.why:'Bu seçenek doğru değil. Konu anlatımına dönüp tekrar bakabilirsin.'))+'</div>'; }
 }
 document.addEventListener('keydown', ev=>{
   if((ev.ctrlKey||ev.metaKey) && (ev.key==='k'||ev.key==='K')){ ev.preventDefault(); const q=$('#sideQ'); if(q && q.offsetParent){ q.focus(); q.select(); } else { go('curr'); setTimeout(()=>{ const c=$('#currQ'); if(c) c.focus(); },0); } }
@@ -2124,7 +2130,7 @@ function fromHash(){
   render(); window.scrollTo(0,0);
 }
 window.addEventListener('hashchange', fromHash);
-window.KESIT_APP = { save:()=>save(), checkBackup,  event:(n,t)=>gcEvent(n,t), pathInfo:(id)=>{ const p=PMAP[id]; if(!p) return null; const ls=p.lessons.map(x=>LMAP[x]).filter(Boolean); return {id:p.id, name:p.name, short:p.short, color:p.color, skills:p.skills||[], lessons:ls.length, exercises:ls.reduce((a,l)=>a+(l.ex||[]).length,0), hours:Math.max(1,Math.round(ls.reduce((a,l)=>a+(l.min||10),0)/60)), complete:ls.length>0&&ls.every(l=>P.done[l.id])}; }, getP:()=>P, replaceP:(np)=>{ P=Object.assign(DEFAULTS(), np||{}); applyTheme(); try{ localStorage.setItem(KEY, JSON.stringify(P)); }catch(e){} render(); renderStats(); }, fresh:()=>Object.assign(DEFAULTS(), {dialectChosen:false}), render:()=>{ render(); renderStats(); }, toast };
+window.KESIT_APP = { save:()=>save(), checkBackup,  event:(n,t)=>gcEvent(n,t), pathInfo:(id)=>{ const p=PMAP[id]; if(!p) return null; const ls=p.lessons.map(x=>LMAP[x]).filter(Boolean); return {id:p.id, name:p.name, short:p.short, color:p.color, skills:p.skills||[], lessons:ls.length, exercises:ls.reduce((a,l)=>a+(l.ex||[]).length,0), hours:saatAralik(ls).replace(/^yaklaşık | saat$/g,''), complete:ls.length>0&&ls.every(l=>P.done[l.id])}; }, getP:()=>P, replaceP:(np)=>{ P=Object.assign(DEFAULTS(), np||{}); applyTheme(); try{ localStorage.setItem(KEY, JSON.stringify(P)); }catch(e){} render(); renderStats(); }, fresh:()=>Object.assign(DEFAULTS(), {dialectChosen:false}), render:()=>{ render(); renderStats(); }, toast };
 gcInit();
 try{ if('serviceWorker' in navigator && /^https:|^http:\/\/localhost/.test(location.href) && !/claude|claudeusercontent/.test(location.host)) navigator.serviceWorker.register('sw.js').catch(()=>{}); }catch(e){}
 writeSummary();

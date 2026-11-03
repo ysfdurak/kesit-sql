@@ -611,6 +611,7 @@ const certLessons = [{
 <tr><th>Sertifika</th><th>Kurum</th><th>Odak</th><th>Kesit SQL'de</th></tr>
 <tr><td>Oracle Database SQL Certified Associate (1Z0-071)</td><td>Oracle</td><td>Saf SQL: SELECT, fonksiyonlar, JOIN, alt sorgu, DDL/DML, view, sequence, yetkiler</td><td>SQL Temelleri öğrenme yolu + Oracle dersleri + “1Z0-071 konuları”</td></tr>
 <tr><td>Azure Database Administrator Associate (DP-300)</td><td>Microsoft</td><td>Azure SQL yönetimi, güvenlik, performans, otomasyon, HA/DR</td><td>DBA öğrenme yolu + “Bulutta SQL Server”</td></tr>
+<tr><td>SQL AI Developer Associate (DP-800)</td><td>Microsoft</td><td>SQL Server, Azure SQL ve Fabric'te veritabanı geliştirme, güvenlik ve dağıtım, T-SQL, gömme (embedding) ve vektörler. Bilgi Kasım 2026'da Microsoft Learn'den okundu, güncelini oradan kontrol et.</td><td>Kısmen: T-SQL dersleri + “Bulutta SQL Server”; yapay zekâ kısmı bu uygulamada yok</td></tr>
 <tr><td>Power BI Data Analyst Associate (PL-300)</td><td>Microsoft</td><td>Power BI; SQL veri hazırlığında destekleyici</td><td>İş Zekâsı öğrenme yolu</td></tr>
 <tr><td>Google Data Analytics Professional Certificate</td><td>Google (Coursera)</td><td>Analiz süreci, tablolar, BigQuery'de SQL, R, görselleştirme</td><td>Veri Analisti öğrenme yolu + BigQuery modülü</td></tr>
 <tr><td>Databricks Certified Data Analyst Associate</td><td>Databricks</td><td>Databricks SQL, Unity Catalog, panolar, sorgu analizi</td><td>Bulut veri ambarları + Veri Analisti</td></tr>
@@ -671,7 +672,7 @@ ${NR("-- Koşula göre farklı tablolara ekle\nINSERT ALL\n    WHEN price >= 500
 <li>Tarih aritmetiği: <code>tarih + 1</code> bir gün ekler; <code>MONTHS_BETWEEN</code>, <code>ADD_MONTHS</code>, <code>NEXT_DAY</code>, <code>LAST_DAY</code>.</li>
 <li>DDL komutları örtük COMMIT yapar; öncesindeki DML geri alınamaz.</li>
 <li>Tek satır döndürmesi beklenen alt sorgu birden çok satır dönerse hata (ORA-01427).</li>
-<li><code>ORDER BY</code>'da takma ad ve sütun sırası kullanılabilir; GROUP BY'da takma ad kullanılamaz.</li>
+<li><code>ORDER BY</code>'da takma ad ve sütun sırası kullanılabilir; Oracle 23ai öncesinde GROUP BY'da takma ad kullanılamaz; 23ai yenilik belgesi buna izin verildiğini yazıyor (Kasım 2026'da okundu). Sınav hangi sürüme göreyse onu esas al.</li>
 </ul>
 `,
   ex: [

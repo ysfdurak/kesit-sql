@@ -234,7 +234,7 @@ ${TS("-- İki sorgu aynı sonucu verir; yalnızca ikincisi order_date indeksini 
 <h2>Gizli tuzaklar</h2>
 <ul>
 <li><b>Örtük dönüşüm</b>: VARCHAR bir sütunu NVARCHAR bir parametreyle (<code>N'...'</code>) karşılaştırmak, sütunun her satırda dönüştürülmesine ve Seek yerine Scan'e yol açabilir. Planda sarı ünlem ile uyarılır.</li>
-<li><b>Parameter sniffing</b> (parameter sniffing): Prosedür ilk çağrıldığındaki parametreye göre plan seçilir ve önbellekte kalır. Veri çok dengesizse diğer değerler için kötü bir plan kullanılır. Çözümler: <code>OPTION (RECOMPILE)</code>, <code>OPTIMIZE FOR</code>, sorguyu ayırmak.</li>
+<li><b>Parameter sniffing</b> (parametreye göre plan seçimi): Prosedür ilk çağrıldığındaki parametreye göre plan seçilir ve önbellekte kalır. Veri çok dengesizse diğer değerler için kötü bir plan kullanılır. Çözümler: <code>OPTION (RECOMPILE)</code>, <code>OPTIMIZE FOR</code>, sorguyu ayırmak.</li>
 <li><b>Güncel olmayan istatistikler</b>: Optimizer satır sayısını yanlış tahmin eder. Planda “tahmini” ile “gerçek” satır sayısı arasındaki büyük fark bunun işaretidir.</li>
 </ul>
 <div class="tip"><b>Query Store</b>SQL Server 2016+'da sorguların plan geçmişini ve performansını saklar. “Dün hızlıydı, bugün yavaş” sorununda hangi planın değiştiğini gösterir ve eski planı zorlamana izin verir.</div>
