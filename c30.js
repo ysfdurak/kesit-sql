@@ -16,11 +16,11 @@ const DK = '(julianday(f.actual_dep) - julianday(f.sched_dep)) * 1440';
    VERİ ANALİSTİ
    ===================================================================== */
 
-more('an-kpi', D('KPI ağacı ve tanecik hataları', `
+more('an-kpi', D('KPI ağacı ve grain hataları', `
 <p>Tek bir ciro rakamı “ne oldu?” sorusunu cevaplar, “neden?” sorusunu cevaplamaz. Bu yüzden analistler ciroyu çarpanlarına ayırır:</p>
 <p><b>Net ciro = aktif müşteri × müşteri başına sipariş (frekans) × ortalama sepet (AOV)</b></p>
 <p>Üç çarpandan hangisinin değiştiğini görmek aksiyonu belirler. Müşteri sayısı düştüyse sorun edinmededir, frekans düştüyse elde tutmada, AOV düştüyse fiyat ya da sepet büyüklüğündedir. Anadolu Market'te teslim edilmiş siparişlerde 2023'ten 2024'e ciro 335.573 TL'den 636.316 TL'ye çıktı. Aktif müşteri 74'ten 120'ye (%62), frekans 3,23'ten 3,51'e, AOV 1.404'ten 1.511 TL'ye yükseldi. Yani büyümenin büyük kısmı <b>yeni müşteriden</b> geliyor. Bu cümleyi tek bir ciro sayısından kuramazdın.</p>
-<h3>En sık hata: JOIN sonrası tanecik</h3>
+<h3>En sık hata: JOIN sonrası grain</h3>
 <p><code>orders</code> tablosunu <code>order_items</code> ile birleştirdiğinde her satır artık bir <b>sipariş kalemi</b> olur. Bu satırlarda <code>COUNT(*)</code> sipariş sayısını değil kalem sayısını verir. <code>AVG(tutar)</code> da sepet ortalamasını değil kalem ortalamasını verir:</p>
 ${C(`SELECT COUNT(*) AS satir,
        COUNT(DISTINCT o.order_id) AS siparis,
@@ -384,7 +384,7 @@ ORDER BY s;`)}
 <tr><td>Takvim günü ile iş günü karışır</td><td>Hafta sonuna denk gelen izinler sorun olur</td><td>Tanımı yaz (bu veride <code>days</code> iş günüdür)</td></tr>
 <tr><td>Bradford'u otomatik yaptırım için kullanmak</td><td>Kronik hastalık ve engellilik durumlarında haksızlık</td><td>Konuşma başlatmak için kullan</td></tr>
 </table>
-<div class="note"><b>Haftanın günü</b>SQLite'ta <code>strftime('%w', start_date)</code> haftanın gününü verir (1 = Pazartesi). Bu veride hastalık izinlerinin yaklaşık 2.200'ü Pazartesi başlıyor; diğer günlerin her biri 1.130–1.210 arasında. Diğer programlarda bu hesap farklı fonksiyonlarla yapılır (SQL Server <code>DATEPART(weekday, …)</code>, PostgreSQL <code>EXTRACT(DOW FROM …)</code>).</div>
+<div class="note"><b>Haftanın günü</b>SQLite'ta <code>strftime('%w', start_date)</code> haftanın gününü verir (1 = Pazartesi). Bu veride hastalık izinlerinin yaklaşık 2.200'ü Pazartesi başlıyor; diğer günlerin her biri 1.130–1.210 arasında. Diğer SQL türlerinde bu hesap farklı fonksiyonlarla yapılır (SQL Server <code>DATEPART(weekday, …)</code>, PostgreSQL <code>EXTRACT(DOW FROM …)</code>).</div>
 `));
 X('ik-devamsizlik', [
   sq('Bradford bantları: 2024\'te hastalık izni olan çalışanları Bradford puanına göre bantlara ayır: <b>1: 0-49</b>, <b>2: 50-199</b>, <b>3: 200-499</b>, <b>4: 500+</b>. Her bantta kaç kişi var: <code>bant</code>, <code>kisi</code>. Banda göre sırala.',
@@ -431,7 +431,7 @@ X('ik-baglilik', [
     { ord: true, hint: 'Dalga koşulunu LEFT JOIN\'in ON kısmına yaz; WHERE\'e yazarsan katılmayanlar kaybolur.' }),
   sq('Bölüme göre 2024-Q4 eNPS (payda: soruyu yanıtlayanlar; 1 basamak); anonimlik için en az 10 yanıtı olan bölümler: <code>name</code>, <code>yanit</code>, <code>enps</code>. eNPS\'e göre artan, eşitlikte ad.',
     `SELECT d.name, COUNT(s.enps) AS yanit, ROUND(100.0 * (SUM(CASE WHEN s.enps >= 9 THEN 1 ELSE 0 END) - SUM(CASE WHEN s.enps <= 6 THEN 1 ELSE 0 END)) / COUNT(s.enps), 1) AS enps FROM ik_survey s JOIN ik_employees e ON e.emp_id = s.emp_id ${DEPT} WHERE s.wave = '2024-Q4' GROUP BY d.dept_id, d.name HAVING COUNT(s.enps) >= 10 ORDER BY enps, d.name;`,
-    { ord: true, hint: 'Eleştirmen 0–6 (<= 6), destekçi 9–10. HAVING COUNT(s.enps) >= 10.' })
+    { ord: true, hint: 'Eleştirmen 0–6 (&lt;= 6), destekçi 9–10. HAVING COUNT(s.enps) >= 10.' })
 ]);
 
 more('ik-proje', D('Bulguyu sınamak: önce–sonra, karşılaştırma grubu ve alternatif açıklamalar', `
@@ -476,6 +476,7 @@ X('ik-proje', [
 
 more('bv-istasyon', D('Yeniden dağıtım ve istasyon doluluk baskısı', `
 <p>Paylaşımlı bisiklet sistemlerinin en pahalı operasyonel kalemi <b>yeniden dağıtım</b>dır (rebalancing). Kamyonetler dolu istasyonlardan bisiklet alıp boş istasyonlara taşır. Kullanıcı için iki kötü an vardır: istasyonda bisiklet bulamamak ve bisikleti bırakacak yer bulamamak. İkisi de gelir kaybı ve şikâyet demektir.</p>
+<div class="note"><b>Veri notu</b>Pedal İzmir'de bisiklet konumu izlenmez: yolculukların %98,5'i bisikletin son bıraktığı istasyondan başlamaz. Net akış sorgusu yöntemi öğretir; bu veriden gerçek bir dengeleme kararı çıkmaz (Veri setleri → Bilinen sınırlamalar).</div>
 <h3>Ham net akış yetmez: kapasiteye böl</h3>
 <p>Üç ayda −700 net akış, 30 yuvalı bir istasyon için yönetilebilir olabilir, 15 yuvalı bir istasyon için ise her gün boşalmak demektir. Karşılaştırılabilir ölçü <b>doluluk baskısı</b>dır: <b>günlük ortalama net akış ÷ kapasite</b>. Alsancak Çarşı (15 yuva) günde ortalama 7,7 bisiklet kaybediyor; baskısı −0,51. Yani her gün kapasitesinin yarısı kadar bisiklet getirilmesi gerekiyor.</p>
 <h3>Günün saatine göre akış</h3>
@@ -511,7 +512,7 @@ ORDER BY s.name, h.dilim;`)}
 <div class="note"><b>Basitleştirme</b>Buradaki akış hesabı başlangıçta istasyonda kaç bisiklet olduğunu ve gece yapılan taşımaları bilmez; yalnızca kullanıcı hareketini ölçer. Gerçek sistemlerde istasyonların dakikalık doluluk kayıtları (dock status) ayrıca tutulur.</div>
 `));
 X('bv-istasyon', [
-  sq('Doluluk baskısı: her istasyon için üç aylık (92 gün) net akışın günlük ortalaması (1 basamak) ve bunun kapasiteye oranı (2 basamak); en negatif 5 istasyon: <code>name</code>, <code>capacity</code>, <code>gunluk_net</code>, <code>baski</code>. Baskıya göre artan, eşitlikte ad. (Sorguyu <2 sn\'de tut: çıkış ve girişleri ayrı CTE\'lerde say.)',
+  sq('Doluluk baskısı: her istasyon için üç aylık (92 gün) net akışın günlük ortalaması (1 basamak) ve bunun kapasiteye oranı (2 basamak); en negatif 5 istasyon: <code>name</code>, <code>capacity</code>, <code>gunluk_net</code>, <code>baski</code>. Baskıya göre artan, eşitlikte ad. (Sorguyu &lt;2 sn\'de tut: çıkış ve girişleri ayrı CTE\'lerde say.)',
     'WITH c AS (SELECT start_station AS st, COUNT(*) AS n FROM bk_trips GROUP BY start_station), g AS (SELECT end_station AS st, COUNT(*) AS n FROM bk_trips WHERE end_station IS NOT NULL GROUP BY end_station) SELECT s.name, s.capacity, ROUND((COALESCE(g.n, 0) - COALESCE(c.n, 0)) / 92.0, 1) AS gunluk_net, ROUND((COALESCE(g.n, 0) - COALESCE(c.n, 0)) / 92.0 / s.capacity, 2) AS baski FROM bk_stations s LEFT JOIN c ON c.st = s.station_id LEFT JOIN g ON g.st = s.station_id ORDER BY baski, s.name LIMIT 5;',
     { ord: true, hint: 'Net akışı derste olduğu gibi iki CTE ile hesapla; sonra 92\'ye ve kapasiteye böl.' }),
   sq('Sabah zirvesi: 07:00–09:59 arasında başlayan yolculuklarda net akışı (gelen − giden) en negatif 5 istasyon: <code>name</code>, <code>net</code>. Net akışa göre artan, eşitlikte ad.',
@@ -670,6 +671,7 @@ more('hv-analitik', D('Rötar nedenleri: kim kontrol ediyor, nasıl yayılıyor?
 <tr><td><b>Zincir (reactionary)</b></td><td><code>gec_gelen_ucak</code></td><td>Önceki uçuşun gecikmesi; planlama ve dönüş süresi</td></tr>
 </table>
 <p>Zincir gecikmesi kendi başına bir neden değildir, önceki uçuşun gecikmesinin <b>yayılmasıdır</b>. Kanat'ta toplam rötar dakikasının %36,6'sı bu gruptan geliyor. Bu yüzden günün ilk uçuşlarını korumak (sabah ilk dalganın zamanında çıkması) ve uçuşlar arasına yeterli dönüş süresi (turnaround) koymak, en etkili iyileştirme alanlarıdır.</p>
+<div class="note"><b>Veri notu</b>Bu genel bir havacılık gerçeğidir. Kanat'ta uçak ataması rastgele olduğu için yayılımı uçak bazında ölçen sorgular yöntemi gösterir, sonuç gerçek filo davranışı değildir (Veri setleri → Bilinen sınırlamalar).</div>
 <h3>Yayılımı veride görmek</h3>
 <p>Her uçağın günü sabah zamanında başlar, gecikmeler gün içinde birikir. Bunu görmek için uçuşları uçak ve gün içinde sıralayıp <b>günün ilk uçuşunu</b> ayırmak yeterli. Kalkış ve varış OTP'sini aylık olarak yan yana koymak da faydalıdır:</p>
 ${C(`SELECT strftime('%Y-%m', sched_dep) AS ay,
@@ -711,7 +713,7 @@ ${C(`SELECT
                          WHERE seat IS NOT NULL
                          GROUP BY flight_id, seat HAVING COUNT(*) > 1) t) AS cift_koltuk;`)}
 <p>Kanat'ın verisi dört kontrolden temiz geçiyor ama beşincide 20 uçuş–koltuk çifti çıkıyor. Örneğin 219 numaralı uçuşta 27B koltuğu iki ayrı yolcuya atanmış ve ikisi de “flown” görünüyor. <code>UNIQUE (flight_id, seat)</code> kısıtı olsaydı ikinci kayıt hiç girilemezdi.</p>
-<h3>UNIQUE ve NULL: programlar ayrışır</h3>
+<h3>UNIQUE ve NULL: SQL türleri ayrışır</h3>
 <p>İptal edilen rezervasyonların koltuğu NULL'dır. Standart SQL'de ve PostgreSQL, MySQL, Oracle, SQLite'ta birden çok NULL bir UNIQUE kısıtını ihlal etmez. <b>SQL Server ise UNIQUE sütunda yalnızca bir NULL'a izin verir.</b> Orada çözüm filtreli bir indekstir: <code>CREATE UNIQUE INDEX ... WHERE seat IS NOT NULL</code>.</p>
 <h3>Güvenli değişiklik akışı</h3>
 <ol>

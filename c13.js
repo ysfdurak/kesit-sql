@@ -1,4 +1,4 @@
-/* Kesit SQL içerik 13: performans laboratuvarı ve patika sonu bitirme projeleri */
+/* Kesit SQL içerik 13: performans laboratuvarı ve öğrenme yolu sonu bitirme projeleri */
 (function () {
 const L = window.SQLP_LESSONS;
 const after = (id, lessons) => { const i = L.findIndex(l => l.id === id); L.splice(i < 0 ? L.length : i + 1, 0, ...lessons); };
@@ -44,13 +44,13 @@ EXPLAIN QUERY PLAN
 SELECT COUNT(*) FROM bank_txns
 WHERE date(txn_time) = '2024-12-24';</pre>
 <p>İndeks var ama sütun <code>date()</code> fonksiyonunun içinde olduğu için yine tüm tablo taranır.</p>
-<h3>4) Bileşik ve kaplayan indeks</h3>
+<h3>4) Bileşik ve kapsayan indeks (covering index)</h3>
 <pre class="code" data-na="tsql pg mysql oracle bq">CREATE INDEX ix_tip_zaman ON bank_txns (txn_type, txn_time, amount);
 EXPLAIN QUERY PLAN
 SELECT SUM(amount) FROM bank_txns
 WHERE txn_type = 'maas' AND txn_time >= '2024-06-01' AND txn_time < '2024-07-01';</pre>
 <p><code>USING COVERING INDEX</code>: sorgunun ihtiyaç duyduğu tüm sütunlar indekste olduğu için tabloya hiç gidilmez. Eşitlik koşulu olan sütun (<code>txn_type</code>) önce, aralık koşulu olan (<code>txn_time</code>) sonra gelir.</p>
-<h2>Gerçek programlarda plan okumak</h2>
+<h2>Gerçek SQL türlerinde plan okumak</h2>
 ${NR("-- SQL Server\nSET STATISTICS IO, TIME ON;\n-- Yürütme planı: Ctrl+M (gerçek plan), Index Seek / Index Scan / Key Lookup\n\n-- PostgreSQL\nEXPLAIN (ANALYZE, BUFFERS) SELECT ...;   -- Seq Scan, Index Scan, Index Only Scan, Bitmap Heap Scan\n\n-- MySQL\nEXPLAIN ANALYZE SELECT ...;             -- type: ALL (tam tarama), range, ref, const\n\n-- Oracle\nEXPLAIN PLAN FOR SELECT ...; SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);  -- TABLE ACCESS FULL, INDEX RANGE SCAN\n\n-- BigQuery: yürütme ayrıntıları sekmesi ve taranan bayt; indeks yerine bölümleme/kümeleme")}
 `,
   ex: [
@@ -92,7 +92,7 @@ const projects = [{
   ]
 }, {
   id: 'proje-bi', lv: 'B2', mod: PRJ, min: 50,
-  title: 'Bitirme projesi (İş Zekası): Anadolu Market yönetim KPI panosu için veri hazırlığı',
+  title: 'Bitirme projesi (İş Zekâsı): Anadolu Market yönetim KPI panosu için veri hazırlığı',
   sum: 'Panoya beslenecek aylık KPI tablosu, kanal payları, yıllık karşılaştırma ve ürün liderleri.',
   body: `
 <h2>Senaryo</h2>
@@ -175,7 +175,7 @@ WHERE strftime('%Y-%m', txn_time) = '2024-12'
 GROUP BY date(txn_time), txn_type
 ORDER BY gun, txn_type;</pre>
 <p>Sorunlar: tarih sütunu fonksiyon içinde (SARGable değil), <code>txn_time</code> üzerinde indeks yok.</p>
-<div class="note"><b>Programlar</b>İndeks adımları BigQuery dışındaki tüm programlarda yapılabilir; BigQuery'de karşılığı bölümleme ve kümelemedir.</div>
+<div class="note"><b>SQL türleri</b>İndeks adımları BigQuery dışındaki tüm SQL türlerinde yapılabilir; BigQuery'de karşılığı bölümleme ve kümelemedir.</div>
 `,
   ex: [
     st(1, 'Raporu SARGable yaz: aynı sonucu, <code>txn_time</code>\'ı fonksiyona sokmadan Aralık 2024 aralığıyla filtreleyerek üret: <code>gun</code>, <code>txn_type</code>, <code>adet</code>, <code>toplam</code>. Gün ve türe göre sırala.', "SELECT date(txn_time) AS gun, txn_type, COUNT(*) AS adet, ROUND(SUM(amount), 0) AS toplam FROM bank_txns WHERE txn_time >= '2024-12-01' AND txn_time < '2025-01-01' GROUP BY date(txn_time), txn_type ORDER BY gun, txn_type;", { ord: true }),
@@ -203,7 +203,7 @@ ORDER BY gun, txn_type;</pre>
 `,
   ex: [
     st(1, 'Şema: <code>cart</code> (<code>cart_id</code> birincil anahtar, <code>customer_id</code> customers\'a yabancı anahtar ve tekil, <code>created_at</code>) ve <code>cart_item</code> (<code>cart_id</code> cart\'a yabancı anahtar, <code>product_id</code> products\'a yabancı anahtar, <code>quantity</code> 1–20 CHECK, birincil anahtar (<code>cart_id</code>, <code>product_id</code>)) tablolarını oluştur. 1 numaralı müşteri için sepet (cart_id 1) ve içine 5 numaralı üründen 2 adet ekle. Sonra sepeti getir: <code>cart_id</code>, <code>product_id</code>, <code>quantity</code>.', "CREATE TABLE cart (cart_id INTEGER PRIMARY KEY, customer_id INTEGER NOT NULL UNIQUE REFERENCES customers(customer_id), created_at TEXT); CREATE TABLE cart_item (cart_id INTEGER NOT NULL REFERENCES cart(cart_id), product_id INTEGER NOT NULL REFERENCES products(product_id), quantity INTEGER NOT NULL CHECK (quantity BETWEEN 1 AND 20), PRIMARY KEY (cart_id, product_id)); INSERT INTO cart VALUES (1, 1, '2024-12-31'); INSERT INTO cart_item VALUES (1, 5, 2); SELECT cart_id, product_id, quantity FROM cart_item;", { dl: NOBQ }),
-    st(2, 'Sepete ürün ekleme (varsa adet artır): sepette 5 numaralı üründen 2 adet varken aynı üründen 3 adet daha eklenince adet 5 olmalı, 9 numaralı üründen 1 adet yeni satır olarak eklenmeli. Önce tabloyu ve ilk satırı oluştur, sonra iki ekleme işlemini UPDATE + INSERT ... WHERE NOT EXISTS desenleriyle yap ve sepeti ürün numarasına göre getir.', "CREATE TABLE cart_item (cart_id INTEGER, product_id INTEGER, quantity INTEGER, PRIMARY KEY (cart_id, product_id)); INSERT INTO cart_item VALUES (1, 5, 2); UPDATE cart_item SET quantity = quantity + 3 WHERE cart_id = 1 AND product_id = 5; INSERT INTO cart_item (cart_id, product_id, quantity) SELECT 1, 5, 3 WHERE NOT EXISTS (SELECT 1 FROM cart_item WHERE cart_id = 1 AND product_id = 5); UPDATE cart_item SET quantity = quantity + 1 WHERE cart_id = 1 AND product_id = 9; INSERT INTO cart_item (cart_id, product_id, quantity) SELECT 1, 9, 1 WHERE NOT EXISTS (SELECT 1 FROM cart_item WHERE cart_id = 1 AND product_id = 9); SELECT cart_id, product_id, quantity FROM cart_item ORDER BY product_id;", { ord: true, dl: NOBQ, hint: 'Her ürün için önce UPDATE dene; satır yoksa INSERT ... SELECT ... WHERE NOT EXISTS. (Programına göre MERGE veya ON CONFLICT de kullanılabilir.)' }),
+    st(2, 'Sepete ürün ekleme (varsa adet artır): sepette 5 numaralı üründen 2 adet varken aynı üründen 3 adet daha eklenince adet 5 olmalı, 9 numaralı üründen 1 adet yeni satır olarak eklenmeli. Önce tabloyu ve ilk satırı oluştur, sonra iki ekleme işlemini UPDATE + INSERT ... WHERE NOT EXISTS desenleriyle yap ve sepeti ürün numarasına göre getir.', "CREATE TABLE cart_item (cart_id INTEGER, product_id INTEGER, quantity INTEGER, PRIMARY KEY (cart_id, product_id)); INSERT INTO cart_item VALUES (1, 5, 2); UPDATE cart_item SET quantity = quantity + 3 WHERE cart_id = 1 AND product_id = 5; INSERT INTO cart_item (cart_id, product_id, quantity) SELECT 1, 5, 3 WHERE NOT EXISTS (SELECT 1 FROM cart_item WHERE cart_id = 1 AND product_id = 5); UPDATE cart_item SET quantity = quantity + 1 WHERE cart_id = 1 AND product_id = 9; INSERT INTO cart_item (cart_id, product_id, quantity) SELECT 1, 9, 1 WHERE NOT EXISTS (SELECT 1 FROM cart_item WHERE cart_id = 1 AND product_id = 9); SELECT cart_id, product_id, quantity FROM cart_item ORDER BY product_id;", { ord: true, dl: NOBQ, hint: 'Her ürün için önce UPDATE dene; satır yoksa INSERT ... SELECT ... WHERE NOT EXISTS. (SQL türüne göre MERGE veya ON CONFLICT de kullanılabilir.)' }),
     st(3, 'Anahtar tabanlı sayfalama: ürünleri <code>product_id</code>\'ye göre sayfa başına 8 kayıtla listeliyoruz; bir önceki sayfanın son ürünü 16 idi. Sonraki sayfayı OFFSET kullanmadan getir: <code>product_id</code>, <code>name</code>, <code>price</code>.', 'SELECT product_id, name, price FROM products WHERE product_id > 16 ORDER BY product_id LIMIT 8;', { ord: true }),
     st(4, 'Sepet özeti uç noktası: 7 numaralı müşterinin son siparişindeki ürünlerin sepette olduğunu varsayarak satır tutarlarını ve genel toplamı (indirim dahil, 2 basamak) tek sorguda getir; son satır <b>TOPLAM</b> olsun: <code>urun</code>, <code>tutar</code>.', `WITH s AS (SELECT MAX(order_id) AS oid FROM orders WHERE customer_id = 7), k AS (SELECT p.name AS urun, ${NET} AS tutar, 0 AS sira FROM order_items oi JOIN products p ON p.product_id = oi.product_id WHERE oi.order_id = (SELECT oid FROM s)) SELECT urun, tutar FROM (SELECT urun, ROUND(tutar, 2) AS tutar, sira FROM k UNION ALL SELECT 'TOPLAM', ROUND(SUM(tutar), 2), 1 FROM k) AS t ORDER BY sira, urun;`, { ord: true }),
     mc('<p>Sepeti siparişe çevirirken sipariş, sipariş satırları ve stok güncellemesi neden tek bir işlem (transaction) içinde yapılmalı?</p>', ['Daha hızlı olduğu için', 'Biri başarısız olursa hepsi geri alınsın, yarım sipariş veya yanlış stok kalmasın diye', 'Kilit gerekmediği için', 'Zorunlu sözdizimi olduğu için'], 1),
@@ -216,7 +216,7 @@ ORDER BY gun, txn_type;</pre>
   body: `
 <h2>Senaryo</h2>
 <p>Ilgaz Bank şube müdürleri kendi şubelerinin aylık özetini bir düğmeyle almak istiyor. Raporu SQL Server'da bir saklı yordam olarak yazacaksın; yanlış parametrede anlaşılır hata vermeli.</p>
-<p>Bu proje yalnızca SQL Server (T-SQL) yazımıyla çözülür. Varsayılan programın farklıysa adımlar yine SQL Server modunda açılır.</p>
+<p>Bu proje yalnızca SQL Server (T-SQL) yazımıyla çözülür. Varsayılan SQL türünün farklıysa adımlar yine SQL Server modunda açılır.</p>
 `,
   ex: [
     { t: 'sql', base: 'tsql', dl: ['tsql'], q: '<p><b>Adım 1.</b> Değişkenlerle: <code>@sube = 1</code> ve <code>@ay = \'2024-12\'</code> için şubenin müşterilerine ait hesaplardaki hareket sayısı ve toplam tutarı (tam sayı) getir: <code>adet</code>, <code>toplam</code>.</p>', sol: "DECLARE @sube INT = 1, @ay CHAR(7) = '2024-12';\nSELECT COUNT(*) AS adet, ROUND(SUM(t.amount), 0) AS toplam\nFROM dbo.bank_txns t\nJOIN dbo.bank_accounts a ON a.account_id = t.account_id\nJOIN dbo.bank_customers c ON c.customer_id = a.customer_id\nWHERE c.branch_id = @sube AND FORMAT(t.txn_time, 'yyyy-MM') = @ay;" },
@@ -228,7 +228,7 @@ ORDER BY gun, txn_type;</pre>
 }];
 L.push(...projects);
 
-/* Patikalara ekle */
+/* Öğrenme yollarına ekle */
 const P = window.SQLP_PATHS; const PA = {}; P.forEach(p => PA[p.id] = p);
 const addEnd = (pid, ids) => { const p = PA[pid]; if (!p) return; ids.forEach(id => { if (!p.lessons.includes(id)) p.lessons.push(id); }); };
 const ins = (pid, afterId, ids) => { const p = PA[pid]; if (!p) return; ids = ids.filter(x => !p.lessons.includes(x)); const i = p.lessons.indexOf(afterId); p.lessons.splice(i < 0 ? p.lessons.length : i + 1, 0, ...ids); };

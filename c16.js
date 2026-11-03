@@ -1,11 +1,11 @@
 /* Kesit SQL içerik 16: ikinci değerlendirme turu
-   - patikalarda seviye sırası düzeltmeleri
+   - öğrenme yollarında seviye sırası düzeltmeleri
    - (aşağıdaki bölümler: kısa ders metinleri, T-SQL ve teknik derslere alıştırmalar, şık dengeleme) */
 (function () {
 const L = window.SQLP_LESSONS;
 const LM = id => L.find(l => l.id === id);
 const PA = {}; (window.SQLP_PATHS || []).forEach(p => PA[p.id] = p);
-/* Bir dersi patikada başka bir dersin ardına (ya da önüne) taşır; ders veya bağlantı yoksa dokunmaz */
+/* Bir dersi öğrenme yolunda başka bir dersin ardına (ya da önüne) taşır; ders veya bağlantı yoksa dokunmaz */
 const moveAfter = (pid, id, anchor) => { const p = PA[pid]; if (!p) return; const i = p.lessons.indexOf(id), j = p.lessons.indexOf(anchor); if (i < 0 || j < 0) return; p.lessons.splice(i, 1); p.lessons.splice(p.lessons.indexOf(anchor) + 1, 0, id); };
 const moveBefore = (pid, id, anchor) => { const p = PA[pid]; if (!p) return; const i = p.lessons.indexOf(id), j = p.lessons.indexOf(anchor); if (i < 0 || j < 0) return; p.lessons.splice(i, 1); p.lessons.splice(p.lessons.indexOf(anchor), 0, id); };
 
@@ -113,7 +113,7 @@ const KAMP = (tablolar, kaliplar) => `
 </ol>
 <h2>Bu kampta en çok kullanacağın kalıplar</h2>
 <table><tr><th>İhtiyaç</th><th>Kalıp</th></tr>${kaliplar.map(k => '<tr><td>' + k[0] + '</td><td><code>' + k[1] + '</code></td></tr>').join('')}</table>
-<div class="note"><b>Tablolar</b>${tablolar} Sütunların açıklamaları ve örnek satırlar Veri Seti sayfasında.</div>
+<div class="note"><b>Tablolar</b>${tablolar} Sütunların açıklamaları ve örnek satırlar Veri setleri sayfasında.</div>
 `;
 more('kamp-musteri', KAMP('Yalnızca <code>customers</code>.', [
   ['Filtre', "WHERE city = 'İzmir' AND gender = 'K'"],
@@ -307,10 +307,10 @@ add('ts-trigger',
 add('ts-dinamik',
   ts('Tablo adını değişkenden alan dinamik bir sorgu yaz: <code>@tablo SYSNAME = N\'products\'</code>; sorgu metnini <code>QUOTENAME</code> ile güvenli oluştur ve <code>sp_executesql</code> ile tablonun satır sayısını <code>satir</code> adıyla döndür.',
     "DECLARE @tablo SYSNAME = N'products'; DECLARE @sql NVARCHAR(MAX) = N'SELECT COUNT(*) AS satir FROM ' + QUOTENAME(@tablo) + N';'; EXEC sp_executesql @sql;",
-    { hint: 'Tablo ve sütun adları parametre olamaz; QUOTENAME adı köşeli paranteze alıp kaçırır.' }),
+    { hint: 'Tablo ve sütun adları parametre olamaz; QUOTENAME adı köşeli paranteze alıp kaçırır.', must: [{ re: '\\bsp_executesql\\b', msg: 'Bu görevde sorguyu sp_executesql ile dinamik çalıştırman gerekiyor.' }, { re: '\\bQUOTENAME\\b', msg: 'Bu görevde sütun ya da tablo adını QUOTENAME ile metne eklemen gerekiyor.' }] }),
   ts('İki parametreli dinamik sorgu: <code>@kat NVARCHAR(50)</code> ve <code>@min DECIMAL(12,2)</code> parametreleriyle, kategorisi @kat olan ve fiyatı @min ve üzerinde olan ürünleri sayan sorguyu sp_executesql ile çalıştır (Elektronik, 1000): <code>adet</code>.',
     "DECLARE @sql NVARCHAR(MAX) = N'SELECT COUNT(*) AS adet FROM products WHERE category = @kat AND price >= @min;'; EXEC sp_executesql @sql, N'@kat NVARCHAR(50), @min DECIMAL(12, 2)', @kat = N'Elektronik', @min = 1000;",
-    { hint: "Parametre tanımları tek bir metinde virgülle yazılır: N'@kat NVARCHAR(50), @min DECIMAL(12, 2)'." }));
+    { hint: "Parametre tanımları tek bir metinde virgülle yazılır: N'@kat NVARCHAR(50), @min DECIMAL(12, 2)'.", must: [{ re: '\\bsp_executesql\\b', msg: 'Bu görevde sorguyu sp_executesql ile dinamik çalıştırman gerekiyor.' }] }));
 
 add('ts-index',
   ts('Yalnızca iptal edilen siparişleri kapsayan, <code>order_date</code> üzerinde <code>ix_orders_iptal</code> adlı <b>filtreli</b> bir nonclustered indeks oluştur.',
@@ -326,7 +326,7 @@ add('ts-plan',
     { hint: "Baştaki sabit kısımla LIKE N'Kot%' indeks aralığı olarak kullanılabilir." }),
   ts('Aşağıdaki sorguyu sütunu fonksiyona sokmadan yeniden yaz: <code>SELECT COUNT(*) AS adet FROM products WHERE ISNULL(stock, 0) &lt; 20;</code>',
     'SELECT COUNT(*) AS adet FROM products WHERE stock < 20 OR stock IS NULL;',
-    { hint: 'ISNULL(stock, 0) < 20, “stok 20\'den az ya da bilinmiyor” demektir.' }));
+    { hint: 'ISNULL(stock, 0) &lt; 20, “stok 20\'den az ya da bilinmiyor” demektir.' }));
 })();
 
 /* ======================= Diğer teknik derslere alıştırmalar ======================= */
@@ -351,7 +351,7 @@ add('veri-tipleri',
 add('collation',
   sq('<code>raw_signups</code> şehirlerini <code>UPPER(TRIM(city))</code> ile standartlaştırıp grupla ve her anahtar için kayıt sayısını getir (boş ve NULL hariç): <code>anahtar</code>, <code>kayit</code>. Anahtara göre sırala. Sonuçta “İSTANBUL” ile “ISTANBUL”un neden ayrı kaldığına dikkat et.',
     "SELECT UPPER(TRIM(city)) AS anahtar, COUNT(*) AS kayit FROM raw_signups WHERE LENGTH(TRIM(city)) > 0 GROUP BY UPPER(TRIM(city)) ORDER BY anahtar;",
-    { ord: true, hint: 'Boş metni ayıklamak için TRIM(city) <> \'\' yerine LENGTH(TRIM(city)) > 0 yaz; Oracle boş metni NULL saydığı için ilki tüm satırları eler. Varsayılan (Türkçe olmayan) harmanlamada küçük “i” büyük “I” olur, “İ” ise “İ” kalır. Bu yüzden istanbul ve İstanbul aynı anahtara düşmez.', why: 'Türkçe metinlerde UPPER/LOWER tek başına yetmez; Türkçe harmanlama ya da TRANSLATE ile karakter eşleme gerekir.' }));
+    { ord: true, hint: 'Boş metni ayıklamak için TRIM(city) &lt;> \'\' yerine LENGTH(TRIM(city)) > 0 yaz; Oracle boş metni NULL saydığı için ilki tüm satırları eler. Varsayılan (Türkçe olmayan) harmanlamada küçük “i” büyük “I” olur, “İ” ise “İ” kalır. Bu yüzden istanbul ve İstanbul aynı anahtara düşmez.', why: 'Türkçe metinlerde UPPER/LOWER tek başına yetmez; Türkçe harmanlama ya da TRANSLATE ile karakter eşleme gerekir.' }));
 
 add('er-modelleme',
   sq('Bire-çok ilişkinin “sıfır” tarafını kontrol et: hiç siparişi olmayan müşterilerin sayısını getir: <code>siparissiz</code>.',
@@ -419,12 +419,12 @@ add('cografi',
     { ord: true, start: SEHIR, hint: 'Mesafeyi alt sorguda hesapla; takma ad WHERE içinde doğrudan kullanılamaz.' }),
   sq('Başlangıç kodundaki şehirler arasında birbirine <b>en yakın</b> iki şehri bul: <code>a</code>, <code>b</code>, <code>km</code> (tam sayı). Her çifti bir kez say (a &lt; b).',
     one(SEHIR) + ' SELECT x.ad AS a, y.ad AS b, ROUND(6371 * 2 * ASIN(SQRT(POWER(SIN((y.enlem - x.enlem) * 0.0174532925 / 2), 2) + COS(x.enlem * 0.0174532925) * COS(y.enlem * 0.0174532925) * POWER(SIN((y.boylam - x.boylam) * 0.0174532925 / 2), 2))), 0) AS km FROM sehir x JOIN sehir y ON x.ad < y.ad ORDER BY km LIMIT 1;',
-    { start: SEHIR, hint: 'Şehir listesini kendisiyle birleştir (x.ad < y.ad) ve Haversine formülünü iki noktanın koordinatlarıyla yaz.' }));
+    { start: SEHIR, hint: 'Şehir listesini kendisiyle birleştir (x.ad &lt; y.ad) ve Haversine formülünü iki noktanın koordinatlarıyla yaz.' }));
 
 add('dwh',
   sq('Tarih boyutu (dimension) hazırla: 2024 Aralık ayında sipariş verilen günlerden tekrarsız bir liste üret: <code>tarih</code>, <code>yil</code>, <code>ay</code>, <code>gun</code>. Tarihe göre sırala.',
     "SELECT DISTINCT order_date AS tarih, CAST(strftime('%Y', order_date) AS INTEGER) AS yil, CAST(strftime('%m', order_date) AS INTEGER) AS ay, CAST(strftime('%d', order_date) AS INTEGER) AS gun FROM orders WHERE order_date >= '2024-12-01' AND order_date < '2025-01-01' ORDER BY tarih;",
-    { ord: true, hint: 'Tarih parçaları için programının yıl/ay/gün fonksiyonlarını kullan.' }),
+    { ord: true, hint: 'Tarih parçaları için SQL türünün yıl/ay/gün fonksiyonlarını kullan.' }),
   sq('Yıldız şema sorgusu: fact (<code>order_items</code>) tablosunu iki boyutla (<code>products</code> ve <code>orders</code>) birleştirip teslim edilen net ciroyu kategori ve kanal kırılımında getir (tam sayı): <code>category</code>, <code>channel</code>, <code>ciro</code>.',
     `SELECT p.category, o.channel, ROUND(SUM(${NET})) AS ciro FROM order_items oi JOIN products p ON p.product_id = oi.product_id JOIN orders o ON o.order_id = oi.order_id WHERE o.status = 'delivered' GROUP BY p.category, o.channel;`,
     { hint: 'Ölçü (ciro) fact tablosundan, kırılımlar (kategori, kanal) boyutlardan gelir.' }));
@@ -471,7 +471,7 @@ add('ds-ornekleme',
 add('de-etl',
   sq('Temiz katman: <code>raw_signups</code> şehirlerini standartlaştır; kırpılmış ve küçük harfe çevrilmiş değer \'istanbul\' ise \'İstanbul\', \'izmir\' ise \'İzmir\', \'ankara\' ise \'Ankara\', boş veya NULL ise \'Bilinmiyor\' olsun. Standart şehir başına kayıt sayısını getir: <code>sehir</code>, <code>kayit</code>.',
     "SELECT CASE WHEN COALESCE(LENGTH(TRIM(city)), 0) = 0 THEN 'Bilinmiyor' WHEN LOWER(TRIM(city)) = 'istanbul' OR TRIM(city) = 'İstanbul' THEN 'İstanbul' WHEN LOWER(TRIM(city)) = 'izmir' OR TRIM(city) = 'İzmir' THEN 'İzmir' WHEN LOWER(TRIM(city)) = 'ankara' THEN 'Ankara' ELSE TRIM(city) END AS sehir, COUNT(*) AS kayit FROM raw_signups GROUP BY CASE WHEN COALESCE(LENGTH(TRIM(city)), 0) = 0 THEN 'Bilinmiyor' WHEN LOWER(TRIM(city)) = 'istanbul' OR TRIM(city) = 'İstanbul' THEN 'İstanbul' WHEN LOWER(TRIM(city)) = 'izmir' OR TRIM(city) = 'İzmir' THEN 'İzmir' WHEN LOWER(TRIM(city)) = 'ankara' THEN 'Ankara' ELSE TRIM(city) END;",
-    { hint: 'Önce NULL ve boş kontrolü, sonra LOWER(TRIM(city)) ile karşılaştırma. “İ” harfi LOWER ile her programda “i” olmayabilir; bu yüzden asıl yazımı da ayrıca kontrol et.' }),
+    { hint: 'Önce NULL ve boş kontrolü, sonra LOWER(TRIM(city)) ile karşılaştırma. “İ” harfi LOWER ile her SQL türünde “i” olmayabilir; bu yüzden asıl yazımı da ayrıca kontrol et.' }),
   sq('İdempotent yükleme: başlangıç kodu <code>gunluk_ozet(gun, siparis)</code> tablosunu oluşturuyor. 2024-12-31 gününün özetini “önce sil, sonra ekle” yöntemiyle yükle; ifadeleri iki kez çalıştırsan da tek satır kalmalı.',
     "CREATE TABLE gunluk_ozet (gun VARCHAR(10), siparis INTEGER); DELETE FROM gunluk_ozet WHERE gun = '2024-12-31'; INSERT INTO gunluk_ozet (gun, siparis) SELECT '2024-12-31', COUNT(*) FROM orders WHERE order_date = '2024-12-31'; DELETE FROM gunluk_ozet WHERE gun = '2024-12-31'; INSERT INTO gunluk_ozet (gun, siparis) SELECT '2024-12-31', COUNT(*) FROM orders WHERE order_date = '2024-12-31';",
     { dl: ['sqlite', 'pg', 'mysql', 'tsql'], start: "CREATE TABLE gunluk_ozet (gun VARCHAR(10), siparis INTEGER);\n-- DELETE + INSERT ifadelerini yaz; iki kez tekrarlayarak sonucu dene.\n", check: 'SELECT gun, siparis FROM gunluk_ozet', hint: "DELETE FROM gunluk_ozet WHERE gun = '2024-12-31'; ardından INSERT ... SELECT ..." }));

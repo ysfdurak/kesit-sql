@@ -1,8 +1,8 @@
 /* Kesit SQL içerik 22: Sertifika sınavları için ayrı hazırlık
-   - Uygulama laboratuvarları: Oracle 1Z0-071, T-SQL / DP-300, Google / BigQuery (yalnızca o programın yazımıyla)
-   - Programa özgü pratik konuları (ora / tsq / bqk) ve bunlardan beslenen süreli kodlama sınavları
+   - Uygulama laboratuvarları: Oracle 1Z0-071, T-SQL / DP-300, Google / BigQuery (yalnızca o SQL türünün yazımıyla)
+   - SQL türüne özgü pratik konuları (ora / tsq / bqk) ve bunlardan beslenen süreli kodlama sınavları
    - Çoktan seçmeli deneme bankalarının genişletilmesi
-   - Sertifika ailelerine göre ayrı patikalar */
+   - Sertifika ailelerine göre ayrı öğrenme yolları */
 (function () {
 const L = window.SQLP_LESSONS, E = window.SQLP_EXAMS, PR = window.SQLP_PRACTICE;
 const PA = {}; (window.SQLP_PATHS || []).forEach(p => PA[p.id] = p);
@@ -66,7 +66,7 @@ ${C("SELECT dept_id, LISTAGG(first_name, ', ') WITHIN GROUP (ORDER BY first_name
       'SELECT first_name, salary FROM employees WHERE salary > ALL (SELECT salary FROM employees WHERE dept_id = 2) AND (dept_id <> 2 OR dept_id IS NULL) ORDER BY salary DESC;', { ord: true }),
     oq('2024 yılı için ay numarası (TO_CHAR ile iki haneli) ve o ayın sipariş sayısı; tarih filtresinde DATE sabiti kullan: <code>ay</code>, <code>siparis</code>. Aya göre sırala.',
       "SELECT TO_CHAR(order_date, 'MM') AS ay, COUNT(*) AS siparis FROM orders WHERE order_date >= DATE '2024-01-01' AND order_date < DATE '2025-01-01' GROUP BY TO_CHAR(order_date, 'MM') ORDER BY ay;", { ord: true }),
-    mc('<p><code>SELECT first_name FROM employees WHERE ROWNUM = 2;</code> ne döndürür?</p>', ['Tablodaki ikinci satırı döndürür', 'Hiçbir satır döndürmez', 'Hata verir; ROWNUM yalnızca < ve <= ile kullanılır', 'İlk iki satırı rastgele sırayla döndürür'], 1,
+    mc('<p><code>SELECT first_name FROM employees WHERE ROWNUM = 2;</code> ne döndürür?</p>', ['Tablodaki ikinci satırı döndürür', 'Hiçbir satır döndürmez', 'Hata verir; ROWNUM yalnızca &lt; ve &lt;= ile kullanılır', 'İlk iki satırı rastgele sırayla döndürür'], 1,
       'ROWNUM, WHERE koşulunu geçen satırlara sırayla verilir. İlk aday satır 1 numarayı alır ve “= 2” koşulunu geçemez; sonraki satır yine 1 olur. Böylece hiçbir satır 2 numaraya ulaşamaz.')
   ]
 };
@@ -170,7 +170,7 @@ const labs = [labZ071, labTsql, labGda];
 const at = L.findIndex(l => l.id === 'cert-tsql');
 L.splice(at < 0 ? L.length : at + 1, 0, ...labs);
 
-/* ============================ PRATİK: programa özgü görevler ============================ */
+/* ============================ PRATİK: SQL türüne özgü görevler ============================ */
 const T = window.SQLP_PRACTICE_TOPICS = window.SQLP_PRACTICE_TOPICS || {};
 T.ora = 'Oracle yazımı'; T.tsq = 'T-SQL yazımı'; T.bqk = 'BigQuery yazımı';
 const add = (t, base) => (id, Lv, d, title, q, sol, o) => PR.push(Object.assign({ id, L: Lv, t, d, title, q: '<p>' + q + '</p>', sol, type: 'sql', base, dl: [base] }, o || {}));
@@ -438,8 +438,8 @@ const ins = (pid, afterId, ids) => { const p = PA[pid]; if (!p) return; ids = id
 ins('sertifika', 'oracle-1z0', ['lab-z071']);
 ins('tsql', 'cert-tsql', ['lab-tsql']);
 P.push({ id: 'sert-mssql', name: 'Microsoft SQL Sertifika Hazırlık', short: 'MS', color: '#2563EB',
-  desc: 'T-SQL sorgulama ve Azure SQL yönetimi (DP-300) için ayrı hazırlık patikası.',
-  long: 'SQL Server ve Azure SQL sertifikalarına hazırlananlar için. Önce T-SQL sorgulamanın sınavda sık çıkan yapılarını (TOP, APPLY, pencere fonksiyonları, hata yönetimi, işlemler) T-SQL yazımıyla çalışırsın; ardından Azure SQL\'in yönetim konularına (dağıtım seçenekleri, güvenlik, izleme, performans, yüksek erişilebilirlik) geçersin. Patika T-SQL kodlama laboratuvarı ve iki çoktan seçmeli denemeyle biter.',
+  desc: 'T-SQL sorgulama ve Azure SQL yönetimi (DP-300) için ayrı hazırlık öğrenme yolu.',
+  long: 'SQL Server ve Azure SQL sertifikalarına hazırlananlar için. Önce T-SQL sorgulamanın sınavda sık çıkan yapılarını (TOP, APPLY, pencere fonksiyonları, hata yönetimi, işlemler) T-SQL yazımıyla çalışırsın; ardından Azure SQL\'in yönetim konularına (dağıtım seçenekleri, güvenlik, izleme, performans, yüksek erişilebilirlik) geçersin. Öğrenme yolu T-SQL kodlama laboratuvarı ve iki çoktan seçmeli denemeyle biter.',
   skills: ['T-SQL sözdizimi', 'APPLY ve TOP', 'Hata yönetimi', 'İşlemler', 'Azure SQL dağıtım seçenekleri', 'Güvenlik', 'İzleme ve performans', 'HA/DR'],
   lessons: ['sertifika-rehber', 'lehceler', 'cert-tsql', 'lab-tsql', 'pencere-cerceve', 'rollup', 'transaction', 'index', 'guvenlik', 'dba-yedek', 'dba-izleme', 'dba-ha', 'azure-sql', 'dp300-yonetim'].filter(id => L.some(l => l.id === id)),
   comp: [
@@ -448,8 +448,8 @@ P.push({ id: 'sert-mssql', name: 'Microsoft SQL Sertifika Hazırlık', short: 'M
     { t: 'Azure SQL', d: 'Dağıtım seçenekleri ve DP-300 konuları', l: ['azure-sql', 'dp300-yonetim'] }
   ],
   beyond: ['Sınavlar: T-SQL Kodlama Laboratuvarı', 'Sınavlar: T-SQL Sorgulama ve DP-300 denemeleri', 'Azure portalında uygulamalı çalışma (ücretsiz deneme hesabı)', 'Resmi Microsoft Learn öğrenme yolları'] });
-P.push({ id: 'sert-bulut', name: 'Bulut Veri Sertifikaları Hazırlık', short: 'BLT', color: '#0891B2',
-  desc: 'Google Data Analytics / BigQuery, Databricks ve Snowflake sınavları için ayrı hazırlık patikası.',
+P.push({ id: 'sert-bulut', name: 'Bulut Veri Sertifikaları Hazırlık', short: 'BLT', color: '#0E7490',
+  desc: 'Google Data Analytics / BigQuery, Databricks ve Snowflake sınavları için ayrı hazırlık öğrenme yolu.',
   long: 'Bulut veri platformlarının sertifikalarına hazırlananlar için. Önce analiz sürecini ve BigQuery yazımını laboratuvarla çalışırsın, sonra bulut veri ambarlarının ortak kavramlarına (depolama ve işlem ayrımı, bölümleme, maliyet, yarı yapısal veri) ve Databricks ile Snowflake\'e özgü konulara geçersin. Her sınav için ayrı çoktan seçmeli deneme ve BigQuery kodlama laboratuvarı vardır.',
   skills: ['Analiz süreci', 'BigQuery sözdizimi', 'Diziler ve UNNEST', 'Maliyet ve bölümleme', 'Lakehouse ve Delta', 'Snowflake mimarisi', 'Yarı yapısal veri'],
   lessons: ['sertifika-rehber', 'cert-gda', 'bq-giris', 'lab-gda', 'bq-dizi', 'bq-kisayol', 'bq-maliyet', 'dwh-bulut', 'json', 'cert-dbx-snow'].filter(id => L.some(l => l.id === id)),

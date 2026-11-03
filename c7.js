@@ -1,5 +1,5 @@
 /* Kesit SQL içerik 7: T-SQL ek dersleri, Veritabanı Yönetimi (DBA), Uygulama Geliştirme,
-   yeni patikalar ve patika yetkinlik haritaları */
+   yeni öğrenme yolları ve öğrenme yolu yetkinlik haritaları */
 (function () {
 const L = window.SQLP_LESSONS = window.SQLP_LESSONS || [];
 const after = (id, lessons) => { const i = L.findIndex(l => l.id === id); L.splice(i < 0 ? L.length : i + 1, 0, ...lessons); };
@@ -40,7 +40,7 @@ ${TS("CREATE SEQUENCE dbo.s AS INT START WITH 1 INCREMENT BY 1;\n\nBEGIN TRAN;\n
 <tr><td><code>IDENT_CURRENT('tablo')</code></td><td>Tablonun son numarası, <b>herhangi bir</b> oturumdan.</td></tr>
 <tr><td><code>OUTPUT inserted.id</code></td><td>Çok satırlı eklemede tüm yeni numaralar.</td></tr>
 </table>
-<p>Diğer programlar: PostgreSQL'de <code>GENERATED ALWAYS AS IDENTITY</code> ve <code>RETURNING id</code>, MySQL'de <code>AUTO_INCREMENT</code> ve <code>LAST_INSERT_ID()</code>, Oracle'da <code>GENERATED AS IDENTITY</code> veya sequence kullanılır.</p>
+<p>Diğer SQL türleri: PostgreSQL'de <code>GENERATED ALWAYS AS IDENTITY</code> ve <code>RETURNING id</code>, MySQL'de <code>AUTO_INCREMENT</code> ve <code>LAST_INSERT_ID()</code>, Oracle'da <code>GENERATED AS IDENTITY</code> veya sequence kullanılır.</p>
 `,
   ex: [
     tx({ q: '<p>5000\'den başlayıp <b>5\'er</b> artan <code>musteri_no</code> adında bir sequence oluştur. Ardından <code>yeni_musteri</code> tablosunu (<code>no INT</code>, <code>ad NVARCHAR(50)</code>) oluştur ve <b>Ankara\'daki Premium</b> müşterileri sıradan aldıkları numarayla bu tabloya ekle.</p>', sol: "CREATE SEQUENCE musteri_no AS INT START WITH 5000 INCREMENT BY 5;\nCREATE TABLE yeni_musteri (no INT, ad NVARCHAR(50));\nINSERT INTO yeni_musteri (no, ad)\nSELECT NEXT VALUE FOR musteri_no, first_name FROM customers WHERE city = N'Ankara' AND segment = 'Premium';", check: 'SELECT COUNT(*) AS adet, MIN(no) AS ilk, MAX(no) AS son FROM yeni_musteri;', hint: 'CREATE SEQUENCE ... START WITH 5000 INCREMENT BY 5; sonra INSERT INTO ... SELECT NEXT VALUE FOR musteri_no, ...' }),
@@ -73,7 +73,7 @@ ${TS("DECLARE @etiketler NVARCHAR(200) = N'kampanya,yeni,indirimli';\n\nSELECT v
 ${TS("DECLARE @kategoriler NVARCHAR(200) = N'Kitap,Spor';\n\nSELECT name, category, price\nFROM products\nWHERE category IN (SELECT value FROM STRING_SPLIT(@kategoriler, ','));")}
 <h3>Sütundaki listeyi açmak: CROSS APPLY</h3>
 ${TS("WITH t AS (\n    SELECT 1 AS siparis, N'kupon,hediye paketi' AS notlar\n    UNION ALL\n    SELECT 2, N'hızlı kargo'\n)\nSELECT t.siparis, s.value AS not_\nFROM t\nCROSS APPLY STRING_SPLIT(t.notlar, ',') AS s;")}
-<div class="tip"><b>Diğer programlar</b>PostgreSQL: <code>string_to_table(metin, ',')</code> veya <code>unnest(string_to_array(...))</code>. MySQL: <code>JSON_TABLE</code> ya da özyinelemeli CTE. Oracle: <code>REGEXP_SUBSTR</code> + <code>CONNECT BY LEVEL</code>. Kalıcı çözüm ise listeyi tek sütunda tutmamak (normalizasyon) ve ayrı bir tabloya yazmaktır.</div>
+<div class="tip"><b>Diğer SQL türleri</b>PostgreSQL: <code>string_to_table(metin, ',')</code> veya <code>unnest(string_to_array(...))</code>. MySQL: <code>JSON_TABLE</code> ya da özyinelemeli CTE. Oracle: <code>REGEXP_SUBSTR</code> + <code>CONNECT BY LEVEL</code>. Kalıcı çözüm ise listeyi tek sütunda tutmamak (normalizasyon) ve ayrı bir tabloya yazmaktır.</div>
 `,
   ex: [
     tx({ q: '<p><code>@sehirler</code> parametresindeki şehirlerde bulunan müşterileri şehir bazında say: <code>city</code>, <code>musteri</code>.</p>', start: "DECLARE @sehirler NVARCHAR(200) = N'Ankara,İzmir,Bursa';\n\n", sol: "DECLARE @sehirler NVARCHAR(200) = N'Ankara,İzmir,Bursa';\nSELECT city, COUNT(*) AS musteri FROM customers WHERE city IN (SELECT value FROM STRING_SPLIT(@sehirler, ',')) GROUP BY city;", hint: '<code>WHERE city IN (SELECT value FROM STRING_SPLIT(@sehirler, \',\'))</code>' }),
@@ -205,7 +205,7 @@ ${NR("GRANT EXECUTE ON dbo.usp_SiparisOzet TO raporcular;  -- tabloya değil, pr
 after('ts-index', [{
   id: 'ts-plan', lv: 'C2', mod: MOD, min: 16,
   title: 'Yürütme planı ve STATISTICS IO: sorgu neden yavaş?',
-  sum: 'Plan operatörleri, mantıksal okuma, SARGable koşullar ve parametre koklama.',
+  sum: 'Plan operatörleri, mantıksal okuma, SARGable koşullar ve parameter sniffing.',
   body: `
 <h2>Plan: motorun yol haritası</h2>
 <p>SQL Server bir sorguyu çalıştırmadan önce <b>sorgu iyileştirici</b> (optimizer) birçok olası yol arasından en ucuz görüneni seçer. Bu seçim <b>yürütme planıdır</b>. SSMS'te <b>Ctrl+L</b> tahmini planı, <b>Ctrl+M</b> ile açılan “gerçek plan” ise sorguyla birlikte gerçekleşen planı gösterir.</p>
@@ -234,13 +234,13 @@ ${TS("-- İki sorgu aynı sonucu verir; yalnızca ikincisi order_date indeksini 
 <h2>Gizli tuzaklar</h2>
 <ul>
 <li><b>Örtük dönüşüm</b>: VARCHAR bir sütunu NVARCHAR bir parametreyle (<code>N'...'</code>) karşılaştırmak, sütunun her satırda dönüştürülmesine ve Seek yerine Scan'e yol açabilir. Planda sarı ünlem ile uyarılır.</li>
-<li><b>Parametre koklama</b> (parameter sniffing): Prosedür ilk çağrıldığındaki parametreye göre plan seçilir ve önbellekte kalır. Veri çok dengesizse diğer değerler için kötü bir plan kullanılır. Çözümler: <code>OPTION (RECOMPILE)</code>, <code>OPTIMIZE FOR</code>, sorguyu ayırmak.</li>
+<li><b>Parameter sniffing</b> (parameter sniffing): Prosedür ilk çağrıldığındaki parametreye göre plan seçilir ve önbellekte kalır. Veri çok dengesizse diğer değerler için kötü bir plan kullanılır. Çözümler: <code>OPTION (RECOMPILE)</code>, <code>OPTIMIZE FOR</code>, sorguyu ayırmak.</li>
 <li><b>Güncel olmayan istatistikler</b>: Optimizer satır sayısını yanlış tahmin eder. Planda “tahmini” ile “gerçek” satır sayısı arasındaki büyük fark bunun işaretidir.</li>
 </ul>
 <div class="tip"><b>Query Store</b>SQL Server 2016+'da sorguların plan geçmişini ve performansını saklar. “Dün hızlıydı, bugün yavaş” sorununda hangi planın değiştiğini gösterir ve eski planı zorlamana izin verir.</div>
 `,
   ex: [
-    tx({ q: '<p>Aralık 2024\'teki sipariş sayısını <b>SARGable</b> biçimde (sütuna fonksiyon uygulamadan) bul: <code>adet</code>.</p>', sol: "SELECT COUNT(*) AS adet FROM orders WHERE order_date >= '2024-12-01' AND order_date < '2025-01-01';", hint: 'Ay başı ile sonraki ay başı arasında yarı açık aralık: >= ve <.' }),
+    tx({ q: '<p>Aralık 2024\'teki sipariş sayısını <b>SARGable</b> biçimde (sütuna fonksiyon uygulamadan) bul: <code>adet</code>.</p>', sol: "SELECT COUNT(*) AS adet FROM orders WHERE order_date >= '2024-12-01' AND order_date < '2025-01-01';", hint: 'Ay başı ile sonraki ay başı arasında yarı açık aralık: >= ve &lt;.' }),
     mc('<p>Planda <code>products</code> üzerinde büyük maliyetli bir <b>Key Lookup</b> görüyorsun. Sorgu <code>WHERE category = @k</code> ile <code>name, price</code> getiriyor ve <code>category</code> üzerinde indeks var. En iyi çözüm?</p>', ['İndeksi silmek', '<code>CREATE INDEX ... ON products(category) INCLUDE (name, price)</code>', 'NOLOCK eklemek', 'Sorguya DISTINCT eklemek'], 1, 'INCLUDE ile istenen sütunlar indeksin yaprak düzeyine eklenir; ana tabloya dönmeye gerek kalmaz (kapsayan indeks).'),
     mc('<p>Hangisi <b>SARGable değildir</b>?</p>', ['<code>WHERE order_id = 10</code>', '<code>WHERE email LIKE \'ali%\'</code>', '<code>WHERE UPPER(email) = \'ALI@X.COM\'</code>', '<code>WHERE order_date &gt;= \'2024-01-01\'</code>'], 2, 'Sütun UPPER fonksiyonunun içinde olduğu için indeks aranamaz.'),
     mc('<p>Bir iyileştirmenin işe yarayıp yaramadığını anlamak için en güvenilir ölçü hangisidir?</p>', ['Geçen süre (elapsed time)', 'Mantıksal okuma (logical reads)', 'Sonuç satır sayısı', 'Plan ekranındaki operatör sayısı'], 1, 'Süre sunucu yüküne göre değişir; mantıksal okuma ise yapılan işi doğrudan ölçer.')
@@ -276,7 +276,7 @@ after('ts-izolasyon', [{
 <p>Okunan sayfalar bellekteki <b>buffer pool</b>'da tutulur. Değiştirilen (kirli) sayfalar hemen diske yazılmaz; <b>checkpoint</b> süreci periyodik olarak yazar. Günlük ise her COMMIT'te diske yazılır; dayanıklılığı (ACID'deki D) sağlayan budur.</p>
 <h3>Bilgi alma sorguları</h3>
 ${NR("SELECT name, recovery_model_desc, state_desc FROM sys.databases;\n\nSELECT name, type_desc, physical_name, size * 8 / 1024 AS boyut_mb\nFROM sys.database_files;\n\nSELECT @@VERSION;")}
-<div class="note"><b>Diğer programlarda karşılıklar</b>PostgreSQL'de “cluster” bir instance'tır; veri dizini (PGDATA), WAL (günlük) ve <code>shared_buffers</code> vardır. Oracle'da instance ile veritabanı ayrı kavramlardır; redo log, tablespace ve SGA karşılık gelir.</div>
+<div class="note"><b>Diğer SQL türlerinde karşılıklar</b>PostgreSQL'de “cluster” bir instance'tır; veri dizini (PGDATA), WAL (günlük) ve <code>shared_buffers</code> vardır. Oracle'da instance ile veritabanı ayrı kavramlardır; redo log, tablespace ve SGA karşılık gelir.</div>
 `,
   ex: [
     mc('<p>Geçici tablolar ve sıralama işlemleri hangi sistem veritabanını kullanır?</p>', ['master', 'model', 'msdb', 'tempdb'], 3),
@@ -316,7 +316,7 @@ ${NR("RESTORE DATABASE anadolu FROM DISK = N'...full.bak' WITH NORECOVERY;   -- 
 <p><code>NORECOVERY</code>, veritabanını sonraki yedekleri kabul edecek şekilde açık bırakır; son adımda <code>RECOVERY</code> ile kullanıma açılır.</p>
 <div class="tip"><b>Altın kurallar</b>Geri yüklenmemiş yedek, yedek değildir: düzenli olarak test sunucusuna geri yükle. 3-2-1 kuralı: 3 kopya, 2 farklı ortam, 1'i başka bir konumda. CHECKSUM ile yedek bozulmalarını erken yakala.</div>
 <table>
-<tr><th>Program</th><th>Araçlar</th></tr>
+<tr><th>SQL türü</th><th>Araçlar</th></tr>
 <tr><td>PostgreSQL</td><td><code>pg_dump</code> (mantıksal), <code>pg_basebackup</code> + WAL arşivi (fiziksel, belirli ana dönüş)</td></tr>
 <tr><td>MySQL</td><td><code>mysqldump</code>, binlog ile belirli ana dönüş; büyük sistemlerde Percona XtraBackup</td></tr>
 <tr><td>Oracle</td><td>RMAN (Recovery Manager)</td></tr>
@@ -355,7 +355,7 @@ ${NR("ALTER INDEX ix_orders_date ON dbo.orders REORGANIZE;\nALTER INDEX ALL ON d
 <h2>Zamanlama: SQL Server Agent</h2>
 <p>Bakım işleri SQL Server Agent <b>işleri</b> (job) olarak zamanlanır: adımlar, zamanlama ve hata durumunda operatöre e-posta. Topluluğun yaygın kullandığı hazır çözüm Ola Hallengren'in bakım betikleridir. Azure SQL Database'de Agent yoktur; Elastic Jobs veya Azure Automation kullanılır.</p>
 <table>
-<tr><th>Program</th><th>Karşılık</th></tr>
+<tr><th>SQL türü</th><th>Karşılık</th></tr>
 <tr><td>PostgreSQL</td><td><code>VACUUM</code> (ölü satırları temizler, MVCC gereği), <code>ANALYZE</code> (istatistik), autovacuum; zamanlama için pg_cron</td></tr>
 <tr><td>MySQL</td><td><code>OPTIMIZE TABLE</code>, <code>ANALYZE TABLE</code>; zamanlama için Event Scheduler</td></tr>
 <tr><td>Oracle</td><td>Otomatik istatistik toplama (DBMS_STATS), DBMS_SCHEDULER</td></tr>
@@ -426,9 +426,9 @@ ${NR("SELECT TOP 10\n       qs.total_worker_time / qs.execution_count AS ort_cpu
 <tr><td><b>Log Shipping</b></td><td>Günlük yedekleri başka sunucuya taşınıp geri yüklenir</td><td>Basit ve ucuz DR; dakikalar düzeyinde gecikme.</td></tr>
 <tr><td><b>Replikasyon</b></td><td>Seçilen tablolar veya satırlar</td><td>Raporlama sunucusu besleme, dağıtık sistemler.</td></tr>
 </table>
-<h2>Diğer programlar</h2>
+<h2>Diğer SQL türleri</h2>
 <table>
-<tr><th>Program</th><th>Yaygın çözümler</th></tr>
+<tr><th>SQL türü</th><th>Yaygın çözümler</th></tr>
 <tr><td>PostgreSQL</td><td>Akış replikasyonu (streaming replication), mantıksal replikasyon, otomatik devralma için Patroni</td></tr>
 <tr><td>MySQL</td><td>Kaynak–kopya replikasyonu, Group Replication / InnoDB Cluster</td></tr>
 <tr><td>Oracle</td><td>Data Guard (DR), RAC (aynı veritabanına birden çok sunucu)</td></tr>
@@ -485,7 +485,7 @@ GROUP BY c.customer_id, c.first_name;</pre>
   ex: [
     { t: 'sql', q: '<p>N+1 sorununu çöz: <b>Kurumsal</b> segmentteki her müşteri için <code>customer_id</code>, <code>first_name</code> ve toplam sipariş sayısını (<code>siparis_sayisi</code>, siparişi yoksa 0) tek sorguda getir.</p>', sol: "SELECT c.customer_id, c.first_name, COUNT(o.order_id) AS siparis_sayisi FROM customers c LEFT JOIN orders o ON o.customer_id = c.customer_id WHERE c.segment = 'Kurumsal' GROUP BY c.customer_id, c.first_name;", hint: 'LEFT JOIN + GROUP BY; COUNT(o.order_id) siparişi olmayanlar için 0 verir.' },
     mc('<p>Hangisi SQL injection\'a karşı <b>asıl</b> korumadır?</p>', ['Girdideki tırnakları elle silmek', 'Parametreli sorgu (prepared statement) kullanmak', 'Sorguyu büyük harfle yazmak', 'Veritabanı şifresini uzatmak'], 1),
-    mc('<p>Bir sayfa yüklenirken günlükte aynı biçimde 200 küçük SELECT görüyorsun (her biri farklı bir id ile). Sorunun adı ve çözümü?</p>', ['Deadlock; NOLOCK', 'N+1; JOIN veya eager loading ile tek sorgu', 'Parametre koklama; RECOMPILE', 'Parçalanma; REBUILD'], 1)
+    mc('<p>Bir sayfa yüklenirken günlükte aynı biçimde 200 küçük SELECT görüyorsun (her biri farklı bir id ile). Sorunun adı ve çözümü?</p>', ['Deadlock; NOLOCK', 'N+1; JOIN veya eager loading ile tek sorgu', 'Parameter sniffing; RECOMPILE', 'Parçalanma; REBUILD'], 1)
   ]
 }, {
   id: 'be-sayfalama', lv: 'B2', mod: APP, min: 14,
@@ -621,7 +621,7 @@ SELECT customer_id, first_name, last_name, full_name FROM customers LIMIT 3;</pr
   ]
 }]);
 
-/* ======================= Patikalar ======================= */
+/* ======================= Öğrenme yolları ======================= */
 const P = window.SQLP_PATHS; const PA = {}; P.forEach(p => PA[p.id] = p);
 const ins = (pid, afterId, ids) => { const p = PA[pid]; if (!p) return; ids = ids.filter(x => !p.lessons.includes(x)); const i = p.lessons.indexOf(afterId); p.lessons.splice(i < 0 ? p.lessons.length : i + 1, 0, ...ids); };
 const BEYOND = {
@@ -635,7 +635,7 @@ const BEYOND = {
   backend: ['Bir programlama dili (C#, Java, Python, Node.js)', 'Bir ORM aracı', 'REST API tasarımı', 'Test ve CI/CD'],
   uzman: ['Kendi projelerinde gerçek ölçekte performans deneyimi', 'Veritabanı iç yapısı üzerine kitaplar ve belgeler']
 };
-P.push({ id: 'bi', name: 'İş Zekası ve Raporlama Uzmanı', short: 'BI', color: '#C27A12',
+P.push({ id: 'bi', name: 'İş Zekâsı ve Raporlama Uzmanı', short: 'BI', color: '#A16207',
   desc: 'Power BI / Tableau için doğru veri: KPI, dönem karşılaştırmaları, paylar, takvim ve yıldız şema.',
   long: 'Raporları ve gösterge panellerini besleyen rol. Temel SQL\'in üzerine metrik tanımlamayı, YTD ve geçen yıl karşılaştırmalarını, pay ve endeks hesaplarını, takvim tablosu ve yıldız şemayla BI aracına doğru veri hazırlamayı öğrenirsin.',
   skills: ['KPI tanımlama', 'Pay ve endeks', 'YTD / YoY', 'Takvim tablosu', 'Yıldız şema', 'View tasarımı', 'ROLLUP', 'Pivot'],
@@ -650,7 +650,7 @@ P.push({ id: 'backend', name: 'Backend Geliştirici için SQL', short: 'API', co
   long: 'Uygulama geliştiren ve veritabanını koddan kullanan rol. Sorgu temellerinin yanında doğru tablo tasarımı, kısıtlar, işlemler ve izolasyon, upsert, sayfalama, ORM ve N+1 sorunu, iyimser kilit gibi uygulama desenleri ile şema değişikliklerini kesintisiz yönetmeyi öğrenirsin.',
   skills: ['Tablo tasarımı', 'Kısıtlar', 'Transaction', 'Upsert', 'Sayfalama', 'ORM ve N+1', 'İyimser kilit', 'Migration', 'SQL injection'],
   lessons: ['veritabani', 'araclar', 'select', 'where', 'mantik', 'null', 'order-limit', 'aggregate', 'group-by', 'having', 'case', 'coalesce', 'iliskiler', 'inner-join', 'left-join', 'subquery', 'correlated', 'cte', 'window-intro', 'ranking', 'ddl-create', 'normalizasyon', 'alter-drop', 'dml', 'upsert', 'transaction', 'acid', 'index', 'view', 'trigger', 'json', 'performans', 'be-orm', 'be-sayfalama', 'be-desenler', 'be-migration', 'ts-sequence', 'guvenlik', 'lehceler'] });
-// mevcut patikalara yeni dersler
+// mevcut öğrenme yollarına yeni dersler
 ins('temel', 'veri-seti', ['araclar']); ins('temel', 'alias-distinct', ['hesaplama']); ins('temel', 'coalesce', ['kosullu']); ins('temel', 'recursive-cte', ['takvim']); ins('temel', 'metin', ['regex']);
 ins('analist', 'veri-seti', ['araclar']); ins('analist', 'alias-distinct', ['hesaplama']); ins('analist', 'coalesce', ['kosullu']); ins('analist', 'an-temizlik', ['an-eda', 'regex', 'metin-benzerlik']); ins('analist', 'recursive-cte', ['takvim']); ins('analist', 'an-dashboard', ['bi-pay']); ins('analist', 'an-buyume', ['ytd']); ins('analist', 'an-funnel', ['an-aktif', 'an-churn', 'an-sepet']); ins('analist', 'mulakat-2', ['vaka-yilsonu', 'vaka-kayip']);
 ins('bilimci', 'alias-distinct', ['hesaplama']); ins('bilimci', 'coalesce', ['kosullu']); ins('bilimci', 'ds-tanimsal', ['ds-olasilik']); ins('bilimci', 'recursive-cte', ['takvim']); ins('bilimci', 'ds-feature', ['an-sepet']); ins('bilimci', 'mulakat-2', ['vaka-kayip']);
@@ -666,7 +666,7 @@ const COMP = {
   analist: [C('SQL temeli', 'Sorgu, filtre, gruplama, JOIN', ['select', 'where', 'group-by', 'having', 'inner-join', 'left-join', 'coklu-join']), C('Veri hazırlama', 'Temizleme, EDA, regex, metin eşleştirme', ['an-temizlik', 'an-eda', 'regex', 'metin-benzerlik', 'coalesce']), C('Metrikler', 'KPI, koşullu sayım, paylar', ['an-kpi', 'kosullu', 'bi-pay']), C('Zaman analizi', 'Tarih fonksiyonları, takvim, MoM/YoY, YTD', ['tarih-fn', 'takvim', 'an-buyume', 'ytd']), C('Müşteri ve ürün analitiği', 'Kohort, funnel, aktif kullanıcı, churn, RFM, sepet, Pareto', ['an-kohort', 'an-funnel', 'an-aktif', 'an-churn', 'an-rfm', 'an-sepet', 'an-pareto']), C('Analitik SQL', 'CTE ve pencere fonksiyonları', ['cte', 'window-intro', 'ranking', 'lag-lead', 'frames']), C('Raporlama ve iletişim', 'Dashboard sorguları, vaka çalışmaları', ['an-dashboard', 'view', 'vaka-yilsonu', 'vaka-kayip'])],
   bilimci: [C('SQL temeli', 'Sorgu, gruplama, JOIN, alt sorgu', ['select', 'group-by', 'inner-join', 'left-join', 'subquery', 'cte']), C('Tanımlayıcı istatistik', 'Ortalama, medyan, dağılım, aykırı değer', ['ds-tanimsal', 'ds-dagilim', 'ds-outlier']), C('Olasılık ve çıkarım', 'Koşullu olasılık, korelasyon, A/B testi', ['ds-olasilik', 'ds-korelasyon', 'ds-ab']), C('Model için veri', 'Örnekleme, özellik mühendisliği, zaman serisi', ['ds-ornekleme', 'ds-feature', 'ds-zaman', 'takvim']), C('Analitik SQL', 'Pencere fonksiyonları ve pivot', ['window-intro', 'ranking', 'lag-lead', 'frames', 'ntile-dist', 'pivot']), C('Yarı yapısal veri', 'JSON', ['json'])],
   muhendis: [C('SQL temeli', 'Sorgu, JOIN, CTE, pencere', ['select', 'group-by', 'inner-join', 'left-join', 'cte', 'window-intro', 'ranking']), C('Tasarım', 'DDL, normalizasyon, kısıtlar, sequence', ['ddl-create', 'alter-drop', 'normalizasyon', 'ts-sequence']), C('Veri değiştirme', 'DML, upsert, işlemler, ACID', ['dml', 'upsert', 'transaction', 'acid']), C('Veri boru hatları', 'ETL/ELT, artımlı yükleme, SCD, tekilleştirme, dbt', ['de-etl', 'de-incremental', 'de-scd', 'de-dedup', 'de-dbt']), C('Veri kalitesi', 'Testler ve temizleme', ['de-kalite', 'regex']), C('Ambar ve performans', 'Yıldız şema, indeks, bölümleme', ['dwh', 'index', 'performans', 'de-partition']), C('Ekosistem', 'Lehçeler, JSON, güvenlik, modern araçlar', ['lehceler', 'json', 'guvenlik', 'modern-ekosistem'])],
-  uzman: [C('Tasarım', 'Normalizasyon ve DDL', ['ddl-create', 'normalizasyon', 'alter-drop']), C('Eşzamanlılık', 'İşlemler, ACID, izolasyon, izleme', ['transaction', 'acid', 'dba-izleme']), C('Performans', 'İndeks, plan, optimizasyon', ['index', 'ts-plan', 'performans']), C('İleri desenler', 'Gaps & islands, sayfalama, uygulama desenleri', ['ileri-desenler', 'be-sayfalama', 'be-desenler', 'rollup']), C('Programlar ve güvenlik', 'Lehçeler, güvenlik, JSON', ['lehceler', 'pg-ozel', 'mysql-ozel', 'oracle-ozel', 'guvenlik', 'ts-guvenlik', 'json'])],
+  uzman: [C('Tasarım', 'Normalizasyon ve DDL', ['ddl-create', 'normalizasyon', 'alter-drop']), C('Eşzamanlılık', 'İşlemler, ACID, izolasyon, izleme', ['transaction', 'acid', 'dba-izleme']), C('Performans', 'İndeks, plan, optimizasyon', ['index', 'ts-plan', 'performans']), C('İleri desenler', 'Gaps & islands, sayfalama, uygulama desenleri', ['ileri-desenler', 'be-sayfalama', 'be-desenler', 'rollup']), C('SQL türleri ve güvenlik', 'Lehçeler, güvenlik, JSON', ['lehceler', 'pg-ozel', 'mysql-ozel', 'oracle-ozel', 'guvenlik', 'ts-guvenlik', 'json'])],
   bi: [C('SQL temeli', 'Sorgu, filtre, gruplama, JOIN', ['select', 'where', 'group-by', 'having', 'inner-join', 'left-join', 'coklu-join']), C('Metrik tanımlama', 'KPI, koşullu sayım, hesaplanan alanlar', ['an-kpi', 'kosullu', 'hesaplama', 'case']), C('Zaman zekâsı', 'Takvim tablosu, YTD, MoM/YoY', ['tarih-fn', 'takvim', 'an-buyume', 'ytd']), C('Pay ve dağılım', 'Toplama göre yüzde, endeks, Pareto', ['bi-pay', 'an-pareto', 'window-intro', 'frames']), C('Rapor yapıları', 'Pivot, ara toplamlar, dashboard sorguları', ['pivot', 'rollup', 'an-dashboard']), C('Veri modeli', 'View, yıldız şema, BI veri hazırlığı', ['view', 'dwh', 'bi-hazirlik']), C('Performans ve uygulama', 'Hızlı rapor sorguları, vaka', ['performans', 'vaka-yilsonu'])],
   dba: [C('SQL ve T-SQL temeli', 'Sorgu ve programlama', ['select', 'group-by', 'inner-join', 'ts-giris', 'ts-degisken', 'ts-gecici', 'ts-proc', 'ts-hata', 'ts-cursor']), C('Mimari', 'Instance, dosyalar, sistem veritabanları', ['dba-mimari', 'ts-sistem']), C('İşlemler ve kilitler', 'ACID, izolasyon, deadlock', ['transaction', 'acid', 'ts-izolasyon']), C('Performans', 'İndeks, plan, istatistik', ['index', 'ts-index', 'ts-plan', 'performans']), C('Koruma', 'Yedekleme ve geri yükleme', ['dba-yedek']), C('Operasyon', 'Bakım, izleme, otomasyon', ['dba-bakim', 'dba-izleme', 'ts-dinamik']), C('Güvenlik', 'Login, rol, yetki, şifreleme', ['guvenlik', 'ts-guvenlik']), C('Süreklilik ve ölçek', 'HA/DR, bölümleme', ['dba-ha', 'de-partition'])],
   backend: [C('Sorgu temeli', 'CRUD sorguları, JOIN, alt sorgu', ['select', 'where', 'group-by', 'inner-join', 'left-join', 'subquery']), C('Şema tasarımı', 'Tablolar, kısıtlar, normalizasyon, anahtar üretimi', ['ddl-create', 'normalizasyon', 'alter-drop', 'ts-sequence']), C('Veri değiştirme', 'DML, upsert', ['dml', 'upsert']), C('İşlemler ve eşzamanlılık', 'Transaction, izolasyon, iyimser kilit', ['transaction', 'acid', 'be-desenler']), C('Koddan veritabanı', 'Parametreli sorgu, ORM, N+1, sayfalama', ['be-orm', 'be-sayfalama']), C('Performans', 'İndeksler ve sorgu optimizasyonu', ['index', 'performans']), C('Güvenlik ve dağıtım', 'SQL injection, yetkiler, migration', ['guvenlik', 'be-migration'])]

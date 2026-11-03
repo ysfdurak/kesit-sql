@@ -433,7 +433,7 @@ ORDER BY d.year, d.quarter;</pre>
 `,
   ex: [
     { t: 'mc', q: '<p>Yıldız şemada “ciro” ve “adet” gibi sayısal ölçüler hangi tabloda tutulur?</p>', o: ['Dimension tablosunda', 'Fact tablosunda', 'Lookup tablosunda', 'Staging tablosunda'], a: 1 },
-    { t: 'sql', q: '<p>Teslim edilmiş siparişlerden, tanecik düzeyi <b>(gün, kategori)</b> olan bir özet tablo <code>agg_daily_category</code> oluştur: <code>order_date</code>, <code>category</code>, <code>revenue</code> (ciro toplamı, yuvarlama yok).</p>', sol: "CREATE TABLE agg_daily_category AS SELECT o.order_date, p.category, SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) AS revenue FROM orders o JOIN order_items oi ON oi.order_id = o.order_id JOIN products p ON p.product_id = oi.product_id WHERE o.status = 'delivered' GROUP BY o.order_date, p.category;", check: 'SELECT order_date, category, ROUND(revenue, 2) FROM agg_daily_category' },
+    { t: 'sql', q: '<p>Teslim edilmiş siparişlerden, grain düzeyi <b>(gün, kategori)</b> olan bir özet tablo <code>agg_daily_category</code> oluştur: <code>order_date</code>, <code>category</code>, <code>revenue</code> (ciro toplamı, yuvarlama yok).</p>', sol: "CREATE TABLE agg_daily_category AS SELECT o.order_date, p.category, SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) AS revenue FROM orders o JOIN order_items oi ON oi.order_id = o.order_id JOIN products p ON p.product_id = oi.product_id WHERE o.status = 'delivered' GROUP BY o.order_date, p.category;", check: 'SELECT order_date, category, ROUND(revenue, 2) FROM agg_daily_category' },
     { t: 'mc', q: '<p>Analitik veri ambarlarında sütun tabanlı (columnar) depolama neden tercih edilir?</p>', o: ['Tek satır güncellemeleri hızlandırır', 'Sorgu sadece ihtiyaç duyulan sütunları okur ve sıkıştırma çok verimlidir', 'Yabancı anahtarları zorunlu kılar', 'Transaction desteği verir'], a: 1 }
   ]
 },
@@ -460,7 +460,7 @@ ORDER BY d.year, d.quarter;</pre>
 <li><b>ARRAY / STRUCT ve UNNEST</b> (BigQuery): İç içe veri tipleri.</li>
 <li><b>Partition ve clustering</b>: Tabloyu tarihe göre bölüp sadece ilgili bölümleri taramak.</li>
 </ul>
-<div class="tip"><b>Bu uygulamada</b>Her kod kutusunun üstündeki program sekmeleri ve alıştırmalardaki “Diğer programlarda gör” düğmesi, bir sorgunun altı programdaki yazılışını ve çıktısını yan yana görmeni sağlar. Bir programda geçersiz olan sözdizimini (ör. SQL Server'da LIMIT) yazarsan o programın vereceği hatayı alırsın.</div>
+<div class="tip"><b>Bu uygulamada</b>Her kod kutusunun üstündeki SQL türü sekmeleri ve alıştırmalardaki “Diğer SQL türlerinde gör” düğmesi, bir sorgunun altı SQL türündeki yazılışını ve çıktısını yan yana görmeni sağlar. Bir SQL türünde geçersiz olan sözdizimini (ör. SQL Server'da LIMIT) yazarsan o SQL türünün vereceği hatayı alırsın. Motor SQLite olduğu için her fark yakalanamaz: yazım hataları ve sık anlam hataları (WHERE'de takma ad, gruplanmamış sütun, koşul toplamı, LIKE harf duyarlılığı) denetlenir; karmaşık sorgularda gerçek motorun vereceği hata burada çıkmayabilir.</div>
 <div class="tip"><b>Taşınabilir SQL yazmak</b>Standart fonksiyonları (COALESCE, CASE, CAST, pencere fonksiyonları, CTE) tercih et. Lehçeye özgü fonksiyonları tek bir view veya makroda topla.</div>
 `,
   ex: [

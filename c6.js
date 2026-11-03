@@ -21,13 +21,13 @@ after('veri-seti', [{
 <h2>Sunucu ve istemci</h2>
 <p>Veritabanı bir <b>sunucu</b> programıdır (SQL Server, PostgreSQL, MySQL, Oracle). Sorguyu ise bir <b>istemci araçta</b> yazarsın; araç sorguyu sunucuya gönderir, sonucu tablo olarak gösterir. Bu uygulamada istemci de veritabanı da tarayıcının içinde çalışır. İş hayatında ise genellikle şu araçlardan birini kullanırsın:</p>
 <table>
-<tr><th>Program</th><th>Resmi araç</th><th>Not</th></tr>
+<tr><th>SQL türü</th><th>Resmi araç</th><th>Not</th></tr>
 <tr><td>SQL Server</td><td>SQL Server Management Studio (SSMS)</td><td>Windows'ta en yaygın araç. VS Code için resmi <b>MSSQL eklentisi</b> de var.</td></tr>
 <tr><td>PostgreSQL</td><td>pgAdmin, psql (komut satırı)</td><td>psql, sunucu yönetiminde çok kullanılır.</td></tr>
 <tr><td>MySQL</td><td>MySQL Workbench</td><td>Modelleme (ER diyagramı) özellikleri de vardır.</td></tr>
 <tr><td>Oracle</td><td>SQL Developer, SQL*Plus</td><td>PL/SQL geliştirme için.</td></tr>
 <tr><td>SQLite</td><td>DB Browser for SQLite</td><td>Tek dosyalık veritabanlarını açar.</td></tr>
-<tr><td>Hepsi</td><td>DBeaver, DataGrip, VS Code</td><td>Birden çok programla çalışanlar için tek araç.</td></tr>
+<tr><td>Hepsi</td><td>DBeaver, DataGrip, VS Code</td><td>Birden çok SQL türüyle çalışanlar için tek araç.</td></tr>
 </table>
 <div class="tip"><b>Kendi bilgisayarında denemek istersen</b>SQL Server'ın <b>Developer</b> ve <b>Express</b> sürümleri, PostgreSQL ve MySQL'in topluluk sürümleri ücretsizdir. Docker biliyorsan tek komutla bir veritabanı sunucusu başlatabilirsin.</div>
 <h2>Sorgu nasıl çalıştırılır?</h2>
@@ -80,7 +80,7 @@ LIMIT 5;</pre>
 <h2>İşlem önceliği</h2>
 <p>Matematikteki gibi önce çarpma ve bölme, sonra toplama ve çıkarma yapılır. <code>price - cost / price</code> ile <code>(price - cost) / price</code> çok farklı sonuç verir. Emin değilsen parantez kullan.</p>
 <h2>Tam sayı bölmesi tuzağı</h2>
-<p>İki tam sayıyı bölmek, programa göre farklı sonuç verir. SQL Server, PostgreSQL ve SQLite küsuratı atar; MySQL ve Oracle ondalıklı sonuç döndürür. Program sekmelerini değiştirip çıktıya bak:</p>
+<p>İki tam sayıyı bölmek, SQL türüne göre farklı sonuç verir. SQL Server, PostgreSQL ve SQLite küsuratı atar; MySQL ve Oracle ondalıklı sonuç döndürür. SQL türü sekmelerini değiştirip çıktıya bak:</p>
 ${CODE("SELECT 7 / 2 AS tam_bolme,\n       7 % 2 AS kalan,\n       7 / 2.0 AS ondalikli;", { oracle: 'SELECT 7 / 2 AS tam_bolme,\n       MOD(7, 2) AS kalan,\n       7 / 2.0 AS ondalikli\nFROM dual;' }, { diff: ['mysql', 'oracle'] })}
 <div class="tip"><b>Oran hesaplarken</b>Sayılardan birini ondalıklı yap: <code>100.0 * a / b</code> veya <code>CAST(a AS DECIMAL(10,2)) / b</code>. Bu tek alışkanlık, raporlardaki en yaygın hatayı önler.</div>
 <h2>Yuvarlama ve matematik fonksiyonları</h2>
@@ -125,7 +125,7 @@ GROUP BY channel;</pre>
 <h3>Üç eşdeğer yazım</h3>
 <table>
 <tr><th>Yazım</th><th>Açıklama</th></tr>
-<tr><td><code>SUM(CASE WHEN koşul THEN 1 ELSE 0 END)</code></td><td>Her programda çalışır. En yaygın yazım.</td></tr>
+<tr><td><code>SUM(CASE WHEN koşul THEN 1 ELSE 0 END)</code></td><td>Her SQL türünde çalışır. En yaygın yazım.</td></tr>
 <tr><td><code>COUNT(CASE WHEN koşul THEN 1 END)</code></td><td>ELSE yazılmayınca NULL döner; COUNT NULL'ları saymaz.</td></tr>
 <tr><td><code>COUNT(*) FILTER (WHERE koşul)</code></td><td>Standart SQL. PostgreSQL ve SQLite'ta var; SQL Server, MySQL ve Oracle'da yok.</td></tr>
 </table>
@@ -146,7 +146,7 @@ GROUP BY segment;</pre>
 }, {
   id: 'regex', lv: 'B1', mod: 'Fonksiyonlar', min: 15,
   title: 'Desen eşleme: LIKE\'tan düzenli ifadelere (REGEX)',
-  sum: 'REGEXP_LIKE, REGEXP_REPLACE, REGEXP_SUBSTR ve programlar arası farklar.',
+  sum: 'REGEXP_LIKE, REGEXP_REPLACE, REGEXP_SUBSTR ve SQL türleri arası farklar.',
   body: `
 <h2>LIKE yetmediğinde</h2>
 <p><code>LIKE</code> yalnızca iki joker bilir: <code>%</code> ve <code>_</code>. “İçinde rakam geçen e-postalar”, “birden fazla boşluk”, “@ işaretinden sonraki kısım” gibi işler için <b>düzenli ifadeler</b> (regular expressions, regex) kullanılır.</p>
@@ -161,9 +161,9 @@ GROUP BY segment;</pre>
 <tr><td><code>a|b</code></td><td>a veya b</td><td><code>gmail|hotmail</code></td></tr>
 <tr><td><code>\\.</code></td><td>Özel karakterin kendisi</td><td><code>\\.com$</code></td></tr>
 </table>
-<h2>Programlara göre regex</h2>
+<h2>SQL türlerine göre regex</h2>
 <table>
-<tr><th>Program</th><th>Eşleşiyor mu?</th><th>Değiştir</th><th>Parça al</th></tr>
+<tr><th>SQL türü</th><th>Eşleşiyor mu?</th><th>Değiştir</th><th>Parça al</th></tr>
 <tr><td>SQL Server 2025</td><td><code>REGEXP_LIKE(s, p)</code></td><td><code>REGEXP_REPLACE</code></td><td><code>REGEXP_SUBSTR</code></td></tr>
 <tr><td>PostgreSQL</td><td><code>s ~ p</code>, büyük/küçük harf duyarsız: <code>s ~* p</code></td><td><code>regexp_replace(s, p, r, 'g')</code></td><td><code>regexp_substr</code> (15+)</td></tr>
 <tr><td>MySQL 8</td><td><code>s REGEXP p</code>, <code>REGEXP_LIKE</code></td><td><code>REGEXP_REPLACE</code></td><td><code>REGEXP_SUBSTR</code></td></tr>
@@ -173,9 +173,9 @@ GROUP BY segment;</pre>
 <div class="warn"><b>SQL Server'ın eski sürümleri</b>REGEXP fonksiyonları SQL Server 2025 ile geldi. Daha eski sürümlerde <code>LIKE '%[0-9]%'</code> ve <code>PATINDEX</code> ile idare edilir.</div>
 <h3>Deseni sağlayan satırları bulmak</h3>
 ${TS("SELECT customer_id, email\nFROM customers\nWHERE REGEXP_LIKE(email, '^[a-z]+\\.[a-z]+@gmail\\.com$');", { pg: "SELECT customer_id, email\nFROM customers\nWHERE email ~ '^[a-z]+\\.[a-z]+@gmail\\.com$';", mysql: "SELECT customer_id, email\nFROM customers\nWHERE email REGEXP '^[a-z]+\\\\.[a-z]+@gmail\\\\.com$';", oracle: "SELECT customer_id, email\nFROM customers\nWHERE REGEXP_LIKE(email, '^[a-z]+\\.[a-z]+@gmail\\.com$');", sqlite: "SELECT customer_id, email\nFROM customers\nWHERE email REGEXP '^[a-z]+\\.[a-z]+@gmail\\.com$';" })}
-<div class="note"><b>MySQL'de çift ters bölü</b>MySQL metin sabitlerinde <code>\\</code> kaçış karakteridir; desendeki <code>\\.</code> için <code>'\\\\.'</code> yazılır. Bunun yerine <code>[.]</code> yazmak her programda çalışır.</div>
+<div class="note"><b>MySQL'de çift ters bölü</b>MySQL metin sabitlerinde <code>\\</code> kaçış karakteridir; desendeki <code>\\.</code> için <code>'\\\\.'</code> yazılır. Bunun yerine <code>[.]</code> yazmak her SQL türünde çalışır.</div>
 <h3>Değiştirmek</h3>
-<p>Ad soyad alanındaki fazladan boşlukları teke indirelim. PostgreSQL'de <code>'g'</code> bayrağı yazılmazsa yalnızca <b>ilk</b> eşleşme değişir; diğer programlar varsayılan olarak hepsini değiştirir.</p>
+<p>Ad soyad alanındaki fazladan boşlukları teke indirelim. PostgreSQL'de <code>'g'</code> bayrağı yazılmazsa yalnızca <b>ilk</b> eşleşme değişir; diğer SQL türleri varsayılan olarak hepsini değiştirir.</p>
 ${TS("SELECT id,\n       full_name,\n       TRIM(REGEXP_REPLACE(full_name, ' +', ' ')) AS temiz_ad\nFROM raw_signups;", { pg: "SELECT id,\n       full_name,\n       TRIM(regexp_replace(full_name, ' +', ' ', 'g')) AS temiz_ad\nFROM raw_signups;", mysql: "SELECT id,\n       full_name,\n       TRIM(REGEXP_REPLACE(full_name, ' +', ' ')) AS temiz_ad\nFROM raw_signups;", oracle: "SELECT id,\n       full_name,\n       TRIM(REGEXP_REPLACE(full_name, ' +', ' ')) AS temiz_ad\nFROM raw_signups;" })}
 <h3>Parça almak</h3>
 ${TS("SELECT REGEXP_SUBSTR(email, '[^@]+$') AS alan_adi,\n       COUNT(*) AS musteri\nFROM customers\nWHERE email IS NOT NULL\nGROUP BY REGEXP_SUBSTR(email, '[^@]+$');", { pg: "SELECT regexp_substr(email, '[^@]+$') AS alan_adi,\n       COUNT(*) AS musteri\nFROM customers\nWHERE email IS NOT NULL\nGROUP BY regexp_substr(email, '[^@]+$');", mysql: "SELECT REGEXP_SUBSTR(email, '[^@]+$') AS alan_adi,\n       COUNT(*) AS musteri\nFROM customers\nWHERE email IS NOT NULL\nGROUP BY alan_adi;", oracle: "SELECT REGEXP_SUBSTR(email, '[^@]+$') AS alan_adi,\n       COUNT(*) AS musteri\nFROM customers\nWHERE email IS NOT NULL\nGROUP BY REGEXP_SUBSTR(email, '[^@]+$');" })}
@@ -198,7 +198,7 @@ ${TS("SELECT REGEXP_SUBSTR(email, '[^@]+$') AS alan_adi,\n       COUNT(*) AS mus
 <p><code>TRANSLATE(metin, 'bulunan', 'yerine')</code>, ikinci listedeki her karakteri üçüncü listede aynı sıradaki karakterle değiştirir. Tek tek REPLACE yazmaktan çok daha kısadır. SQL Server (2017+), PostgreSQL ve Oracle'da vardır; MySQL ve SQLite'ta iç içe REPLACE yazılır.</p>
 ${TS("SELECT DISTINCT city,\n       UPPER(TRANSLATE(TRIM(city), 'İıŞşĞğÜüÖöÇç', 'IiSsGgUuOoCc')) AS anahtar\nFROM raw_signups\nWHERE LEN(TRIM(city)) > 0;", { pg: "SELECT DISTINCT city,\n       UPPER(TRANSLATE(TRIM(city), 'İıŞşĞğÜüÖöÇç', 'IiSsGgUuOoCc')) AS anahtar\nFROM raw_signups\nWHERE LENGTH(TRIM(city)) > 0;", oracle: "SELECT DISTINCT city,\n       UPPER(TRANSLATE(TRIM(city), 'İıŞşĞğÜüÖöÇç', 'IiSsGgUuOoCc')) AS anahtar\nFROM raw_signups\nWHERE LENGTH(TRIM(city)) > 0;", mysql: "SELECT DISTINCT city,\n       UPPER(" + nestRep('TRIM(city)') + ") AS anahtar\nFROM raw_signups\nWHERE CHAR_LENGTH(TRIM(city)) > 0;", sqlite: "SELECT DISTINCT city,\n       UPPER(" + nestRep('TRIM(city)') + ") AS anahtar\nFROM raw_signups\nWHERE LENGTH(TRIM(city)) > 0;" })}
 <div class="warn"><b>SQL Server'da TRANSLATE kuralı</b>İkinci ve üçüncü argüman aynı uzunlukta olmalı, yoksa hata verir. PostgreSQL ve Oracle'da üçüncü liste kısaysa fazlalık karakterler <b>silinir</b>: <code>TRANSLATE('a-b', '-', '')</code> → <code>ab</code>.</div>
-<div class="note"><b>Neden <code>LEN(TRIM(city)) &gt; 0</code>?</b>Oracle boş metni ('') NULL kabul eder; <code>city &lt;&gt; ''</code> koşulu Oracle'da hiçbir satır döndürmez. Uzunluk kontrolü her programda aynı çalışır.</div>
+<div class="note"><b>Neden <code>LEN(TRIM(city)) &gt; 0</code>?</b>Oracle boş metni ('') NULL kabul eder; <code>city &lt;&gt; ''</code> koşulu Oracle'da hiçbir satır döndürmez. Uzunluk kontrolü her SQL türünde aynı çalışır.</div>
 <h2>Sesçil benzerlik: SOUNDEX ve DIFFERENCE</h2>
 <p><code>SOUNDEX</code> bir kelimeyi okunuşuna göre 4 karakterlik bir koda çevirir: “Mehmet” ve “Mehmed” aynı kodu (M530) alır. SQL Server'daki <code>DIFFERENCE(a, b)</code> iki kodun kaç karakterinin tuttuğunu 0–4 arası verir.</p>
 ${TS("SELECT SOUNDEX('Mehmet') AS a,\n       SOUNDEX('Mehmed') AS b,\n       DIFFERENCE('Mehmet', 'Mehmed') AS benzerlik;", { pg: "-- fuzzystrmatch eklentisi gerekir: CREATE EXTENSION fuzzystrmatch;\nSELECT soundex('Mehmet') AS a,\n       soundex('Mehmed') AS b,\n       difference('Mehmet', 'Mehmed') AS benzerlik;" })}
@@ -206,7 +206,7 @@ ${TS("SELECT SOUNDEX('Mehmet') AS a,\n       SOUNDEX('Mehmed') AS b,\n       DIF
 <h2>Düzenleme mesafesi: Levenshtein</h2>
 <p>İki metni birbirine dönüştürmek için gereken en az harf ekleme, silme veya değiştirme sayısıdır: “Ankara” ile “Ankra” arasındaki mesafe 1'dir. Yazım hatalı kayıtları bulmak için idealdir.</p>
 <table>
-<tr><th>Program</th><th>Fonksiyon</th></tr>
+<tr><th>SQL türü</th><th>Fonksiyon</th></tr>
 <tr><td>PostgreSQL</td><td><code>levenshtein(a, b)</code> (fuzzystrmatch eklentisi)</td></tr>
 <tr><td>Oracle</td><td><code>UTL_MATCH.EDIT_DISTANCE(a, b)</code></td></tr>
 <tr><td>SQL Server, MySQL</td><td>Yerleşik değil; kullanıcı tanımlı fonksiyon veya uygulama tarafında hesaplanır</td></tr>
@@ -229,7 +229,7 @@ after('recursive-cte', [{
   body: `
 <h2>Sipariş olmayan gün raporda kaybolur</h2>
 <p>Günlük sipariş sayısını <code>GROUP BY order_date</code> ile alırsan, hiç sipariş olmayan günler sonuçta <b>hiç görünmez</b>. Grafikte bu günler atlanır ve trend olduğundan iyi görünür. Çözüm: önce eksiksiz bir <b>gün listesi</b> üret, sonra veriyi ona <b>LEFT JOIN</b> ile bağla.</p>
-<h3>1. Özyinelemeli CTE ile gün listesi (her programda)</h3>
+<h3>1. Özyinelemeli CTE ile gün listesi (her SQL türünde)</h3>
 <pre class="code">WITH RECURSIVE gunler(gun) AS (
     SELECT DATE('2024-12-01')
     UNION ALL
@@ -269,8 +269,8 @@ FROM gunler;</pre>
   ]
 }]);
 
-/* ======================= İş Zekası ve Raporlama ======================= */
-const BI = 'İş Zekası ve Raporlama';
+/* ======================= İş Zekâsı ve Raporlama ======================= */
+const BI = 'İş Zekâsı ve Raporlama';
 after('an-dashboard', [{
   id: 'bi-pay', lv: 'B1', mod: BI, min: 12,
   title: 'Pay ve oran analizleri: toplama göre yüzde',
@@ -361,7 +361,7 @@ ORDER BY b.ay;</pre>
   ]
 }, {
   id: 'bi-hazirlik', lv: 'B2', mod: BI, min: 14,
-  title: 'BI aracına veri hazırlamak: tanecik, görünüm ve boyutlar',
+  title: 'BI aracına veri hazırlamak: grain (tanecik), görünüm ve boyutlar',
   sum: 'Power BI / Tableau için olgu (fact) görünümü ve boyut tabloları.',
   body: `
 <h2>Raporu kim çizer, veriyi kim hazırlar?</h2>
@@ -401,7 +401,7 @@ GROUP BY channel;</pre>
 </table>
 `,
   ex: [
-    { t: 'sql', q: '<p>BI aracı için sipariş satırı tanecikli bir görünüm oluştur: <code>v_satis_satir</code>. Sütunlar: <code>order_id</code>, <code>order_date</code>, <code>channel</code>, <code>status</code>, <code>category</code>, <code>urun</code> (ürün adı), <code>quantity</code>, <code>net_tutar</code> (adet × birim fiyat × (1 − indirim), 2 basamak).</p>', sol: `CREATE VIEW v_satis_satir AS SELECT o.order_id, o.order_date, o.channel, o.status, p.category, p.name AS urun, oi.quantity, ROUND(${NET}, 2) AS net_tutar FROM order_items oi JOIN orders o ON o.order_id = oi.order_id JOIN products p ON p.product_id = oi.product_id;`, check: "SELECT COUNT(*) AS satir, ROUND(SUM(net_tutar), 2) AS toplam, COUNT(DISTINCT category) AS kategori, SUM(CASE WHEN urun IS NULL THEN 1 ELSE 0 END) AS adsiz FROM v_satis_satir;", hint: 'CREATE VIEW ad AS SELECT ... üç tabloyu birleştiren bir sorgu.' },
+    { t: 'sql', q: '<p>BI aracı için sipariş satırı düzeyinde bir görünüm oluştur: <code>v_satis_satir</code>. Sütunlar: <code>order_id</code>, <code>order_date</code>, <code>channel</code>, <code>status</code>, <code>category</code>, <code>urun</code> (ürün adı), <code>quantity</code>, <code>net_tutar</code> (adet × birim fiyat × (1 − indirim), 2 basamak).</p>', sol: `CREATE VIEW v_satis_satir AS SELECT o.order_id, o.order_date, o.channel, o.status, p.category, p.name AS urun, oi.quantity, ROUND(${NET}, 2) AS net_tutar FROM order_items oi JOIN orders o ON o.order_id = oi.order_id JOIN products p ON p.product_id = oi.product_id;`, check: "SELECT COUNT(*) AS satir, ROUND(SUM(net_tutar), 2) AS toplam, COUNT(DISTINCT category) AS kategori, SUM(CASE WHEN urun IS NULL THEN 1 ELSE 0 END) AS adsiz FROM v_satis_satir;", hint: 'CREATE VIEW ad AS SELECT ... üç tabloyu birleştiren bir sorgu.' },
     { t: 'sql', q: '<p>Müşteri boyutu hazırla: her müşteri için <code>customer_id</code>, <code>ad_soyad</code> (ad + boşluk + soyad), <code>sehir</code> (boşsa “Bilinmiyor”), <code>segment</code>, <code>ilk_siparis</code> (ilk sipariş tarihi) ve <code>siparis_sayisi</code>. Hiç siparişi olmayan müşteriler de listede olmalı.</p>', sol: "SELECT c.customer_id, c.first_name || ' ' || c.last_name AS ad_soyad, COALESCE(c.city, 'Bilinmiyor') AS sehir, c.segment, MIN(o.order_date) AS ilk_siparis, COUNT(o.order_id) AS siparis_sayisi FROM customers c LEFT JOIN orders o ON o.customer_id = c.customer_id GROUP BY c.customer_id, c.first_name, c.last_name, c.city, c.segment;", hint: 'Siparişi olmayanlar için LEFT JOIN ve COUNT(o.order_id).' },
     mc('<p>BI modeline “iptal oranı” bilgisini nasıl vermek en doğrudur?</p>', ['Her satıra hesaplanmış oran sütunu eklemek', 'İptal sayısını ve toplam sipariş sayısını ayrı ölçüler olarak verip oranı raporda hesaplatmak', 'Oranı metin olarak yazmak', 'Oranı yalnızca toplam satırına yazmak'], 1, 'Oranlar toplanamaz veya ortalaması alınamaz; filtre değiştikçe pay ve paydanın yeniden toplanıp bölünmesi gerekir.')
   ]

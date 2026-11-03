@@ -1,7 +1,7 @@
 /* Kesit SQL içerik 34: yapı düzenlemesi
    - 1 dakikada ilk sorgu dersi (ilk-sorgu) ve Temeller sırası: önce sorgu, sonra kavramlar
    - seviye etiketlerinin dengelenmesi (tablo oluşturma, basit JOIN, işlemler, view daha erken)
-   - SQL Temelleri patikası: çekirdek dersler + isteğe bağlı derinleşme */
+   - SQL Temelleri öğrenme yolu: çekirdek dersler + isteğe bağlı derinleşme */
 (function () {
 const L = window.SQLP_LESSONS; const LM = id => L.find(l => l.id === id);
 const sq = (q, sol, o) => Object.assign({ t: 'sql', q: '<p>' + q + '</p>', sol }, o || {});

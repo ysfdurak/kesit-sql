@@ -1,4 +1,4 @@
-/* Kesit SQL içerik 18: Kanat Havayolları veri seti üzerinde ayrı bir patika
+/* Kesit SQL içerik 18: Kanat Havayolları veri seti üzerinde ayrı bir öğrenme yolu
    Temelden ileriye 10 ders, bitirme projesi ve alıştırma bankası soruları. */
 (function () {
 const L = window.SQLP_LESSONS;
@@ -42,7 +42,7 @@ FROM hv_flights
 WHERE actual_dep IS NULL
 ORDER BY sched_dep
 LIMIT 5;</pre>
-<div class="tip"><b>Önce veriye bak</b>Bir tabloyu ilk kez sorgularken <code>SELECT * ... LIMIT 10</code> ile birkaç satırı incele ve <b>Veri Seti</b> sayfasındaki ilişki şemasına göz at. Hangi sütunun hangi tabloya bağlandığını bilmek sonraki derslerin yarısıdır.</div>
+<div class="tip"><b>Önce veriye bak</b>Bir tabloyu ilk kez sorgularken <code>SELECT * ... LIMIT 10</code> ile birkaç satırı incele ve <b>Veri setleri</b> sayfasındaki ilişki şemasına göz at. Hangi sütunun hangi tabloya bağlandığını bilmek sonraki derslerin yarısıdır.</div>
 `,
   ex: [
     sq('Yurt dışındaki havalimanlarını (<code>country</code> Türkiye olmayanlar) kodu, şehri ve ülkesiyle getir: <code>airport_code</code>, <code>city</code>, <code>country</code>. Ülkeye, eşitlikte koda göre sırala.',
@@ -51,7 +51,7 @@ LIMIT 5;</pre>
       'SELECT tail_no, model, seats FROM hv_aircraft WHERE seats > 200 ORDER BY seats DESC, tail_no;', { ord: true }),
     sq('<b>KN101</b> seferinin Aralık 2024\'teki uçuşlarını planlanan kalkış zamanı ve durumuyla getir: <code>sched_dep</code>, <code>status</code>. Kalkışa göre sırala.',
       "SELECT sched_dep, status FROM hv_flights WHERE flight_no = 'KN101' AND sched_dep >= '2024-12-01' AND sched_dep < '2025-01-01' ORDER BY sched_dep;",
-      { ord: true, hint: "Saatli sütunda ay filtresi: sched_dep >= '2024-12-01' AND sched_dep < '2025-01-01'." }),
+      { ord: true, hint: "Saatli sütunda ay filtresi: sched_dep >= '2024-12-01' AND sched_dep &lt; '2025-01-01'." }),
     sq('İptal edilen uçuşlardan en erken planlanmış 10 tanesini getir: <code>flight_id</code>, <code>flight_no</code>, <code>sched_dep</code>.',
       "SELECT flight_id, flight_no, sched_dep FROM hv_flights WHERE status = 'cancelled' ORDER BY sched_dep, flight_id LIMIT 10;", { ord: true }),
     sq('İzmir\'de yaşayan <b>Gold</b> veya <b>Elite</b> üyeleri getir: <code>full_name</code>, <code>tier</code>. Ada göre sırala.',
@@ -111,9 +111,9 @@ GROUP BY tier;</pre>
   sum: 'İki zaman arasındaki dakika farkı, saate ve aya göre gruplama, zamanında kalkış oranı ve rezervasyon öncesi gün sayısı.',
   body: `
 <h2>İki zaman arasındaki fark</h2>
-<p>Havayolunda her şey dakikayla ölçülür. Kalkış gecikmesi = gerçek kalkış − planlanan kalkış. Her programın yazımı farklıdır:</p>
+<p>Havayolunda her şey dakikayla ölçülür. Kalkış gecikmesi = gerçek kalkış − planlanan kalkış. Her SQL türünün yazımı farklıdır:</p>
 <table>
-<tr><th>Program</th><th>Dakika farkı</th></tr>
+<tr><th>SQL türü</th><th>Dakika farkı</th></tr>
 <tr><td>SQL Server</td><td><code>DATEDIFF(minute, sched_dep, actual_dep)</code></td></tr>
 <tr><td>PostgreSQL</td><td><code>EXTRACT(EPOCH FROM (actual_dep - sched_dep)) / 60</code></td></tr>
 <tr><td>MySQL</td><td><code>TIMESTAMPDIFF(MINUTE, sched_dep, actual_dep)</code></td></tr>
@@ -139,7 +139,7 @@ WHERE f.actual_dep IS NOT NULL;</pre>
   ex: [
     sq('2024-12-24 günündeki ilk 5 uçuşun (planlanan kalkış sırasıyla) kalkış gecikmesini dakika olarak getir: <code>flight_id</code>, <code>flight_no</code>, <code>gecikme</code>.',
       `SELECT f.flight_id, f.flight_no, ${DLY} AS gecikme FROM hv_flights f WHERE f.sched_dep >= '2024-12-24' AND f.sched_dep < '2024-12-25' ORDER BY f.sched_dep, f.flight_id LIMIT 5;`,
-      { ord: true, hint: 'Gerçek kalkış − planlanan kalkış, dakika cinsinden. Programına uygun yazım ders tablosunda.' }),
+      { ord: true, hint: 'Gerçek kalkış − planlanan kalkış, dakika cinsinden. SQL türüne uygun yazım ders tablosunda.' }),
     sq('Ay bazında ortalama kalkış gecikmesini (1 basamak) getir; iptal edilen uçuşlar hariç: <code>ay</code> (YYYY-AA), <code>ort_gecikme</code>. Aya göre sırala.',
       `SELECT strftime('%Y-%m', f.sched_dep) AS ay, ROUND(AVG(${DLY}), 1) AS ort_gecikme FROM hv_flights f WHERE f.actual_dep IS NOT NULL GROUP BY strftime('%Y-%m', f.sched_dep) ORDER BY ay;`,
       { ord: true }),
@@ -155,7 +155,7 @@ WHERE f.actual_dep IS NOT NULL;</pre>
       "WITH g AS (SELECT b.price, julianday(date(f.sched_dep)) - julianday(date(b.booked_at)) AS gun FROM hv_bookings b JOIN hv_flights f ON f.flight_id = b.flight_id) SELECT CASE WHEN gun < 7 THEN 'Son hafta' WHEN gun < 30 THEN 'Son ay' ELSE 'Erken' END AS grup, COUNT(*) AS rezervasyon, ROUND(AVG(price)) AS ort_ucret FROM g GROUP BY CASE WHEN gun < 7 THEN 'Son hafta' WHEN gun < 30 THEN 'Son ay' ELSE 'Erken' END;",
       { hint: 'Önce iki zamanı da tarihe (güne) çevir, sonra gün farkını al. Bir CTE içinde hesaplayıp dışarıda CASE ile grupla.', why: 'Son dakika biletleri belirgin biçimde pahalı: havayolları talep yaklaştıkça fiyatı yükseltir.' }),
     mc('<p><code>WHERE sched_dep BETWEEN \'2024-12-01\' AND \'2024-12-31\'</code> filtresi Aralık uçuşlarının hangisini kaçırır?</p>', ['1 Aralık 00:00\'daki uçuşları', '31 Aralık\'ta 00:00\'dan sonra planlanan tüm uçuşları', 'Yalnızca iptal edilen uçuşları', 'Hiçbirini; BETWEEN iki ucu da kapsar'], 1,
-      "'2024-12-31' değeri 31 Aralık 00:00 anlamına gelir; o günün sonraki saatleri bu değerden büyüktür. Doğrusu yarı açık aralıktır: >= '2024-12-01' AND < '2025-01-01'.")
+      "'2024-12-31' değeri 31 Aralık 00:00 anlamına gelir; o günün sonraki saatleri bu değerden büyüktür. Doğrusu yarı açık aralıktır: >= '2024-12-01' AND &lt; '2025-01-01'.")
   ]
 },
 /* ---------------------------------------------------------------- 4 */
@@ -240,7 +240,7 @@ LIMIT 5;</pre>
       'SELECT r.route_id, k.city AS kalkis, v.city AS varis, r.distance_km FROM hv_routes r JOIN hv_airports k ON k.airport_code = r.origin JOIN hv_airports v ON v.airport_code = r.dest ORDER BY r.distance_km DESC, r.route_id LIMIT 5;', { ord: true }),
     sq('Aynı şehirde birden fazla havalimanı olan şehirleri, havalimanı çiftleriyle getir (her çift bir kez): <code>city</code>, <code>a</code>, <code>b</code>.',
       'SELECT x.city, x.airport_code AS a, y.airport_code AS b FROM hv_airports x JOIN hv_airports y ON y.city = x.city AND x.airport_code < y.airport_code;',
-      { hint: 'Tabloyu kendisiyle şehir üzerinden birleştir; aynı çifti iki kez görmemek için x.kod < y.kod.' }),
+      { hint: 'Tabloyu kendisiyle şehir üzerinden birleştir; aynı çifti iki kez görmemek için x.kod &lt; y.kod.' }),
     sq('<b>Dönüş rotası olmayan</b> rotaları bul (A → B var ama B → A yok): <code>route_id</code>, <code>origin</code>, <code>dest</code>.',
       'SELECT r.route_id, r.origin, r.dest FROM hv_routes r LEFT JOIN hv_routes d ON d.origin = r.dest AND d.dest = r.origin WHERE d.route_id IS NULL;',
       { hint: 'Rota tablosunu kendisiyle ters yönde LEFT JOIN yap: d.origin = r.dest AND d.dest = r.origin.' }),
@@ -304,9 +304,10 @@ LIMIT 5;</pre>
   body: `
 <h2>Rötar neden yayılır?</h2>
 <p>Bir uçak gün içinde birkaç sefer yapar. Sabahki uçuş geç kalırsa, aynı uçağın öğleden sonraki uçuşu da genellikle geç kalkar: buna <b>rötar zinciri</b> (gec_gelen_ucak) denir. Bunu görmek için aynı uçağın uçuşlarını zaman sırasına koyup bir önceki satıra bakmak gerekir; tam olarak pencere fonksiyonlarının işi.</p>
+<div class="note"><b>Veri notu</b>Kanat'ta uçak ataması rastgeledir: aynı uçak aynı saatte iki seferde görünebilir, rotasyon bitişik değildir (Veri setleri → Bilinen sınırlamalar). Bu ders LAG yöntemini öğretir; çıkan zincir sayıları gerçek filo analizi değildir.</div>
 <pre class="code">SELECT f.tail_no, f.sched_dep, f.flight_no,
        ${DLY} AS gecikme,
-       LAG(${DLY}) OVER (PARTITION BY f.tail_no ORDER BY f.sched_dep) AS onceki_gecikme
+       LAG(${DLY}) OVER (PARTITION BY f.tail_no ORDER BY f.sched_dep, f.flight_id) AS onceki_gecikme
 FROM hv_flights f
 WHERE f.tail_no = 'TC-KNA'
   AND f.sched_dep >= '2024-12-01' AND f.sched_dep < '2024-12-03'
@@ -325,8 +326,8 @@ GROUP BY p.tier;</pre>
     sq('2024-12-15 günü her uçağın uçuşlarını kalkış sırasıyla numaralandır: <code>tail_no</code>, <code>sched_dep</code>, <code>flight_no</code>, <code>sira</code>. Uçağa, sonra sıraya göre sırala.',
       "SELECT tail_no, sched_dep, flight_no, ROW_NUMBER() OVER (PARTITION BY tail_no ORDER BY sched_dep, flight_id) AS sira FROM hv_flights WHERE sched_dep >= '2024-12-15' AND sched_dep < '2024-12-16' ORDER BY tail_no, sira;", { ord: true }),
     sq('<b>TC-KNA</b> uçağının 1–2 Aralık 2024 uçuşlarında her uçuşun kalkış gecikmesini ve <b>aynı uçağın bir önceki</b> uçuşunun gecikmesini getir: <code>sched_dep</code>, <code>flight_no</code>, <code>gecikme</code>, <code>onceki_gecikme</code>. Kalkışa göre sırala.',
-      `SELECT f.sched_dep, f.flight_no, ${DLY} AS gecikme, LAG(${DLY}) OVER (ORDER BY f.sched_dep) AS onceki_gecikme FROM hv_flights f WHERE f.tail_no = 'TC-KNA' AND f.sched_dep >= '2024-12-01' AND f.sched_dep < '2024-12-03' ORDER BY f.sched_dep;`,
-      { ord: true, hint: 'LAG(ifade) OVER (ORDER BY sched_dep). Tek uçak filtrelendiği için PARTITION BY gerekmez.' }),
+      `SELECT f.sched_dep, f.flight_no, ${DLY} AS gecikme, LAG(${DLY}) OVER (ORDER BY f.sched_dep, f.flight_id) AS onceki_gecikme FROM hv_flights f WHERE f.tail_no = 'TC-KNA' AND f.sched_dep >= '2024-12-01' AND f.sched_dep < '2024-12-03' ORDER BY f.sched_dep, f.flight_id;`,
+      { ord: true, hint: 'LAG(ifade) OVER (ORDER BY sched_dep, flight_id). Tek uçak filtrelendiği için PARTITION BY gerekmez; flight_id eşit kalkış saatlerinde sırayı sabitler.' }),
     sq('Rotaları ortalama kalkış gecikmesine göre sırala (iptaller hariç) ve en kötü 5 rotayı getir: <code>origin</code>, <code>dest</code>, <code>ort_gecikme</code> (1 basamak), <code>sira</code> (DENSE_RANK, en kötü 1).',
       `WITH g AS (SELECT r.origin, r.dest, ROUND(AVG(${DLY}), 1) AS ort_gecikme FROM hv_flights f JOIN hv_routes r ON r.route_id = f.route_id WHERE f.actual_dep IS NOT NULL GROUP BY r.origin, r.dest), s AS (SELECT origin, dest, ort_gecikme, DENSE_RANK() OVER (ORDER BY ort_gecikme DESC) AS sira FROM g) SELECT origin, dest, ort_gecikme, sira FROM s WHERE sira <= 5 ORDER BY sira, origin, dest;`,
       { ord: true, hint: 'Önce rota ortalamalarını CTE ile hesapla, sonra DENSE_RANK; filtreyi dış sorguda uygula.' }),
@@ -411,9 +412,9 @@ WHERE origin = 'ADB' AND dest = 'FRA';</pre>
 <div class="warn"><b>Önce SELECT, sonra UPDATE</b>Bir UPDATE veya DELETE'i çalıştırmadan önce aynı WHERE koşuluyla SELECT çalıştırıp kaç satırın etkileneceğini gör. Bu derste her alıştırma veritabanının temiz bir kopyasında çalışır.</div>
 `,
   ex: [
-    sq('10 numaralı rezervasyonu iptal et: durumunu <b>\'cancelled\'</b> yap ve koltuğunu boşalt (NULL).',
-      "UPDATE hv_bookings SET status = 'cancelled', seat = NULL WHERE booking_id = 10;",
-      { check: 'SELECT booking_id, status, seat FROM hv_bookings WHERE booking_id IN (9, 10, 11) ORDER BY booking_id', hint: 'İki sütunu tek SET içinde virgülle güncelle.' }),
+    sq('11 numaralı rezervasyon hatalı girilmiş, iptal et: durumunu <b>\'cancelled\'</b> yap ve koltuğunu boşalt (NULL).',
+      "UPDATE hv_bookings SET status = 'cancelled', seat = NULL WHERE booking_id = 11;",
+      { check: 'SELECT booking_id, status, seat FROM hv_bookings WHERE booking_id IN (10, 11, 12) ORDER BY booking_id', hint: 'İki sütunu tek SET içinde virgülle güncelle.' }),
     sq('3000 numaralı uçuşu iptal et ve bu uçuştaki tüm rezervasyonları da iptal et; iki değişikliği tek bir işlem (transaction) içinde yap. Uçuşta durum \'cancelled\', gerçek zamanlar NULL, pax 0; rezervasyonlarda durum \'cancelled\', koltuk NULL olsun.',
       "BEGIN; UPDATE hv_flights SET status = 'cancelled', actual_dep = NULL, actual_arr = NULL, pax = 0 WHERE flight_id = 3000; UPDATE hv_bookings SET status = 'cancelled', seat = NULL WHERE flight_id = 3000; COMMIT;",
       { dl: ['sqlite', 'pg', 'mysql', 'tsql', 'oracle'], check: "SELECT (SELECT status || '|' || COALESCE(pax, -1) FROM hv_flights WHERE flight_id = 3000) AS ucus, (SELECT COUNT(*) FROM hv_bookings WHERE flight_id = 3000 AND status <> 'cancelled') AS kalan, (SELECT COUNT(*) FROM hv_bookings WHERE flight_id = 3000 AND seat IS NOT NULL) AS koltuklu",
@@ -425,8 +426,8 @@ WHERE origin = 'ADB' AND dest = 'FRA';</pre>
     sq('Ek hizmet satışları için <code>hv_ek_hizmet</code> tablosunu oluştur: <code>hizmet_id</code> birincil anahtar, <code>booking_id</code> hv_bookings\'e yabancı anahtar, <code>tur</code> yalnızca \'bagaj\', \'koltuk\' veya \'yemek\' olabilir (CHECK), <code>ucret</code> negatif olamaz (CHECK). İki satır ekle: (1, 5, \'bagaj\', 450) ve (2, 5, \'yemek\', 180).',
       "CREATE TABLE hv_ek_hizmet (hizmet_id INTEGER PRIMARY KEY, booking_id INTEGER REFERENCES hv_bookings(booking_id), tur VARCHAR(10) CHECK (tur IN ('bagaj', 'koltuk', 'yemek')), ucret DECIMAL(10, 2) CHECK (ucret >= 0)); INSERT INTO hv_ek_hizmet VALUES (1, 5, 'bagaj', 450); INSERT INTO hv_ek_hizmet VALUES (2, 5, 'yemek', 180);",
       { dl: ['tsql', 'pg', 'mysql', 'oracle', 'sqlite'], check: 'SELECT hizmet_id, booking_id, tur, ucret FROM hv_ek_hizmet ORDER BY hizmet_id', hint: "CHECK (tur IN ('bagaj', 'koltuk', 'yemek')) ve CHECK (ucret >= 0)." }),
-    sq('Seviye yükseltme: gerçekleşen (flown) uçuş sayısı <b>15 veya daha fazla</b> olan <b>Silver</b> üyeleri <b>Gold</b> yap.',
-      "UPDATE hv_passengers SET tier = 'Gold' WHERE tier = 'Silver' AND passenger_id IN (SELECT passenger_id FROM hv_bookings WHERE status = 'flown' GROUP BY passenger_id HAVING COUNT(*) >= 15);",
+    sq('Seviye yükseltme: gerçekleşen (flown) uçuş sayısı <b>10 veya daha fazla</b> olan <b>Silver</b> üyeleri <b>Gold</b> yap.',
+      "UPDATE hv_passengers SET tier = 'Gold' WHERE tier = 'Silver' AND passenger_id IN (SELECT passenger_id FROM hv_bookings WHERE status = 'flown' GROUP BY passenger_id HAVING COUNT(*) >= 10);",
       { check: 'SELECT tier, COUNT(*) AS uye FROM hv_passengers GROUP BY tier ORDER BY tier', hint: 'Önce aynı alt sorguyu SELECT olarak çalıştırıp kaç üyenin etkileneceğini gör.' }),
     mc('<p>Uçuş iptali ile rezervasyon iptalini aynı işlem içinde yapmazsan en kötü durumda ne olur?</p>', ['Hiçbir şey; iki UPDATE her zaman birlikte başarılı olur', 'İlk UPDATE başarılı olup ikincisi hata verirse uçuş iptal görünür ama yolcuların rezervasyonları aktif kalır', 'İkinci UPDATE ilkini otomatik olarak geri alır', 'Veritabanı iki UPDATE\'i birleştirip tek satır günceller'], 1,
       'İşlem (transaction) “ya hep ya hiç” garantisi verir: ikinci adım başarısız olursa ROLLBACK ile ilk adım da geri alınır ve veri tutarlı kalır.')
@@ -472,7 +473,7 @@ WHERE origin = 'ADB' AND dest = 'FRA';</pre>
 const at = L.findIndex(l => l.id === 'proje-temel');
 L.splice(at < 0 ? L.length : at + 1, 0, ...lessons);
 
-/* ---------- Patika ---------- */
+/* ---------- Öğrenme yolu ---------- */
 const P = window.SQLP_PATHS = window.SQLP_PATHS || [];
 P.push({
   id: 'hava', name: 'Kanat Havayolları ile SQL', short: 'KH', color: '#1D6FB8',
@@ -532,7 +533,7 @@ add('k116', 'orta', 3, 'İptal edilen uçuştaki üyeler', 'Havayolu tarafından
 add('k117', 'orta', 2, 'Kanal kıyası yerine seviye kıyası', 'Seviyeye göre üye başına ortalama rezervasyon sayısı (1 basamak; hiç rezervasyonu olmayanlar 0): <code>tier</code>, <code>ort</code>.', 'WITH u AS (SELECT p.passenger_id, p.tier, COUNT(b.booking_id) AS n FROM hv_passengers p LEFT JOIN hv_bookings b ON b.passenger_id = p.passenger_id GROUP BY p.passenger_id, p.tier) SELECT tier, ROUND(AVG(n), 1) AS ort FROM u GROUP BY tier;');
 add('k118', 'orta', 3, 'Saat dilimi', 'Londra (LHR) uçuşlarının Aralık 2024\'teki ilk 3 tanesinin planlanan varışını <b>Londra yerel saatiyle</b> getir (tz_offset farkı kadar kaydır): <code>flight_no</code>, <code>tr_saati</code>, <code>yerel</code>. Kalkışa göre sırala.', "SELECT f.flight_no, f.sched_arr AS tr_saati, datetime(f.sched_arr, (a.tz_offset - 3) || ' hours') AS yerel FROM hv_flights f JOIN hv_routes r ON r.route_id = f.route_id JOIN hv_airports a ON a.airport_code = r.dest WHERE r.dest = 'LHR' AND f.sched_dep >= '2024-12-01' ORDER BY f.sched_dep LIMIT 3;", { ord: true, hint: 'Yerel saat = Türkiye saati + (tz_offset − 3) saat. SQL Server: DATEADD(hour, a.tz_offset - 3, f.sched_arr).' });
 /* İleri */
-add('k201', 'ileri', 2, 'Uçak dönüş süresi', 'TC-KNA uçağının 2024-12-10 günündeki uçuşları arasında yerde kalma süresi (bir önceki planlanan varıştan bu planlanan kalkışa, dakika): <code>flight_no</code>, <code>sched_dep</code>, <code>yerde_dk</code>. Kalkışa göre sırala.', "SELECT flight_no, sched_dep, ROUND((julianday(sched_dep) - julianday(LAG(sched_arr) OVER (ORDER BY sched_dep))) * 1440) AS yerde_dk FROM hv_flights WHERE tail_no = 'TC-KNA' AND sched_dep >= '2024-12-10' AND sched_dep < '2024-12-11' ORDER BY sched_dep;", { ord: true });
+add('k201', 'ileri', 2, 'Uçak dönüş süresi', 'TC-KNA uçağının 2024-12-10 günündeki uçuşları arasında yerde kalma süresi (bir önceki planlanan varıştan bu planlanan kalkışa, dakika): <code>flight_no</code>, <code>sched_dep</code>, <code>yerde_dk</code>. Kalkışa göre sırala.', "SELECT flight_no, sched_dep, ROUND((julianday(sched_dep) - julianday(LAG(sched_arr) OVER (ORDER BY sched_dep, flight_id))) * 1440) AS yerde_dk FROM hv_flights WHERE tail_no = 'TC-KNA' AND sched_dep >= '2024-12-10' AND sched_dep < '2024-12-11' ORDER BY sched_dep, flight_id;", { ord: true });
 add('k202', 'ileri', 2, 'Rotada en kötü gün', 'IST → ESB rotasında kalkış gecikmesi en yüksek 3 uçuşu DENSE_RANK ile bul: <code>sched_dep</code>, <code>gecikme</code>, <code>sira</code>.', `WITH g AS (SELECT f.sched_dep, ${DLY} AS gecikme FROM hv_flights f JOIN hv_routes r ON r.route_id = f.route_id WHERE r.origin = 'IST' AND r.dest = 'ESB' AND f.actual_dep IS NOT NULL), s AS (SELECT sched_dep, gecikme, DENSE_RANK() OVER (ORDER BY gecikme DESC) AS sira FROM g) SELECT sched_dep, gecikme, sira FROM s WHERE sira <= 3 ORDER BY sira, sched_dep;`, { ord: true });
 add('k203', 'ileri', 3, 'Kümülatif yolcu', 'Aralık 2024\'te her gün taşınan yolcu ve ay başından itibaren kümülatif toplam: <code>gun</code>, <code>yolcu</code>, <code>kumulatif</code>. Güne göre sırala.', "WITH d AS (SELECT date(sched_dep) AS gun, SUM(pax) AS yolcu FROM hv_flights WHERE sched_dep >= '2024-12-01' AND sched_dep < '2025-01-01' GROUP BY date(sched_dep)) SELECT gun, yolcu, SUM(yolcu) OVER (ORDER BY gun ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS kumulatif FROM d ORDER BY gun;", { ord: true });
 add('k204', 'ileri', 3, 'Rötar zinciri', 'Aynı uçağın bir önceki uçuşu 30 dakikadan fazla gecikmişken bir sonraki uçuşu da 30 dakikadan fazla geciken uçuş sayısı: <code>zincir</code>.', `WITH g AS (SELECT f.tail_no, f.sched_dep, ${DLY} AS gecikme FROM hv_flights f WHERE f.actual_dep IS NOT NULL), l AS (SELECT gecikme, LAG(gecikme) OVER (PARTITION BY tail_no ORDER BY sched_dep) AS onceki FROM g) SELECT COUNT(*) AS zincir FROM l WHERE gecikme > 30 AND onceki > 30;`);

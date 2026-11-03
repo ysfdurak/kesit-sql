@@ -303,7 +303,7 @@ ${ADIM([
   ['son SELECT', 'Koşullu sayımla matrisi kurar, oranı kohort büyüklüğüne böler', '2023, 6, 9, m1, m2, m3, ilk6ay']
 ])}
 <h2>Neden ay numarası?</h2>
-<p>İki tarih arasındaki “ay farkı” programdan programa farklı hesaplanır (SQL Server <code>DATEDIFF(month)</code> ay sınırlarını sayar, PostgreSQL <code>AGE</code> gün hassasiyetinde çalışır). Yıl × 12 + ay dönüşümü her programda aynı sonucu verir ve aritmetiği basitleştirir. Geri dönüşüm: yıl = FLOOR((no − 1) / 12), ay = (no − 1) % 12 + 1. FLOOR gerekir; çünkü MySQL, Oracle ve BigQuery tam sayıları da ondalıklı böler.</p>
+<p>İki tarih arasındaki “ay farkı” SQL türüne göre farklı hesaplanır (SQL Server <code>DATEDIFF(month)</code> ay sınırlarını sayar, PostgreSQL <code>AGE</code> gün hassasiyetinde çalışır). Yıl × 12 + ay dönüşümü her SQL türünde aynı sonucu verir ve aritmetiği basitleştirir. Geri dönüşüm: yıl = FLOOR((no − 1) / 12), ay = (no − 1) % 12 + 1. FLOOR gerekir; çünkü MySQL, Oracle ve BigQuery tam sayıları da ondalıklı böler.</p>
 <h2>Sık hatalar</h2>
 <ul>
 <li><b>Aynı ayda iki sipariş:</b> <code>aktif</code> adımında DISTINCT olmazsa müşteri aynı ay için iki kez sayılır; COUNT(DISTINCT) son adımda bunu kurtarır ama ara adımlar şişer.</li>
@@ -345,7 +345,7 @@ ${ADIM([
 ])}
 <h2>Kalıp: “işaretle ve kümülatif topla”</h2>
 <p>Bu kalıp yalnızca oturum için değil, her türlü “bir koşul gerçekleşince yeni grup başlar” sorusunda kullanılır: fiyat değişimleri, vardiya başlangıçları, aynı uçağın yerde kaldığı aralıklar. Boşlukları ve adaları ROW_NUMBER farkıyla bulma yöntemine göre avantajı, eşik (30 dakika) koyabilmesidir.</p>
-<div class="note"><b>Neden saniye?</b>Olay zamanları saniyeli. Dakika farkını programlar farklı hesaplar: SQL Server <code>DATEDIFF(minute)</code> geçen dakika sınırlarını sayar, diğerleri kesirli süreyi. Eşiğe yakın aralıklarda bu bir dakikalık fark oturum sayısını değiştirir; saniyeyle karşılaştırmak her programda aynı sonucu verir.</div>
+<div class="note"><b>Neden saniye?</b>Olay zamanları saniyeli. Dakika farkını SQL türleri farklı hesaplar: SQL Server <code>DATEDIFF(minute)</code> geçen dakika sınırlarını sayar, diğerleri kesirli süreyi. Eşiğe yakın aralıklarda bu bir dakikalık fark oturum sayısını değiştirir; saniyeyle karşılaştırmak her SQL türünde aynı sonucu verir.</div>
 <div class="warn"><b>Eşit zamanlı olaylar</b>Aynı saniyede iki olay olabilir. Pencere sıralamasına benzersiz bir sütun (event_id) eklemezsen oturum numaraları çalıştırmadan çalıştırmaya değişebilir.</div>
 `,
   ex: [
@@ -407,7 +407,7 @@ ${ADIM([
   sum: 'Uçuş, gün ve neden düzeylerini ayrı CTE\'lerde kurup tek pano satırında birleştirmek; günün başlıca rötar nedeni ve 7 günlük hareketli dakiklik.',
   body: `
 <h2>Soru</h2>
-<p>Kanat Havayolları operasyon merkezi her sabah bir pano açıyor: Dün kaç uçuş planlandı, kaçı iptal edildi, zamanında kalkış oranı ne, son yedi günün eğilimi ne, rötarların başlıca nedeni neydi? Bu soruların her biri farklı bir tanecikte hesaplanır ve sonunda gün düzeyinde birleşir.</p>
+<p>Kanat Havayolları operasyon merkezi her sabah bir pano açıyor: Dün kaç uçuş planlandı, kaçı iptal edildi, zamanında kalkış oranı ne, son yedi günün eğilimi ne, rötarların başlıca nedeni neydi? Bu soruların her biri farklı bir grain düzeyinde hesaplanır ve sonunda gün düzeyinde birleşir.</p>
 <h2>Sorgu</h2>
 ${GIRIS}
 <pre class="code">${OPS}</pre>
@@ -422,7 +422,7 @@ ${ADIM([
 <h2>İki önemli ayrıntı</h2>
 <ul>
 <li><b>Hareketli oran:</b> 7 günün oranlarının ortalaması değil, 7 günün <i>toplam</i> zamanında kalkışının toplam kalkışa oranıdır: <code>SUM(zamaninda) OVER w / SUM(kalkan) OVER w</code>.</li>
-<li><b>Adlandırılmış pencere:</b> <code>WINDOW w AS (...)</code> aynı çerçeveyi iki kez yazmaktan kurtarır. SQL Server 2022 öncesi ve bazı programlar desteklemez; o durumda çerçeve her OVER içinde tekrarlanır.</li>
+<li><b>Adlandırılmış pencere:</b> <code>WINDOW w AS (...)</code> aynı çerçeveyi iki kez yazmaktan kurtarır. SQL Server 2022 öncesi ve bazı SQL türleri desteklemez; o durumda çerçeve her OVER içinde tekrarlanır.</li>
 </ul>
 <div class="tip"><b>Neden LEFT JOIN?</b>Hiç rötar yaşanmayan bir günde <code>baslica</code> satırı yoktur. INNER JOIN o günü panodan düşürür; LEFT JOIN günü korur ve nedeni boş bırakır.</div>
 `,
@@ -508,7 +508,7 @@ ${ADIM([
       { ord: true, hint: 'Her ürünün ilk güncelleme anından önceki satışlarını tarih sırasına koy (azalan) ve ilkini al.' }),
     sq('Nokta-zaman birleştirmeyi <b>Kanat Havayolları</b>\'nda kullan: her rezervasyonun yapıldığı anda yolcunun üyelik seviyesini bilmek istiyoruz; ancak seviye tablosunda geçmiş yok. Bunun yerine şu soruyu cevapla: her rezervasyon için, <b>rezervasyon anına kadar</b> o üyenin gerçekleşmiş (flown) uçuş sayısını hesapla (rezervasyon anından önce kalkmış uçuşlar) ve bu sayıya göre rezervasyonları grupla: 0, 1–4, 5+: <code>grup</code>, <code>rezervasyon</code>, <code>ort_ucret</code> (tam sayı).',
       "WITH r AS (SELECT b.booking_id, b.passenger_id, b.booked_at, b.price FROM hv_bookings b), g AS (SELECT r.booking_id, r.price, COUNT(f.flight_id) AS onceki FROM r LEFT JOIN hv_bookings b2 ON b2.passenger_id = r.passenger_id AND b2.status = 'flown' LEFT JOIN hv_flights f ON f.flight_id = b2.flight_id AND f.sched_dep < r.booked_at GROUP BY r.booking_id, r.price) SELECT CASE WHEN onceki = 0 THEN '0' WHEN onceki <= 4 THEN '1-4' ELSE '5+' END AS grup, COUNT(*) AS rezervasyon, ROUND(AVG(price)) AS ort_ucret FROM g GROUP BY CASE WHEN onceki = 0 THEN '0' WHEN onceki <= 4 THEN '1-4' ELSE '5+' END;",
-      { hint: 'Koşul her rezervasyonun kendi zamanına göre değişir: “f.sched_dep < r.booked_at”. Saymak istediğin uçuşu LEFT JOIN\'in ON kısmında süz; WHERE\'e yazarsan hiç geçmişi olmayan rezervasyonlar kaybolur.' }),
+      { hint: 'Koşul her rezervasyonun kendi zamanına göre değişir: “f.sched_dep &lt; r.booked_at”. Saymak istediğin uçuşu LEFT JOIN\'in ON kısmında süz; WHERE\'e yazarsan hiç geçmişi olmayan rezervasyonlar kaybolur.' }),
     mc('<p>Nokta-zaman birleştirmede koşul <code>s.order_date BETWEEN b.baslangic AND b.bitis</code> yazılırsa ne olur?</p>', ['Hiçbir fark olmaz; BETWEEN yarı açık aralıktır', 'Tam bir güncelleme anına denk gelen satış hem eski hem yeni fiyat satırıyla eşleşir ve satır çoğalır', 'Açık uçlu (güncel) aralıklar eşleşmez', 'Sorgu yalnızca ilk fiyat dönemini döndürür'], 1,
       'BETWEEN iki ucu da dahil eder. Bir aralığın bitişi bir sonrakinin başlangıcıdır; o ana denk gelen satış iki aralığa birden düşer. Doğrusu: başlangıç dahil, bitiş hariç.')
   ]
@@ -517,7 +517,7 @@ ${ADIM([
 const at = L.findIndex(l => l.id === 'ileri-desenler');
 L.splice(at < 0 ? L.length : at + 1, 0, ...lessons);
 
-/* Patika: Büyük Sorgular (ileri seviye) */
+/* Öğrenme yolu: Büyük Sorgular (ileri seviye) */
 const P = window.SQLP_PATHS = window.SQLP_PATHS || [];
 P.push({ id: 'buyuk', name: 'İleri SQL: Büyük Sorgular', short: 'BS', color: '#7C3AED',
   desc: 'Gerçek işten çok adımlı, uzun sorgular: kohort matrisi, oturumlama, RFM, operasyon panosu, kural motoru, SCD 2.',

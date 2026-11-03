@@ -1,5 +1,5 @@
 /* Kesit SQL — Pedal İzmir bisiklet paylaşımı veri seti (hayali; deterministik üretim)
-   Haziran–Ağustos 2024: 60 istasyon, 700 bisiklet, 6.000 kullanıcı, saatlik hava durumu ve yaklaşık 120.000 yolculuk.
+   Haziran–Ağustos 2024: 62 istasyon, 700 bisiklet, 6.000 kullanıcı, saatlik hava durumu ve 116.517 yolculuk.
    Büyük tablo SQLite içinde özyinelemeli sorguyla üretilir: tohum metni küçük kalır, veri tam ve tekrarlanabilir.
    Örüntüler: hafta içi sabah ve akşam iş çıkışı zirvesi, hafta sonu öğleden sonra; yağmurda düşüş; elektrikli bisikletler daha hızlı;
    sahil istasyonları çekici; bazı yolculuklar kapanmamış; bazı bisikletler aynı anda iki yolculukta görünür (veri kalitesi). */
@@ -120,7 +120,7 @@ CREATE INDEX bk_trips_user ON bk_trips (user_id);
     bk_bikes: 'Bisikletler (700); model klasik / elektrikli',
     bk_users: 'Kullanıcılar (6.000); abone / tek seferlik; doğum yılı ve cinsiyet bazen boş',
     bk_weather: 'Saatlik hava durumu (Haziran–Ağustos 2024); obs_hour saat başı',
-    bk_trips: 'Yolculuklar (~120.000): büyük tablo. Kapanmamış yolculukta end_station, ended_at, distance_km ve fare boştur. started_at ve user_id üzerinde indeks vardır; istasyon sütunlarında yoktur',
+    bk_trips: 'Yolculuklar (116.517): büyük tablo. Kapanmamış yolculukta end_station, ended_at, distance_km ve fare boştur. started_at ve user_id üzerinde indeks vardır; istasyon sütunlarında yoktur',
     bk_maintenance: 'Bakım kayıtları; closed_at boşsa bakım sürüyor'
   });
   Object.assign(root.SQLP_COLMETA = root.SQLP_COLMETA || {}, {

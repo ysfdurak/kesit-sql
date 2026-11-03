@@ -181,7 +181,7 @@ LIMIT 10;</pre>
 <pre class="code">SELECT COUNT(*) AS yanlis, COUNT(DISTINCT o.order_id) AS dogru
 FROM orders o
 JOIN order_items oi ON oi.order_id = o.order_id;</pre>
-<div class="warn"><b>Altın kural</b>JOIN'den sonra toplam alırken, sonuç tablonun <b>tanecik düzeyini</b> (grain) bil: Her satır neyi temsil ediyor? Bir sipariş mi, bir sipariş satırı mı? Farklı tanecikteki iki tabloyu birleştirmeden önce birini önce özetlemek (alt sorgu/CTE) çoğu zaman doğru yoldur.</div>
+<div class="warn"><b>Altın kural</b>JOIN'den sonra toplam alırken, sonuç tablonun <b>grain düzeyini</b> (tanecik) bil: Her satır neyi temsil ediyor? Bir sipariş mi, bir sipariş satırı mı? Farklı grain düzeyindeki iki tabloyu birleştirmeden önce birini önce özetlemek (alt sorgu/CTE) çoğu zaman doğru yoldur.</div>
 `,
   ex: [
     { t: 'sql', q: '<p>Her <b>sipariş kanalı</b> (<code>channel</code>) için teslim edilmiş (<code>delivered</code>) siparişlerin cirosunu hesapla (2 basamak). Sütunlar: <code>channel</code>, <code>ciro</code>.</p>', sol: "SELECT o.channel, ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 2) AS ciro FROM orders o JOIN order_items oi ON oi.order_id = o.order_id WHERE o.status = 'delivered' GROUP BY o.channel;" },

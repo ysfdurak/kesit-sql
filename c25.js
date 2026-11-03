@@ -36,7 +36,7 @@ FROM (SELECT r.city, COUNT(*) AS siparis
       FROM lk_orders o JOIN lk_restaurants r ON r.restaurant_id = o.restaurant_id
       GROUP BY r.city) t;</pre>
 <h2>4. Ara adımı gör</h2>
-<p>Uzun bir CTE zincirinde son SELECT'i geçici olarak bir ara adıma çevir: <code>SELECT * FROM adim2 LIMIT 20</code>. Ara sonucun tanecik düzeyi (bir satır neyi temsil ediyor?) beklediğin gibi mi?</p>
+<p>Uzun bir CTE zincirinde son SELECT'i geçici olarak bir ara adıma çevir: <code>SELECT * FROM adim2 LIMIT 20</code>. Ara sonucun grain düzeyi (bir satır neyi temsil ediyor?) beklediğin gibi mi?</p>
 <h2>5. Uç değerlere bak</h2>
 <p>MIN, MAX ve NULL sayısı çoğu veri sorununu hemen gösterir: negatif tutar, gelecekte bir tarih, beklenmedik boşluk.</p>
 <pre class="code">SELECT MIN(placed_at), MAX(placed_at),
@@ -72,7 +72,7 @@ FROM t LEFT JOIN bank_fx f ON f.rate_date = t.gun AND f.currency = 'USD'
 ORDER BY t.gun;</pre>
 <p>Hafta sonları <code>try_rate</code> boş gelir.</p>
 <h2>Yol 1: ilişkili alt sorgu</h2>
-<p>Her gün için o güne kadarki en son kur tarihini bul, sonra o tarihin kurunu al. Her programda çalışır, anlaşılması kolaydır; büyük tablolarda yavaş olabilir.</p>
+<p>Her gün için o güne kadarki en son kur tarihini bul, sonra o tarihin kurunu al. Her SQL türünde çalışır, anlaşılması kolaydır; büyük tablolarda yavaş olabilir.</p>
 <pre class="code">WITH RECURSIVE t(gun) AS (
   SELECT '2024-03-01' UNION ALL SELECT date(gun, '+1 day') FROM t WHERE gun < '2024-03-14'
 )
@@ -95,7 +95,7 @@ k AS (
 SELECT gun, MAX(try_rate) OVER (PARTITION BY grp) AS kur
 FROM k
 ORDER BY gun;</pre>
-<p><code>COUNT(sütun)</code> boşları saymadığı için grup numarası yalnızca dolu satırlarda artar. Bu yöntem tabloyu bir kez tarar ve her programda çalışır.</p>
+<p><code>COUNT(sütun)</code> boşları saymadığı için grup numarası yalnızca dolu satırlarda artar. Bu yöntem tabloyu bir kez tarar ve her SQL türünde çalışır.</p>
 <h2>Yol 3: IGNORE NULLS</h2>
 <p>Oracle, BigQuery, Snowflake ve SQL Server 2022 şu kısa yazımı destekler: <code>LAST_VALUE(try_rate IGNORE NULLS) OVER (ORDER BY gun)</code>. PostgreSQL ve MySQL'de yoktur; orada 2. yol kullanılır.</p>
 <div class="note"><b>Dikkat</b>Dizinin <b>başında</b> boşluk varsa (ilk gün hafta sonuysa) doldurulacak bir önceki değer yoktur; sorgu NULL döndürür. Takvimi bir gün geriden başlatmak ya da ilk değeri bilinçli olarak seçmek gerekir.</div>
@@ -166,14 +166,14 @@ FROM i GROUP BY ada ORDER BY ada;</pre>
     sq('Aynı yöntemi İzmir için uygula (restoran şehri): İzmir\'de aynı anda yolda olan en fazla teslimat: <code>en_yogun</code>.', "WITH t AS (SELECT o.picked_at, o.delivered_at FROM lk_orders o JOIN lk_restaurants r ON r.restaurant_id = o.restaurant_id WHERE o.status = 'teslim' AND r.city = 'İzmir'), olay AS (SELECT picked_at AS an, 1 AS d FROM t UNION ALL SELECT delivered_at, -1 FROM t), k AS (SELECT SUM(d) OVER (ORDER BY an, d ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS yolda FROM olay) SELECT MAX(yolda) AS en_yogun FROM k;"),
     sq('Kurye 55\'in Aralık 2024 teslimatlarını, çakışanları birleştirerek “meşgul dönemlere” ayır; teslimat sayısı ve dönem sayısı: <code>teslimat</code>, <code>donem</code>.', "WITH s AS (SELECT picked_at AS bas, delivered_at AS bit, MAX(delivered_at) OVER (ORDER BY picked_at ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) AS onceki FROM lk_orders WHERE courier_id = 55 AND status = 'teslim' AND picked_at >= '2024-12-01' AND picked_at < '2025-01-01'), i AS (SELECT SUM(CASE WHEN onceki IS NULL OR bas > onceki THEN 1 ELSE 0 END) OVER (ORDER BY bas ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS ada FROM s) SELECT COUNT(*) AS teslimat, COUNT(DISTINCT ada) AS donem FROM i;"),
     sq('Kanat Havayolları: aynı uçağın planlanan iki uçuşunun (sched_dep → sched_arr) çakıştığı durumların sayısı (çift başına bir kez; veri hatası testi): <code>cakisma</code>.', 'SELECT COUNT(*) AS cakisma FROM hv_flights a JOIN hv_flights b ON b.tail_no = a.tail_no AND a.flight_id < b.flight_id AND a.sched_dep < b.sched_arr AND b.sched_dep < a.sched_arr;'),
-    mc('<p>[10:00, 10:30) ve [10:30, 11:00) aralıkları için hangisi doğrudur?</p>', ['Çakışırlar; 10:30 ikisinde de var', '<code>a.bas &lt; b.bit AND b.bas &lt; a.bit</code> koşuluna göre çakışmazlar; yarı açık aralıkta ilkinin bitişi ikincisine dahil değildir', 'Çakışma koşulu bu durumda hata verir', 'Sonuç programa göre değişir'], 1, '10:00 < 11:00 doğru, ama 10:30 < 10:30 yanlış; koşul sağlanmaz. Kapalı aralık istersen <= kullanırsın.')
+    mc('<p>[10:00, 10:30) ve [10:30, 11:00) aralıkları için hangisi doğrudur?</p>', ['Çakışırlar; 10:30 ikisinde de var', '<code>a.bas &lt; b.bit AND b.bas &lt; a.bit</code> koşuluna göre çakışmazlar; yarı açık aralıkta ilkinin bitişi ikincisine dahil değildir', 'Çakışma koşulu bu durumda hata verir', 'Sonuç SQL türüne göre değişir'], 1, '10:00 &lt; 11:00 doğru, ama 10:30 &lt; 10:30 yanlış; koşul sağlanmaz. Kapalı aralık istersen &lt;= kullanırsın.')
   ]
 });
 
 after('pivot', {
   id: 'unpivot', lv: 'B2', mod: 'İleri Sorgu Yapıları', min: 15,
   title: 'Geniş tablodan uzun tabloya: UNPIVOT',
-  sum: 'Sütunlara yayılmış ölçümleri satırlara çevirmek: UNION ALL, sabit liste ile CROSS JOIN, programlara özgü UNPIVOT ve uzun formatın analizdeki faydası.',
+  sum: 'Sütunlara yayılmış ölçümleri satırlara çevirmek: UNION ALL, sabit liste ile CROSS JOIN, SQL türlerine özgü UNPIVOT ve uzun formatın analizdeki faydası.',
   body: `
 <h2>Neden uzun format?</h2>
 <p>Lezzet Kurye değerlendirmelerinde iki puan iki ayrı sütunda durur: <code>food_score</code> ve <code>courier_score</code>. “Hangi puan türünün ortalaması daha düşük?”, “Her puan türünde 1 verenlerin oranı?” gibi sorular, puanlar <b>tek sütunda</b> ve türü ayrı bir sütunda olduğunda tek bir GROUP BY ile cevaplanır. Görselleştirme araçları da çoğunlukla uzun format ister.</p>
@@ -191,7 +191,7 @@ SELECT order_id, 'kurye', courier_score FROM lk_ratings;</pre>
 FROM lk_ratings r
 CROSS JOIN (SELECT 'yemek' AS tur UNION ALL SELECT 'kurye') t;</pre>
 <p>Tabloyu bir kez okur; her satırı tür sayısı kadar çoğaltıp CASE ile doğru sütunu seçer.</p>
-<h2>Yol 3: programa özgü operatörler</h2>
+<h2>Yol 3: SQL türüne özgü operatörler</h2>
 <ul><li>SQL Server ve Oracle: <code>UNPIVOT (puan FOR tur IN (food_score, courier_score))</code></li><li>BigQuery: <code>UNPIVOT (puan FOR tur IN (food_score, courier_score))</code></li><li>PostgreSQL: <code>CROSS JOIN LATERAL (VALUES ('yemek', food_score), ('kurye', courier_score)) v(tur, puan)</code></li></ul>
 <div class="note"><b>NULL'lara dikkat</b>SQL Server ve Oracle UNPIVOT, değeri NULL olan satırları varsayılan olarak atar; UNION ALL yöntemi ise korur. Sayımlar bu yüzden farklı çıkabilir.</div>
 `,
@@ -203,7 +203,7 @@ CROSS JOIN (SELECT 'yemek' AS tur UNION ALL SELECT 'kurye') t;</pre>
   ]
 });
 
-/* ---------- Patikalara yerleştir ---------- */
+/* ---------- Öğrenme yollarına yerleştir ---------- */
 (window.SQLP_PATHS || []).forEach(p => {
   const put = (anchor, id) => { if (p.lessons.includes(id)) return; const i = p.lessons.indexOf(anchor); if (i >= 0) p.lessons.splice(i + 1, 0, id); };
   put('sik-hatalar', 'hata-ayiklama'); put('takvim', 'son-deger'); put('ardisik-seri', 'zaman-araligi'); put('pivot', 'unpivot');

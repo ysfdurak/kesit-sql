@@ -1,5 +1,5 @@
 /* Kesit SQL — Pusula A.Ş. İnsan Kaynakları veri seti (hayali; deterministik üretim)
-   2019–2024 arası yaklaşık 1.900 çalışanın işe giriş, görev, maaş, performans, izin, işe alım, anket ve eğitim kayıtları.
+   2019–2024 arası 2.199 çalışanın işe giriş, görev, maaş, performans, izin, işe alım, anket ve eğitim kayıtları.
    İçine gerçekçi örüntüler yerleştirilmiştir: ilk yılda yüksek ayrılma, bant altı maaş ve zayıf yönetici puanıyla artan
    gönüllü ayrılma, seviye karışımından doğan ham ücret farkı, Pazartesi hastalık izni yığılması, referans kaynağının kalitesi. */
 (function (root) {
@@ -138,7 +138,7 @@ CREATE TABLE ik_training (emp_id INTEGER NOT NULL REFERENCES ik_employees(emp_id
   sql += ins('ik_positions', ['position_id', 'title', 'dept_id', 'level', 'band_min', 'band_max'], pos);
   /* Bant dışına çok taşan maaşlar için Temmuz 2024 düzeltmesi */
   const PB = {}; pos.forEach(p => PB[p[0]] = p);
-  emps.forEach(e => { if (e.term && e.term < Date.UTC(2024, 6, 1)) return; const p = PB[e.pos]; const mid = (p[4] + p[5]) / 2; const last = e.sal[e.sal.length - 1][2]; const lo = mid * (0.78 + R() * 0.04), hi = mid * (1.22 + R() * 0.04); if (last < lo) e.sal.push([e.id, '2024-07-01', r100(lo), 'düzeltme']); else if (last > hi) e.sal.push([e.id, '2024-07-01', r100(hi), 'düzeltme']); });
+  emps.forEach(e => { if (e.term && e.term < Date.UTC(2024, 6, 1)) return; const p = PB[e.pos]; const mid = (p[4] + p[5]) / 2; const last = e.sal[e.sal.length - 1][2]; const lo = mid * (0.78 + R() * 0.04), hi = mid * (1.22 + R() * 0.04); if (e.hire > Date.UTC(2024, 6, 1)) return; /* Temmuz 2024'ten sonra işe girene düzeltme yazılmaz */ if (last < lo) e.sal.push([e.id, '2024-07-01', r100(lo), 'düzeltme']); else if (last > hi) e.sal.push([e.id, '2024-07-01', r100(hi), 'düzeltme']); });
   /* yöneticiler: zaman içinde sabit kabul (yalnızca Veri ekibinde değişim) */
   emps.forEach(e => { if (!e.mgr && e !== gm && !e.isMgr) e.mgr = mgrOf(e, e.term || TEND); if (e.isMgr && e.lv === 4) e.mgr = heads[e.dept].id; });
   sql += ins('ik_employees', ['emp_id', 'full_name', 'gender', 'birth_year', 'city', 'education', 'hire_date', 'term_date', 'term_type', 'term_reason', 'position_id', 'manager_id', 'hire_source', 'work_mode'],
@@ -159,6 +159,8 @@ CREATE TABLE ik_training (emp_id INTEGER NOT NULL REFERENCES ik_employees(emp_id
     if (R() < 0.3) lv.push([++lid, e.id, 'mazeret', ds(nextWork(ys + Math.floor(R() * (span - 3)) * DAY)), bi(1, 3)]);
     if (R() < 0.03) lv.push([++lid, e.id, 'ücretsiz', ds(nextWork(ys + Math.floor(R() * (span - 20)) * DAY)), bi(5, 20)]); } });
   lv.sort((a, b) => a[3] < b[3] ? -1 : a[3] > b[3] ? 1 : a[1] - b[1]); lv.forEach((r, i) => r[0] = i + 1);
+  /* Ayrılıştan sonra başlayan hastalık izni olmaz: haftanın aynı gününde öne alınır, izin numarası değişmez */
+  lv.forEach(r => { const e = E[r[1]]; if (e.term && r[3] > ds(e.term)) { let t = Date.parse(r[3] + 'T00:00:00Z'); while (t > e.term) t -= 7 * DAY; r[3] = ds(t); } });
   sql += ins('ik_leaves', ['leave_id', 'emp_id', 'leave_type', 'start_date', 'days'], lv);
   /* İşe alım: her 2022–2024 alımı için bir kadro talebi ve aday hunisi; ayrıca açık ve iptal talepler */
   const reqs = [], cands = []; let rq = 0, cd = 0;
