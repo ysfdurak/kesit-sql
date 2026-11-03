@@ -91,7 +91,7 @@ E.push({ id: 'genel-ileri', name: 'SQL İleri Seviye', short: 'İleri', lv: 'ile
   q('İşlem', 'Phantom read\'i de engelleyen en katı standart izolasyon düzeyi?', ['READ UNCOMMITTED', 'READ COMMITTED', 'REPEATABLE READ', 'SERIALIZABLE'], 3),
   q('İşlem', 'Deadlock nedir?', ['Uzun süren sorgu', 'İki işlemin birbirinin kilidini bekleyerek kilitlenmesi', 'İndeks bozulması', 'Bağlantı kopması'], 1),
   q('Performans', 'Bileşik indeks (a, b) hangi koşulda en verimli kullanılır?', ['WHERE b = 1', 'WHERE a = 1 AND b = 2', 'WHERE b > 5', 'WHERE c = 3'], 1),
-  q('Performans', 'Kaplayan (covering) indeks ne demektir?', ['Tüm tabloyu kapsayan indeks', 'Sorgunun ihtiyaç duyduğu tüm sütunları içerdiği için tabloya dönmeye gerek bırakmayan indeks', 'Benzersiz indeks', 'Kümelenmiş indeks'], 1),
+  q('Performans', 'Kapsayan (covering) indeks ne demektir?', ['Tüm tabloyu kapsayan indeks', 'Sorgunun ihtiyaç duyduğu tüm sütunları içerdiği için tabloya dönmeye gerek bırakmayan indeks', 'Benzersiz indeks', 'Kümelenmiş indeks'], 1),
   q('Performans', 'Hangisi indeksin <b>dezavantajıdır</b>?', ['Okumayı hızlandırması', 'Yazma (INSERT/UPDATE/DELETE) işlemlerini yavaşlatması ve alan kaplaması', 'Sıralamayı hızlandırması', 'JOIN\'leri hızlandırması'], 1),
   q('Performans', 'Sorgu planında büyük tablonun tamamının okunması hangi işlemle görülür?', ['Index Seek', 'Table/Full Scan', 'Key Lookup', 'Nested Loop'], 1),
   q('Performans', 'SQL Server\'da bir tabloda kaç kümelenmiş (clustered) indeks olabilir?', ['Sınırsız', 'Bir', 'İki', '999'], 1),
