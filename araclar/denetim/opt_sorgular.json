@@ -1,0 +1,174 @@
+{
+ "pg-tarih-seq": {
+  "motor": "pg",
+  "q": "SELECT COUNT(*) FROM bank_txns WHERE txn_time >= '2024-11-01' AND txn_time < '2024-12-01'"
+ },
+ "pg-tarih-ix": {
+  "motor": "pg",
+  "kur": "CREATE INDEX ix_txn_time ON bank_txns (txn_time)",
+  "q": "SELECT COUNT(*) FROM bank_txns WHERE txn_time >= '2024-11-01' AND txn_time < '2024-12-01'"
+ },
+ "pg-tarih-fn": {
+  "motor": "pg",
+  "kur": "CREATE INDEX ix_txn_time ON bank_txns (txn_time)",
+  "q": "SELECT COUNT(*) FROM bank_txns WHERE EXTRACT(YEAR FROM txn_time) = 2024 AND EXTRACT(MONTH FROM txn_time) = 11"
+ },
+ "pg-tek-gun": {
+  "motor": "pg",
+  "kur": "CREATE INDEX ix_txn_time ON bank_txns (txn_time)",
+  "q": "SELECT txn_id, amount FROM bank_txns WHERE txn_time >= '2024-11-01' AND txn_time < '2024-11-02'"
+ },
+ "pg-exists": {
+  "motor": "pg",
+  "q": "SELECT c.customer_id FROM bank_customers c WHERE EXISTS (SELECT 1 FROM bank_accounts a WHERE a.customer_id = c.customer_id)"
+ },
+ "pg-in": {
+  "motor": "pg",
+  "q": "SELECT c.customer_id FROM bank_customers c WHERE c.customer_id IN (SELECT a.customer_id FROM bank_accounts a)"
+ },
+ "pg-distinct": {
+  "motor": "pg",
+  "q": "SELECT DISTINCT c.customer_id FROM bank_customers c JOIN bank_accounts a ON a.customer_id = c.customer_id"
+ },
+ "pg-nested": {
+  "motor": "pg",
+  "q": "SELECT a.customer_id, t.amount FROM bank_accounts a JOIN bank_txns t ON t.account_id = a.account_id WHERE a.account_id = 100019"
+ },
+ "pg-hash": {
+  "motor": "pg",
+  "q": "SELECT a.customer_id, COUNT(*) FROM bank_txns t JOIN bank_accounts a ON a.account_id = t.account_id GROUP BY a.customer_id"
+ },
+ "pg-merge": {
+  "motor": "pg",
+  "q": "SELECT o.order_id, l.item_id FROM lk_orders o JOIN lk_order_lines l ON l.order_id = o.order_id ORDER BY o.order_id"
+ },
+ "pg-offset": {
+  "motor": "pg",
+  "q": "SELECT order_id, placed_at FROM lk_orders ORDER BY order_id LIMIT 10 OFFSET 5000"
+ },
+ "pg-keyset": {
+  "motor": "pg",
+  "q": "SELECT order_id, placed_at FROM lk_orders WHERE order_id > 5000 ORDER BY order_id LIMIT 10"
+ },
+ "pg-secici-yaygin": {
+  "motor": "pg",
+  "kur": "CREATE INDEX ix_tip ON bank_txns (txn_type)",
+  "q": "SELECT txn_id, amount FROM bank_txns WHERE txn_type = 'kart_harcama'"
+ },
+ "pg-secici-nadir": {
+  "motor": "pg",
+  "kur": "CREATE INDEX ix_tip ON bank_txns (txn_type)",
+  "q": "SELECT txn_id, amount FROM bank_txns WHERE txn_type = 'faiz'"
+ },
+ "pg-bolum-iyi": {
+  "motor": "pg",
+  "bolum": true,
+  "q": "SELECT COUNT(*) FROM tx_bolum WHERE txn_time >= '2024-11-01' AND txn_time < '2024-12-01'"
+ },
+ "pg-bolum-fn": {
+  "motor": "pg",
+  "bolum": true,
+  "q": "SELECT COUNT(*) FROM tx_bolum WHERE EXTRACT(MONTH FROM txn_time) = 11"
+ },
+ "pg-bolum-alt": {
+  "motor": "pg",
+  "bolum": true,
+  "q": "SELECT COUNT(*) FROM tx_bolum WHERE txn_time >= (SELECT MAX(txn_time) - INTERVAL '30 days' FROM bank_txns)"
+ },
+ "pg-kapsama-yok": {
+  "motor": "pg",
+  "kur": "CREATE INDEX ix_hesap_zaman ON bank_txns (account_id, txn_time)",
+  "q": "SELECT SUM(amount) FROM bank_txns WHERE account_id = 100019 AND txn_time >= '2024-01-01'"
+ },
+ "pg-kapsama-var": {
+  "motor": "pg",
+  "kur": "CREATE INDEX ix_hesap_zaman ON bank_txns (account_id, txn_time) INCLUDE (amount)",
+  "q": "SELECT SUM(amount) FROM bank_txns WHERE account_id = 100019 AND txn_time >= '2024-01-01'"
+ },
+ "pg-sira-iyi": {
+  "motor": "pg",
+  "kur": "CREATE INDEX ix_a ON bank_txns (txn_type, txn_time)",
+  "q": "SELECT COUNT(*) FROM bank_txns WHERE txn_type = 'faiz' AND txn_time >= '2024-11-01' AND txn_time < '2024-12-01'"
+ },
+ "pg-sira-kotu": {
+  "motor": "pg",
+  "kur": "CREATE INDEX ix_b ON bank_txns (txn_time, txn_type)",
+  "q": "SELECT COUNT(*) FROM bank_txns WHERE txn_type = 'faiz' AND txn_time >= '2024-11-01' AND txn_time < '2024-12-01'"
+ },
+ "pg-cte-acik": {
+  "motor": "pg",
+  "kur": "CREATE INDEX ix_txn_time ON bank_txns (txn_time)",
+  "q": "WITH t AS (SELECT txn_id, txn_time FROM bank_txns) SELECT COUNT(*) FROM t WHERE txn_time >= '2024-11-01' AND txn_time < '2024-11-02'"
+ },
+ "pg-cte-mat": {
+  "motor": "pg",
+  "kur": "CREATE INDEX ix_txn_time ON bank_txns (txn_time)",
+  "q": "WITH t AS MATERIALIZED (SELECT txn_id, txn_time FROM bank_txns) SELECT COUNT(*) FROM t WHERE txn_time >= '2024-11-01' AND txn_time < '2024-11-02'"
+ },
+ "pg-tur-iyi": {
+  "motor": "pg",
+  "q": "SELECT COUNT(*) FROM bank_txns WHERE account_id = 100019"
+ },
+ "pg-tur-kotu": {
+  "motor": "pg",
+  "q": "SELECT COUNT(*) FROM bank_txns WHERE account_id::text = '100019'"
+ },
+ "pg-ifade-ix": {
+  "motor": "pg",
+  "kur": "CREATE INDEX ix_gun ON bank_txns ((txn_time::date))",
+  "q": "SELECT COUNT(*) FROM bank_txns WHERE txn_time::date = '2024-11-01'"
+ },
+ "pg-yildiz": {
+  "motor": "pg",
+  "q": "SELECT * FROM bank_txns ORDER BY amount DESC"
+ },
+ "pg-iki-sutun": {
+  "motor": "pg",
+  "q": "SELECT txn_id, amount FROM bank_txns ORDER BY amount DESC"
+ },
+ "pg-pencere": {
+  "motor": "pg",
+  "q": "SELECT txn_id, ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY txn_time DESC) AS sira FROM bank_txns"
+ },
+ "pg-pencere-ix": {
+  "motor": "pg",
+  "kur": "CREATE INDEX ix_hesap_zaman ON bank_txns (account_id, txn_time DESC)",
+  "q": "SELECT txn_id, ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY txn_time DESC) AS sira FROM bank_txns"
+ },
+ "pg-once-birlestir": {
+  "motor": "pg",
+  "q": "SELECT s.name, COUNT(*) FROM bk_trips t JOIN bk_stations s ON s.station_id = t.start_station GROUP BY s.name"
+ },
+ "pg-once-topla": {
+  "motor": "pg",
+  "q": "WITH g AS (SELECT start_station, COUNT(*) AS n FROM bk_trips GROUP BY start_station) SELECT s.name, g.n FROM g JOIN bk_stations s ON s.station_id = g.start_station"
+ },
+ "pg-bayat": {
+  "motor": "pg",
+  "bayat": true,
+  "q": "SELECT COUNT(*) FROM tx_kopya WHERE account_id = 100019"
+ },
+ "pg-taze": {
+  "motor": "pg",
+  "bayat": true,
+  "analyze": "tx_kopya",
+  "q": "SELECT COUNT(*) FROM tx_kopya WHERE account_id = 100019"
+ },
+ "pg-loops": {
+  "motor": "pg",
+  "q": "SELECT a.account_id, t.amount FROM bank_accounts a JOIN bank_txns t ON t.account_id = a.account_id WHERE a.customer_id < 6 AND t.txn_type = 'fatura'"
+ },
+ "pg-count-yildiz": {
+  "motor": "pg",
+  "q": "SELECT COUNT(*) FROM lk_orders"
+ },
+ "pg-count-bir": {
+  "motor": "pg",
+  "q": "SELECT COUNT(1) FROM lk_orders"
+ },
+ "pg-having": {
+  "motor": "pg",
+  "kur": "CREATE INDEX ix_tip ON bank_txns (txn_type)",
+  "q": "SELECT txn_type, COUNT(*) FROM bank_txns GROUP BY txn_type HAVING txn_type = 'faiz'"
+ }
+}

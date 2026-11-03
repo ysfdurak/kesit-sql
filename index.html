@@ -1,5 +1,5 @@
 <!doctype html><html lang="tr"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Kesit SQL: sıfırdan ileri seviyeye ücretsiz, Türkçe SQL eğitimi. Kurulum ve hesap yok; tarayıcında çalışan bir SQL veritabanıyla 258 ders, 1.620 otomatik denetlenen alıştırma, 6 SQL türü.">
+<meta name="description" content="Kesit SQL: sıfırdan ileri seviyeye ücretsiz, Türkçe SQL eğitimi. Kurulum ve hesap yok; tarayıcında çalışan bir SQL veritabanıyla 271 ders, 1.747 otomatik denetlenen alıştırma, 6 SQL türü.">
 <meta name="theme-color" content="#D3352C">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
@@ -9,7 +9,7 @@
 <meta property="og:locale" content="tr_TR">
 <meta property="og:site_name" content="Kesit SQL">
 <meta property="og:title" content="Kesit SQL: sıfırdan ileri seviyeye Türkçe SQL">
-<meta property="og:description" content="Kurulum yok, hesap yok. Tarayıcında çalışan bir SQL veritabanıyla 258 ders, 1.620 alıştırma ve 6 SQL türü.">
+<meta property="og:description" content="Kurulum yok, hesap yok. Tarayıcında çalışan bir SQL veritabanıyla 271 ders, 1.747 alıştırma ve 6 SQL türü.">
 <meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png">
 <meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/">
 <meta name="twitter:card" content="summary_large_image"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}.doors{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
@@ -224,6 +224,8 @@ button.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink);
 .theory th{background:var(--surface-2)}
 .tbl-wrap{overflow-x:auto; max-width:100% !important}
 .note,.tip,.warn{border-radius:8px; padding:12px 14px; margin:14px 0; font-size:.94rem; border:1px solid}
+.plan-cikti{font-variant-ligatures:none; font-family:var(--f-mono); font-size:.76rem; line-height:1.5; background:var(--surface-2); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin:6px 0 14px; overflow-x:auto; white-space:pre; max-width:100%}
+.plan-etiket{font-size:.78rem; color:var(--muted); margin:10px 0 -2px}
 .note{background:var(--surface-2); border-color:var(--line)}
 .tip{background:var(--ok-soft); border-color:color-mix(in srgb, var(--ok) 35%, transparent)}
 .warn{background:var(--warn-soft); border-color:color-mix(in srgb, var(--warn) 35%, transparent)}
@@ -577,6 +579,9 @@ button.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink);
 <script src="c34.js"></script>
 <script src="c35.js"></script>
 <script src="c36.js"></script>
+<script src="plan-ciktilari.js"></script>
+<script src="c37.js"></script>
+<script src="c38.js"></script>
 <script src="ipuclari.js"></script>
 <script src="arena-data.js"></script>
 <script src="config.js"></script>
@@ -607,7 +612,7 @@ const COLMETA = window.SQLP_COLMETA || {}; const TABLES = Object.keys(COLMETA);
 const lvOrder = id => LEVELS.findIndex(l=>l.id===id);
 const lvName = id => (LEVELS[lvOrder(id)]||{}).name || id;
 const lvBadge = id => '<span class="lv lv-'+id+'">'+lvName(id)+'</span>';
-const EXTRA_MODS = ['Veri Analisti','BT İş Analizi','Veri Bilimi','Veri Mühendisliği','Mülakat Hazırlığı','SQL Türlerine Özgü','İş Zekâsı ve Raporlama','Veritabanı Yönetimi (DBA)','Uygulama Geliştirme','Vaka Çalışmaları','Yapay Zekâ ile SQL','BigQuery ve Bulut Veri Ambarları','Sertifika Hazırlık','Alıştırma Kampı','Bitirme Projeleri','Kanat Havayolları','Büyük Sorgular','İK Analitiği','Büyük Veriyle Çalışmak'];
+const EXTRA_MODS = ['Veri Analisti','BT İş Analizi','Veri Bilimi','Veri Mühendisliği','Mülakat Hazırlığı','SQL Türlerine Özgü','İş Zekâsı ve Raporlama','Veritabanı Yönetimi (DBA)','Uygulama Geliştirme','Vaka Çalışmaları','Yapay Zekâ ile SQL','BigQuery ve Bulut Veri Ambarları','Sertifika Hazırlık','Alıştırma Kampı','Bitirme Projeleri','Kanat Havayolları','Büyük Sorgular','İK Analitiği','Büyük Veriyle Çalışmak','Sorgu Optimizasyonu'];
 (function hints(){ const dc=[], tc=[], all=[], dt=[]; for(const t of TABLES) for(const [c,ty] of COLMETA[t]){ all.push(c); if(/date/.test(ty)) dc.push(c); if(ty==='datetime') dt.push(c); if(/^text/.test(ty)) tc.push(c); } DX.setSchemaHints(dc, tc, all, dt); })();
 
 /* ---------- Depolama ---------- */
@@ -1045,7 +1050,7 @@ function aiCopySQL(){ const e=LS.e; let ek='SQL türü: '+DNAME[LS.d]; try{ if(e
 function sqlView(e,k){
   const solved=P.ex[k] && !S.review, d=exDialect(e,k), al=exAllowed(e);
   const used=tablesIn((e.sol||'')+' '+(e.start||'')+' '+e.q);
-  let h='<div class="ex-grid"><div class="panel brief"><div class="row" style="justify-content:space-between"><span class="eyebrow">Görev'+(solved?' · çözüldü':'')+'</span>'+(e.check?'<span class="chip">Veriyi değiştiren görev</span>':'')+(al.length<5?'<span class="chip">'+al.map(x=>DNAME[x]).join(' / ')+' yazımıyla</span>':'')+'</div>'+(e.adv?'<div class="adv-note"><b>İleri görev.</b> '+esc(e.adv)+' Dersin bitmesi için gerekmez; konuyu öğrenince dön.</div>':'')+'<div class="q">'+e.q+'</div>';
+  let h='<div class="ex-grid"><div class="panel brief"><div class="row" style="justify-content:space-between"><span class="eyebrow">Görev'+(solved?' · çözüldü':'')+'</span>'+(e.plan?'<span class="chip" title="Sonuçtan sonra sorgu planına da bakılır. Motor SQLite olduğu için plan SQLite planıdır.">Plan da denetlenir</span>':'')+(e.check?'<span class="chip">Veriyi değiştiren görev</span>':'')+(al.length<5?'<span class="chip">'+al.map(x=>DNAME[x]).join(' / ')+' yazımıyla</span>':'')+'</div>'+(e.adv?'<div class="adv-note"><b>İleri görev.</b> '+esc(e.adv)+' Dersin bitmesi için gerekmez; konuyu öğrenince dön.</div>':'')+'<div class="q">'+e.q+'</div>';
   h+=usedDataHTML(used,!(window.matchMedia&&matchMedia('(max-width:860px)').matches));
   h+='<div class="row" style="gap:8px">'+(e.hint?'<button class="btn sm" data-act="hint">İpucu</button>':'')+'<button class="btn sm ghost" data-act="sol">Çözümü göster</button><button class="btn sm ghost" data-act="ai-copy" title="Görevi, kodunu ve hatanı bir isteme kopyalar. Hiçbir yere gönderilmez.">Yapay zekâ için kopyala</button></div><div id="hintBox"></div><div id="solBox"></div></div>';
   h+='<div class="work"><div class="ed-shell"><div class="ed-top"><label for="exD" style="display:flex;gap:6px;align-items:center">SQL türü <select id="exD">'+al.map(x=>'<option value="'+x+'"'+(x===d?' selected':'')+'>'+DNAME[x]+'</option>').join('')+'</select></label><span class="row" style="gap:8px"><button class="btn sm ghost" data-act="fmt" style="color:var(--code-ink);padding:2px 6px">Biçimlendir</button><span class="kbd-hint">Ctrl/⌘ + Enter</span></span></div><div id="ed"></div></div>';
@@ -1107,6 +1112,7 @@ function submitEx(){
   const {l,e,k,d}=LS; const code=ED.get(); if(!code.trim()) return;
   const db=fresh(); const r=run(db,code,d); let uset=lastSet(r);
   if(!r.error && e.check){ try{ uset=db.exec(e.check).pop()||null; }catch(er){ uset=null; } }
+  const pf=(!r.error&&e.plan)?DX.planFail(e,db,r):null;
   $('#res').innerHTML=resultHTML(r, Object.assign({noErr:!!r.error}, e.check?{checkSet:uset}:{})); db.close();
   if(r.error){ $('#fb').innerHTML=errHTML(r); return; }
   const s=solResult(e,k);
@@ -1114,6 +1120,7 @@ function submitEx(){
   const c=compare(uset,s.set,e.ord); LS.tries++;
   if(!c.ok && e.check && /değerler farklı|satır|sütun var/.test(c.why)) c.why=/pragma_|sqlite_master|sqlite_schema/i.test(e.check)?'Tablonun yapısı beklenenle aynı değil. Sütunları, PRIMARY KEY, FOREIGN KEY ve CHECK kısıtlarını kontrol et.':'Tablonun son durumu beklenenle aynı değil. Hangi satırların değiştiğini ve koşulu kontrol et.';
   if(c.ok){ const mf=mustFail(e, code, d); if(mf){ $('#fb').innerHTML='<div class="msg err"><b>Sonuç doğru, yöntem eksik</b>'+esc(mf)+'<div class="row" style="margin-top:8px"></div></div>'; return; } }
+  if(c.ok&&pf){ $('#fb').innerHTML='<div class="msg err"><b>Sonuç doğru, plan beklenen gibi değil</b>'+esc(pf.msg)+(pf.plan?'<pre class="plan-cikti">'+esc(pf.plan)+'</pre>':'')+'</div>'; return; }
   if(c.ok){
     const first=!P.ex[k]; P.ex[k]=1; if(first) addXP(LS.shown?2:10);
     const extra=solvedHook(k, LS.tries===1 && !LS.shown);
@@ -1444,9 +1451,9 @@ function arJudge(c, code, d){
   const cases=[{ad:'Örnek veri', sql:''}].concat(c.tests); const out=[]; let firstR=null;
   for(let i=0;i<cases.length;i++){ const t=cases[i];
     const dbS=fresh(); if(t.sql) try{ dbS.exec(t.sql); }catch(e){} const sr=run(dbS,c.sol,'sqlite'); dbS.close();
-    const dbU=fresh(); if(t.sql) try{ dbU.exec(t.sql); }catch(e){} const ur=run(dbU,code,d); dbU.close(); if(!i) firstR=ur;
+    const dbU=fresh(); if(t.sql) try{ dbU.exec(t.sql); }catch(e){} const ur=run(dbU,code,d); const apf=(!i&&!ur.error&&c.plan)?DX.planFail(c,dbU,ur):null; dbU.close(); if(!i) firstR=ur;
     if(ur.error){ out.push({ad:t.ad, ok:false, why:'Hata: '+ur.error}); break; }
-    const cm=compare(lastSet(ur), lastSet(sr), c.ord ? (/eşitlikte/i.test(c.q) ? 'strict' : true) : false); out.push({ad:t.ad, ok:cm.ok, why:cm.why}); }
+    const cm=compare(lastSet(ur), lastSet(sr), c.ord ? (/eşitlikte/i.test(c.q) ? 'strict' : true) : false); if(cm.ok&&apf){ cm.ok=false; cm.why='Sonuç doğru, plan beklenen gibi değil. '+apf.msg+(apf.plan?' Planın: '+apf.plan.replace(/\n/g,' | '):''); } out.push({ad:t.ad, ok:cm.ok, why:cm.why}); }
   const all=out.length===cases.length&&out.every(x=>x.ok);
   const html='<div class="msg '+(all?'ok':'err')+'"><b>'+(all?'Tüm testler geçti':'Bazı testler geçmedi')+'</b><div class="ar-tests">'+out.map((x,i)=>'<div class="ar-test '+(x.ok?'ok':'no')+'"><i>'+(x.ok?'✓':'✗')+'</i><span>'+(i?'Gizli test '+i:'Örnek veri')+(i&&!x.ok?': '+esc(x.ad):'')+(x.ok?'':'<br><span class="muted">'+esc(x.why)+'</span>')+'</span></div>').join('')+(out.length<cases.length?'<div class="ar-test no"><i>·</i><span class="muted">Kalan '+(cases.length-out.length)+' test çalıştırılmadı.</span></div>':'')+'</div>';
   return {out, all, firstR, html};
