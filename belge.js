@@ -106,8 +106,8 @@
     let h = '<section class="panel cert-panel"><div class="sec-head"><div><span class="eyebrow">Tebrikler</span><h2 style="margin:2px 0 0">Tamamlama belgen hazır</h2></div>' + (d.rec ? '<span class="chip okc">' + esc(trDate(d.rec.date)) + '</span>' : '') + '</div>';
     h += '<p class="muted" style="margin:0">' + esc(d.name) + ' öğrenme yolunun ' + d.lessons + ' çekirdek dersini bitirdin. Belgede görünecek adını yaz; ad yalnızca bu tarayıcıda saklanır.</p>';
     h += '<form class="cert-form" data-cert-form="' + esc(pid) + '"><input class="input" name="ad" maxlength="60" required autocomplete="name" aria-label="Belgede görünecek ad" placeholder="Ad Soyad" value="' + esc(name) + '"><button class="btn pri" type="submit">' + (d.rec ? 'Belgeyi güncelle' : 'Belgeyi oluştur') + '</button></form>';
-    h += '<div class="cert-out" id="certOut"' + (d.rec ? '' : ' hidden') + '><canvas id="certCanvas" aria-label="Tamamlama belgesi önizlemesi"></canvas><div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn" data-cert="png" data-p="' + esc(pid) + '">Görsel olarak indir (PNG)</button><button class="btn" data-cert="print" data-p="' + esc(pid) + '">Yazdır / PDF kaydet</button><button class="btn" data-cert="li-share" data-p="' + esc(pid) + '">LinkedIn\'de paylaş</button><button class="btn ghost" data-cert="li-profile" data-p="' + esc(pid) + '">LinkedIn profiline ekle</button></div>';
-    h += '<p class="muted" style="margin:0;font-size:.82rem">LinkedIn paylaşımında görseli kendin eklemen gerekir: önce PNG olarak indir, paylaşım penceresinde görsel ekle. “Profiline ekle” LinkedIn\'in Lisanslar ve sertifikalar formunu doldurulmuş olarak açar. Bu belge resmî bir sertifika değildir.</p></div></section>';
+    h += '<div class="cert-out" id="certOut"' + (d.rec ? '' : ' hidden') + '><canvas id="certCanvas" aria-label="Tamamlama belgesi önizlemesi"></canvas><div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn" data-cert="png" data-p="' + esc(pid) + '">Görsel olarak indir (PNG)</button><button class="btn" data-cert="print" data-p="' + esc(pid) + '">Yazdır / PDF kaydet</button><button class="btn" data-cert="li-share" data-p="' + esc(pid) + '">LinkedIn\'de paylaş</button></div>';
+    h += '<p class="muted" style="margin:0;font-size:.82rem">LinkedIn paylaşımında görseli kendin eklemen gerekir: önce PNG olarak indir, paylaşım penceresinde görsel ekle. Bu belge kendi beyanına dayanır, resmî bir sertifika değildir; profilinde sertifika olarak göstermemeni öneririz.</p></div></section>';
     return h;
   }
   function opts(pid) {
@@ -140,10 +140,7 @@
   }
   function linkedIn(pid, kind) {
     const o = opts(pid); const site = o.url || 'https://github.com';
-    if (kind === 'li-share') { window.open('https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(site), '_blank', 'noopener'); return; }
-    const [y, m] = o.date.split('-');
-    const u = 'https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=' + encodeURIComponent('Kesit SQL: ' + o.path + ' (tamamlama belgesi)') + '&organizationName=' + encodeURIComponent('Kesit SQL') + '&issueYear=' + y + '&issueMonth=' + Number(m) + (o.url ? '&certUrl=' + encodeURIComponent(o.url) : '') + '&certId=' + encodeURIComponent(o.no);
-    window.open(u, '_blank', 'noopener');
+    window.open('https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(site), '_blank', 'noopener');
   }
   function listHTML() {
     const A = app(); if (!A) return ''; const P = A.getP(); const certs = P.certs || {}; const ids = Object.keys(certs).filter(id => { const i = A.pathInfo(id); return i && i.complete; });
