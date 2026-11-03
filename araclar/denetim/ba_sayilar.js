@@ -6,6 +6,7 @@ const tr=x=>typeof x==='number'?x:parseFloat(String(x).replace(',','.'));
 const r1=e=>`ROUND(${e},1)`, oran=(c1,c2)=>`ROUND(100.0*SUM(CASE WHEN ${c1} THEN 1 ELSE 0 END)/COUNT(*),1)`;
 const Q={
  q4Teslim:`SELECT COUNT(*) FROM lk_orders WHERE ${TW}`, q4Iptal:`SELECT COUNT(*) FROM lk_orders WHERE ${W} AND status='iptal'`, q4Iade:`SELECT COUNT(*) FROM lk_orders WHERE ${W} AND status='iade'`,
+ zamanOran:`SELECT ROUND(100.0*SUM(CASE WHEN ${S}<=2700 THEN 1 ELSE 0 END)/COUNT(*),1) FROM lk_orders WHERE ${TW}`, hedefEksik:`SELECT CAST(ROUND(0.8*COUNT(*)+0.4999) AS INT)-SUM(CASE WHEN ${S}<=2700 THEN 1 ELSE 0 END) FROM lk_orders WHERE ${TW}`,
  q4Gec:`SELECT COUNT(*) FROM lk_orders WHERE ${TW} AND ${S}>2700`, q4Gec60:`SELECT COUNT(*) FROM lk_orders WHERE ${TW} AND ${S}>3600`, q4Gec45:`SELECT COUNT(*) FROM lk_orders WHERE ${TW} AND ${S}>2700 AND ${S}<=3600`, q4Zaman:`SELECT COUNT(*) FROM lk_orders WHERE ${TW} AND ${S}<=2700`,
  q4IptalKuryesiz:`SELECT COUNT(*) FROM lk_orders WHERE ${W} AND status='iptal' AND courier_id IS NULL`, disiSiparis:`SELECT COUNT(*) FROM lk_orders WHERE placed_at>='2025-01-01'`,
  tam45:`SELECT COUNT(*) FROM lk_orders WHERE ${TW} AND ${S}=2700`, gecIade:`SELECT COUNT(*) FROM lk_orders WHERE ${W} AND status='iade' AND ${S}>2700`, kesilen:`SELECT COUNT(*) FROM lk_orders WHERE ${TW} AND ${S}>2700 AND ${S}<2760`, kesilenTL:`SELECT 30*COUNT(*) FROM lk_orders WHERE ${TW} AND ${S}>2700 AND ${S}<2760`,

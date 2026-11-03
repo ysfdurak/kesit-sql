@@ -13,7 +13,8 @@ const N = window.SQLP_BA_SAYI = {
   donusGec: '84,9', donusZaman: '86,4', ekimOran: '23,1', kasimOran: '21,6', aralikOran: '23,3', kasimGec: 469, aralikGec: 592,
   kasimMaliyet: 15990, aralikMaliyet: 20640, ekimMaliyet: 15270, aralikZirve: 49, indirimliGec: 247,
   sepetEsik: 400, sepetAltMax: 395, ucretsiz: 3972, ucretli: 3206,
-  ciro: 3391530, restoranTL: 9600, platformTL: 42300, restoranAdet: 274, hazirlikSinir: 3
+  ciro: 3391530, restoranTL: 9600, platformTL: 42300, restoranAdet: 274, hazirlikSinir: 3,
+  zamanOran: '77,3', hedefEksik: 181
 };
 const f = n => typeof n === 'number' ? n.toLocaleString('tr-TR') : n;
 const SN = 'ROUND((julianday(delivered_at) - julianday(placed_at)) * 86400)';
@@ -43,35 +44,35 @@ const arrow = (pts, c) => { const a = pts[pts.length - 2], b = pts[pts.length - 
 const svg = (w, h, title, inner, maxw) => '<div class="ba-sekil" style="margin:14px 0;text-align:center"><svg viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="' + X(title) + '" style="width:100%;max-width:' + (maxw || 520) + 'px;height:auto;' + FONT + '">' + inner + '</svg></div>';
 
 const bpmn = (() => {
-  const W = 360, H = 520, c = [60, 180, 300]; let s = '';
-  ['Müşteri', 'Platform', 'Operasyon'].forEach((t, i) => { s += '<rect x="' + (i * 120) + '.5" y=".5" width="119" height="' + (H - 1) + '" fill="' + (i === 1 ? 'var(--surface-2)' : 'var(--surface)') + '" stroke="var(--line)"/>' + label(c[i], 15, t, { w: 700 }); });
-  const cx = c[1];
+  /* Kulvar işi kimin yaptığını gösterir: otomatik kararlar ve kayıtlar Platform'da, Operasyon'da yalnız insan incelemesi var. */
+  const W = 380, H = 520, x = [0, 100, 290, 380], c = [50, 158, 335], cx = c[1], yan = 252; let s = '';
+  ['Müşteri', 'Platform', 'Operasyon'].forEach((t, i) => { s += '<rect x="' + x[i] + '.5" y=".5" width="' + (x[i + 1] - x[i] - 1) + '" height="' + (H - 1) + '" fill="' + (i === 1 ? 'var(--surface-2)' : 'var(--surface)') + '" stroke="var(--line)"/>' + label((x[i] + x[i + 1]) / 2, 15, t, { w: 700 }); });
   s += ev(cx, 46, 9, 'start') + label(cx + 14, 46, ['Teslim', 'kaydı'], { a: 'start', c: 'var(--muted)', lh: 12 });
   s += arrow([[cx, 55], [cx, 74]]);
   s += task(cx, 94, 100, 38, ['Teslim süresini', 'hesapla']);
   s += arrow([[cx, 113], [cx, 134]]);
   s += gate(cx, 160, 26, ['Geç', 'mi?']);
-  s += arrow([[cx + 39, 160], [c[2], 160], [c[2], 188]]) + label(cx + 50, 153, 'Hayır', { c: 'var(--muted)' });
-  s += ev(c[2], 198, 9, 'end') + label(c[2], 222, ['Kupon yok'], { c: 'var(--muted)' });
+  s += arrow([[cx + 39, 160], [yan - 10, 160]]) + label(cx + 53, 152, 'Hayır', { c: 'var(--muted)' });
+  s += ev(yan, 160, 9, 'end') + label(yan, 181, 'Kupon yok', { c: 'var(--muted)' });
   s += arrow([[cx, 186], [cx, 208]]) + label(cx + 8, 198, 'Evet', { a: 'start', c: 'var(--muted)' });
   s += gate(cx, 234, 26, ['Sınır', 'dolu mu?']);
-  s += arrow([[cx + 39, 234], [c[2], 234], [c[2], 262]]) + label(cx + 50, 227, 'Evet', { c: 'var(--muted)' });
-  s += task(c[2], 282, 100, 38, ['Kuponsuz', 'kaydı logla']);
-  s += arrow([[c[2], 301], [c[2], 322]]) + ev(c[2], 332, 9, 'end');
+  s += arrow([[cx + 39, 234], [yan, 234], [yan, 256]]) + label(cx + 53, 226, 'Evet', { c: 'var(--muted)' });
+  s += task(yan, 276, 72, 38, ['Kuponsuz', 'kaydı logla']);
+  s += arrow([[yan, 295], [yan, 314]]) + ev(yan, 324, 9, 'end') + label(yan, 345, 'Sınır dolu', { c: 'var(--muted)' });
   s += arrow([[cx, 260], [cx, 284]]) + label(cx + 8, 272, 'Hayır', { a: 'start', c: 'var(--muted)' });
   s += task(cx, 304, 100, 38, ['Kupon', 'oluştur']);
   s += arrow([[cx, 323], [cx, 346]]);
   s += gate(cx, 372, 26, ['Kayıt', 'tamam mı?']);
-  s += arrow([[cx + 39, 372], [c[2], 372], [c[2], 396]]) + label(cx + 50, 365, 'Hata', { c: 'var(--muted)' });
-  s += task(c[2], 416, 100, 38, ['Hata kuyruğunu', 'incele']);
+  s += arrow([[cx + 39, 372], [c[2], 372], [c[2], 396]]) + label(cx + 53, 364, 'Hata', { c: 'var(--muted)' });
+  s += task(c[2], 416, 84, 38, ['Hata kuyruğunu', 'incele']);
   s += arrow([[c[2], 435], [c[2], 456]]) + ev(c[2], 466, 9, 'end');
   s += arrow([[cx, 398], [cx, 424]]) + label(cx + 8, 411, 'Tamam', { a: 'start', c: 'var(--muted)' });
   s += task(cx, 444, 100, 38, ['Bildirim', 'gönder']);
   s += arrow([[cx - 50, 444], [c[0], 444], [c[0], 424]]);
-  s += task(c[0], 402, 92, 38, ['Kuponu', 'görür']);
+  s += task(c[0], 402, 84, 38, ['Kuponu', 'görür']);
   s += arrow([[c[0], 383], [c[0], 352]]);
   s += ev(c[0], 342, 9, 'end');
-  return svg(W, H, 'TO-BE süreç şeması: teslim kaydı geldiğinde süre hesaplanır, geç ve sınır dolmamışsa kupon oluşturulur, bildirim gönderilir; hatada operasyon kuyruğu incelenir.', s, 460);
+  return svg(W, H, 'TO-BE süreç şeması: teslim kaydı geldiğinde Platform süreyi hesaplar. Geç değilse kupon yok ve süreç biter. Geçse ve aylık sınır doluysa Platform kuponsuz kaydı loglar. Sınır dolu değilse kupon oluşur; kayıt tamamsa bildirim gider ve müşteri kuponu görür. Kayıt hatası Operasyon kulvarında kuyruktan incelenir.', s, 480);
 })();
 
 const sekans = (() => {
@@ -117,7 +118,7 @@ add({ id: 'ba-rol', lv: 'A1', min: 14,
 <table><tr><th>Rol</th><th>Asıl sorusu</th><th>Kupon talebinde</th></tr>
 <tr><td><b>BT iş analisti</b></td><td>Ne yapılmalı ve doğru yapıldığını nasıl anlarız?</td><td>Kuralları, kabul kriterlerini ve testleri yazar</td></tr>
 <tr><td><b>Veri analisti</b></td><td>Veri ne söylüyor?</td><td>Geç teslimin nedenini ve kuponun etkisini derinlemesine analiz eder</td></tr>
-<tr><td><b>Ürün sahibi</b> (product owner)</td><td>Önce hangisi yapılmalı?</td><td>Öncelik verir, iş listesini (backlog) yönetir, kabul kararını verir</td></tr>
+<tr><td><b>Ürün sahibi</b> (product owner)</td><td>Önce hangisi yapılmalı?</td><td>Öncelik verir, backlog'u (iş listesi) yönetir, kabul kararını verir</td></tr>
 <tr><td><b>Proje yöneticisi</b> (project manager)</td><td>Ne zaman, kaç kişiyle, hangi riskle?</td><td>Plan, bütçe ve bağımlılıkları yönetir</td></tr>
 <tr><td><b>Sistem analisti</b></td><td>Sistem bunu teknik olarak nasıl yapacak?</td><td>Servis, tablo ve entegrasyon tasarımını ayrıntılandırır</td></tr></table>
 <h2>Kim, neyin neresinde: RACI</h2>
@@ -130,7 +131,7 @@ add({ id: 'ba-rol', lv: 'A1', min: 14,
 <tr><td>UAT onayı</td><td>C</td><td>I</td><td>I</td><td>R, A</td></tr></table>
 <p>Bu bir örnektir; her kurumda aynı değildir. Yine de şu ayrım değişmez: iş analisti gereksinimin hesabını verir, işin kabul edilip edilmeyeceğine iş birimi karar verir.</p>
 <h2>Bu yol neden SQL ile başlıyor?</h2>
-<p>İş analisti çoğu ekipte sorgu yazmak zorunda değildir, ama yazabilen analist sorunu kendi boyutlandırır, kenar durumları veriden bulur ve testin sonucunu kendisi doğrular. Hiç SQL bilmiyorsan sorun değil: yol önce SQL'i öğretir, sonra aynı talebi yedi derste sürdürür.</p>
+<p>İş analisti çoğu ekipte sorgu yazmak zorunda değildir, ama yazabilen analist sorunu kendi boyutlandırır, kenar durumları veriden bulur ve testin sonucunu kendisi doğrular. Hiç SQL bilmiyorsan sorun değil: yol önce SQL'i öğretir, sonra aynı talebi sekiz derste sürdürür.</p>
 <div class="note"><b>Bu yol neyi yapmaz?</b>Görüşme yönetmek, toplantıda ikna etmek ve kurum süreçlerini öğrenmek uygulamayla gelir; bir ders bunların yerini tutmaz. Yol iş garantisi vermez. Bitirince alacağın belge bu uygulamanın tamamlama belgesidir, sertifika değildir.</div>
 <div class="note"><b>BABOK ve sertifikalar</b>BABOK Guide, International Institute of Business Analysis (IIBA) tarafından yayımlanan iş analizi bilgi kılavuzudur. IIBA'nın üç temel sertifikası vardır. ECBA için deneyim şartı aranmaz. CCBA son 7 yılda 3.750 saat iş analizi deneyimi ve 21 saat mesleki gelişim, CBAP son 10 yılda 7.500 saat deneyim ve 35 saat mesleki gelişim ister. Bu bilgiyi Kasım 2026'da IIBA'nın sitesinden kontrol ettik; başvurmadan önce güncelini oradan oku. Bu uygulama bu sınavlara hazırlık değildir.</div>`,
   ex: [
@@ -195,6 +196,12 @@ SELECT durum, COUNT(*) AS teslimat,
 FROM s
 GROUP BY durum;`)}
 <p>Fark küçük. Müşteri puanı ise belirgin düşüyor: geç teslimlerde kurye puanı ortalaması ${N.puanGec}, diğerlerinde ${N.puanZaman}. Dürüst özet: <i>geç teslim memnuniyeti düşürüyor; yeniden siparişe etkisi bu veride küçük görünüyor.</i> Bu gözlemdir, neden-sonuç kanıtı değildir ve kuponun getirisini garanti etmez. Bunu talep sahibine söylemek senin işindir. Kupon yine yapılabilir, ama başarı ölçüsü buna göre yazılır.</p>
+<h3>Başarı ölçüsü: sayı, kaynak, hedef, süre</h3>
+<p>“Şikâyetler azalsın” ölçü değildir. Ölçü dört şeyi söylemeli: nereden başlıyoruz, başlangıç sayısı nereden geliyor, hedef kaç, ne zaman bakacağız.</p>
+<table><tr><th>Ölçü</th><th>Başlangıç değeri ve kaynağı</th><th>Hedef</th><th>Süre</th><th>Sahibi</th></tr>
+<tr><td><b>Ana ölçü:</b> pilot grupta geç teslim şikâyeti sayısı</td><td>Geçişten önceki 8 haftanın sayısı; müşteri hizmetleri kayıtlarından alınacak. Bu veri uygulamada yok.</td><td>%20 azalma</td><td>Geçişten sonraki 8 hafta, pilot dışı grupla karşılaştırmalı</td><td>Müşteri hizmetleri</td></tr>
+<tr><td><b>Yan ölçü:</b> geç teslimlerde ortalama kurye puanı</td><td>${N.puanGec}; Ekim-Aralık 2024, bu uygulamadaki veri</td><td>Düşmemesi yeterli</td><td>Aynı 8 hafta</td><td>Operasyon</td></tr></table>
+<p>%20 hedefi veriden çıkmadı: talep sahibiyle konuşulup yazılan bir hedeftir ve başlangıç sayısı gelince gözden geçirilir. Başlangıç değeri olmayan ölçüyü kabul etme: açık soru olarak yaz, sahibini ve tarihini koy.</p>
 <h3>Bedeli ne kadar?</h3>
 <p>Görüşmeden çıkan tutar önerisi: 45-60 dakika arası 30 TL, 60 dakikayı aşan 60 TL. Bu kuralla dönemin kupon bedeli üst sınırda ${f(N.maliyet)} TL. Karşılaştırma için aynı dönemde teslim edilen siparişlerin sepet toplamı ${f(N.ciro)} TL. Üst sınır diyoruz, çünkü her kupon kullanılmayabilir ve bir aylık sınır gelebilir.</p>
 <h2>Kapsamı çiz</h2>
@@ -235,7 +242,7 @@ add({ id: 'ba-gereksinim', lv: 'B1', min: 28,
 <tr><td>Müşteri bilgilendirilir.</td><td>Hangi kanal, hangi metin?</td><td>Kupon oluşunca uygulama içi bildirim gider; metin ve kanal EK-2'dedir.</td></tr></table>
 <p>“Hızlı, kolay, uygun, gerektiğinde, vb.” sözcüklerini gördüğünde dur. Yerine sayı, koşul ya da liste yaz.</p>
 <h2>Kullanıcı hikâyesi (user story)</h2>
-<p>Çevik (agile) ekiplerde iş çoğu zaman şu kalıpla yazılır: <b>Bir [kim] olarak, [ne] istiyorum, böylece [neden].</b></p>
+<p>Agile (çevik) ekiplerde iş çoğu zaman şu kalıpla yazılır: <b>Bir [kim] olarak, [ne] istiyorum, böylece [neden].</b></p>
 ${nor(`Bir müşteri olarak,
 siparişim söz verilen süreyi aştığında otomatik telafi kuponu almak istiyorum,
 böylece destek ekibine yazmadan hakkım olanı alırım.`)}
@@ -253,15 +260,23 @@ ${nor(`Senaryo: 60 dakikayı aşan teslim
 Given durumu "teslim" olan bir sipariş var
   And sipariş ile teslim arası 3.601 saniye
   And müşterinin bu ay aldığı kupon sayısı 1
-When teslim kaydı oluşur
+When kupon işi siparişi değerlendirir
 Then müşteriye 60 TL kupon oluşur
   And kupon teslim kaydından en geç 5 dakika sonra görünür
 
 Senaryo: İade edilmiş sipariş
 Given durumu "iade" olan bir sipariş var
   And sipariş ile teslim arası 4.000 saniye
-When kupon işi çalışır
-Then kupon oluşmaz`)}
+When kupon işi siparişi değerlendirir
+Then kupon oluşmaz
+
+Senaryo: Kupondan sonra gelen iade
+Given 3.000 saniyede teslim edilen siparişe 30 TL kupon oluşmuş
+  And kupon henüz kullanılmamış
+When sipariş iade edilir
+Then kupon iptal edilir
+  And iptal, sipariş numarasıyla kayda geçer`)}
+<p>Oluşturma senaryolarının tetikleyicisi tek: teslim kaydı kupon işini başlatır, iş siparişi değerlendirir. Her kriterde aynı cümleyi yaz; farklı yazarsan okuyan iki ayrı olay olduğunu sanar. Üçüncü senaryonun olayı gerçekten farklıdır: iade, kupondan sonra gelir.</p>
 <h2>Kenar durumları veriden bul</h2>
 <p>Toplantıda aklına gelmeyen durumları veri söyler. Her biri bir soru üretir, cevabı bir kural olur.</p>
 ${box(`SELECT status, COUNT(*) AS siparis,
@@ -276,7 +291,8 @@ ORDER BY status;`)}
 <tr><td>${f(N.gecIade)} iade siparişi de 45 dakikayı aşmış</td><td>Parası iade edilene bir de kupon mu?</td><td>Yalnız “teslim” durumu kupon alır</td></tr>
 <tr><td>${f(N.tam45)} teslimat tam 2.700 saniye sürmüş</td><td>“Aşan” mı, “ve üzeri” mi?</td><td>2.700 geç değildir; sınır dahil değil</td></tr>
 <tr><td>${f(N.musteriAy)} müşteri-ayda 2'den çok geç teslim var</td><td>Sınır gerçekten çalışır mı?</td><td>Ayda en çok 2; ${f(N.fazlaKupon)} kupon sınırdan düşer</td></tr>
-<tr><td>Dönem sınırında ${f(N.disiSiparis)} sipariş 1 Ocak 2025'e sarkmış</td><td>Hangi aya yazılır?</td><td>Ay, sipariş zamanına göre belirlenir</td></tr></table>
+<tr><td>Dönem sınırında ${f(N.disiSiparis)} sipariş 1 Ocak 2025'e sarkmış</td><td>Hangi aya yazılır?</td><td>Ay, sipariş zamanına göre belirlenir</td></tr>
+<tr><td>Dönemde ${f(N.q4Iade)} iade var, ama iadenin ne zaman yapıldığı tutulmuyor</td><td>Kupon 5 dakikada oluşur, iade sonra gelirse kupon geri alınır mı?</td><td>Öneri: kullanılmamış kupon iptal edilir; kullanılmışsa geri alınmaz. Karar finansın, açık soruya yazılır</td></tr></table>
 <div class="warn"><b>Dakika mı, saniye mi?</b>Süreyi dakikaya kesen bir hesapla “45'ten büyük” yazarsan 45 dakika 30 saniye süren teslimat geç sayılmaz. Bu veride ${f(N.kesilen)} teslimat tam bu aralıkta: toplam ${f(N.kesilenTL)} TL'lik kupon sessizce kaybolur. SQL türlerinin dakika farkı fonksiyonları da aynı davranmaz; SQL Server'ın <code>DATEDIFF(minute, ...)</code> ifadesi dakika sınırı geçişlerini sayar. Bu yüzden kural saniye ile yazıldı. Böyle bir ayrıntı gereksinimde açık yazılmazsa testte değil canlıda ortaya çıkar.</div>
 <p>Çıktın: numaralı gereksinim listesi, iş kuralları tablosu, hikâyeler ve her hikâyenin kabul kriterleri. Bunlar BRD'nin kalbidir.</p>`,
   ex: [
@@ -289,7 +305,8 @@ ORDER BY status;`)}
     sq('Yeni soru: iade edilen siparişlerden kaçı 45 dakikayı aşmış? Kural “yalnız teslim” olmasaydı bunlar kupon alırdı: <code>iade_gec</code>.', CTE + "SELECT COUNT(*) AS iade_gec FROM t WHERE status = 'iade' AND sure_sn > 2700;", 'Durum değerleri teslim, iptal ve iade. İki koşulu AND ile birleştir.', { start: START }),
     sq('Aylık sınır sorusu: bir müşterinin aynı takvim ayında 2\'den fazla geç teslim aldığı <b>müşteri-ay</b> sayısı ve sınır yüzünden üretilmeyecek kupon sayısı: <code>musteri_ay</code>, <code>dusen_kupon</code>.', CTE + ", g AS (SELECT customer_id, strftime('%Y-%m', placed_at) AS ay, COUNT(*) AS n FROM t WHERE status = 'teslim' AND sure_sn > 2700 GROUP BY customer_id, strftime('%Y-%m', placed_at) HAVING COUNT(*) > 2) SELECT COUNT(*) AS musteri_ay, SUM(n - 2) AS dusen_kupon FROM g;", 'İkinci bir CTE ile önce müşteri ve aya göre grupla, 2\'den fazlasını HAVING ile ayır. Dışta hem satırları say hem de fazlalığı topla. Yeni CTE için WITH yazmak yerine başlangıç kodundan sonra virgülle devam et.', { start: CTE + '-- t\'nin arkasına virgülle ikinci bir CTE ekleyerek devam et.\n' }),
     sq('Dakikaya kesmenin bedeli. Süresi 2.700 saniyeyi aşan ama 2.760 saniyenin altında kalan teslimatlar, dakikaya kesen bir hesapta “45 dakika” görünür ve kupon alamaz. Bu teslimatların sayısı: <code>kaybolan</code>.', CTE + "SELECT COUNT(*) AS kaybolan FROM t WHERE status = 'teslim' AND sure_sn > 2700 AND sure_sn < 2760;", 'İki sınır da dahil değil. Durumu da süzmeyi unutma.', { start: START }),
-    mc('Kabul kriterinde “Given müşterinin bu ay aldığı kupon sayısı 2” yazıyor. Bu senaryonun beklenen sonucu ne olmalı?', ['60 TL kupon oluşur, sınır yalnız 30 TL için geçerlidir', 'Kupon oluşmaz, kayıt sınır nedeniyle loglanır', 'Kupon oluşur, müşteri ertesi ay kullanabilir', 'İşlem hata verir, destek ekibi elle kupon tanımlar'], 1, 'İş kuralı ayda en çok 2 kupon diyor. İyi kriter yalnız “üretilmez” demez, izlenebilirlik için ne kaydedileceğini de söyler.')
+    mc('Kabul kriterinde “Given müşterinin bu ay aldığı kupon sayısı 2” yazıyor. Bu senaryonun beklenen sonucu ne olmalı?', ['60 TL kupon oluşur, sınır yalnız 30 TL için geçerlidir', 'Kupon oluşmaz, kayıt sınır nedeniyle loglanır', 'Kupon oluşur, müşteri ertesi ay kullanabilir', 'İşlem hata verir, destek ekibi elle kupon tanımlar'], 1, 'İş kuralı ayda en çok 2 kupon diyor. İyi kriter yalnız “üretilmez” demez, izlenebilirlik için ne kaydedileceğini de söyler.'),
+    mc('Kupon 5 dakikada oluştu, müşteri ertesi gün siparişi iade etti. Gereksinimde bu durum yok. Doğru adım hangisi?', ['Veride iade tarihi olmadığı için durumu kapsam dışı sayarsın', 'Kuponu her durumda iptal eden kuralı kendin yazarsın', 'Soruyu seçenekleriyle açık sorulara yazıp finansa götürürsün', 'Kuponu geri almayıp geliştirici kararına bırakırsın'], 2, 'Kenar durum bulmak iş analistinin işi, para kararı iş biriminindir. Seçenekleri ve etkisini yazıp sahibine götürürsün; karar çıkınca kural ve kabul kriteri olur.')
   ] });
 
 /* ---------- 4. Süreç ---------- */
@@ -320,7 +337,7 @@ add({ id: 'ba-surec', lv: 'B1', min: 26,
 <tr><td><b>Karar</b> (gateway)</td><td>Baklava</td><td>Akış koşula göre ayrılır; her çıkışın adı olur</td></tr>
 <tr><td><b>Kulvar</b> (lane)</td><td>Yüzme kulvarı gibi şerit</td><td>İşi kimin yaptığını gösterir</td></tr></table>
 ${bpmn}
-<p>Şemayı okurken her baklavanın bütün çıkışlarının adı var mı, her yol bir bitişe varıyor mu diye bak. Bu çizim “kayıt tamam değilse ne olur?” sorusunu görünür kıldı: gereksinimde olmayan bir operasyon kuyruğu doğdu. BPMN'de çok daha fazla öğe vardır; bu ders okuyup temel akış çizecek kadarını verir.</p>
+<p>Şemayı okurken her baklavanın bütün çıkışlarının adı var mı, her yol bir bitişe varıyor mu diye bak. Kuponsuz kaydı sistem yazar, bu yüzden Platform kulvarında; Operasyon'a yalnız bir insanın bakması gereken hata düşer. Bu çizim “kayıt tamam değilse ne olur?” sorusunu görünür kıldı: gereksinimde olmayan bir operasyon kuyruğu doğdu. BPMN'de çok daha fazla öğe vardır; bu ders okuyup temel akış çizecek kadarını verir.</p>
 <h2>Sıra diyagramı (sequence diagram)</h2>
 <p>BPMN işin akışını, <b>sıra diyagramı</b> sistemlerin birbirine hangi sırayla mesaj attığını gösterir. Dikey çizgiler katılımcılar, oklar mesajlar, kesikli oklar cevaplardır. Zaman yukarıdan aşağı akar.</p>
 ${sekans}
@@ -332,7 +349,8 @@ ${sekans}
 <tr><td>K2</td><td>teslim</td><td>2.700 ve altı</td><td>fark etmez</td><td>Kupon yok</td></tr>
 <tr><td>K3</td><td>teslim</td><td>2.701 - 3.600</td><td>evet</td><td>30 TL</td></tr>
 <tr><td>K4</td><td>teslim</td><td>3.601 ve üstü</td><td>evet</td><td>60 TL</td></tr>
-<tr><td>K5</td><td>teslim</td><td>2.701 ve üstü</td><td>hayır</td><td>Kupon yok, “sınır dolu” kaydı</td></tr></table>
+<tr><td>K5</td><td>teslim</td><td>2.701 ve üstü</td><td>hayır</td><td>Kupon yok, “sınır dolu” kaydı</td></tr>
+<tr><td>K6</td><td>kupondan sonra iade</td><td>fark etmez</td><td>fark etmez</td><td>Kullanılmamış kupon iptal; açık soru finansta</td></tr></table>
 <p>K1-K4'ü SQL'e dökmek, kuralın veride neye karşılık geldiğini gösterir. Sıra önemli: <code>CASE</code> ilk doğru koşulda durur.</p>
 ${box(CTE + `SELECT CASE WHEN status <> 'teslim' THEN 'K1 durum uygun değil'
             WHEN sure_sn <= 2700 THEN 'K2 zamanında'
@@ -513,7 +531,7 @@ Idempotency-Key: siparis-5045
 <tr><td><code>order_id</code></td><td><code>lk_orders.order_id</code></td><td>İstekle gelir, varlığı kontrol edilir</td></tr>
 <tr><td><code>customer_id</code></td><td><code>lk_orders.customer_id</code></td><td>İstekle gelmez, siparişten bulunur</td></tr>
 <tr><td><code>tutar</code></td><td>hesaplanır, <code>ba_kupon.tutar</code></td><td>Karar tablosundan</td></tr>
-<tr><td><code>son_kullanim</code></td><td>kaynak yok</td><td>Açık soru: tabloda alan yok, karar gerekli</td></tr></table>
+<tr><td><code>son_kullanim</code></td><td>kaynak yok</td><td>Açık soru: tabloda alan yok, süre için karar gerekli (Canlıya geçiş dersindeki mini BRD bunu 30 gün olarak kapatır)</td></tr></table>
 <p>Son satır sözleşmeyi okumanın kazancıdır: API'de olan alanın tabloda karşılığı yok. Bunu geliştirme başlamadan yakalamak ucuzdur. Gerçek API'lerle Python'dan çalışmak istersen Kesit Python'daki BT İş Analisti yolunda HTTP dersi var.</p>`,
   ex: [
     mc('Müşterinin kuponlarını listeleyen uç (endpoint) hangi fiille tanımlanır?', ['POST', 'GET', 'DELETE', 'PATCH'], 1, 'Listelemek veri okur, hiçbir şeyi değiştirmez. GET bu iş içindir ve tekrarlanması güvenlidir.'),
@@ -596,7 +614,8 @@ add({ id: 'ba-uat', lv: 'B1', min: 28,
 <tr><td>olumsuz-iptal</td><td>iptal</td><td>boş</td><td>0</td><td>0</td></tr>
 <tr><td>sinir-2700</td><td>teslim</td><td>2.700</td><td>0</td><td>0</td></tr>
 <tr><td>sinir-2701</td><td>teslim</td><td>2.701</td><td>0</td><td>30</td></tr>
-<tr><td>aylik-sinir</td><td>teslim</td><td>4.000</td><td>2</td><td>0</td></tr></table>
+<tr><td>aylik-sinir</td><td>teslim</td><td>4.000</td><td>2</td><td>0</td></tr>
+<tr><td>sonradan-iade</td><td>teslim, sonra iade</td><td>3.000</td><td>0</td><td>30, sonra kupon iptal</td></tr></table>
 <h2>Test verisi</h2>
 <p>Sınır durumu canlı veride her zaman bulunmaz. Test ortamında kendi verini kurarsın. Kişisel veri içeren canlı kaydı test ortamına kopyalama; gerekirse maskele (<b>KVKK</b> dersi isteğe bağlı bölümde). Burada test verisini küçük bir tablo olarak tutuyoruz:</p>
 ${box(TEST1 + `SELECT senaryo, status, sure_sn, aylik_kupon, beklenen FROM ba_test ORDER BY senaryo;`)}
@@ -640,12 +659,160 @@ Ek: Sorgu ve ekran görüntüsü`)}
     mc('UAT onayını kim verir?', ['Testi yürüttüğü için iş analisti', 'Kodu bildiği için geliştirici', 'İşi kabul edecek olan iş birimi', 'Hataları kapattığı için test uzmanı'], 2, 'İş analisti kanıtı hazırlar ve görüş bildirir, ama sistemin işi çözdüğünü kabul eden taraf iş birimidir.')
   ] });
 
+/* ---------- Agile ve Waterfall ---------- */
+const RTM0 = `CREATE TABLE ba_gereksinim (grs VARCHAR(10), baslik VARCHAR(60), oncelik VARCHAR(10), puan INT);
+INSERT INTO ba_gereksinim VALUES ('GRS-01', 'Geç teslimde kupon üret', 'Must', 8);
+INSERT INTO ba_gereksinim VALUES ('GRS-02', 'Tutarı karar tablosundan hesapla', 'Must', 3);
+INSERT INTO ba_gereksinim VALUES ('GRS-03', 'Yalnız teslim durumu kupon alır', 'Must', 2);
+INSERT INTO ba_gereksinim VALUES ('GRS-04', '2.700 saniye geç sayılmaz', 'Must', 1);
+INSERT INTO ba_gereksinim VALUES ('GRS-05', 'Ayda en çok iki kupon', 'Must', 5);
+INSERT INTO ba_gereksinim VALUES ('NFR-01', 'Kupon en geç 5 dakikada görünür', 'Must', 3);
+INSERT INTO ba_gereksinim VALUES ('GRS-06', 'Kuponu uygulama içinde bildir', 'Should', 5);
+INSERT INTO ba_gereksinim VALUES ('GRS-07', 'Operasyon için kupon raporu', 'Should', 3);
+INSERT INTO ba_gereksinim VALUES ('GRS-08', 'Kupondan sonra iadede kuponu iptal et', 'Could', 3);
+INSERT INTO ba_gereksinim VALUES ('GRS-09', 'Ödeme ekranını yeniden tasarla', 'Wont', 13);
+`;
+const RTM1 = RTM0 + `CREATE TABLE ba_testler (test VARCHAR(20), grs VARCHAR(10), sonuc VARCHAR(10));
+INSERT INTO ba_testler VALUES ('olumlu-30', 'GRS-01', 'gecti');
+INSERT INTO ba_testler VALUES ('olumlu-60', 'GRS-02', 'gecti');
+INSERT INTO ba_testler VALUES ('olumsuz-iptal', 'GRS-03', 'gecti');
+INSERT INTO ba_testler VALUES ('olumsuz-iade', 'GRS-03', 'kaldi');
+INSERT INTO ba_testler VALUES ('sinir-2700', 'GRS-04', 'kaldi');
+INSERT INTO ba_testler VALUES ('sinir-2701', 'GRS-04', 'gecti');
+INSERT INTO ba_testler VALUES ('aylik-sinir', 'GRS-05', 'kaldi');
+INSERT INTO ba_testler VALUES ('bildirim-metni', 'GRS-06', 'gecti');
+`;
+add({ id: 'ba-cevik', lv: 'B1', min: 32,
+  title: 'Agile ve Waterfall ortamlarında iş analizi',
+  sum: 'Gereksinim toplama teknikleri, MoSCoW, use case ile kullanıcı hikâyesi, izlenebilirlik matrisi (RTM), tel çerçeve, FRD ve SRS, Scrum ve sprintte iş analisti, boşluk analizi.',
+  en: 'agile waterfall scrum sprint elicitation interview workshop observation document review moscow use case user story rtm traceability matrix wireframe mockup prototype frd srs gap analysis çevik şelale gereksinim toplama izlenebilirlik boşluk analizi tel çerçeve',
+  body: `<p>Kupon talebini baştan sona yürüttün, ama bir şeyi açık bıraktık: bu iş hangi düzende yürüyor? Aynı analist bir şirkette Agile (çevik) çalışır, iki haftada bir sprint toplantısına girer; başka bir şirkette Waterfall (şelale) düzeninde onay imzası bekleyen uzun bir doküman yazar. Bu derste iki ortamın araçlarını yine kupon talebi üzerinden görüyorsun. Süreci tek bir ders öğretmez; amaç, iş ilanında ve görüşmede geçen adların ne olduğunu bilmek ve birini uygulayacak kadar görmektir.</p>
+<h2>Gereksinim toplama teknikleri (elicitation)</h2>
+<p>Gereksinim hazır gelmez, onu çıkarırsın. Hangi tekniği seçeceğin sorduğun soruya bağlıdır.</p>
+<table><tr><th>Teknik</th><th>En çok ne zaman?</th><th>Kuponda</th><th>Tuzak</th></tr>
+<tr><td><b>Görüşme</b> (interview)</td><td>Bir kişiden derin bilgi gerektiğinde</td><td>Destek ekibi şefiyle “son şikâyet neydi?”</td><td>Tek kişinin görüşünü kural sanmak</td></tr>
+<tr><td><b>Çalıştay</b> (workshop)</td><td>Birden çok paydaş aynı karara varacaksa</td><td>Pazarlama ve finans kupon süresini birlikte tartışır</td><td>Gündemsiz toplantı; en yüksek ses kazanır</td></tr>
+<tr><td><b>Gözlem</b> (observation)</td><td>İnsanlar yaptığını tam anlatamıyorsa</td><td>Destek çalışanının elle kupon verişini izlemek</td><td>İzlendiğini bilen kişi farklı davranabilir</td></tr>
+<tr><td><b>Doküman inceleme</b> (document review)</td><td>Yazılı kural, sözleşme, eski sistem varsa</td><td>Veri sözlüğünde “400 TL üzeri ücretsiz”</td><td>Doküman eskimiş olabilir; süreç derslerinde veriyle sınadığın gibi doğrula</td></tr></table>
+<p>Tek teknik nadiren yeter: dokümanı oku, görüşmede sor, çelişkiyi çalıştaya taşı, sonucu gözlemle sına. AS-IS sütununu görüşmeden yazdığımızı hatırla; gözlem, “kendi yorumuyla karar verir” cümlesini kanıtlar ya da çürütür.</p>
+<h2>Önceliklendirme: MoSCoW</h2>
+<p><b>MoSCoW</b> dört kovadır: <b>Must</b> (bu olmadan sürüm çıkmaz), <b>Should</b> (önemli ama geçici çözümü var), <b>Could</b> (yer kalırsa), <b>Won't</b> (bu sürümde yok, reddedilmedi).</p>
+<table><tr><th>Kova</th><th>Kuponda</th><th>Neden burada?</th></tr>
+<tr><td>Must</td><td>Kupon üretimi, tutar kuralı, “yalnız teslim”, aylık sınır</td><td>Bunlar olmadan para yanlış gider</td></tr>
+<tr><td>Should</td><td>Uygulama içi bildirim, operasyon raporu</td><td>Bir süre elle ya da sorguyla idare edilir</td></tr>
+<tr><td>Could</td><td>Kupondan sonra iadede otomatik iptal</td><td>Açık soru kapanınca; önce elle iptal edilebilir</td></tr>
+<tr><td>Won't</td><td>Ödeme ekranının yeniden tasarımı</td><td>Ayrı talep; kapsam dışına yazıldı</td></tr></table>
+<div class="warn"><b>Her şey Must ise öncelik yoktur</b>Paydaş için her madde önemlidir. Sor: “Bu olmadan sürümü çıkarsak ne olur?” Cevap “kötü olur ama para ya da hukuk sorunu doğmaz” ise Must değildir. Önceliği MoSCoW'la yazmak kararı ürün sahibinden almaz; ona tartışacak bir liste verir.</div>
+${box(RTM0 + `SELECT oncelik, COUNT(*) AS gereksinim, SUM(puan) AS puan
+FROM ba_gereksinim
+GROUP BY oncelik
+ORDER BY oncelik;`)}
+<p>Puan, ekibin verdiği göreli büyüklüktür (story point). Bu örnekte Must toplamı 22 puan. Ekibin bir sprintte 20 puan yaptığını varsayarsak Must'ların hepsi bile sığmıyor: ya kapsam küçülür ya süre uzar. Bu cümle, “hepsi önemli” tartışmasını sayıya çevirir.</p>
+<h2>Kullanım senaryosu (use case) ve kullanıcı hikâyesi</h2>
+<p>Aynı gereksinimi iki biçimde yaz, farkı görürsün.</p>
+${nor(`KULLANICI HİKÂYESİ
+Bir müşteri olarak,
+siparişim söz verilen süreyi aştığında otomatik telafi kuponu almak istiyorum,
+böylece destek ekibine yazmadan hakkım olanı alırım.
+(Ayrıntı kabul kriterlerinde.)`)}
+${nor(`KULLANIM SENARYOSU UC-01: Geç teslime kupon üret
+Aktör: Kupon işi (zamanlanmış sistem). İlgili: Müşteri.
+Ön koşul: Siparişin teslim kaydı oluşmuş.
+Ana akış:
+  1. İş, teslim süresini saniye olarak hesaplar.
+  2. İş, süreyi 2.700 ile karşılaştırır; aşıyorsa devam eder.
+  3. İş, müşterinin bu ayki kupon sayısını okur; ikiden azsa devam eder.
+  4. İş, tutarı karar tablosundan bulur, kuponu yazar.
+  5. Sistem müşteriye bildirim gönderir.
+Alternatif akışlar:
+  2a. Süre aşmıyor: kupon yok, süreç biter.
+  3a. Sınır dolu: kupon yok, "sınır dolu" kaydı yazılır.
+  4a. Kayıt hatası: hata kuyruğuna düşer, operasyon inceler.
+Son koşul: Siparişin en çok bir kuponu vardır ya da nedeni kayıtlıdır.`)}
+<table><tr><th></th><th>Kullanıcı hikâyesi</th><th>Kullanım senaryosu</th></tr>
+<tr><td>Amacı</td><td>Konuşmayı başlatmak, değeri söylemek</td><td>Etkileşimi adım adım tarif etmek</td></tr>
+<tr><td>Ayrıntı</td><td>Kısa; ayrıntı kabul kriterinde ve konuşmada</td><td>Ana ve alternatif akış içinde yazılı</td></tr>
+<tr><td>Sık görüldüğü yer</td><td>Agile ekipler</td><td>Doküman ağırlıklı projeler, sözleşmeye bağlı işler</td></tr>
+<tr><td>Eksiği</td><td>Birbirine bağlı akışları bir arada göstermez</td><td>Yazması ve güncel tutması pahalı</td></tr></table>
+<p>İkisi rakip değildir. Alternatif akışı çok olan bir işte önce use case yazıp hikâyeleri ondan çıkarmak yaygın bir yoldur: 2a, 3a ve 4a burada ayrı kabul kriterleri olur.</p>
+<h2>İzlenebilirlik matrisi (RTM, requirements traceability matrix)</h2>
+<p>RTM, her gereksinimi kaynağına, hikâyesine, testine ve hatasına bağlayan tablodur. İki soruyu cevaplar: <b>ileri yön</b>, bu gereksinim test edildi mi? <b>Geri yön</b>, bu test ya da kod hangi gereksinim için var? Geri yönde sahibi çıkmayan iş, kimsenin istemediği iştir.</p>
+<table><tr><th>Gereksinim</th><th>Kaynak</th><th>Hikâye</th><th>Test</th><th>Sonuç</th><th>Hata</th></tr>
+<tr><td>GRS-03 Yalnız teslim</td><td>Finans görüşmesi</td><td>KUP-12</td><td>olumsuz-iptal, olumsuz-iade</td><td>1 geçti, 1 kaldı</td><td>HATA-31</td></tr>
+<tr><td>GRS-04 Sınır 2.700</td><td>Karar tablosu K2</td><td>KUP-12</td><td>sinir-2700, sinir-2701</td><td>1 geçti, 1 kaldı</td><td>HATA-32</td></tr>
+<tr><td>NFR-01 5 dakika</td><td>Görüşme</td><td>KUP-14</td><td style="font-weight:700">yok</td><td>?</td><td></td></tr></table>
+<p>RTM genellikle tablo ya da Jira bağlantılarıdır. Veriye dökülürse boşlukları SQL bulur: test edilmemiş gereksinim, eşi olmayan satırla aynı kalıptır.</p>
+${box(RTM1 + `SELECT g.grs, g.baslik, COUNT(t.test) AS test_sayisi
+FROM ba_gereksinim g
+LEFT JOIN ba_testler t ON t.grs = g.grs
+GROUP BY g.grs, g.baslik
+ORDER BY g.grs;`)}
+<h2>Tel çerçeve (wireframe)</h2>
+<p>Tel çerçeve, ekranın düzenini ve akışını renksiz, kaba biçimde gösterir. Amacı tasarım seçmek değil, “bu ekranda ne var, tıklayınca nereye gidiyor?” sorusunu erken konuşmaktır.</p>
+${nor(`+------------------------------+
+| Siparişlerim > #5045         |
+|------------------------------|
+| [!] Teslimat geç kaldı       |
+|     30 TL kupon tanımlandı   |
+|     Son kullanım: 07.01.2025 |
+|     [ Kuponu kullan ]        |
+|------------------------------|
+| Sipariş ayrıntıları ...      |
++------------------------------+`)}
+<p>Bu kaba çizim hemen soru üretir: kupon geçerlilik tarihi nereden gelecek, kullanılmış kuponda düğme ne olacak? Sonraki adımlar: <b>mockup</b> görsel tasarımı gösterir, <b>prototip</b> tıklanabilir. İş analisti çoğu zaman yalnız tel çerçeveyi çizer ya da tasarımcıyla konuşur; sonuç ekranın kararı tasarım ekibindedir.</p>
+<h2>Doküman adları: BRD, FRD, SRS</h2>
+<table><tr><th>Doküman</th><th>Sorusu</th><th>Kim okur?</th><th>Kuponda</th></tr>
+<tr><td><b>BRD</b> (business requirements document)</td><td>İş neden ve ne istiyor?</td><td>İş birimi, yönetim</td><td>Sorun, başarı ölçüsü, kapsam, iş kuralı</td></tr>
+<tr><td><b>FRD</b> (functional requirements document)</td><td>Sistem ne yapacak?</td><td>Analist, geliştirici, test</td><td>Kupon işinin davranışı, ekranlar, hata durumları</td></tr>
+<tr><td><b>SRS</b> (software requirements specification)</td><td>Yazılım hangi koşullarla nasıl davranacak?</td><td>Geliştirici, mimar, test</td><td>İşlevsel ve işlevsel olmayan gereksinim, arayüz, kısıtlar</td></tr></table>
+<p>Bu adlar kuruma göre değişir: bazı şirkette tek bir doküman üçünü taşır, bazısında FRD ile SRS aynı şeydir. Görüşmede “sizde bu belge ne içeriyor?” diye sormak bilgisizlik değil, doğru sorudur.</p>
+<h2>Waterfall ve Agile: aynı iş, farklı ritim</h2>
+<table><tr><th></th><th>Waterfall</th><th>Agile</th></tr>
+<tr><td>Gereksinim</td><td>Başta, büyük ölçüde tamamlanır ve onaylanır</td><td>Parça parça, işin yanında netleşir</td></tr>
+<tr><td>Ana çıktı</td><td>BRD, FRD ya da SRS, imza</td><td>Backlog (iş listesi), hikâye, kabul kriteri</td></tr>
+<tr><td>Değişiklik</td><td>Değişiklik talebi ve onay</td><td>Bir sonraki sprintin önceliği olur; kapsam büyükse yine görünür tartışılır</td></tr>
+<tr><td>Uygun olduğu yer</td><td>Kapsamı sabit, sözleşmeli ya da denetime tabi işler</td><td>Belirsizliği yüksek, sık geri bildirim alınabilen işler</td></tr></table>
+<p>Çoğu kurum ikisinin karışımıyla çalışır. Waterfall'da analist belgeyi erken bitirir ve onayı alır; Agile'da yazıyı küçük tutar, sürekli güncel tutar. RTM ve mini BRD ikisinde de işe yarar, yalnız kalınlığı değişir.</p>
+<h3>Sprintte iş analisti</h3>
+<p>Scrum rehberi “iş analisti” diye bir rol tanımlamaz. Analist çoğu ekipte ürün sahibine ya da geliştirme ekibine destek verir. Aşağıdaki tablo yaygın kullanımı anlatır, kural değildir.</p>
+<table><tr><th>Etkinlik</th><th>Amaç</th><th>İş analisti ne yapar?</th></tr>
+<tr><td>Backlog refinement (backlog inceleme)</td><td>Yaklaşan işleri netleştirmek. Tören değil, sürekli süren etkinlik</td><td>Hikâyeyi ve kabul kriterini hazırlar, soruları kapatır</td></tr>
+<tr><td>Sprint planlama (sprint planning)</td><td>Bu sprintte ne yapılacağı</td><td>Kapsamı açıklar, kuralları cevaplar</td></tr>
+<tr><td>Günlük toplantı (daily scrum)</td><td>Ekibin günlük uyumu</td><td>Gerektiğinde katılır, engel olan soruyu alır</td></tr>
+<tr><td>Sprint gözden geçirme (sprint review)</td><td>Yapılanı paydaşla konuşmak</td><td>Paydaşı getirir, geri bildirimi backlog'a yazar</td></tr>
+<tr><td>Retrospektif (retrospective)</td><td>Çalışma biçimini iyileştirmek</td><td>Gereksinim kaynaklı sorunları söyler</td></tr></table>
+<h2>Boşluk analizi (gap analysis)</h2>
+<p>Boşluk analizi üç soru sorar: neredeyiz, nereye gidiyoruz, farkı kapatmak için ne gerekir? AS-IS ile TO-BE yan yana yazıldığında süreç boşluğu görünür; veri olan yerde boşluk sayıya çevrilir.</p>
+${box(CTE + `SELECT COUNT(*) AS teslim,
+       SUM(CASE WHEN sure_sn <= 2700 THEN 1 ELSE 0 END) AS zamaninda,
+       ROUND(100.0 * SUM(CASE WHEN sure_sn <= 2700 THEN 1 ELSE 0 END) / COUNT(*), 1) AS oran
+FROM t
+WHERE status = 'teslim';`)}
+<p>Dönemde teslimlerin %${N.zamanOran}'ü 45 dakikanın altında. Diyelim ki yönetim “%80 zamanında” hedefi koydu; bu rakam senaryonun varsayımıdır, sektör değeri değildir. Boşluk ${f(N.hedefEksik)} teslimat: bu kadarı daha zamanında olsaydı hedef tutardı. Kupon bu boşluğu kapatmaz, çünkü geç teslimi azaltmaz, sonucunu yumuşatır. Boşluk analizinin faydası budur: istenen çözümün gerçekten farkı kapatıp kapatmadığını sordurur.</p>`,
+  ex: [
+    mc('Destek çalışanlarının elle kupon verirken gerçekte hangi adımları izlediğini öğrenmek istiyorsun; anlatırken adımları atladıklarını fark ettin. En uygun teknik hangisi?', ['Bütün çalışanlara anket göndermek', 'Çalışanları iş başında gözlemlemek', 'Şefle bir görüşme daha yapmak', 'Eski süreç dokümanını incelemek'], 1, 'Söylenen ile yapılan farklıysa gözlem gerekir. Görüşme ve doküman, kişinin anlattığını ya da yazılmış olanı verir.'),
+    mc('Pazarlama ve finans kupon süresi konusunda farklı şey söylüyor. Bir sonraki adım için en uygun teknik hangisi?', ['İkisiyle ayrı görüşüp kararı kendin vermek', 'Eski kampanyaların dokümanlarını okumak', 'Karar sahibiyle birlikte çalıştay yapmak', 'Destek ekibinin kuponu kullanışını izlemek'], 2, 'Çelişki aynı odada, karar sahibi varken daha hızlı kapanır. Çalıştayın gündemi ve çıktısı önceden yazılır.'),
+    mc('Paydaş kırk maddeden otuz beşini Must işaretledi. En iyi adım hangisi?', ['Sırayla geliştirip kalanını sonraki sürüme bırakmak', 'Must sayısını yöneticinin onayıyla yarıya indirmek', 'Her maddeye “bu olmadan çıkarsak ne olur?” diye sormak', 'Listeyi olduğu gibi ürün sahibine iletmek'], 2, 'Sorun etiket değil ölçüt eksikliği. “Olmazsa ne olur?” sorusu para, hukuk ve iş akışı etkisini ortaya çıkarır; karar yine ürün sahibindedir.'),
+    mc('MoSCoW\'da <b>Won\'t</b> ne anlama gelir?', ['Bu sürümde yapılmayacak, ileride konuşulabilir', 'İstek reddedildi, bir daha ele alınmayacak', 'Geliştirici yapılamaz dediği için çıkarıldı', 'Düşük öncelikli, yer kalırsa yapılacak'], 0, 'Won\'t kapsam kararıdır ve beklentiyi açıkça yönetir. “Yer kalırsa” Could anlamına gelir.'),
+    mc('Alternatif akışı çok olan kupon işini dokümana dökmek istiyorsun. Use case hikâyeden neyi daha iyi verir?', ['Müşterinin bu işten alacağı değeri', 'Sprint içinde kaç puan tutacağını', 'Ana ve alternatif akışları tek yerde', 'Hangi ekibin önce başlayacağını'], 2, 'Use case etkileşimi adım adım, sapmalarıyla yazar. Değeri hikâye, büyüklüğü tahmin toplantısı, sırayı planlama söyler.'),
+    mc('RTM\'de bir gereksinimin test sütunu boş. Bu ne söyler?', ['Gereksinim gereksizdir, listeden çıkarılır', 'Test uzmanı işini eksik yaptı demektir', 'Gereksinim karşılanmış sayılır, not düşülür', 'Karşılandığına dair kanıt henüz yoktur'], 3, 'Boş test sütunu kanıt yokluğudur, başarısızlık ya da gereksizlik değildir. Önce test mi eksik, gereksinim mi kalktı diye sorarsın.'),
+    mc('Tel çerçeve toplantısında paydaş düğmenin rengini tartışmaya başladı. Ne yaparsın?', ['Rengi hemen seçtirip tartışmayı kapatırsın', 'Tel çerçeveye geri dönüp akış ve içeriğe odaklarsın', 'Toplantıyı bitirip mockup hazırlatırsın', 'Tasarımcıyı çağırıp kararı ona bırakırsın'], 1, 'Tel çerçevenin kaba olması bilerekdir: düzen ve akış konuşulsun diye. Görsel kararın yeri sonraki adımdır.'),
+    mc('Sözleşmeli, kapsamı imzalı bir projede ekip “gereksinimi sprintte netleştiririz” diyor. Sakıncası nedir?', ['Sözleşme kapsamı değişince onaylı süreç gerekir', 'Sprint yalnızca yazılım ekiplerinde kullanılabilir', 'Agile ekipler doküman yazmadığı için izlenemez', 'Waterfall projelerinde test yapılmadığı için risklidir'], 0, 'Sözleşmeli işte kapsam değişikliği resmî süreç ister. Çalışma düzeni Agile olabilir, ama onaylı kapsam ve RTM korunur.'),
+    sq('İleri yön izlenebilirlik. Başlangıç kodu gereksinimleri (<code>ba_gereksinim</code>) ve testleri (<code>ba_testler</code>) kuruyor. <b>Hiç testi olmayan</b> gereksinimleri getir, <code>Wont</code> olanlar hariç: <code>grs</code>, <code>baslik</code>, <code>oncelik</code>. <code>grs</code> sırasına göre.', RTM1 + "SELECT g.grs, g.baslik, g.oncelik FROM ba_gereksinim g LEFT JOIN ba_testler t ON t.grs = g.grs WHERE t.grs IS NULL AND g.oncelik <> 'Wont' ORDER BY g.grs;", 'Eşi olmayanı bulma kalıbı: gereksinim solda, test sağda. Sağ taraf boş olanları süz, Won\'t kovasını da dışarıda bırak.', { start: RTM1 + '-- Sorgunu buraya yaz.\n', ord: true, must: [{ re: '\\b(LEFT\\s+(OUTER\\s+)?JOIN|NOT\\s+EXISTS|NOT\\s+IN|EXCEPT|MINUS)\\b', msg: 'Eşi olmayan gereksinimi JOIN, NOT EXISTS ya da küme işlemiyle bul; kimlikleri elle yazma.' }] }),
+    sq('Kapsam raporu. Önceliğe göre gereksinim sayısı ve en az bir testi olan gereksinim sayısı: <code>oncelik</code>, <code>gereksinim</code>, <code>testli</code>. <code>Wont</code> hariç, önceliğe göre sırala. Bir gereksinimin iki testi olabilir, iki kez sayma.', RTM1 + "SELECT g.oncelik, COUNT(DISTINCT g.grs) AS gereksinim, COUNT(DISTINCT t.grs) AS testli FROM ba_gereksinim g LEFT JOIN ba_testler t ON t.grs = g.grs WHERE g.oncelik <> 'Wont' GROUP BY g.oncelik ORDER BY g.oncelik;", 'JOIN sonrası bir satır bir test olabilir. Tekrarları atarak say; sağ taraftaki boşlar sayılmaz.', { start: RTM1 + '-- Sorgunu buraya yaz.\n', ord: true, must: [{ re: '\\bDISTINCT\\b', msg: 'İki testi olan gereksinimi iki kez saymamak için DISTINCT kullan.' }] }),
+    sq('UAT kapısı. Testi <b>kalan</b> Must gereksinimleri ve kaç testinin kaldığı: <code>grs</code>, <code>kalan</code>. <code>grs</code> sırasına göre. Bu liste boş olmadan onay verilmez.', RTM1 + "SELECT g.grs, COUNT(*) AS kalan FROM ba_gereksinim g JOIN ba_testler t ON t.grs = g.grs WHERE g.oncelik = 'Must' AND t.sonuc = 'kaldi' GROUP BY g.grs ORDER BY g.grs;", 'Bu sefer eşi olanlar gerekli, normal JOIN yeterli. İki koşulu birlikte yazıp gereksinime göre grupla.', { start: RTM1 + '-- Sorgunu buraya yaz.\n', ord: true }),
+    sq('MoSCoW ve kapasite. Sprint kapasitesi 20 puan. Önceliğe göre toplam puan ve kapasiteyi aşıp aşmadığı: <code>oncelik</code>, <code>puan</code>, <code>durum</code> (20\'yi aşıyorsa \'aşıyor\', değilse \'sığıyor\'). <code>Wont</code> hariç, önceliğe göre sırala.', RTM0 + "SELECT oncelik, SUM(puan) AS puan, CASE WHEN SUM(puan) > 20 THEN 'aşıyor' ELSE 'sığıyor' END AS durum FROM ba_gereksinim WHERE oncelik <> 'Wont' GROUP BY oncelik ORDER BY oncelik;", 'Toplamı grup başına al; aynı toplamı CASE içinde kapasiteyle karşılaştır.', { start: RTM0 + '-- Sorgunu buraya yaz.\n', ord: true, must: [{ re: '\\bCASE\\b', msg: 'Durumu CASE ile hesapla.' }] }),
+    sq('RTM\'ye kanıt. GRS-03 “yalnız teslim durumu kupon alır” diyor. Başlangıç kodu hatalı kupon işinin Aralık çıktısını (<code>ba_kupon</code>) üretiyor. Kuponu <code>lk_orders</code> ile bağla ve durumu teslim olmayan kupon sayısını bul: <code>kanit_hata</code>. Bu sayı hata kaydına ve RTM\'ye yazılır.', HATALI + "SELECT COUNT(*) AS kanit_hata FROM ba_kupon k JOIN lk_orders o ON o.order_id = k.order_id WHERE o.status <> 'teslim';", 'Durum kupon tablosunda yok, siparişten gelir. Sipariş numarasıyla bağla, teslim olmayanları say.', { start: HATALI + '-- Sorgunu buraya yaz.\n', must: [{ re: '\\blk_orders\\b', msg: 'Kanıt, sipariş tablosundaki gerçek durumdan gelmeli.' }] }),
+    sq('Boşluk analizi. Hedef: teslimlerin %80\'i zamanında (45 dakika ve altı). Kuryenin aracına göre zamanında oranı (<code>oran</code>, yüzde, 1 basamak) ve hedefe uzaklığı (<code>fark</code> = 80 - oran, 1 basamak): <code>vehicle</code>, <code>oran</code>, <code>fark</code>. <code>fark</code> azalan sırala.', CTE + "SELECT c.vehicle, ROUND(100.0 * SUM(CASE WHEN t.sure_sn <= 2700 THEN 1 ELSE 0 END) / COUNT(*), 1) AS oran, ROUND(80 - 100.0 * SUM(CASE WHEN t.sure_sn <= 2700 THEN 1 ELSE 0 END) / COUNT(*), 1) AS fark FROM t JOIN lk_couriers c ON c.courier_id = t.courier_id WHERE t.status = 'teslim' GROUP BY c.vehicle ORDER BY fark DESC;", 'Oran kalıbını kur, sonra aynı ifadeyi 80\'den çıkar. Yuvarlamayı en sonda yap.', { start: START, ord: true, must: [{ re: '\\bCASE\\b', msg: 'Zamanında olanları koşullu toplamayla say.' }] })
+  ] });
+
 /* ---------- 8. Canlıya geçiş ---------- */
+/* Duman testi hatalı bir işin çıktısına bakar: filtre iadeyi de alıyor. Doğru tablo üzerinde bu test hep 0 verir ve hiçbir şey kanıtlamaz. */
 const KUPON = `CREATE TABLE ba_kupon AS
 SELECT o.order_id, o.customer_id, o.status,
        CASE WHEN ${SN} > 3600 THEN 60 ELSE 30 END AS tutar
 FROM lk_orders o
-WHERE o.status = 'teslim'
+WHERE o.status IN ('teslim', 'iade')
   AND o.placed_at >= '2024-12-01' AND o.placed_at < '2025-01-01'
   AND ${SN} > 2700;
 `;
@@ -664,14 +831,15 @@ add({ id: 'ba-canli', lv: 'B1', min: 28,
 <tr><td>Hemen sonra</td><td>Duman testleri çalıştı, sonuç sıfır hata</td><td>BA, test uzmanı</td></tr>
 <tr><td>İlk hafta</td><td>Günlük KPI ve bütçe takibi</td><td>BA</td></tr></table>
 <h2>Duman testi (smoke test) SQL ile</h2>
-<p>Duman testi, “ayakta mı, en kritik şey doğru mu?” diye bakan kısa kontroldür. Bütün testlerin yerine geçmez. Yine “hata varsa sayı döner” kalıbı:</p>
+<p>Duman testi, “ayakta mı, en kritik şey doğru mu?” diye bakan kısa kontroldür. Bütün testlerin yerine geçmez. Yine “hata varsa sayı döner” kalıbı. Aşağıdaki kutunun ilk bölümü canlıya çıkan işi taklit eder ve bilerek hata içerir: filtresi iade siparişlerini de alıyor.</p>
 ${box(KUPON + `SELECT 'teslim_disi_kupon' AS test, COUNT(*) AS hata FROM ba_kupon WHERE status <> 'teslim'
 UNION ALL
 SELECT 'tutar_gecersiz', COUNT(*) FROM ba_kupon WHERE tutar NOT IN (30, 60)
 UNION ALL
 SELECT 'tekrar_eden', COUNT(*) FROM (SELECT order_id FROM ba_kupon GROUP BY order_id HAVING COUNT(*) > 1) AS x;`)}
+<p><code>teslim_disi_kupon</code> sıfırdan büyük çıkıyor: geçiş durur. Testin neye baktığını da sına: işin kendi filtresiyle aynı koşulu arayan bir test, o filtre bozulmadıkça ne bulabilir? Bu yüzden duman testini önce bilerek bozulmuş bir çıktıda dene; doğru çıktıda hep 0 veren test hiçbir şey kanıtlamaz.</p>
 <h2>Önce ve sonra</h2>
-<p>Başarı ölçüsü talep aşamasında yazılmıştı: kuponun geçerli olduğu dönemde destek şikâyeti ve müşteri puanı nasıl değişti? Kupon verimizde gerçekten olmadığı için burada yalnız yöntemi gösteriyoruz: canlıya geçişi 1 Aralık 2024 varsayıyoruz.</p>
+<p>Başarı ölçüsü talep aşamasında yazılmıştı: pilot grupta geç teslim şikâyeti, geçişten sonraki 8 haftada, başlangıç değerine göre %20 azalmalı; geç teslimlerde kurye puanı ${N.puanGec}'ın altına düşmemeli. Şikâyet sayısı bu uygulamanın verisinde yok, müşteri hizmetlerinden gelir. Kupon da verimizde gerçekten olmadığı için burada yalnız yöntemi gösteriyoruz: canlıya geçişi 1 Aralık 2024 varsayıyoruz.</p>
 ${box(CTE + `SELECT strftime('%Y-%m', placed_at) AS ay,
        COUNT(*) AS teslim,
        SUM(CASE WHEN sure_sn > 2700 THEN 1 ELSE 0 END) AS gec,
@@ -704,15 +872,16 @@ ORDER BY ay;`)}
 <p>Her şey bir araya geldi. Şablon olarak kullanabileceğin kısa BRD:</p>
 <table><tr><th>Bölüm</th><th>İçerik</th></tr>
 <tr><td>1. Özet ve sorun</td><td>Dönemde teslim edilen ${f(N.q4Teslim)} siparişin ${f(N.q4Gec)} tanesi 45 dakikayı aşıyor. Geç teslimlerde kurye puanı ${N.puanGec}, diğerlerinde ${N.puanZaman}. Bugün telafi elle ve kişiye göre yapılıyor.</td></tr>
-<tr><td>2. Amaç ve başarı ölçüsü</td><td>Geç teslim alan müşterinin 5 dakika içinde kupon alması, bu konudaki destek taleplerinin azalması. Yeniden sipariş artışı garanti edilmiyor; pilotla ölçülecek.</td></tr>
+<tr><td>2. Amaç ve başarı ölçüsü</td><td>Geç teslim alan müşterinin 5 dakika içinde kupon alması. Ana ölçü: pilot grupta geç teslim şikâyeti, geçişten sonraki 8 haftada %20 azalır; başlangıç değeri geçiş öncesi 8 hafta, kaynağı müşteri hizmetleri kayıtları (bu uygulamanın verisinde yok). Yan ölçü: geç teslimlerde kurye puanı ${N.puanGec}'ın altına düşmez. Yeniden sipariş artışı garanti edilmiyor; pilotla ölçülecek.</td></tr>
 <tr><td>3. Kapsam</td><td>İçi: süre hesabı, kupon, bildirim, rapor. Dışı: kurye ve restoran iyileştirmeleri, restorana kesinti.</td></tr>
 <tr><td>4. Paydaşlar ve RACI</td><td>Müşteri hizmetleri (talep sahibi), operasyon, finans, geliştirme, test.</td></tr>
-<tr><td>5. İş kuralları</td><td>Yalnız “teslim”. Süre saniye ile, sipariş zamanından teslime. 2.700 saniyeyi aşan 30 TL, 3.600 saniyeyi aşan 60 TL. Sipariş başına bir, ayda en çok iki kupon. Karar tablosu ekte.</td></tr>
+<tr><td>5. İş kuralları</td><td>Yalnız “teslim”. Süre saniye ile, sipariş zamanından teslime. 2.700 saniyeyi aşan 30 TL, 3.600 saniyeyi aşan 60 TL. Sipariş başına bir, ayda en çok iki kupon. Kupon teslim kaydından itibaren 30 gün geçerlidir (karar K-03: ürün sahibi kararı, pazarlama 30 gün, finans 7 gün önerdi; gerekçe ve maliyet etkisi karar kaydında). Karar tablosu ekte.</td></tr>
 <tr><td>6. Gereksinimler</td><td>GRS-01...: işlevsel. NFR-01: kupon en geç 5 dakikada. Kullanıcı hikâyeleri ve kabul kriterleri.</td></tr>
 <tr><td>7. Süreç ve veri</td><td>TO-BE şeması, sıra diyagramı, alan eşleme, API sözleşmesi bağlantısı.</td></tr>
 <tr><td>8. Varsayım ve riskler</td><td>Müşteriye söz verilen süre verisi yok, 45 dakika varsayımdır. Tutar bedeli üst sınırda ${f(N.maliyet)} TL. Kuponun getirisi kanıtlı değil.</td></tr>
 <tr><td>9. Test ve kabul</td><td>Senaryo listesi, mutabakat sorguları, çıkış ölçütü.</td></tr>
-<tr><td>10. Geçiş ve kapanış</td><td>Geçiş planı, geri alma ölçütleri, ilk ay raporu, kapanış tarihi.</td></tr></table>
+<tr><td>10. Geçiş ve kapanış</td><td>Geçiş planı, geri alma ölçütleri, ilk ay raporu, kapanış tarihi.</td></tr>
+<tr><td>11. Açık sorular</td><td>Her satır: soru, karar sahibi, tarih. <b>Başlangıç şikâyet sayısı</b>: müşteri hizmetleri, UAT başlamadan önce. <b>Kupon sonrası iade</b>: kullanılmamış kupon iptal edilsin önerisi; kullanılmış kuponun bedeli kimde kalır? Finans, UAT başlamadan önce. <b>Söz verilen süre</b>: 45 dakika varsayımı doğru mu? Operasyon, geçişten önce. Kapanan soru bu satırdan çıkar, karar kaydına geçer; kupon geçerlilik süresi böyle kapandı.</td></tr></table>
 <p>BRD'deki sayılar elle yazılmaz, tekrar üretilebilir sorgudan gelir. Aşağıdaki sorgu 1. ve 8. bölümlerin sayılarını verir. Bir yıl sonra biri “bu sayı nereden çıktı?” diye sorduğunda cevabın budur.</p>
 ${box(CTE + `SELECT 'teslim' AS olcu, COUNT(*) AS deger FROM t WHERE status = 'teslim'
 UNION ALL
@@ -723,7 +892,7 @@ UNION ALL
 SELECT 'etkilenen_musteri', COUNT(DISTINCT customer_id) FROM t WHERE status = 'teslim' AND sure_sn > 2700;`)}
 <p>İşin kapanışı: ilk ay raporu sunulur, açık konular sahiplerine devredilir, doküman son hâliyle bırakılır, “ne öğrendik?” toplantısı yapılır. Sonraki talep büyük ihtimalle bu kuponun başka bir yönüyle gelir. Bitirme projesinde tam olarak bunu yapacaksın.</p>`,
   ex: [
-    sq('Duman testi. Başlangıç kodu Aralık kuponlarını üretiyor. Tek raporda üç test: <code>teslim_disi_kupon</code> (durum teslim değil), <code>tutar_gecersiz</code> (tutar 30 ya da 60 değil), <code>bos_musteri</code> (müşteri boş). Sütunlar: <code>test</code>, <code>hata</code>.', KUPON + "SELECT 'teslim_disi_kupon' AS test, COUNT(*) AS hata FROM ba_kupon WHERE status <> 'teslim' UNION ALL SELECT 'tutar_gecersiz', COUNT(*) FROM ba_kupon WHERE tutar NOT IN (30, 60) UNION ALL SELECT 'bos_musteri', COUNT(*) FROM ba_kupon WHERE customer_id IS NULL;", 'Her test ayrı bir SELECT; ilk sütun testin adı olan sabit metin. Sonuçları küme işlemiyle alt alta koy. Tekrarları yok saymayan biçimi kullan.', { start: KUPON + '-- Testleri buraya yaz.\n', must: [{ re: '\\bUNION\\s+ALL\\b', msg: 'Testleri UNION ALL ile tek raporda birleştir.' }] }),
+    sq('Duman testi. Başlangıç kodu kupon işinin Aralık çıktısını üretiyor ve iş bilerek hatalı. Tek raporda üç test: <code>teslim_disi_kupon</code> (durum teslim değil), <code>tutar_gecersiz</code> (tutar 30 ya da 60 değil), <code>bos_musteri</code> (müşteri boş). Sütunlar: <code>test</code>, <code>hata</code>.', KUPON + "SELECT 'teslim_disi_kupon' AS test, COUNT(*) AS hata FROM ba_kupon WHERE status <> 'teslim' UNION ALL SELECT 'tutar_gecersiz', COUNT(*) FROM ba_kupon WHERE tutar NOT IN (30, 60) UNION ALL SELECT 'bos_musteri', COUNT(*) FROM ba_kupon WHERE customer_id IS NULL;", 'Her test ayrı bir SELECT; ilk sütun testin adı olan sabit metin. Sonuçları küme işlemiyle alt alta koy. Tekrarları yok saymayan biçimi kullan.', { start: KUPON + '-- Testleri buraya yaz.\n', must: [{ re: '\\bUNION\\s+ALL\\b', msg: 'Testleri UNION ALL ile tek raporda birleştir.' }] }),
     sq('Önce ve sonra: Kasım ve Aralık 2024 için teslim sayısı, geç sayısı ve geç oranı (yüzde, 1 basamak): <code>ay</code>, <code>teslim</code>, <code>gec</code>, <code>oran</code>. Aya göre sırala.', CTE + "SELECT strftime('%Y-%m', placed_at) AS ay, COUNT(*) AS teslim, SUM(CASE WHEN sure_sn > 2700 THEN 1 ELSE 0 END) AS gec, ROUND(100.0 * SUM(CASE WHEN sure_sn > 2700 THEN 1 ELSE 0 END) / COUNT(*), 1) AS oran FROM t WHERE status = 'teslim' AND placed_at >= '2024-11-01' GROUP BY strftime('%Y-%m', placed_at) ORDER BY ay;", 'Dönem <code>t</code> içinde Ekim\'den başlıyor; WHERE ile Kasım başına çek. Oran kalıbını ba-talep dersinden hatırla.', { start: START, ord: true }),
     sq('Memnuniyet KPI\'ı: Kasım ve Aralık 2024\'te teslim edilip puanlanan siparişlerde ortalama kurye puanı (2 basamak) ve puan sayısı: <code>ay</code>, <code>ort_puan</code>, <code>puan_sayisi</code>. Aya göre sırala.', "SELECT strftime('%Y-%m', o.placed_at) AS ay, ROUND(AVG(r.courier_score), 2) AS ort_puan, COUNT(*) AS puan_sayisi FROM lk_orders o JOIN lk_ratings r ON r.order_id = o.order_id WHERE o.status = 'teslim' AND o.placed_at >= '2024-11-01' AND o.placed_at < '2025-01-01' GROUP BY strftime('%Y-%m', o.placed_at) ORDER BY ay;", 'Puanlar ayrı tabloda; siparişle bağla. Puansız siparişler ortalamaya girmesin, bu yüzden normal JOIN yeterli.', { ord: true }),
     sq('Bütçe takibi. Aylık kupon tutarını hesapla, onaylı aylık bütçe 18.000 TL. <code>ay</code>, <code>tutar</code>, <code>durum</code> (bütçeyi aşıyorsa \'aşım\', aşmıyorsa \'uygun\'). Aya göre sırala.', CTE + ", a AS (SELECT strftime('%Y-%m', placed_at) AS ay, SUM(CASE WHEN sure_sn > 3600 THEN 60 ELSE 30 END) AS tutar FROM t WHERE status = 'teslim' AND sure_sn > 2700 GROUP BY strftime('%Y-%m', placed_at)) SELECT ay, tutar, CASE WHEN tutar > 18000 THEN 'aşım' ELSE 'uygun' END AS durum FROM a ORDER BY ay;", 'Önce aylık toplamı ikinci bir CTE ile hesapla. Dış sorguda bu toplamı bütçeyle karşılaştıran bir CASE yaz.', { start: CTE + '-- t\'nin arkasına virgülle aylık toplamı veren ikinci bir CTE ekle.\n', ord: true }),
@@ -798,10 +967,12 @@ add({ id: 'proje-is-analisti', lv: 'B2', mod: 'Bitirme Projeleri', min: 60,
   ] });
 
 /* ---------- Mülakat ---------- */
-add({ id: 'ba-mulakat', lv: 'B2', mod: 'Mülakat Hazırlığı', min: 30,
+const isk = l => '<div style="margin-top:10px"><b>Güçlü cevap iskeleti</b><ol style="margin:4px 0 0;padding-left:20px">' + l.map(x => '<li>' + x + '</li>').join('') + '</ol></div>';
+const mi = (q, o, a, why, l) => mc(q, o, a, why + isk(l));
+add({ id: 'ba-mulakat', lv: 'B2', mod: 'Mülakat Hazırlığı', min: 50,
   title: 'Mülakat: BT iş analisti için SQL ve senaryo soruları',
   sum: 'İş analisti görüşmelerinde sık geçen senaryo soruları ve bir analistten beklenen pratik SQL.',
-  en: 'business analyst interview questions ba mülakat senaryo sql scenario stakeholder conflict change request',
+  en: 'business analyst interview questions ba mülakat senaryo sql scenario stakeholder conflict change request moscow use case rtm traceability wireframe frd srs agile waterfall scrum sprint backlog gap analysis',
   body: `<p>İş analisti görüşmeleri iki ayaklıdır. Birinde “şu durumda ne yaparsın?” diye sorulur, öbüründe bazı şirketler SQL ya da veri okuma görevi verir. Soru türleri şirkete ve sektöre göre değişir; buradaki liste bir kalıptır, sınav kılavuzu değil.</p>
 <h2>Senaryo sorusuna cevap iskeleti</h2>
 <ol><li><b>Netleştir.</b> “Önce şunu sorardım...” diye başla. Hemen çözüm söylemek zayıf görünür.</li>
@@ -813,22 +984,32 @@ add({ id: 'ba-mulakat', lv: 'B2', mod: 'Mülakat Hazırlığı', min: 30,
 <p>Analistten çoğu zaman karmaşık sorgu değil doğru düşünme beklenir: filtre, gruplama, JOIN, NULL ve mutabakat. Yazarken sesli düşün: “Bir satır neyi temsil ediyor? Bu JOIN satır sayısını değiştirir mi?” Sonuca güvenmeden önce basit bir kontrol toplamı söyle.</p>
 <h2>Kendini anlatırken</h2>
 <p>Bu yoldaki BRD'yi portföy olarak gösterebilirsin. Kullandığın verinin hayali ve eğitim amaçlı olduğunu belirt. Sayıların nereden geldiğini gösteren sorguyu yanında tut; bir sayı sorulduğunda onu göstermek güven verir.</p>
-<div class="note"><b>Hazırlık önerisi</b>Aşağıdaki senaryo sorularını önce şıklara bakmadan sesli cevapla, sonra kendi cevabını doğru şıkla karşılaştır. Gerçek görüşmede şık olmaz.</div>`,
+<div class="note"><b>Hazırlık önerisi</b>Aşağıdaki senaryo sorularını önce şıklara bakmadan sesli cevapla, sonra kendi cevabını doğru şıkla karşılaştır. Gerçek görüşmede şık olmaz. Doğru cevabın altında bir “güçlü cevap iskeleti” açılır: sesli cevabını bununla karşılaştır. Son on soru Agile ve Waterfall ortamlarının araçları üzerinedir: gereksinim toplama, MoSCoW, use case, RTM, tel çerçeve, FRD/SRS, sprint ve boşluk analizi.</div>`,
   ex: [
-    mc('İki paydaş aynı alan için çelişen kural istiyor: pazarlama “kupon 30 gün geçerli”, finans “7 gün”. İlk adımın ne olur?', ['Ortasını bulup ikisine de uyacağını umarak 18 gün yazarsın', 'Gerekçe ve etkiyi toplayıp kararı sahibine götürürsün', 'Üst yöneticiye e-posta atıp seni bu işten çıkarmasını istersin', 'Geliştiriciye iki kuralı da ayar olarak koymasını söylersin'], 1, 'Kararı iş analisti tek başına vermez ama karar için gerekli bilgiyi toplar: maliyet, kullanım oranı, müşteri etkisi. Sonra kararı sahibine götürür ve kayda alır.'),
-    mc('Geliştirici “bu gereksinim yanlış, öyle olmaz” diyor. Ne yaparsın?', ['Sözleşme gibi yazıldığı için uygulamasını istersin', 'Hemen gereksinimi siler, teknik bilgisine güvenirsin', 'Gerekçesini dinler, alternatifi birlikte tartışırsın', 'Konuyu toplantıda herkesin önünde tartışmaya açarsın'], 2, 'Geliştirici çoğu zaman görmediğin bir kısıtı görür. Amaç gereksinimi korumak değil, iş amacına uygun çözümü bulmaktır. Değişiklik olursa kayda geçer.'),
-    mc('İterasyonun ortasında üst düzey bir yönetici “şunu da ekleyin” diyor. En iyi cevap hangisi?', ['Olur der, ekibe akşam fazla mesai yazdırırsın', 'Yetkin olmadığını söyleyip konuyu kapatırsın', 'Kaydı açmadan geliştiriciye doğrudan iletirsin', 'Etkisini çıkarır, önceliği ürün sahibine götürürsün'], 3, 'Yeni istek yok sayılmaz, sessizce de eklenmez. Etki ve ödünleşim görünür olunca öncelik kararı doğru kişide kalır.'),
-    mc('Canlıya çıktıktan bir saat sonra iki katı kupon üretildiğini fark ettin. İlk adımın hangisi?', ['Geri alma ölçütüne bakıp sorumluyu haberdar edersin', 'Sorunu kendi başına çözmek için sorgularla neden aramaya başlarsın', 'Yarın yapılacak toplantının gündemine bir madde eklersin', 'Fazla kuponları veritabanından elle silmeye başlarsın'], 0, 'Önce etkiyi durduracak kararı tetiklersin; önceden yazılmış ölçüt bunun içindir. Kök neden analizi sonra gelir. Canlıda elle veri silmek izinsiz yapılmaz.'),
-    mc('Finans raporu ile senin sorgun farklı ciro veriyor. Nasıl ilerlersin?', ['Finans raporunun yanlış olduğunu yazıp sorgunu kullanırsın', 'İki tanımı karşılaştırır: dönem, durum, indirim, tarih alanı', 'Farkı yuvarlayıp ortalamasını raporda paylaşırsın', 'Finans sistemine güvenip kendi sorgunu silersin'], 1, 'Çoğu fark tanımdan gelir: iptal dahil mi, hangi tarih, hangi saat dilimi? Önce tanımı hizala, sonra satır düzeyinde küçük bir örnekle farkı bul.'),
-    mc('İş analisti ile ürün sahibi arasındaki temel fark sorulduğunda en dürüst cevap hangisi?', ['İkisi aynı iştir; yalnız şirket içi unvan değişir', 'Ürün sahibi kod yazar, iş analisti dokümanı onaylar', 'Şirkete göre değişir; öncelik çoğunlukla ürün sahibinde', 'İş analisti öncelik verir, ürün sahibi test senaryosu yazar'], 2, 'Sınır kuruma göre değişir ve bunu söylemek dürüstlüktür. Bazı ekiplerde tek kişi ikisini yapar. Kendi deneyiminden örnek vererek tamamla.'),
-    mc('Kabul kriteri “sistem hızlı olmalı” yazılmış ve test ekibi bunu test edemiyor. Ne yaparsın?', ['Kriteri silersin, çünkü hız işlevsel gereksinim değildir', 'Test ekibinden sezgisel olarak karar vermesini istersin', 'Geliştiriciye en hızlı çözümü yapmasını söylersin', 'Paydaşa ölçü sorar, sayıya çevirip yeniden yazarsın'], 3, 'Örnek: “Kupon, teslim kaydından en geç 5 dakika sonra görünür.” Sayı iş biriminden gelir, teknik ekiple yapılabilirliği konuşulur.'),
-    mc('“BRD ile kullanıcı hikâyesi arasındaki fark nedir?” sorusuna en iyi cevap hangisi?', ['BRD işin bütününü, hikâye tek parçayı anlatır', 'BRD yalnız şelale projelerinde vardır; çevik ekipler hiç yazmaz', 'Hikâye yöneticiler için, BRD yalnız geliştiriciler için yazılır', 'İkisi aynı bilgiyi taşır, biri yalnızca Türkçe yazılır'], 0, 'Birçok çevik ekip de işin bütününü anlatan bir özet doküman tutar; biçimi ve adı değişebilir. Önemli olan kapsam, gerekçe ve parçalar arasındaki izlenebilirliktir.'),
-    sq('<b>SQL.</b> Hiç siparişi olmayan müşteri sayısı: <code>siparissiz</code>. (<code>lk_customers</code>, <code>lk_orders</code>)', "SELECT COUNT(*) AS siparissiz FROM lk_customers c LEFT JOIN lk_orders o ON o.customer_id = c.customer_id WHERE o.order_id IS NULL;", 'Klasik eşi olmayan soru. Müşteri solda; sağ tarafın anahtarı boş olanları say.'),
-    sq('<b>SQL.</b> Satır çoğalması. Teslim edilmiş siparişlerden tek satırda: sipariş sayısı <code>siparis</code>, kalem sayısı <code>kalem</code>, sepet toplamı <code>tutar</code>. (<code>lk_orders</code>, <code>lk_order_lines</code>)', "SELECT COUNT(DISTINCT o.order_id) AS siparis, COUNT(*) AS kalem, SUM(l.qty * l.unit_price) AS tutar FROM lk_orders o JOIN lk_order_lines l ON l.order_id = o.order_id WHERE o.status = 'teslim';", 'JOIN sonrası bir satır bir sipariş değil bir kalemdir. Sipariş sayısında tekrarları at.'),
-    sq('<b>SQL.</b> Ay kayması: sipariş ayı ile teslim ayı farklı olan teslim edilmiş sipariş sayısı. Rapor hangi tarihe göre yazılıyorsa bu kayıtlar farklı aya düşer: <code>ay_kayan</code>.', "SELECT COUNT(*) AS ay_kayan FROM lk_orders WHERE status = 'teslim' AND strftime('%Y-%m', placed_at) <> strftime('%Y-%m', delivered_at);", 'Her iki tarihten de yıl-ay çıkar ve karşılaştır. İki raporun neden farklı ay toplamı verdiğini açıklayan tipik bir kontrol.'),
-    sq('<b>SQL.</b> Müşterileri dönem içi teslim sipariş sayısına göre ayır: 1-2 \'az\', 3-9 \'orta\', 10 ve üzeri \'cok\'. Segment başına müşteri sayısı: <code>segment</code>, <code>musteri</code>. Segmente göre sırala. Dönem: Ekim-Aralık 2024.', "WITH m AS (SELECT customer_id, COUNT(*) AS n FROM lk_orders WHERE status = 'teslim' AND placed_at >= '2024-10-01' AND placed_at < '2025-01-01' GROUP BY customer_id) SELECT CASE WHEN n >= 10 THEN 'cok' WHEN n >= 3 THEN 'orta' ELSE 'az' END AS segment, COUNT(*) AS musteri FROM m GROUP BY CASE WHEN n >= 10 THEN 'cok' WHEN n >= 3 THEN 'orta' ELSE 'az' END ORDER BY segment;", 'İki kademe: önce müşteri başına sipariş sayısı, sonra bu sayıyı CASE ile segmente çevirip say.', { ord: true }),
-    sq('<b>SQL.</b> Veri kalitesi: hiç kalemi olmayan sipariş sayısı. Sonuç sıfırsa da söylemek değerlidir: <code>kalemsiz</code>.', "SELECT COUNT(*) AS kalemsiz FROM lk_orders o WHERE NOT EXISTS (SELECT 1 FROM lk_order_lines l WHERE l.order_id = o.order_id);", 'Sipariş tablosundan başla. Karşılığı olmayanları LEFT JOIN ya da NOT EXISTS ile bulabilirsin.'),
-    sq('<b>SQL.</b> Hangi restoran iptal oranında en kötü? En az 100 siparişi olanlardan iptal oranı (yüzde, 1 basamak) en yüksek 3 restoran: <code>name</code>, <code>siparis</code>, <code>oran</code>. Orana göre azalan, eşitlikte ada göre sırala.', "SELECT r.name, COUNT(*) AS siparis, ROUND(100.0 * SUM(CASE WHEN o.status = 'iptal' THEN 1 ELSE 0 END) / COUNT(*), 1) AS oran FROM lk_orders o JOIN lk_restaurants r ON r.restaurant_id = o.restaurant_id GROUP BY r.name HAVING COUNT(*) >= 100 ORDER BY oran DESC, r.name LIMIT 3;", 'Koşullu toplamayla oran hesapla; alt sınırı grup koşulu olarak yaz, sıralayıp ilk üçü al.', { ord: true })
+    mi('İki paydaş aynı alan için çelişen kural istiyor: pazarlama “kupon 30 gün geçerli”, finans “7 gün”. İlk adımın ne olur?', ['Maliyet riski taşıdığı için finansın 7 gününü yazar, pazarlamaya bilgi verirsin', 'Gerekçe ve etkiyi toplayıp kararı sahibine götürürsün', 'Talep pazarlamadan geldiği için 30 günü yazar, finansı bilgilendirirsin', 'Süreyi ayar yaptırıp kararı canlıya geçiş sonrasına bırakırsın'], 1, 'Kararı iş analisti tek başına vermez ama karar için gerekli bilgiyi toplar: maliyet, kullanım oranı, müşteri etkisi. Sonra kararı sahibine götürür ve kayda alır.', ['Her iki tarafın gerekçesini sor: maliyet mi, kullanım oranı mı?', 'Veriyi getir: geçmiş kullanım süresi, tutar etkisi.', 'Karar sahibini söyle, toplantıyı kur.', 'Kararı ve gerekçeyi BRD\'ye yaz; bu yolda karar K-03 böyle kapandı.']),
+    mi('Geliştirici “bu gereksinim yanlış, öyle olmaz” diyor. Ne yaparsın?', ['Gereksinim onaylı olduğu için önce uygulanmasını, tartışmanın sonra yapılmasını istersin', 'Teknik bilgisine güvenip gereksinimi önerdiği biçime çevirirsin', 'Gerekçesini dinler, alternatifi birlikte tartışırsın', 'İş birimini hemen toplantıya çağırıp kararı onlara bırakırsın'], 2, 'Geliştirici çoğu zaman görmediğin bir kısıtı görür. Amaç gereksinimi korumak değil, iş amacına uygun çözümü bulmaktır. Değişiklik olursa kayda geçer.', ['Önce neyi gördüğünü sor: kısıt mı, yanlış anlama mı?', 'İş amacını tekrarla: çözüm değişebilir, amaç değişmez.', 'Alternatifi etkisiyle iş birimine götür.', 'Değişikliği gereksinim numarasıyla kayda geçir.']),
+    mi('İterasyonun ortasında üst düzey bir yönetici “şunu da ekleyin” diyor. En iyi cevap hangisi?', ['Yönetici istediği için sprinte ekler, ekibi bilgilendirirsin', 'Sprint kapalıdır der, isteği sonraki döneme not edersin', 'Geliştiriciyle yapılabilirliğini konuşur, küçükse eklersin', 'Etkisini çıkarır, önceliği ürün sahibine götürürsün'], 3, 'Yeni istek yok sayılmaz, sessizce de eklenmez. Etki ve ödünleşim görünür olunca öncelik kararı doğru kişide kalır.', ['İsteği yok saymadan kaydet, gerçek ihtiyacı sor.', 'Etkiyi çıkar: neyin yerine geçer, ne kadar sürer?', 'Kararı ürün sahibine götür.', 'Sonucu yöneticiye dön, kapsam değiştiyse belgele.']),
+    mi('Canlıya çıktıktan bir saat sonra iki katı kupon üretildiğini fark ettin. İlk adımın hangisi?', ['Geri alma ölçütüne bakıp sorumluyu haberdar edersin', 'Yanlış alarm vermemek için önce sorguyla kök nedeni bulursun', 'Etkiyi netleştirmek için gün sonu raporunu bekleyip tutarı hesaplarsın', 'Fazla kuponları listeleyip temizleme için geliştiriciye iletirsin'], 0, 'Önce etkiyi durduracak kararı tetiklersin; önceden yazılmış ölçüt bunun içindir. Kök neden analizi sonra gelir. Canlıda elle veri silmek izinsiz yapılmaz.', ['Sayıyı doğrula: tek bir sorguyla, dakikalar içinde.', 'Önceden yazılmış ölçüte bak; eşik aşıldıysa karar sahibini çağır.', 'Etkiyi durdur, sonra kök nedene geç.', 'Olay sonrası: verilmiş kuponlar ne olacak, kayda yaz.']),
+    mi('Finans raporu ile senin sorgun farklı ciro veriyor. Nasıl ilerlersin?', ['Finans raporu resmî kaynak olduğu için sorgunu ona uydurursun', 'İki tanımı karşılaştırır: dönem, durum, indirim, tarih alanı', 'Fark küçükse yuvarlama kaynaklı sayıp notla raporlarsın', 'Sorgunu finansla paylaşıp raporlarını düzeltmelerini istersin'], 1, 'Çoğu fark tanımdan gelir: iptal dahil mi, hangi tarih, hangi saat dilimi? Önce tanımı hizala, sonra satır düzeyinde küçük bir örnekle farkı bul.', ['Tanımları yan yana yaz: dönem, durum, tarih alanı, indirim.', 'Küçük bir dönemde satır düzeyinde karşılaştır.', 'Farkı nedenlere böl, kalan farkı açıkla.', 'Tek tanımda anlaş, sözlüğe yaz.']),
+    mi('İş analisti ile ürün sahibi arasındaki temel fark sorulduğunda en dürüst cevap hangisi?', ['İkisi aynı iştir; görevler aynı kalır, yalnız şirket içi unvan değişir', 'Ürün sahibi iş değerini yönetir, analist yalnız doküman yazar', 'Şirkete göre değişir; öncelik çoğunlukla ürün sahibinde', 'Analist gereksinimin sahibidir, bu yüzden önceliği de o belirler'], 2, 'Sınır kuruma göre değişir ve bunu söylemek dürüstlüktür. Bazı ekiplerde tek kişi ikisini yapar. Kendi deneyiminden örnek vererek tamamla.', ['Kuruma göre değiştiğini baştan söyle.', 'Yaygın ayrımı ver: öncelik ve değer ürün sahibinde, ayrıntı ve doğrulama analistte.', 'Kendi deneyiminden ya da bu yoldaki kupon örneğinden göster.']),
+    mi('Kabul kriteri “sistem hızlı olmalı” yazılmış ve test ekibi bunu test edemiyor. Ne yaparsın?', ['Kriteri işlevsel olmayan listeye taşır, UAT dışında bırakırsın', 'Test ekibinden mevcut sisteme göre makul bir eşik seçmesini istersin', 'Geliştiriciden ulaşabileceği süreyi alıp kritere yazarsın', 'Paydaşa ölçü sorar, sayıya çevirip yeniden yazarsın'], 3, 'Örnek: “Kupon, teslim kaydından en geç 5 dakika sonra görünür.” Sayı iş biriminden gelir, teknik ekiple yapılabilirliği konuşulur.', ['“Hızlı” kimin için, hangi işlemde? Paydaşa sor.', 'Sayıya çevir: kupon en geç 5 dakikada görünür.', 'Yapılabilirliği geliştiriciyle konuş.', 'Testi ve ölçüm noktasını kriterin yanına yaz.']),
+    mi('“BRD ile kullanıcı hikâyesi arasındaki fark nedir?” sorusuna en iyi cevap hangisi?', ['BRD işin bütününü, hikâye tek parçayı anlatır', 'BRD Waterfall (şelale), hikâye Agile (çevik) işlerinde kullanılır; biri varsa öbürü gerekmez', 'Hikâye geliştirici için, BRD yalnız yönetim onayı için yazılır', 'BRD kuralları, hikâye ekran tasarımını anlatır; ikisi ayrı konudur'], 0, 'Birçok Agile ekip de işin bütününü anlatan bir özet doküman tutar; biçimi ve adı değişebilir. Önemli olan kapsam, gerekçe ve parçalar arasındaki izlenebilirliktir.', ['Kapsamı söyle: bütün iş ve tek parça.', 'Bağı göster: hikâye BRD\'deki gereksinime izlenir.', 'Örnek ver: kupon BRD\'si ve “geç teslimde kupon üret” hikâyesi.']),
+    sq('<b>SQL.</b> Hiç siparişi olmayan müşteri sayısı: <code>siparissiz</code>. (<code>lk_customers</code>, <code>lk_orders</code>)', "SELECT COUNT(*) AS siparissiz FROM lk_customers c LEFT JOIN lk_orders o ON o.customer_id = c.customer_id WHERE o.order_id IS NULL;", 'Klasik eşi olmayan soru. Müşteri solda; sağ tarafın anahtarı boş olanları say.', { why: isk(['Bir satır neyi temsil ediyor, sesli söyle.', 'LEFT JOIN ya da NOT EXISTS seç, nedenini söyle.', 'Kontrol: toplam müşteri = siparişli + siparişsiz.']) }),
+    sq('<b>SQL.</b> Satır çoğalması. Teslim edilmiş siparişlerden tek satırda: sipariş sayısı <code>siparis</code>, kalem sayısı <code>kalem</code>, sepet toplamı <code>tutar</code>. (<code>lk_orders</code>, <code>lk_order_lines</code>)', "SELECT COUNT(DISTINCT o.order_id) AS siparis, COUNT(*) AS kalem, SUM(l.qty * l.unit_price) AS tutar FROM lk_orders o JOIN lk_order_lines l ON l.order_id = o.order_id WHERE o.status = 'teslim';", 'JOIN sonrası bir satır bir sipariş değil bir kalemdir. Sipariş sayısında tekrarları at.', { why: isk(['JOIN sonrası satırın kalem olduğunu söyle.', 'Sipariş için DISTINCT, kalem için COUNT(*) kullan.', 'Kontrol: sipariş sayısını tek tabloda da say.']) }),
+    sq('<b>SQL.</b> Ay kayması: sipariş ayı ile teslim ayı farklı olan teslim edilmiş sipariş sayısı. Rapor hangi tarihe göre yazılıyorsa bu kayıtlar farklı aya düşer: <code>ay_kayan</code>.', "SELECT COUNT(*) AS ay_kayan FROM lk_orders WHERE status = 'teslim' AND strftime('%Y-%m', placed_at) <> strftime('%Y-%m', delivered_at);", 'Her iki tarihten de yıl-ay çıkar ve karşılaştır. İki raporun neden farklı ay toplamı verdiğini açıklayan tipik bir kontrol.', { why: isk(['Hangi tarih alanı rapora giriyor, sor.', 'İki alanın ayını karşılaştır.', 'Bulduğun kaydın rapor farkını nasıl açıkladığını söyle.']) }),
+    sq('<b>SQL.</b> Müşterileri dönem içi teslim sipariş sayısına göre ayır: 1-2 \'az\', 3-9 \'orta\', 10 ve üzeri \'cok\'. Segment başına müşteri sayısı: <code>segment</code>, <code>musteri</code>. Segmente göre sırala. Dönem: Ekim-Aralık 2024.', "WITH m AS (SELECT customer_id, COUNT(*) AS n FROM lk_orders WHERE status = 'teslim' AND placed_at >= '2024-10-01' AND placed_at < '2025-01-01' GROUP BY customer_id) SELECT CASE WHEN n >= 10 THEN 'cok' WHEN n >= 3 THEN 'orta' ELSE 'az' END AS segment, COUNT(*) AS musteri FROM m GROUP BY CASE WHEN n >= 10 THEN 'cok' WHEN n >= 3 THEN 'orta' ELSE 'az' END ORDER BY segment;", 'İki kademe: önce müşteri başına sipariş sayısı, sonra bu sayıyı CASE ile segmente çevirip say.', { ord: true, why: isk(['Taneciği söyle: önce bir satır bir müşteri.', 'CASE sınırlarını boşluk bırakmadan yaz.', 'Kontrol: segment toplamı müşteri sayısına eşit mi?']) }),
+    sq('<b>SQL.</b> Veri kalitesi: hiç kalemi olmayan sipariş sayısı. Sonuç sıfırsa da söylemek değerlidir: <code>kalemsiz</code>.', "SELECT COUNT(*) AS kalemsiz FROM lk_orders o WHERE NOT EXISTS (SELECT 1 FROM lk_order_lines l WHERE l.order_id = o.order_id);", 'Sipariş tablosundan başla. Karşılığı olmayanları LEFT JOIN ya da NOT EXISTS ile bulabilirsin.', { why: isk(['Veri kalitesi sorusu olduğunu söyle.', 'Sipariş solda, kalem sağda.', 'Sonuç sıfırsa da raporla: kontrol yapıldı, sorun yok.']) }),
+    sq('<b>SQL.</b> Hangi restoran iptal oranında en kötü? En az 100 siparişi olanlardan iptal oranı (yüzde, 1 basamak) en yüksek 3 restoran: <code>name</code>, <code>siparis</code>, <code>oran</code>. Orana göre azalan, eşitlikte ada göre sırala.', "SELECT r.name, COUNT(*) AS siparis, ROUND(100.0 * SUM(CASE WHEN o.status = 'iptal' THEN 1 ELSE 0 END) / COUNT(*), 1) AS oran FROM lk_orders o JOIN lk_restaurants r ON r.restaurant_id = o.restaurant_id GROUP BY r.name HAVING COUNT(*) >= 100 ORDER BY oran DESC, r.name LIMIT 3;", 'Koşullu toplamayla oran hesapla; alt sınırı grup koşulu olarak yaz, sıralayıp ilk üçü al.', { ord: true, why: isk(['Oranın pay ve paydasını söyle.', 'Küçük örnek yanıltmasın: HAVING ile alt sınır koy.', 'Yorum sınırı: oran nedeni söylemez, restoranla konuşulur.']) })
+    ,mi('Destek ekibi “süreç zaten belli” diyor, ama şikâyetler kişiden kişiye farklı çözülüyor. Hangi gereksinim toplama adımı önce gelir?', ['Şefle görüşüp süreci yazılı olarak onaylatmak', 'İşi yapan çalışanları iş başında gözlemlemek', 'Kalite ekibinin süreç dokümanını temel almak', 'Herkese anket gönderip en sık cevabı kural yapmak'], 1, 'Söylenen ile yapılan ayrışıyorsa önce gözlem gerekir. Doküman ve şef, olması gerekeni anlatır.', ['Tekniği sorunun türüne bağla.', 'Gözlemden iki üç somut fark çıkar.', 'Farkları çalıştayda kurala çevir.', 'Sonucu AS-IS olarak yaz ve doğrulat.']),
+    mi('Çalıştayda iki birim saatlerce kapsamı tartıştı, karar çıkmadı. Bir sonraki sefer neyi değiştirirsin?', ['Daha çok kişi çağırıp görüşleri artırırsın', 'Kararı toplantı sonrası kendin yazıp gönderirsin', 'Gündemi, karar sahibini ve çıktıyı önceden yazarsın', 'İki birimi ayrı ayrı çağırıp orta yolu seçersin'], 2, 'Çalıştay hazırlıkla işler: karar sorusu, karar sahibi, kanıt ve beklenen çıktı önceden bilinir.', ['Sorunu teşhis et: karar sahibi yoktu, soru belirsizdi.', 'Gündemi tek karar sorusuna indir.', 'Kanıtı önceden dağıt.', 'Karar kaydını toplantıda yaz.']),
+    mi('Ürün sahibi bütün maddeleri Must yaptı ve sprint kapasitesi yetmiyor. Görüşmede ne dersin?', ['Ekibe fazla mesai planlayıp Must listesini koruruz', 'Her maddeyi “olmazsa ne olur?” diye sınar, kapasiteyi gösteririm', 'Düşük puanlı Must maddelerini önce bitirip kalanı bırakırım', 'MoSCoW işe yaramadığı için başka yöntem öneririm'], 1, 'Öncelik kararı ürün sahibinde kalır, ama analist ölçütü ve sayıyı masaya getirir: Must toplamı kapasiteyi aşıyorsa kapsam ya da süre değişir.', ['Ölçütü söyle: para, hukuk, iş akışı etkisi.', 'Sayıyı göster: Must 22 puan, kapasite 20.', 'Seçenekleri sun: kapsamı böl, süreyi uzat.', 'Kararı ürün sahibine bırak, kaydet.']),
+    mi('“Use case ile kullanıcı hikâyesi arasındaki fark nedir?” sorusuna en iyi cevap hangisi?', ['Use case eski yöntemdir, Agile ekipte kullanılmaz', 'Hikâye değeri söyler; use case akışı ve sapmaları anlatır', 'Use case kullanıcı için, hikâye geliştirici için yazılır', 'Hikâye daha ayrıntılı olduğu için testi ondan yazılır'], 1, 'İkisi rakip değildir: alternatif akışı çok olan işte use case yazıp hikâyeleri ondan çıkarmak yaygındır.', ['Tek cümleyle farkı söyle.', 'Kupon örneği ver: 3a “sınır dolu” alternatif akışı.', 'Hangisini ne zaman seçtiğini söyle.']),
+    mi('Sprint sonunda bir paydaş “bu özellik neden yapıldı?” diye soruyor ve kimse bilmiyor. Hangi çıktı bunu önlerdi?', ['Geri yönde izlenebilen bir RTM', 'Daha ayrıntılı bir sıra diyagramı', 'Kod incelemesi sırasında yazılan yorumlar', 'Sprint planlamadaki puan listesi'], 0, 'RTM\'nin geri yönü kod ve testi gereksinime, gereksinimi de kaynağına bağlar.', ['RTM\'nin iki yönünü söyle.', 'Boş sütunun ne anlama geldiğini söyle: kanıt yok.', 'Güncel tutma yolunu söyle: Jira bağlantısı ya da tablo.', 'SQL ile boşluk bulabildiğini ekle.']),
+    mi('Paydaş tel çerçeveyi görünce “bu ay canlıya çıkar, ekran hazır” dedi. Ne yaparsın?', ['Tel çerçeveyi hemen geliştiriciye teslim edersin', 'Çizimi bu toplantıda mockup seviyesine getirirsin', 'Bunun yalnız düzen çizimi olduğunu, kuralların ve testin kaldığını anlatırsın', 'Paydaşın beklentisini bozmamak için sonra düzeltirsin'], 2, 'Tel çerçevenin kaba olması beklentiyi yönetir: akış konuşulur, iş bitti sanılmaz.', ['Çizimin amacını söyle.', 'Kalan işleri say: kural, veri, test.', 'Takvimi kapsamla bağla.']),
+    mi('“FRD ile SRS farkı nedir?” sorusuna görüşmede nasıl cevap verirsin?', ['FRD iş amacını, SRS maliyeti anlatır; ikisi hep ayrıdır', 'SRS yalnız Waterfall\'da, FRD yalnız Agile\'da yazılır', 'Yaygın ayrımı söyler, kuruma göre değiştiğini ekler, sizde nasıl diye sorarım', 'İkisi de BRD\'nin eski adıdır, bugün kullanılmaz'], 2, 'Adların sınırı kuruma göre değişir. Yaygın ayrımı bilmek ve bunu söylemek, ezber tanımdan daha güven verir.', ['BRD: iş ne istiyor; FRD: sistem ne yapacak; SRS: teknik gereksinim.', 'Kuruma göre değiştiğini söyle.', 'Soruyla bitir: sizde bu belge ne içeriyor?']),
+    mi('Sprint gözden geçirmede paydaş yeni bir istek söyledi. İş analisti olarak ne yaparsın?', ['İsteği yazar, backlog\'a ekler, önceliği ürün sahibine bırakırsın', 'Sprint bittiği için isteği reddedersin', 'Sonraki sprinte kendin yerleştirip ekibe bildirirsin', 'Hemen geliştiriciye iletir, aynı gün başlatırsın'], 0, 'Gözden geçirmenin amacı geri bildirim almaktır. İstek kaybolmaz, ama öncelik kararı yine ürün sahibindedir.', ['İsteği olduğu gibi yaz, ihtiyacı sor.', 'Backlog\'a ekle.', 'Etkisini refinement\'ta çıkar.', 'Kararı ürün sahibine bırak.']),
+    mi('Ekip “inceleme toplantısına hazırlıksız gelen hikâyeler sprinti bozuyor” diyor. İş analisti hangi işi güçlendirir?', ['Günlük toplantıda hikâyeleri ayrıntılı anlatmayı', 'Retrospektifte sorumluları belirlemeyi', 'Sprint planlamayı uzatıp orada netleştirmeyi', 'Refinement\'ta kabul kriterlerini ve soruları önceden kapatmayı'], 3, 'Netleştirme sprintten önce yapılır. Planlama toplantısı hazır işleri seçmek içindir.', ['Sorunu örnekle: hangi hikâye, ne eksikti?', 'Hazır tanımı (definition of ready) öner.', 'Refinement\'ta soruları kapat.', 'Sonraki sprintte ölç: planlamada açılan soru sayısı.']),
+    mi('Yönetim “zamanında teslimi %80\'e çıkaralım” diyor; bugün %77,3. Boşluk analizi olarak ilk cevabın ne olur?', ['%2,7 puan küçük bir fark, kupon projesiyle kapanır', 'Farkı teslim sayısına çevirir, nerede biriktiğini ve hangi işin kapatacağını sorarım', 'Hedef düşük olduğu için %90 önerir, sonra backlog\'u yazarım', 'Önce kuponun bitmesini bekler, sonra ölçerim'], 1, 'Boşluk sayıya çevrilince “kupon bunu kapatır mı?” sorusu çıkar: kapatmaz, çünkü geç teslimi azaltmaz.', ['Neredeyiz: %77,3, kaynağı sorgu.', 'Nereye: %80, kim koydu, ne zamana?', 'Fark: 181 teslimat; araç, bölge, saat kırılımı.', 'Hangi iş farkı kapatır, hangisi kapatmaz?'])
   ] });
 
 /* ---------- Öğrenme yolu ---------- */
@@ -837,9 +1018,9 @@ const PA = {}; window.SQLP_PATHS.forEach(p => PA[p.id] = p);
 const yol = {
   id: 'is-analisti', name: 'BT İş Analisti', short: 'BA', color: '#1F5F8B', kind: 'rol',
   desc: 'Bir iş talebini gereksinime, teste ve canlıya taşı; SQL ile sorunu boyutlandır, sonucu doğrula.',
-  long: 'BT iş analisti, iş biriminin talebini geliştirme ekibinin yapabileceği, test ekibinin sınayabileceği yazılı gereksinime çevirir, işi canlıya kadar izler. Bu yol SQL bilmeyen birinden başlar: önce sorgu yazma, JOIN ve NULL; sonra ER okuma, kısıtlar, normalizasyon ve veri kalitesi. Sekiz özel ders tek bir talebi, geç teslimde otomatik kupon talebini, görüşmeden BRD\'ye, süreç şemasından API sözleşmesine, UAT\'den canlı sonrası ölçüme götürür. Görüşme yönetmeyi ve Jira ya da Confluence kullanmayı burada yalnız okuyarak öğrenirsin; bunlar pratikle gelişir. Yol iş garantisi vermez.',
-  skills: ['Talep analizi', 'Gereksinim ve kabul kriteri', 'BPMN okuma ve çizme', 'Alan eşleme', 'API sözleşmesi okuma', 'UAT', 'SQL ile mutabakat', 'BRD'],
-  lessons: W(`ba-rol ilk-sorgu veritabani veri-seti select alias-distinct hesaplama where mantik in-between-like null order-limit aggregate group-by having case coalesce tarih-fn tarih-filtre iliskiler inner-join left-join coklu-join subquery toplama-tuzak set-ops cte ba-talep ba-gereksinim ba-surec dml ddl-create er-modelleme kisitlar normalizasyon ba-veri ba-api transaction de-kalite sql-test ba-uat ba-canli proje-is-analisti ba-mulakat`),
+  long: 'BT iş analisti, iş biriminin talebini geliştirme ekibinin yapabileceği, test ekibinin sınayabileceği yazılı gereksinime çevirir, işi canlıya kadar izler. Bu yol SQL bilmeyen birinden başlar: önce sorgu yazma, JOIN ve NULL; sonra ER okuma, kısıtlar, normalizasyon ve veri kalitesi. Dokuz özel ders tek bir talebi, geç teslimde otomatik kupon talebini, görüşmeden BRD\'ye, süreç şemasından API sözleşmesine, UAT\'den canlı sonrası ölçüme götürür; bir ders de bu işin Agile (çevik) ve Waterfall (şelale) ortamlarında nasıl yürüdüğünü anlatır. Görüşme yönetmeyi ve Jira ya da Confluence kullanmayı burada yalnız okuyarak öğrenirsin; bunlar pratikle gelişir. Yol iş garantisi vermez.',
+  skills: ['Talep analizi', 'Gereksinim ve kabul kriteri', 'MoSCoW önceliklendirme', 'BPMN okuma ve çizme', 'Alan eşleme', 'API sözleşmesi okuma', 'UAT', 'İzlenebilirlik matrisi', 'SQL ile mutabakat', 'BRD'],
+  lessons: W(`ba-rol ilk-sorgu veritabani veri-seti select alias-distinct hesaplama where mantik in-between-like null order-limit aggregate group-by having case coalesce tarih-fn tarih-filtre iliskiler inner-join left-join coklu-join subquery toplama-tuzak set-ops cte ba-talep ba-gereksinim ba-surec dml ddl-create er-modelleme kisitlar normalizasyon ba-veri ba-api transaction de-kalite sql-test ba-uat ba-cevik ba-canli proje-is-analisti ba-mulakat`),
   opt: W(`metin sayi-tip kosullu sorgu-sirasi self-cross-join join-ozet correlated exists-anyall sik-hatalar hata-ayiklama an-kpi view window-intro ranking index acid kvkk`),
   comp: [
     { t: 'SQL temeli', d: 'Filtre, gruplama, NULL, CASE, tarih', l: ['select', 'where', 'null', 'group-by', 'case', 'tarih-filtre'] },
@@ -848,6 +1029,7 @@ const yol = {
     { t: 'Gereksinim ve süreç', d: 'Kural, hikâye, kabul kriteri, BPMN, sıra diyagramı, karar tablosu', l: ['ba-gereksinim', 'ba-surec'] },
     { t: 'Veri ve entegrasyon', d: 'ER okuma, kısıt, normalizasyon, alan eşleme, API sözleşmesi', l: ['er-modelleme', 'kisitlar', 'normalizasyon', 'ba-veri', 'ba-api'] },
     { t: 'Test ve kalite', d: 'İşlem mantığı, veri kalitesi, UAT, mutabakat', l: ['transaction', 'de-kalite', 'sql-test', 'ba-uat'] },
+    { t: 'Çalışma biçimi', d: 'Agile, Waterfall, Scrum, gereksinim toplama, MoSCoW, use case, RTM, tel çerçeve, FRD/SRS, boşluk analizi', l: ['ba-cevik'] },
     { t: 'Canlı ve kapanış', d: 'Geçiş planı, duman testi, KPI, geri alma, BRD', l: ['ba-canli'] },
     { t: 'Bitirme ve mülakat', d: 'Değişiklik talebini baştan sona götür, görüşmeye hazırlan', l: ['proje-is-analisti', 'ba-mulakat'] }
   ],
@@ -876,7 +1058,21 @@ PA.mulakat.opt = (PA.mulakat.opt || []).concat(['ba-mulakat']);
   ['Önem ve öncelik (severity, priority)', 'Önem hatanın etkisini, öncelik ne zaman düzeltileceğini anlatır; ikisi farklıdır.'],
   ['Geçiş planı (cutover)', 'Canlıya geçişin sıralı, sahipli adım listesi.'],
   ['Değişiklik talebi (change request)', 'Onaylanmış kapsamın dışındaki isteğin etkisiyle birlikte kayda alınması.'],
-  ['Değişiklik yönetimi (change management)', 'Yeni sürecin insanlar tarafından benimsenmesi için yapılan iletişim, eğitim ve geçiş işleri.']
+  ['Değişiklik yönetimi (change management)', 'Yeni sürecin insanlar tarafından benimsenmesi için yapılan iletişim, eğitim ve geçiş işleri.'],
+  ['Gereksinim toplama (elicitation)', 'Gereksinimi paydaşlardan ve belgelerden çıkarma işi: görüşme, çalıştay, gözlem, doküman inceleme.'],
+  ['Çalıştay (workshop)', 'Paydaşların aynı odada, yönetilen bir oturumda kural ya da kapsam üzerinde karar verdiği toplantı.'],
+  ['MoSCoW', 'Önceliklendirme yöntemi: Must (olmazsa olmaz), Should (olmalı), Could (olabilir), Won\'t (bu sürümde yok).'],
+  ['Kullanım senaryosu (use case)', 'Bir aktörün sistemle hedefine ulaşmasını ana ve alternatif akışlarla adım adım anlatan gereksinim biçimi.'],
+  ['İzlenebilirlik matrisi (RTM, requirements traceability matrix)', 'Her gereksinimi kaynağına, hikâyesine, testine ve hatalarına bağlayan tablo.'],
+  ['Tel çerçeve (wireframe)', 'Ekranın düzenini ve akışını renksiz, kaba biçimde gösteren çizim; tasarım değil, konuşma aracıdır.'],
+  ['FRD (functional requirements document)', 'İşlevsel gereksinim dokümanı: sistemin ne yapacağını BRD\'den daha ayrıntılı anlatır.'],
+  ['SRS (software requirements specification)', 'Yazılım gereksinim belirtimi: işlevsel ve işlevsel olmayan gereksinimleri teknik düzeyde toplar. Adlar ve sınırlar kuruma göre değişir.'],
+  ['Boşluk analizi (gap analysis)', 'Bugünkü durum ile hedef arasındaki farkı ölçüp farkı kapatacak işleri çıkarma.'],
+  ['Agile (çevik)', 'Küçük parçalarla, sık geri bildirimle ilerleyen çalışma yaklaşımı.'],
+  ['Waterfall (şelale)', 'Gereksinim, tasarım, geliştirme ve testin sırayla, büyük ölçüde bir kez yapıldığı çalışma düzeni.'],
+  ['Scrum', 'Yaygın bir Agile çerçevesi: sabit süreli sprintler, ürün sahibi, geliştiriciler ve Scrum Master.'],
+  ['Backlog (iş listesi)', 'Yapılacak işlerin öncelik sırasına dizilmiş listesi; ürün sahibi yönetir.'],
+  ['Sprint', 'Agile ekipte sabit süreli çalışma dönemi. Kısa, sabit aralıklarla planlanır ve gözden geçirilir.']
 ].forEach(g => window.SQLP_GLOSSARY.push(g));
-Object.assign(window.SQLP_SEARCH_SYN, { 'business analyst': ['iş analisti'], ba: ['iş analisti'], brd: ['brd'], 'user story': ['kullanıcı hikâyesi'], 'acceptance criteria': ['kabul kriteri'], uat: ['uat', 'kabul testi'], bpmn: ['bpmn'], 'sequence diagram': ['sıra diyagramı'], requirements: ['gereksinim'], stakeholder: ['paydaş'], 'smoke test': ['duman testi'], rollback: ['geri alma'], reconciliation: ['mutabakat'], idempotency: ['idempotency'], 'field mapping': ['alan eşleme'] });
+Object.assign(window.SQLP_SEARCH_SYN, { moscow: ['moscow', 'öncelik'], 'use case': ['kullanım senaryosu'], rtm: ['izlenebilirlik'], traceability: ['izlenebilirlik'], wireframe: ['tel çerçeve'], mockup: ['tel çerçeve'], prototype: ['tel çerçeve'], frd: ['frd'], srs: ['srs'], sprint: ['sprint'], agile: ['agile', 'çevik'], waterfall: ['waterfall', 'şelale'], scrum: ['scrum'], backlog: ['backlog', 'iş listesi'], elicitation: ['gereksinim toplama'], workshop: ['çalıştay'], 'gap analysis': ['boşluk analizi'], 'business analyst': ['iş analisti'], ba: ['iş analisti'], brd: ['brd'], 'user story': ['kullanıcı hikâyesi'], 'acceptance criteria': ['kabul kriteri'], uat: ['uat', 'kabul testi'], bpmn: ['bpmn'], 'sequence diagram': ['sıra diyagramı'], requirements: ['gereksinim'], stakeholder: ['paydaş'], 'smoke test': ['duman testi'], rollback: ['geri alma'], reconciliation: ['mutabakat'], idempotency: ['idempotency'], 'field mapping': ['alan eşleme'] });
 })();
