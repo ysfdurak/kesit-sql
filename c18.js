@@ -303,8 +303,8 @@ LIMIT 5;</pre>
   sum: 'ROW_NUMBER, LAG, DENSE_RANK, hareketli ortalama, FIRST_VALUE ve toplam içindeki pay.',
   body: `
 <h2>Rötar neden yayılır?</h2>
-<p>Bir uçak gün içinde birkaç sefer yapar. Sabahki uçuş geç kalırsa, aynı uçağın öğleden sonraki uçuşu da genellikle geç kalkar: buna <b>rötar zinciri</b> (gec_gelen_ucak) denir. Bunu görmek için aynı uçağın uçuşlarını zaman sırasına koyup bir önceki satıra bakmak gerekir; tam olarak pencere fonksiyonlarının işi.</p>
-<div class="note"><b>Veri notu</b>Kanat'ta uçak ataması rastgeledir: aynı uçak aynı saatte iki seferde görünebilir, rotasyon bitişik değildir (Veri setleri → Bilinen sınırlamalar). Bu ders LAG yöntemini öğretir; çıkan zincir sayıları gerçek filo analizi değildir.</div>
+<p>Bir uçak gün içinde birkaç sefer yapar. Önceki sefer geç inerse sonraki sefer de geç kalkabilir: buna <b>rötar zinciri</b> (gec_gelen_ucak) denir. Kanat'ta bir sefer en az 15 dakika geç indiğinde aynı uçağın sonraki seferi %48,0 olasılıkla en az 15 dakika geç kalkıyor; zamanında indiğinde bu oran %32,6. Farkı görmek için aynı uçağın uçuşlarını zaman sırasına koyup bir önceki satıra bakmak gerekir; tam olarak pencere fonksiyonlarının işi.</p>
+<div class="note"><b>Veri notu</b>Kanat'ta her uçağın konumu izlenebilir: iner, en az 35 dakika (dış hatta 60) yerde kalır, indiği yerden kalkar. Boş geçişler <code>hv_repositioning</code> tablosundadır. Filo seyrek çalıştığı için önceki iniş ile planlanan kalkış arası medyan 472 dakikadır: 342 <code>gec_gelen_ucak</code> satırının yalnız 12'sinde uçak planlanan saatte hazır değildi. Bu neden “önceki sefer geç indi” demektir, tek başına neden-sonuç kanıtı değildir.</div>
 <pre class="code">SELECT f.tail_no, f.sched_dep, f.flight_no,
        ${DLY} AS gecikme,
        LAG(${DLY}) OVER (PARTITION BY f.tail_no ORDER BY f.sched_dep, f.flight_id) AS onceki_gecikme

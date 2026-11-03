@@ -153,7 +153,7 @@ SELECT m.ay, m.mau, COUNT(*) AS olayli_gun,
 FROM m JOIN g ON g.ay = m.ay
 GROUP BY m.ay, m.mau
 ORDER BY m.ay;`)}
-<p>Ekim'de 296 kişi aktif, ortalama DAU 9,6, yapışkanlık %3,2. Bu düşük bir değerdir. Sebebini aktif gün dağılımı gösterir: 600 kullanıcının 595'i yalnızca <b>bir gün</b> görünmüş. Veri, kampanyayla gelen ve bir kez dönen ziyaretçilerin hunisine benziyor. Burada yapışkanlıktan çok edinme ve dönüşüm metriklerine bakmak gerekir.</p>
+<p>Ekim'de 296 kişi aktif, ortalama DAU 14,6, yapışkanlık %4,9. Bu düşük bir değerdir. Sebebini aktif gün dağılımı gösterir: 600 kullanıcının 403'ü yalnızca <b>bir gün</b> görünmüş, en sık gelenler de 5 gün. Veri, kampanyayla gelen ve az geri dönen ziyaretçilerin hunisine benziyor. Burada yapışkanlıktan çok edinme ve dönüşüm metriklerine bakmak gerekir.</p>
 ${C(`WITH k AS (
   SELECT user_id, COUNT(DISTINCT DATE(event_time)) AS aktif_gun
   FROM web_events
@@ -476,7 +476,7 @@ X('ik-proje', [
 
 more('bv-istasyon', D('Yeniden dağıtım ve istasyon doluluk baskısı', `
 <p>Paylaşımlı bisiklet sistemlerinin en pahalı operasyonel kalemi <b>yeniden dağıtım</b>dır (rebalancing). Kamyonetler dolu istasyonlardan bisiklet alıp boş istasyonlara taşır. Kullanıcı için iki kötü an vardır: istasyonda bisiklet bulamamak ve bisikleti bırakacak yer bulamamak. İkisi de gelir kaybı ve şikâyet demektir.</p>
-<div class="note"><b>Veri notu</b>Pedal İzmir'de bisiklet konumu izlenmez: yolculukların %98,5'i bisikletin son bıraktığı istasyondan başlamaz. Net akış sorgusu yöntemi öğretir; bu veriden gerçek bir dengeleme kararı çıkmaz (Veri setleri → Bilinen sınırlamalar).</div>
+<div class="note"><b>Pratik not</b>Pedal İzmir'de kamyonet taşımaları <code>bk_rebalancing</code> tablosundadır: üç ayda 7.422 yükte 28.180 bisiklet. İstasyon net akışı ile kamyonet net akışı neredeyse birebir ters orantılıdır (korelasyon −0,99). Yani net akış buradaki dengeleme ihtiyacını gerçekten gösterir.</div>
 <h3>Ham net akış yetmez: kapasiteye böl</h3>
 <p>Üç ayda −700 net akış, 30 yuvalı bir istasyon için yönetilebilir olabilir, 15 yuvalı bir istasyon için ise her gün boşalmak demektir. Karşılaştırılabilir ölçü <b>doluluk baskısı</b>dır: <b>günlük ortalama net akış ÷ kapasite</b>. Alsancak Çarşı (15 yuva) günde ortalama 7,7 bisiklet kaybediyor; baskısı −0,51. Yani her gün kapasitesinin yarısı kadar bisiklet getirilmesi gerekiyor.</p>
 <h3>Günün saatine göre akış</h3>
@@ -670,10 +670,10 @@ more('hv-analitik', D('Rötar nedenleri: kim kontrol ediyor, nasıl yayılıyor?
 <tr><td><b>Dış</b></td><td><code>hava</code>, <code>hava_trafik</code></td><td>Meteoroloji, hava trafik kontrolü</td></tr>
 <tr><td><b>Zincir (reactionary)</b></td><td><code>gec_gelen_ucak</code></td><td>Önceki uçuşun gecikmesi; planlama ve dönüş süresi</td></tr>
 </table>
-<p>Zincir gecikmesi kendi başına bir neden değildir, önceki uçuşun gecikmesinin <b>yayılmasıdır</b>. Kanat'ta toplam rötar dakikasının %36,6'sı bu gruptan geliyor. Bu yüzden günün ilk uçuşlarını korumak (sabah ilk dalganın zamanında çıkması) ve uçuşlar arasına yeterli dönüş süresi (turnaround) koymak, en etkili iyileştirme alanlarıdır.</p>
-<div class="note"><b>Veri notu</b>Bu genel bir havacılık gerçeğidir. Kanat'ta uçak ataması rastgele olduğu için yayılımı uçak bazında ölçen sorgular yöntemi gösterir, sonuç gerçek filo davranışı değildir (Veri setleri → Bilinen sınırlamalar).</div>
+<p>Zincir gecikmesi kendi başına bir neden değildir, önceki uçuşun gecikmesinin <b>yayılmasıdır</b>. Kanat'ta toplam rötar dakikasının %24,9'u bu gruptan geliyor. Bu yüzden günün ilk uçuşlarını korumak (sabah ilk dalganın zamanında çıkması) ve uçuşlar arasına yeterli dönüş süresi (turnaround) koymak, en etkili iyileştirme alanlarıdır.</p>
+<div class="note"><b>Veri notu</b>Kanat'ta <code>gec_gelen_ucak</code> yalnız aynı uçağın önceki seferi en az 15 dakika geç indiyse yazılır (342 satır). Uçak kalkış saatinde gerçekten hazır olmayan satır ise 12'dir; filo seyrek uçtuğu için yayılım çoğunlukla dolaylıdır.</div>
 <h3>Yayılımı veride görmek</h3>
-<p>Her uçağın günü sabah zamanında başlar, gecikmeler gün içinde birikir. Bunu görmek için uçuşları uçak ve gün içinde sıralayıp <b>günün ilk uçuşunu</b> ayırmak yeterli. Kalkış ve varış OTP'sini aylık olarak yan yana koymak da faydalıdır:</p>
+<p>Gecikmeler gün içinde birikir: Kanat'ta uçağın günün ilk uçuşunda zamanında kalkış %65,1, sonraki uçuşlarda %59,2. Bunu görmek için uçuşları uçak ve gün içinde sıralayıp <b>günün ilk uçuşunu</b> ayırmak yeterli. Kalkış ve varış OTP'sini aylık olarak yan yana koymak da faydalıdır:</p>
 ${C(`SELECT strftime('%Y-%m', sched_dep) AS ay,
        ROUND(100.0 * SUM(CASE WHEN ROUND((julianday(actual_dep) - julianday(sched_dep)) * 1440) <= 15 THEN 1 ELSE 0 END)
              / COUNT(actual_dep), 1) AS kalkis_otp,

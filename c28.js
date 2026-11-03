@@ -126,8 +126,8 @@ FROM h LEFT JOIN y ON y.hava = h.hava;</pre>
   sum: 'İstasyon bazında giren–çıkan farkıyla yeniden dağıtım ihtiyacı, en yoğun güzergâhlar, doluluk baskısı ve veri kalitesi kontrolleri (kapanmamış yolculuk, aynı anda iki yolculukta görünen bisiklet).',
   body: `
 <h2>Net akış</h2>
-<p>Bir istasyondan çıkan bisiklet sayısı gelen sayısından fazlaysa istasyon boşalır; tersi doluysa yer kalmaz. İşletme ekibi her gece kamyonetle bisikletleri yeniden dağıtır. Hangi istasyonların kronik olarak boşaldığını <b>net akış = gelen − giden</b> ile bulursun.</p>
-<div class="note"><b>Veri notu</b>Pedal İzmir'de bisiklet konumu izlenmez: yolculukların %98,5'i bisikletin son bıraktığı istasyondan başlamaz. Net akış sorgusu yöntemi öğretir; bu veriden gerçek bir dengeleme kararı çıkmaz (Veri setleri → Bilinen sınırlamalar).</div>
+<p>Bir istasyondan çıkan bisiklet sayısı gelen sayısından fazlaysa istasyon boşalır; tersi doluysa yer kalmaz. İşletme ekibi günde iki tur kamyonetle bisikletleri yeniden dağıtır (<code>bk_rebalancing</code>). Hangi istasyonların kronik olarak boşaldığını <b>net akış = gelen − giden</b> ile bulursun.</p>
+<div class="note"><b>Pratik not</b>Pedal İzmir'de bisiklet son bıraktığı istasyondan kalkar, bu yüzden net akış gerçek bir ihtiyacı gösterir. Alsancak Çarşı üç ayda −708 net akışa sahip; kamyonet oraya 893 bisiklet getirip 203'ünü götürmüş, net +690. Net akışı <code>bk_rebalancing</code> ile yan yana koyarsan hangi istasyonun kamyonete bağımlı olduğunu görürsün.</div>
 <p>Net akışı iki ayrı toplamın birleşimiyle yazmak, büyük tabloyu OR koşuluyla birleştirmekten çok daha hızlıdır:</p>
 <pre class="code">WITH cikis AS (SELECT start_station AS st, COUNT(*) AS n FROM bk_trips GROUP BY start_station),
      giris AS (SELECT end_station AS st, COUNT(*) AS n FROM bk_trips WHERE end_station IS NOT NULL GROUP BY end_station)
@@ -140,7 +140,7 @@ LIMIT 5;</pre>
 <h2>Veri kalitesi</h2>
 <p>Büyük sistemlerde veri hatası kaçınılmazdır. İki kontrol:</p>
 <ul><li><b>Kapanmamış yolculuk:</b> <code>ended_at</code> boş; kilit sinyali gelmemiş ya da bisiklet kaybolmuş olabilir.</li>
-<li><b>Aynı bisiklet aynı anda iki yolculukta:</b> aralıkları çakışan iki yolculuk aynı <code>bike_id</code>’yi taşıyorsa ya kayıt hatası ya da bisiklet kimliği yanlış okunmuştur. Bu kontrol büyük tabloda kendine birleştirme gerektirir; önce dar bir tarih aralığında dene.</li></ul>
+<li><b>Aynı bisiklet aynı anda iki yolculukta:</b> aralıkları çakışan iki yolculuk aynı <code>bike_id</code>’yi taşıyorsa ya kayıt hatası ya da bisiklet kimliği yanlış okunmuştur. Pedal İzmir'de bilerek bırakılmış tam 25 çakışan çift var. Bu kontrol büyük tabloda kendine birleştirme gerektirir; önce dar bir tarih aralığında dene.</li></ul>
 `,
   ex: [
     sq('Net akışı en negatif (en çok boşalan) 5 istasyon: <code>name</code>, <code>net</code>.', 'WITH cikis AS (SELECT start_station AS st, COUNT(*) AS n FROM bk_trips GROUP BY start_station), giris AS (SELECT end_station AS st, COUNT(*) AS n FROM bk_trips WHERE end_station IS NOT NULL GROUP BY end_station) SELECT s.name, COALESCE(g.n, 0) - COALESCE(c.n, 0) AS net FROM bk_stations s LEFT JOIN cikis c ON c.st = s.station_id LEFT JOIN giris g ON g.st = s.station_id ORDER BY net, s.name LIMIT 5;', O),
@@ -148,7 +148,7 @@ LIMIT 5;</pre>
     sq('En yoğun 5 güzergâh (başlangıç ≠ bitiş; yön önemli; eşitlikte istasyon numaraları): <code>start_station</code>, <code>end_station</code>, <code>yolculuk</code>.', 'SELECT start_station, end_station, COUNT(*) AS yolculuk FROM bk_trips WHERE end_station IS NOT NULL AND end_station <> start_station GROUP BY start_station, end_station ORDER BY yolculuk DESC, start_station, end_station LIMIT 5;', O),
     sq('Kapanmamış yolculukların istasyona göre dağılımı; en çok olan 3 başlangıç istasyonu (eşitlikte numara): <code>start_station</code>, <code>kapanmamis</code>.', 'SELECT start_station, COUNT(*) AS kapanmamis FROM bk_trips WHERE ended_at IS NULL GROUP BY start_station ORDER BY kapanmamis DESC, start_station LIMIT 3;', O),
     sq('Veri kalitesi: 1–3 Haziran 2024 arasında başlayan yolculuklarda aynı bisikletin aralıkları çakışan iki yolculuğu (çift bir kez): <code>cakisma</code>.', "WITH t AS (SELECT trip_id, bike_id, started_at, ended_at FROM bk_trips WHERE started_at >= '2024-06-01' AND started_at < '2024-06-04' AND ended_at IS NOT NULL) SELECT COUNT(*) AS cakisma FROM t a JOIN t b ON b.bike_id = a.bike_id AND a.trip_id < b.trip_id AND a.started_at < b.ended_at AND b.started_at < a.ended_at;"),
-    sq('Bakım: açık (kapanmamış) bakım kaydı olan bisiklet sayısı ve bu bisikletlerin bakımı açıkken yaptığı yolculuk sayısı (veri tutarsızlığı): <code>bisiklet</code>, <code>yolculuk</code>.', 'SELECT COUNT(DISTINCT m.bike_id) AS bisiklet, (SELECT COUNT(*) FROM bk_trips t JOIN bk_maintenance m2 ON m2.bike_id = t.bike_id AND m2.closed_at IS NULL AND t.started_at > m2.opened_at) AS yolculuk FROM bk_maintenance m WHERE m.closed_at IS NULL;')
+    sq('Bakım: açık (kapanmamış) bakım kaydı olan bisiklet sayısı ve bu bisikletlerin bakımı açıkken yaptığı yolculuk sayısı (kontrol sorgusu: tutarlı veride 0): <code>bisiklet</code>, <code>yolculuk</code>.', 'SELECT COUNT(DISTINCT m.bike_id) AS bisiklet, (SELECT COUNT(*) FROM bk_trips t JOIN bk_maintenance m2 ON m2.bike_id = t.bike_id AND m2.closed_at IS NULL AND t.started_at > m2.opened_at) AS yolculuk FROM bk_maintenance m WHERE m.closed_at IS NULL;')
   ]
 },
 {
