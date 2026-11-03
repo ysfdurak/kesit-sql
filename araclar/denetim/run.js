@@ -13,7 +13,7 @@ initSqlJs().then(SQL=>{
   const BASE=require("./base.js")(SQL,c);
   const fresh=()=>{ const db=new SQL.Database(BASE); c.SQLP_REGISTER(db); DX.register(db); return db; };
   let SH=null; const RO=(c,e)=>!e.check&&/^\s*(--[^\n]*\n\s*)*(WITH|SELECT)\b/i.test(c)&&!/\b(INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|INTO)\b/i.test(c);
-  const runOne=(code,d,e)=>{ const ro=RO(code,e); if(ro&&!SH) SH=fresh(); const db=ro?SH:fresh(); let r; try{ r=DX.runDialect(db,code,d,{env:{procs:{},funcs:{},tvfs:{},tran:0,nocount:false}}); }catch(er){ r={error:'THROW '+er.message}; } let set=r&&r.sets&&r.sets.length?r.sets[r.sets.length-1]:null; if(!r.error&&e.check){ try{ set=db.exec(e.check).pop()||null; }catch(er){ r.error='CHECK '+er.message; } } if(!ro) db.close(); return {error:r.error,set}; };
+  const runOne=(code,d,e)=>{ const ro=RO(code,e); if(ro&&!SH) SH=fresh(); const db=ro?SH:fresh(); let r; try{ r=DX.runDialect(db,code,d,{env:{procs:{},funcs:{},tvfs:{},tran:0,nocount:false}}); }catch(er){ r={error:'THROW '+er.message}; } let set=r&&r.sets&&r.sets.length?r.sets[r.sets.length-1]:null; if(!r.error&&e.check){ try{ set=db.exec(e.check).pop()||null; }catch(er){ r.error='CHECK '+er.message; } } let pf=null; if(!r.error&&e.plan){ const dbp=ro?fresh():db; if(ro) try{ DX.runDialect(dbp,code,d,{env:{procs:{},funcs:{},tvfs:{},tran:0,nocount:false}}); }catch(er){} pf=DX.planFail(e,dbp,r); if(ro) dbp.close(); } if(!ro) db.close(); if(pf) out.push({id:e.__id,kind:'planKurali',d,err:pf.msg,plan:pf.plan}); return {error:r.error,set}; };
   const items=[];
   const FL=process.env.FILTER?new RegExp(process.env.FILTER):null; const SF=process.env.SOLF?new RegExp(process.env.SOLF):null; const ok=(id,e)=>(!FL||FL.test(id))&&(!SF||SF.test(e.sol||''));
   c.SQLP_LESSONS.forEach(l=>(l.ex||[]).forEach((e,i)=>{ if(!ok(l.id,e)) return; if(e.t!=='mc') items.push({src:'ders',id:l.id+'#'+(i+1),lv:l.lv,e}); }));
@@ -21,7 +21,7 @@ initSqlJs().then(SQL=>{
   const out=[]; let n=0;
   // sw.js'teki veritabanı dosyası adı gerçekten olmalı (ilk ziyarette önbelleğe alınır)
   { const R=require('./yol.js').ROOT+'', m=fs.readFileSync(R+'sw.js','utf8').match(/const BASE = '([^']+)'/); if(!m||!fs.existsSync(R+m[1])) out.push({id:'sw.js',src:'site',kind:'swTabanYok',err:m&&m[1]}); }
-  for(const it of items){ const e=it.e; const T0=Date.now(); process.on('exit',()=>{}); if(process.env.PROG) process.stderr.write('> '+it.id+'\n'); if(!e.sol){ out.push({...it,kind:'cozumYok'}); continue; }
+  for(const it of items){ const e=it.e; e.__id=it.id; const T0=Date.now(); process.on('exit',()=>{}); if(process.env.PROG) process.stderr.write('> '+it.id+'\n'); if(!e.sol){ out.push({...it,kind:'cozumYok'}); continue; }
     const b=exBase(e); const ref=runOne(e.sol,b,e); n++; { const mf=mustFail(e,e.sol,b); if(mf) out.push({id:it.id,src:it.src,kind:'yontemKurali',d:b,err:mf}); }
     if(ref.error){ out.push({id:it.id,src:it.src,kind:'cozumHata',d:b,err:ref.error}); continue; }
     // check'li görevde çözüm tablonun durumunu değiştirmiyorsa ve yöntem kuralı yoksa her cevap "Doğru" sayılır
