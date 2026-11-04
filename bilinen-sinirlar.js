@@ -10,7 +10,9 @@ window.KESIT_SINIRLAR = {
   "sinir": [
    "Bütünüyle kurgu: elle kuruldu, gerçek bir sistemden alınmadı. Sayılar ölçüm değildir.",
    "Görünümlerin yalnız seçili sütunları var. Motor gerçek DMV, BACKUP, GRANT, SQL Agent çalıştırmaz; kopyası olmayan görünüm hata verir.",
-   "sys.dm_exec_sql_text ve sys.dm_db_index_physical_stats gerçekte işlevdir; burada tabloya çevrilir, parametreleri yok sayılır."
+   "sys.dm_exec_sql_text ve sys.dm_db_index_physical_stats gerçekte işlevdir; burada tabloya çevrilir, parametreleri yok sayılır.",
+   "Motor birleştirmeli view'e doğrudan yazdırmaz; gerçek sunucu tek tablonun sütununa dokunan UPDATE'e izin verir. Tetikleyici satır başına çalışır, gerçek sunucuda ifade başınadır. Bir hata bütün çalıştırmayı durdurur; gerçek sunucuda XACT_ABORT kapalıyken sonraki satır sürer.",
+   "GRANT, BACKUP, ALTER INDEX, UPDATE STATISTICS, DBCC gibi komutlar burada çalışmaz, ekranda 'Bu motor desteklemiyor' yazar; yazımın yanlış olduğu anlamına gelmez. sys.indexes yalnız object_id, index_id ya da fill_factor geçen sorguda kurgu kopyaya gider, yoksa motorun kendi indekslerini gösterir."
   ]
  },
  "ops": {
