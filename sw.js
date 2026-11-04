@@ -2,8 +2,8 @@
    Güncellemeler hemen görünür. Kurulumda çekirdek dosyalar (sayfa, betikler, yazı tipleri, veritabanı) önbelleğe alınır;
    böylece site bir kez açıldıktan sonra internet yokken de çalışır.
    Sürüm değişince eski önbellek silinir. Kardeş uygulamalar aynı adreste olduğu için yalnız kesit-sql-* adlı önbelleklere dokunulur. */
-const CACHE = 'kesit-sql-v8';
-const BASE = 'base-a787b9ae-6z9dr.b64.txt'; /* make_base.js günceller; denetim (run.js) dosyanın varlığını sınar */
+const CACHE = 'kesit-sql-v9';
+const BASE = 'base-35afd20e-7wsib.b64.txt'; /* make_base.js günceller; denetim (run.js) dosyanın varlığını sınar */
 /* Liste elle tutulmaz: betikler index.html'den, yazı tipleri fonts.css'ten okunur. Tek dosyanın alınamaması kurulumu bozmaz; o dosya ilk kullanımda önbelleğe girer. */
 async function precache() {
   const res = await fetch('index.html'); if (!res.ok) return;

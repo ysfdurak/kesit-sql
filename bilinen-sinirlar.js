@@ -1,6 +1,19 @@
 /* Veri setleri sayfasındaki "Bilerek bırakılanlar ve bilinen sınırlamalar" bölümünün metinleri. Üç uygulamada aynı metin; sayılar son veriden hesaplandı.
-   Anahtarlar: market, bank, hava, kurye, ik, bisiklet. Değer: { bilerek: [...], sinir: [...] }. */
+   Anahtarlar: market, bank, hava, kurye, ik, bisiklet, ops (ops yalnız Kesit SQL'de). Değer: { bilerek: [...], sinir: [...] }. */
 window.KESIT_SINIRLAR = {
+ "ops": {
+  "bilerek": [
+   "Tek sorunun iki nedeni var: Salı 12 Kasım sabahı rapor sorgusunun planı değişiyor ve aynı sabah portal sürümüyle pahalı bir sorgu geliyor. Süre bütün sorgularda artar, okunan sayfa yalnız bu ikisinde.",
+   "Yanıltıcı örüntüler bilerek kondu: kapalı svc_eski hesabının 30 dakikada bir başarısız girişi, pazar gecesi ETL'in müşterileri sırayla okuması, an_selin'in üç yazım hatası, an_derya'nın cumartesi girişi.",
+   "Parola deneme, ardışık okuma ve arama kutusu denemesi aynı kişiye bağlanamaz: portal kayıtlarında görünen adres uygulama sunucusudur."
+  ],
+  "sinir": [
+   "Bütünüyle kurgu: tohumlu üreteçten gelir, gerçek bir sistemden alınmadı. Süre ve okuma değerleri ölçüm değildir, bu sayıları gerçek bir SQL Server'a taşıma.",
+   "IP adresleri özel ağ (10.0.0.0/8) ve belgeleme (203.0.113.0/24) aralıklarındandır.",
+   "ops_plan_stats, Query Store'u basitleştirerek taklit eder; gerçek katalog görünümleri değildir. Uygulama motoru SQLite olduğu için günlükte yazan sorgular çalıştırılmaz, metin olarak incelenir.",
+   "Bu veri yalnız Kesit SQL'dedir; Kesit Power BI ve Kesit Python'da yoktur."
+  ]
+ },
  "market": {
   "bilerek": [
    "raw_signups (52 satır) kirli bırakıldı: boşluk, büyük ve küçük harf karışıklığı, tekrar ve karışık tarih biçimi temizlik pratiği içindir.",

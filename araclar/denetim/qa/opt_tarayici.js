@@ -4,6 +4,7 @@
 const { chromium } = require('playwright');
 const U = process.env.URL || 'http://localhost:8811/index.html';
 const LESSONS = (process.env.DERS || 'opt-olc,opt-plan,opt-tur,opt-indeks,opt-secicilik,opt-join,opt-toplama,opt-turler,opt-yanlis,mk-opt,opt-proje,bv-proje,ai-proje,index,performans,sargable,be-sayfalama,de-partition,proje-tsql,proje-backend').split(',');
+const ARENA_ID = process.env.ARENA || 'opt-ay-raporu';
 const TAMLAR = process.env.TAM ? process.env.TAM.split(',') : ['1280'];
 const bekle = (p, ms) => p.waitForTimeout(ms);
 (async () => {
@@ -40,15 +41,15 @@ const bekle = (p, ms) => p.waitForTimeout(ms);
       }
     }
     /* Pratik: plan denetimli iki görev */
-    for (const id of ['op01', 'op06', 'op12']) {
+    for (const id of (process.env.PRATIK || 'op01,op06,op12').split(',')) {
       await nav('pratik-' + id); await bekle(p, 300); await tasma('pratik ' + id);
       const e = await p.evaluate(i => { const x = SQLP_PRACTICE.find(y => y.id === i); return { sol: x.sol, ynl: x.ynl || [] }; }, id);
       for (const yz of e.ynl.slice(0, 2)) { const r = await dene(yz); if (r.ok === true) sonuc.yanlisGecti.push(w + ' pratik ' + id); else sonuc.yanlisRed++; }
       const r = await dene(e.sol); if (r.ok === true) sonuc.cozumKabul++; else sonuc.cozumRed.push(w + ' pratik ' + id + ' ' + r.t);
     }
     /* Arena: plan denetimi ve gizli test */
-    { const A = await p.evaluate(() => { const c = SQLP_ARENA.ch.find(x => x.id === 'opt-ay-raporu'); return { sol: c.sol, ynl: c.ynl }; });
-      await nav('oyun-ch-opt-ay-raporu'); await bekle(p, 2500); await tasma('arena');
+    { const A = await p.evaluate(i => { const c = SQLP_ARENA.ch.find(x => x.id === i); return { sol: c.sol, ynl: c.ynl }; }, ARENA_ID);
+      await nav('oyun-ch-' + ARENA_ID); await bekle(p, 2500); await tasma('arena');
       const ar = async kod => { await p.fill('#ed textarea', kod); await p.click('[data-ar="submit"]'); await bekle(p, 7000); return p.evaluate(() => { const m = [...document.querySelectorAll('.msg')].pop(); return m ? { ok: m.classList.contains('ok'), t: m.innerText.slice(0, 220) } : { ok: null, t: '' }; }); };
       for (const yz of A.ynl) { const r = await ar(yz); if (r.ok === true) sonuc.yanlisGecti.push(w + ' arena ' + yz.slice(0, 60)); else sonuc.yanlisRed++; }
       const r = await ar(A.sol); if (r.ok === true) sonuc.cozumKabul++; else sonuc.cozumRed.push(w + ' arena ' + r.t); }
