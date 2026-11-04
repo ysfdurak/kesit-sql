@@ -3,7 +3,7 @@
 const {chromium}=require('playwright'),fs=require('fs'),path=require('path');
 const ST=process.argv[2],BASE=process.env.BASE,SITE='https://ysfdurak.github.io';
 const APPS=[
- {dir:'kesit-sql',ad:'Kesit SQL',konu:'SQL',bekle:6000,ex:'window.SQLP_LESSONS',hash:i=>'#ders-'+i},
+ {dir:'kesit-sql',ad:'Kesit SQL',konu:'SQL',bekle:6000,ex:'window.SQLP_LESSONS',hash:i=>'#ders-'+i,exHash:i=>'#ders-'+i+'/1',duzelt:[[/Bu sayfanın içinde gerçek bir veritabanı çalışıyor\./g,'Uygulamada, tarayıcında gerçek bir veritabanı çalışıyor.'],[/Kod kutularındaki\s*(<[^>]+>)?\s*Çalıştır\s*(<\/[^>]+>)?\s*düğmesi/g,'Uygulamadaki kod kutularının Çalıştır düğmesi'],[/Aşağıdaki kutunun üstündeki SQL türü sekmelerine tıklayarak farkı gör:/g,'Uygulamada kutunun üstündeki SQL türü sekmelerinden farkı görebilirsin:']]},
  {dir:'kesit-powerbi',ad:'Kesit Power BI',konu:'Power BI',bekle:3000,ex:'window.PBI_LESSONS||window.KESIT_LESSONS',hash:i=>'#ders-'+i},
  {dir:'kesit-python',ad:'Kesit Python',konu:'Python',bekle:3000,ex:'window.PY_LESSONS',hash:i=>'#/lesson/'+i},
 ];
@@ -15,6 +15,7 @@ const LV={A1:'Temel',A2:'Temel',B1:'Orta',B2:'Orta',C1:'İleri',C2:'İleri',teme
 const LVS=['Temel','Orta','İleri'];
 function govde(b,app,idler){
  let s=String(b||'');
+ (app.duzelt||[]).forEach(([re,y])=>{ s=s.replace(re,y); });
  // Uygulama içi bağlantılar: başka bir dersse statik sayfasına, değilse uygulamaya
  s=s.replace(/<a\b([^>]*?)href="#\/lesson\/([\w-]+)[^"]*"([^>]*)>/g,(m,a,id)=>idler.has(id)?`<a href="../${id}/">`:'<a href="../../">');
  s=s.replace(/<button\b([^>]*?)>([\s\S]*?)<\/button>/g,(m,a,ic)=>{ const l=/data-lesson="([\w-]+)"/.exec(a); if(l&&idler.has(l[1])) return `<a href="../${l[1]}/">${ic}</a>`; const g=/data-go="([\w-]+)"/.exec(a); const d=/data-id="([\w-]+)"/.exec(a); if(g&&d&&idler.has(d[1])) return `<a href="../${d[1]}/">${ic}</a>`; return `<a href="../../">${ic}</a>`; });
@@ -37,7 +38,7 @@ function sayfa(app,l,i,L,idler,css){
 <main id="icerik" class="st-m"><span class="st-e">${esc([lv,l.mod].filter(Boolean).join(' · '))}</span><h1>${esc(l.title)}</h1>${l.sum?`<p class="st-l">${l.sum}</p>`:''}
 <div class="st-c"><a class="st-p" href="${ac}">${ex?`Uygulamada aç, ${ex} alıştırmayı çöz`:'Uygulamada aç'}</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
 <article class="panel theory">${govde(l.body,app,idler)}</article>
-<div class="st-c"><a class="st-p" href="${ac}">${ex?`Alıştırmalara geç (${ex})`:'Uygulamada devam et'}</a></div>
+<div class="st-c"><a class="st-p" href="${ex&&app.exHash?`../../${app.exHash(l.id)}`:ac}">${ex?`Alıştırmalara geç (${ex})`:'Uygulamada devam et'}</a></div>
 <nav class="st-n" aria-label="Ders sırası">${on?`<a href="../${on.id}/">← ${esc(on.title)}</a>`:'<span></span>'}${son?`<a href="../${son.id}/">${esc(son.title)} →</a>`:'<span></span>'}</nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>`;
 }

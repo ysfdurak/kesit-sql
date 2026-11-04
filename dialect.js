@@ -693,6 +693,17 @@ function fwdBool(sql, d) {
   }
   return T.map(t => t.v).join('');
 }
+/* SQLite tarafındaki regexp_replace ve MySQL, Oracle, BigQuery, SQL Server 2025 bütün eşleşmeleri değiştirir; PostgreSQL 'g' bayrağı olmadan yalnız ilkini. Üç bağımsız değişkenli çağrıya 'g' eklenir. */
+function fwdRegexAll(s) {
+  const re = /\bREGEXP_REPLACE\s*\(/gi; let m; const yer = [];
+  while ((m = re.exec(s))) {
+    let i = m.index + m[0].length, dep = 0, ar = 1, ins = false;
+    for (; i < s.length; i++) { const c = s[i]; if (ins) { if (c === "'") { if (s[i + 1] === "'") i++; else ins = false; } continue; } if (c === "'") { ins = true; continue; } if (c === '(') dep++; else if (c === ')') { if (!dep) break; dep--; } else if (c === ',' && !dep) ar++; }
+    if (ar === 3) yer.push(i);
+  }
+  yer.sort((a, b) => b - a).forEach(i => { s = s.slice(0, i) + ", 'g'" + s.slice(i); });
+  return s;
+}
 function forward(sql, d) {
   if (!sql || d === 'sqlite') return sql;
   FWD_SQL = sql;
@@ -709,6 +720,7 @@ function forward(sql, d) {
   s = fwdTx(s, d);
   if (d === 'tsql' || d === 'oracle') s = fwdGroupAlias(s);
   if (d === 'oracle') s = fwdOracleMisc(s);
+  if (d === 'pg') s = fwdRegexAll(s);
   if (d === 'pg' || d === 'tsql') s = fwdBool(s, d);
   if (d === 'pg') s = s.replace(/\browid\b/gi, 'ctid');
   if (d === 'pg') s = pgDateLits(s);
@@ -2651,6 +2663,19 @@ function bindSeq(db, env, d) {
   db.create_function('seq_curr_', n => { const s = get(n); if (s.cur === null) return fnErr(d === 'pg' ? `ERROR: currval of sequence "${n}" is not yet defined in this session` : `ORA-08002: sequence ${String(n).toUpperCase()}.CURRVAL is not yet defined in this session`); return s.cur; });
   db.create_function('seq_set_', (n, v) => { const s = get(n); s.cur = Number(v); return s.cur; });
 }
+/* Türkçe klavye: noktalı İ ya da noktasız ı içeren SQL sözcüğü ve kıvrık tırnak. Yalnız hata olduğunda açıklar, sorguyu değiştirmez. */
+const TR_SOZ = new Set(('SELECT DISTINCT LIMIT OFFSET WHERE IN LIKE ILIKE BETWEEN IS NULL INNER JOIN LEFT RIGHT FULL OUTER CROSS UNION INTERSECT EXCEPT MINUS WITH RECURSIVE PARTITION OVER WINDOW INSERT INTO DELETE UPDATE CREATE DROP ALTER TABLE VIEW INDEX PRIMARY FOREIGN UNIQUE CHECK DEFAULT VALUES EXISTS HAVING TIES FIRST ROWS ORDER GROUP BY ASC DESC CASE WHEN THEN ELSE END AND OR NOT ON AS SET BEGIN COMMIT ROLLBACK TRIGGER PROCEDURE FUNCTION DECLARE PRINT IIF ISNULL IFNULL NVL COALESCE NULLIF MIN MAX COUNT SUM AVG CAST CONVERT SUBSTR SUBSTRING INSTR CHARINDEX TRIM LTRIM RTRIM REPLACE LENGTH LEN ROUND ROW_NUMBER RANK DENSE_RANK NTILE LAG LEAD FIRST_VALUE LAST_VALUE STRING_AGG GROUP_CONCAT DATEDIFF DATEADD DATEPART DATE_TRUNC EXTRACT STRFTIME JULIANDAY GETDATE TOP FETCH').split(' '));
+function turkceIpucu(sql) {
+  const duz = String(sql || '').replace(/--[^\n]*/g, ' ').replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/'(?:[^']|'')*'/g, "''").replace(/"[^"]*"/g, '""');
+  if (/[“”‘’]/.test(duz)) return 'Kıvrık tırnak (“ ” ‘ ’) SQL\'de geçmez. Tırnakları klavyedeki düz tek tırnakla yeniden yaz: \'Kitap\'. Telefon klavyesi kıvrık tırnak üretebilir.';
+  const sutun = new Set(); const CM = root.SQLP_COLMETA || {}; for (const t of Object.keys(CM)) { sutun.add(t); for (const c of CM[t]) sutun.add(c[0]); }
+  for (const w of duz.match(/[\p{L}_][\p{L}\p{N}_]*/gu) || []) {
+    if (!/[İı]/.test(w)) continue;
+    const dogru = w.replace(/İ/g, 'I').replace(/ı/g, 'i');
+    if (TR_SOZ.has(dogru.toUpperCase()) || sutun.has(dogru.toLowerCase())) return 'Türkçe klavye: ' + w + ' değil ' + dogru + ' yaz. SQL sözcüklerinde noktalı İ ve noktasız ı tanınmaz. Büyük I için ı tuşuna Shift ile bas.';
+  }
+  return '';
+}
 function runDialect(db, sql, d, opt) {
   opt = opt || {};
   const env0 = opt.env || (opt.env = { procs: {}, funcs: {}, tvfs: {}, tran: 0, nocount: false }); env0.seqs = env0.seqs || {}; env0.fetchStatus = -1;
@@ -2690,6 +2715,7 @@ function runDialect(db, sql, d, opt) {
     if (d === 'tsql') { const L = lintTsqlPost(sql); if (L) throw L; }
   } catch (e) {
     const f = errOut(e, d); if (f) { res.error = f.message; res.hint = f.hint; }
+    if (res.error) { const tr = turkceIpucu(sql); if (tr) res.hint = tr; }
     if (d !== 'sqlite' && res.error) { /* yarım kalan işlemi kapat */ try { db.exec('ROLLBACK'); } catch (er) { /* yok */ } }
   }
   res.ms = Math.round((typeof performance !== 'undefined' ? performance : Date).now() - t0);
