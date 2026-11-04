@@ -1070,18 +1070,17 @@ ${CODE(`SELECT channel,
 FROM orders
 GROUP BY channel;`, null, { base: 'pg' })}
 <h2>DISTINCT ON: grup başına ilk satır</h2>
-<pre class="code" data-norun>-- Her müşterinin son siparişi (PostgreSQL'e özgü)
+<pre class="code" data-base="pg" data-na="tsql mysql oracle bq sqlite">-- Her müşterinin son siparişi (PostgreSQL'e özgü)
 SELECT DISTINCT ON (customer_id) customer_id, order_id, order_date
 FROM orders
 ORDER BY customer_id, order_date DESC;</pre>
 <p>Diğer SQL türlerinde bunun karşılığı <code>ROW_NUMBER() ... = 1</code> kalıbıdır.</p>
 <h2>generate_series ve diziler</h2>
-<pre class="code" data-norun>SELECT d::date AS gun
-FROM generate_series(DATE '2024-12-01', DATE '2024-12-31', INTERVAL '1 day') AS d;
-
-SELECT ARRAY_AGG(name ORDER BY price DESC) AS urunler FROM products WHERE category = 'Spor';
+<pre class="code" data-base="pg" data-na="tsql mysql oracle bq sqlite">SELECT d::date AS gun
+FROM generate_series(DATE '2024-12-01', DATE '2024-12-31', INTERVAL '1 day') AS d;</pre>
+<pre class="code" data-norun>SELECT ARRAY_AGG(name ORDER BY price DESC) AS urunler FROM products WHERE category = 'Spor';
 SELECT * FROM products WHERE category = ANY(ARRAY['Kitap', 'Spor']);</pre>
-<div class="note"><b>Neden bu kadar popüler?</b>Açık kaynak, standarda en sadık SQL türü; JSONB, tam metin arama, coğrafi veri (PostGIS), vektör arama (pgvector) gibi eklentilerle neredeyse her işi görür. Bu taklitte DISTINCT ON, generate_series ve diziler çalıştırılamaz; kutuları başvuru olarak kullan.</div>
+<div class="note"><b>Neden bu kadar popüler?</b>Açık kaynak, standarda en sadık SQL türü; JSONB, tam metin arama, coğrafi veri (PostGIS), vektör arama (pgvector) gibi eklentilerle neredeyse her işi görür. Bu taklitte DISTINCT ON ve generate_series çalışır; dizi türü (ARRAY, ANY) çalışmaz, o kutuyu başvuru olarak kullan.</div>
 `,
   ex: [
     { t: 'sql', dl: ['pg'], base: 'pg', q: '<p>PostgreSQL yazımıyla: FILTER kullanarak her müşteri segmentinin toplam sipariş sayısını ve <b>mobil kanaldan</b> gelen sipariş sayısını getir: <code>segment</code>, <code>toplam</code>, <code>mobil</code>.</p>', sol: "SELECT c.segment, COUNT(*) AS toplam, COUNT(*) FILTER (WHERE o.channel = 'mobile') AS mobil FROM orders o JOIN customers c ON c.customer_id = o.customer_id GROUP BY c.segment;" },
