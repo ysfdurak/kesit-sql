@@ -9,7 +9,7 @@
 <meta property="og:locale" content="tr_TR">
 <meta property="og:site_name" content="Kesit SQL">
 <meta property="og:title" content="Kesit SQL: sıfırdan ileri seviyeye Türkçe SQL">
-<meta property="og:description" content="Kurulum yok, hesap yok. Tarayıcında çalışan bir SQL veritabanıyla 295 ders, 1.944 alıştırma ve 6 SQL türü.">
+<meta property="og:description" content="Kurulum yok, hesap yok. Tarayıcında çalışan bir SQL veritabanıyla 296 ders, 1.949 alıştırma ve 6 SQL türü.">
 <meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png">
 <meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/">
 <meta name="twitter:card" content="summary_large_image"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}.doors{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
@@ -589,6 +589,7 @@ button.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink);
 <script src="c39.js"></script>
 <script src="c40.js"></script>
 <script src="c41.js"></script>
+<script src="c42.js"></script>
 <script src="ipuclari.js"></script>
 <script src="arena-data.js"></script>
 <script src="config.js"></script>
@@ -630,7 +631,7 @@ function pilotBos(){ return {tests:[], aktifDk:0, dersBaslangic:{}, dersBitis:{}
 function pilotKirp(t){ return t.length>20 ? [t[0]].concat(t.slice(-19)) : t; } /* ilk test silinmez */
 function pilotNorm(p){ const b=pilotBos(); p=(p&&typeof p==='object')?p:{}; return {tests:Array.isArray(p.tests)?pilotKirp(p.tests):[], aktifDk:Math.max(0,+p.aktifDk||0), dersBaslangic:p.dersBaslangic||b.dersBaslangic, dersBitis:p.dersBitis||b.dersBitis, takilma:p.takilma||b.takilma}; }
 function pilotBirlestir(a,b){ a=pilotNorm(a); b=pilotNorm(b); const g={}; a.tests.concat(b.tests).forEach(t=>{ g[[t.tarih,t.puan,t.toplam,t.seviye].join('|')]=t; }); const ilk=(x,y)=>{ const o=Object.assign({},x); for(const k in y) if(!o[k]||String(y[k])<String(o[k])) o[k]=y[k]; return o; }; const tk=Object.assign({},a.takilma); for(const k in b.takilma) tk[k]=Math.max(tk[k]||0,b.takilma[k]); return {tests:pilotKirp(Object.values(g).sort((x,y)=>String(x.tarih)<String(y.tarih)?-1:1)), aktifDk:Math.max(a.aktifDk,b.aktifDk), dersBaslangic:ilk(a.dersBaslangic,b.dersBaslangic), dersBitis:ilk(a.dersBitis,b.dersBitis), takilma:tk}; }
-const PILOT_SURUM='v11'; /* sw.js önbellek sürümüyle birlikte artır */
+const PILOT_SURUM='v12'; /* sw.js önbellek sürümüyle birlikte artır */
 const DEFAULTS = () => ({done:{}, ex:{}, xp:0, days:{}, placement:null, drafts:{}, last:null, seen:{}, dialect:'pg', dialectChosen:false, goal:null, goalChosen:false, rv:{}, rvc:0, dl:{}, theme:'auto', pilot:pilotBos()});
 let P = Object.assign(DEFAULTS(), load()); P.pilot=pilotNorm(P.pilot);
 function applyTheme(){ const r=document.documentElement; if(P.theme==='light'||P.theme==='dark') r.setAttribute('data-theme',P.theme); else r.removeAttribute('data-theme'); }
@@ -724,7 +725,7 @@ const ICON = {
 const NAVG=[
   ['Öğren',[['home','Ana sayfa','home'],['paths','Öğrenme yolları','path'],['curr','Dersler','book'],['review','Tekrar','refresh'],['test','Seviye testi','target']]],
   ['Pratik',[['pratik','Pratik','gym'],['play','SQL Arena','bolt'],['sinav','Sınavlar','exam']]],
-  ['Araçlar',[['serbest','Sorgu editörü','term']]],
+  ['Araçlar',[['serbest','Sorgu editörü','term'],['fiddle','Paylaşılabilir deneme','term']]],
   ['Kariyer',[['mulakat','Mülakat','chat'],['projeler','Bitirme projeleri','flag'],['belgeler','Belgelerim','award']]],
   ['Referans',[['data','Veri setleri','data'],['hatalar','Sık hatalar','warn'],['dict','Sözlük','dict']]]
 ];
@@ -794,7 +795,7 @@ function renderStats(){
   const ms=$('#miniStats'); if(ms) ms.innerHTML = '<button data-go="profile" aria-label="Profil"><b>'+P.xp+'</b>&nbsp;XP'+(dueList().length?' · '+dueList().length+' tekrar':'')+'</button> <span class="dot '+dot+'" title="'+eng+'"></span>'+(installEvt?' <button data-act="install" style="color:var(--accent);font-weight:600">Yükle</button>':'');
 }
 function setDialect(d, quiet){ if(!DIDS.includes(d)) return; P.dialect=d; P.dialectChosen=true; save(); render(); if(!quiet) toast('SQL türü: '+DNAME[d]); }
-function hashOf(){ const v=S.view, id=S.id; if(v==='lesson') return 'ders-'+id+(S.step?'/'+S.step:'')+(S.ctx?'@'+S.ctx:''); if(v==='path') return 'patika-'+id; if(v==='pratiksoru') return 'pratik-'+id; if(v==='play'&&id) return 'oyun-'+id; if(v==='home') return ''; return v; }
+function hashOf(){ const v=S.view, id=S.id; if(v==='lesson') return 'ders-'+id+(S.step?'/'+S.step:'')+(S.ctx?'@'+S.ctx:''); if(v==='path') return 'patika-'+id; if(v==='pratiksoru') return 'pratik-'+id; if(v==='play'&&id) return 'oyun-'+id; if(v==='fiddle') return 'fiddle'+(id?'='+id:''); if(v==='home') return ''; return v; }
 function syncHash(replace){ const h=hashOf(), url=h?('#'+h):location.pathname+location.search; if((location.hash||'').slice(1)===h) return; try{ history[replace?'replaceState':'pushState'](null,'',url); }catch(e){} }
 function go(view, id, opts){
   opts=opts||{};
@@ -814,7 +815,7 @@ function gcInit(){
 }
 function gcSend(v){ if(!GC.code) return; if(GC.ready&&window.goatcounter&&window.goatcounter.count){ try{ window.goatcounter.count(v); }catch(e){} } else if(GC.q.length<50) GC.q.push(v); }
 function gcView(){
-  if(!GC.code) return; const path=location.pathname+(location.hash||''); if(path===GC.last) return; GC.last=path;
+  if(!GC.code) return; const path=location.pathname+(location.hash||'').replace(/^#fiddle=.*/,'#fiddle'); if(path===GC.last) return; GC.last=path;
   const t = S.view==='lesson'&&LMAP[S.id] ? LMAP[S.id].title : S.view==='path'&&PMAP[S.id] ? 'Öğrenme yolu: '+PMAP[S.id].name : S.view==='pratiksoru'&&PRMAP[S.id] ? 'Pratik: '+PRMAP[S.id].title : S.view==='play'&&S.id ? 'SQL Arena: '+S.id : NAVTITLE[S.view]||S.view;
   gcSend({path, title:'Kesit SQL · '+t});
 }
@@ -830,6 +831,7 @@ function render(){
   else if(v==='lesson') main.innerHTML=viewLesson();
   else if(v==='play') main.innerHTML=viewArena();
   else if(v==='serbest') main.innerHTML=viewPlay();
+  else if(v==='fiddle') main.innerHTML=viewFiddle();
   else if(v==='test') main.innerHTML=viewTest();
   else if(v==='dict') main.innerHTML=viewDict();
   else if(v==='hakkinda') main.innerHTML=viewAbout();
@@ -851,6 +853,7 @@ function render(){
   if(v==='sinav'){ examTick(); mountCode(); }
   if(v==='play') mountArena(); else arStop();
   if(v==='serbest') mountPlay();
+  if(v==='fiddle') mountFiddle();
   if(v==='data') mountData();
   if(v==='path' && window.KESIT_CERT) window.KESIT_CERT.mount(S.id);
   }catch(e){ console.error(e); main.innerHTML='<div class="wrap"><div class="panel empty">Bu sayfa açılamadı. Sayfayı yenilemeyi dene; sorun sürerse <button class="btn ghost sm" style="padding:0" data-act="feedback" data-ders="Sayfa açılmadı: '+esc(v)+'">bize bildir</button>.</div></div>'; }
@@ -866,7 +869,7 @@ function lessonList(ids){ return '<div class="panel lessons">'+ids.map(id=>LMAP[
 function viewMulakat(){
   const ids=LESSONS.filter(l=>l.mod==='Mülakat Hazırlığı').map(l=>l.id); const pth=PMAP.mulakat;
   const sim=EXMAP['kod-mulakat'];
-  return '<div class="wrap" style="gap:18px"><div><h1>Mülakat</h1><p class="muted" style="max-width:70ch;margin:6px 0 0">Teknik SQL mülakatlarında sık çıkan kalıplar ve süreli bir simülasyon. '+(pth?'Sırayla ilerlemek için '+esc(pth.name)+' yolunu aç.':'')+'</p></div><div class="row" style="gap:8px">'+(sim?'<button class="btn pri" data-exam="kod-mulakat">Mülakat simülasyonunu başlat</button>':'')+(pth?'<button class="btn" data-go="path" data-id="mulakat">'+esc(pth.name)+'</button>':'')+'</div>'+lessonList(ids)+'</div>';
+  return '<div class="wrap" style="gap:18px"><div><h1>Mülakat</h1><p class="muted" style="max-width:70ch;margin:6px 0 0">Teknik SQL mülakatlarında sık çıkan kalıplar ve süreli bir simülasyon. '+(pth?'Sırayla ilerlemek için '+esc(pth.name)+' yolunu aç.':'')+'</p></div><div class="row" style="gap:8px">'+(sim?'<button class="btn pri" data-exam="kod-mulakat">Mülakat simülasyonunu başlat</button>':'')+(pth?'<button class="btn" data-go="path" data-id="mulakat">'+esc(pth.name)+'</button>':'')+'</div>'+'<section class="lvl-block"><div class="sec-head"><div><h2>Süreli setler</h2><span class="muted" style="font-size:.85rem">Sayaç işler, ipucu yok. Bitince her görev için başka geçerli çözümler ve kenar durum gelir. Görevler bu uygulama için yazıldı, hiçbiri bir şirketin sorusu değildir.</span></div></div><div class="row" style="gap:8px;flex-wrap:wrap">'+['kod-mk-kolay','kod-mk-orta','kod-mk-zor'].filter(x=>EXMAP[x]).map(x=>'<button class="btn" data-exam="'+x+'">'+esc(EXMAP[x].short)+' · '+EXMAP[x].n+' görev · '+EXMAP[x].min+' dk</button>').join('')+'</div></section>'+'<section class="lvl-block"><div class="sec-head"><h2>Desen haritası</h2></div><div class="panel"><div class="rtable"><table><thead><tr><th>Desen</th><th>Ders</th><th>Görevler</th></tr></thead><tbody>'+(window.SQLP_DESEN||[]).map(r=>'<tr><td>'+esc(r[0])+'</td><td>'+(LMAP[r[1]]?'<button class="btn sm ghost" data-lesson="'+r[1]+'" style="white-space:normal;text-align:left">'+esc(LMAP[r[1]].title)+'</button>':'')+'</td><td><span class="row" style="gap:4px;flex-wrap:wrap">'+r[2].filter(i=>PRMAP[i]).map(i=>'<button class="btn sm" data-pr="'+i+'"'+(prDone(PRMAP[i])?' title="Çözüldü"':'')+'>'+(prDone(PRMAP[i])?'✓ ':'')+esc(PRMAP[i].title)+'</button>').join('')+'</span></td></tr>').join('')+'</tbody></table></div></div></section>'+lessonList(ids)+'</div>';
 }
 function viewProjeler(){
   const ids=LESSONS.filter(l=>l.mod==='Bitirme Projeleri').map(l=>l.id);
@@ -1150,11 +1153,20 @@ function submitEx(){
     $('#fb').innerHTML='<div class="msg err"><b>Henüz değil</b>'+esc(c.why)+extra+'<div class="row" style="margin-top:8px"><button class="btn sm" data-act="expected">Beklenen sonucu göster</button></div></div>';
   }
 }
+/* Başka geçerli çözümler: görevin alt alanı. Çalıştırınca süre bu tarayıcıda ölçülür. */
+function altMetin(p,al,d){ const b=p.base||'sqlite'; if(d===b) return al.sql; try{ return DX.forward(al.sql,d)||al.sql; }catch(e){ return al.sql; } }
+function altHTML(p,d,ana){ if(!p.alt&&!p.kenar) return ''; let h='<div class="panel brief" style="margin-top:10px"><h3 style="margin:0 0 6px;font-size:1rem">Başka geçerli çözümler</h3>'; if(p.alt) h+=[{ad:ana||'Örnek çözüm', sql:exText(p.sol,p,d,p.solv)||p.sol, not:'Görevin örnek çözümü.', ana:1}].concat(p.alt.map(al=>({ad:al.ad, sql:altMetin(p,al,d), not:al.not}))).map((x,i)=>'<div style="margin-top:10px"><b>'+esc(x.ad)+'</b><div class="muted" style="font-size:.88rem">'+esc(x.not)+'</div><pre class="code" data-norun style="white-space:pre-wrap">'+esc(x.sql)+'</pre><button class="btn sm" data-act="alt-run" data-kod="'+esc(x.sql).replace(/"/g,'&quot;')+'" data-dil="'+d+'">Çalıştır, süreyi gör</button><div class="alt-sonuc muted" style="font-size:.85rem;margin-top:4px"></div></div>').join(''); if(p.kenar) h+='<div class="note" style="margin-top:10px"><b>Mülakatta sorulur</b>'+p.kenar+'</div>'; return h+'</div>'; }
+function altRun(t){ if(!engineReady()) return; const k=t.parentElement.querySelector('.alt-sonuc'); const db=fresh(); const r=run(db,t.dataset.kod,t.dataset.dil); db.close(); const s=lastSet(r); k.textContent=r.error?r.error:((s?s.values.length:0)+' satır, bu tarayıcıda '+r.ms+' ms. Süre tek ölçümdür, büyük veride fark açılabilir.'); }
+const MER=(window.SQLP_MERDIVEN||[]).reduce((a,b)=>a.concat(b[1]),[]);
+function merSonraki(){ return MER.map(id=>PRMAP[id]).find(x=>x&&!prDone(x))||null; }
+function merdivenHTML(){ const dn=MER.filter(id=>PRMAP[id]&&prDone(PRMAP[id])).length, nx=merSonraki(); let h='<section class="panel" style="margin-bottom:14px"><div class="row" style="justify-content:space-between;gap:10px;flex-wrap:wrap"><div><h2 style="margin:0;font-size:1.1rem">Merdiven</h2><span class="muted" style="font-size:.88rem">Konu seçmek istemiyorsan: kolaydan zora tek sıra, '+dn+' / '+MER.length+' basamak.</span></div>'+(nx?'<button class="btn pri" data-pr="'+nx.id+'">Sıradaki: '+esc(nx.title)+'</button>':'<span class="chip okc">Bitti</span>')+'</div><details style="margin-top:8px"><summary class="muted" style="cursor:pointer">Basamakları göster</summary>'+(window.SQLP_MERDIVEN||[]).map(b=>'<div style="margin-top:8px"><b style="font-size:.9rem">'+esc(b[0])+'</b><div class="row" style="gap:6px;flex-wrap:wrap;margin-top:4px">'+b[1].map(id=>{ const p=PRMAP[id]; return p?'<button class="btn sm'+(prDone(p)?' ghost':'')+'" data-pr="'+id+'">'+(prDone(p)?'✓ ':'')+esc(p.title)+'</button>':''; }).join('')+'</div></div>').join('')+'</details></section>'; return h; }
 function afterSolve(l){
-  if(l && l.pr){ const nx=PRACTICE.find(x=>x._i>LS.e._i && !prDone(x)); const fb=$('#fb .msg'); if(fb && nx) fb.insertAdjacentHTML('beforeend','<div class="row" style="margin-top:8px"><button class="btn sm pri" data-pr="'+nx.id+'">Sonraki görev</button></div>'); return; }
+  if(l && l.pr){ const merde=MER.includes(LS.e.id); const nm=merde?merSonraki():null; const nx=nm||PRACTICE.find(x=>x._i>LS.e._i && !prDone(x)); const fb=$('#fb .msg'); if(fb && nx) fb.insertAdjacentHTML('beforeend','<div class="row" style="margin-top:8px"><button class="btn sm pri" data-pr="'+nx.id+'">'+(nm?'Sonraki basamak':'Sonraki görev')+'</button></div>'); const f0=$('#fb'); if(f0) f0.insertAdjacentHTML('beforeend',altHTML(LS.e,LS.d)); const b0=$('#fb .msg .btn.pri'); if(b0) b0.focus({preventScroll:true}); return; }
+  { const f0=$('#fb'); if(f0&&(LS.e.alt||LS.e.kenar)) f0.insertAdjacentHTML('beforeend',altHTML(LS.e,LS.d)); }
+  { const ex=l.ex||[], fb=$('#fb .msg'); const i=S.step-1; let j=-1; for(let z=i+1;z<ex.length;z++){ const kk=l.id+':'+z; if(!P.ex[kk]){ j=z; break; } } if(fb&&j>=0){ fb.insertAdjacentHTML('beforeend','<div class="row" style="margin-top:8px"><button class="btn sm pri" data-step="'+(j+1)+'">Sonraki görev ('+(j+1)+' / '+ex.length+')</button></div>'); const b=fb.querySelector('.btn.pri'); if(b) b.focus({preventScroll:true}); } }
   const all=reqSolved(l);
   const sb=document.querySelectorAll('.steps button')[S.step]; if(sb) sb.classList.add('done');
-  if(all && !P.done[l.id]){ dersBitti(l.id); addXP(20); save(); gcEvent('ders-bitti/'+l.id, 'Ders bitti: '+l.title); setTimeout(()=>{ toast('Ders tamamlandı: '+l.title+' (+20 XP)'); const pg=$('.pager'); if(pg){ const nb=document.createElement('div'); nb.innerHTML=nextBtn(l); pg.replaceChild(nb.firstChild, pg.lastElementChild);} },300); }
+  if(all && !P.done[l.id]){ dersBitti(l.id); addXP(20); save(); gcEvent('ders-bitti/'+l.id, 'Ders bitti: '+l.title); setTimeout(()=>{ toast('Ders tamamlandı: '+l.title+' (+20 XP)'); const pg=$('.pager'); if(pg){ const nb=document.createElement('div'); nb.innerHTML=nextBtn(l); pg.replaceChild(nb.firstChild, pg.lastElementChild);} const fb=$('#fb .msg'); if(fb&&!fb.querySelector('.btn.pri')){ fb.insertAdjacentHTML('beforeend','<div class="row" style="margin-top:8px"><span class="muted" style="font-size:.88rem">Ders bitti.</span> '+nextBtn(l).replace('class="btn pri"','class="btn sm pri"')+'</div>'); const b=fb.querySelector('.btn.pri'); if(b) b.focus({preventScroll:true}); } },300); }
 }
 
 /* ---------- Sonuç gösterimi ---------- */
@@ -1377,6 +1389,42 @@ function mountPlay(){
   onEngine(()=>{ const s=$('#pgSchema'); if(s) s.innerHTML=schemaHTML(null, playD); });
   renderHist(); aiInit();
 }
+/* ---------- Paylaşılabilir deneme: şema ve sorgu yalnız adresin # kısmında durur, sunucuya gitmez ---------- */
+const FD_SINIR=8000; let FD=null, fdEdS=null, fdSon=null;
+const fdEnc=o=>{ const b=new TextEncoder().encode(JSON.stringify(o)); let t=''; for(let i=0;i<b.length;i++) t+=String.fromCharCode(b[i]); return btoa(t).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); };
+function fdDec(x){ if(typeof x!=='string'||x.length>FD_SINIR||!/^[A-Za-z0-9_-]+$/.test(x)) return null; try{ const t=atob(x.replace(/-/g,'+').replace(/_/g,'/')); const b=new Uint8Array(t.length); for(let i=0;i<t.length;i++) b[i]=t.charCodeAt(i); const o=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(b)); if(!o||o.v!==1||typeof o.s!=='string'||typeof o.q!=='string') return null; const ok=DX.DIALECTS.some(y=>y.id===o.d); return {d:ok?o.d:'sqlite', s:o.s, q:o.q, veri:o.b===true}; }catch(e){ return null; } }
+const FD_ORNEK={s:"CREATE TABLE satis (id INTEGER PRIMARY KEY, ay TEXT, tutar INTEGER);\nINSERT INTO satis VALUES (1, 'Ocak', 120);\nINSERT INTO satis VALUES (2, 'Şubat', 90);\nINSERT INTO satis VALUES (3, 'Mart', 150);", q:"SELECT ay, tutar, SUM(tutar) OVER (ORDER BY id) AS birikimli\nFROM satis\nORDER BY id;"};
+function viewFiddle(){
+  const gel=S.id?fdDec(S.id):null; const bozuk=S.id&&!gel;
+  if(gel) FD=Object.assign({},gel,{gelen:true,anahtar:S.id}); else if(!FD||FD.anahtar!==undefined&&FD.anahtar!==S.id&&S.id){ let tas=null; try{ tas=P.drafts&&P.drafts['__fd']?JSON.parse(P.drafts['__fd']):null; }catch(e){ tas=null; } FD={d:(tas&&tas.d)||P.dialect, s:(tas&&typeof tas.s==='string')?tas.s:FD_ORNEK.s, q:(tas&&typeof tas.q==='string')?tas.q:FD_ORNEK.q, veri:!!(tas&&tas.veri)}; }
+  const secenek=DX.DIALECTS.map(y=>'<option value="'+y.id+'"'+(y.id===FD.d?' selected':'')+'>'+esc(y.name||DNAME[y.id])+'</option>').join('');
+  return '<div class="wrap" style="gap:14px"><div><h1>Paylaşılabilir deneme</h1><p class="muted" style="max-width:72ch;margin:6px 0 0">Kendi tablolarını kur, sorgunu dene, bağlantıyla paylaş. Bağlantı metnin kendisidir: adresin <code>#</code> kısmında durur, sunucuya gönderilmez, kaydedilmez. Kişisel veri koyma; bağlantıyı alan herkes okur.</p></div>'
+   +(bozuk?'<div class="msg err"><b>Bağlantı açılamadı</b>Bu bağlantı bozuk ya da çok uzun. Boş bir denemeyle devam ediyorsun.</div>':'')
+   +(gel?'<div class="warn" role="status" style="margin:0"><b>Bağlantıdan geldi, çalıştırılmadı</b>Kodu oku, sonra Çalıştır\'a bas. Kod yalnız bu tarayıcıda ve geçici bir veritabanında çalışır.</div>':'')
+   +'<div class="row" style="gap:10px;flex-wrap:wrap;align-items:center"><label class="row" style="gap:6px;font-size:.9rem">SQL türü <select class="input" id="fdD" style="width:auto">'+secenek+'</select></label><label class="row" style="gap:6px;font-size:.9rem"><input type="checkbox" id="fdB"'+(FD.veri?' checked':'')+'> Örnek veri setleri de yüklensin</label><button class="btn pri" data-act="fd-run" data-needs-engine '+(engineReady()?'':'disabled')+'>Çalıştır</button><button class="btn" data-act="fd-link">Bağlantı oluştur</button><button class="btn ghost" data-act="fd-md">Sonucu Markdown kopyala</button><button class="btn ghost" data-act="fd-ornek">Örneği yükle</button><span class="muted num" id="fdBoy" style="font-size:.85rem"></span></div>'
+   +'<div id="fdLink"></div><div class="ex-grid"><div class="work"><div class="ed-shell"><div class="ed-top"><span style="font-size:.8rem">Şema ve veri</span></div><div id="fdS"></div></div></div><div class="work"><div class="ed-shell"><div class="ed-top"><span style="font-size:.8rem">Sorgu</span></div><div id="ed"></div></div></div></div><div id="fdRes" class="panel" aria-live="polite"><div class="empty">Sonuç burada görünür.</div></div></div>';
+}
+function fdNesne(){ return {v:1, d:FD.d, s:fdEdS?fdEdS.get():FD.s, q:ED?ED.get():FD.q, b:!!FD.veri}; }
+function fdBoyut(){ const el=$('#fdBoy'); if(!el) return; const n=fdEnc(fdNesne()).length; el.textContent='Bağlantı: '+n+' / '+FD_SINIR+' karakter'; el.style.color=n>FD_SINIR?'var(--err)':''; const o=fdNesne(); try{ if(!FD.gelen){ P.drafts['__fd']=JSON.stringify({d:o.d,s:o.s,q:o.q,veri:o.b}); save(); } }catch(e){} }
+function mountFiddle(){
+  fdSon=null; fdEdS=makeEditor($('#fdS'), FD.s, fdRun, FD.d, [], true); ED=makeEditor($('#ed'), FD.q, fdRun, FD.d, [], true);
+  fdEdS.onChange=()=>{ FD.gelen=false; fdBoyut(); }; ED.onChange=()=>{ FD.gelen=false; fdBoyut(); };
+  const d=$('#fdD'); if(d) d.onchange=()=>{ FD.d=d.value; FD.s=fdEdS.get(); FD.q=ED.get(); fdBoyut(); }; const b=$('#fdB'); if(b) b.onchange=()=>{ FD.veri=b.checked; fdBoyut(); };
+  fdBoyut();
+}
+function fdRun(){
+  if(!engineReady()) return; const env={procs:{},funcs:{},tvfs:{},tran:0,nocount:false}; let db;
+  if(FD.veri) db=fresh(); else { db=new SQL.Database(); window.SQLP_REGISTER(db); DX.register(db); }
+  const k=$('#fdRes'); let h=''; let sonSet=null;
+  try{ const sc=fdEdS.get(), qq=ED.get();
+    if(sc.trim()){ const r=run(db,sc,FD.d,env); h+='<div class="result-meta"><span>Şema ve veri</span></div>'+resultHTML(r); }
+    if(qq.trim()){ const r=run(db,qq,FD.d,env); h+='<div class="result-meta"><span>Sorgu</span></div>'+resultHTML(r); sonSet=lastSet(r); }
+  } finally { db.close(); }
+  fdSon=sonSet; k.innerHTML=h||'<div class="empty">Çalıştırılacak kod yok.</div>';
+}
+function fdLink(){ const t=fdEnc(fdNesne()); const k=$('#fdLink'); if(!k) return; if(t.length>FD_SINIR){ k.innerHTML='<div class="msg err"><b>Bağlantı çok uzun</b>'+t.length+' karakter, sınır '+FD_SINIR+'. Veriyi azalt: bağlantı adres çubuğuna sığmalı.</div>'; return; } S.id=t; FD.anahtar=t; try{ history.replaceState(null,'','#fiddle='+t); }catch(e){} const u=location.origin+location.pathname+'#fiddle='+t; k.innerHTML='<div class="row" style="gap:8px"><input class="input" id="fdUrl" readonly aria-label="Paylaşılabilir bağlantı" style="flex:1;min-width:0" value="'+esc(u)+'"></div>'; copyText(u,'Bağlantı kopyalandı.'); }
+function fdMd(){ if(!fdSon){ toast('Önce sorguyu çalıştır.'); return; } const hc=v=>v===null?'NULL':String(v).replace(/\|/g,'\\|').replace(/\n/g,' '); const md='| '+fdSon.columns.map(hc).join(' | ')+' |\n|'+fdSon.columns.map(()=>' --- ').join('|')+'|\n'+fdSon.values.slice(0,200).map(r=>'| '+r.map(hc).join(' | ')+' |').join('\n'); copyText(md,'Sonuç Markdown olarak kopyalandı.'); }
+
 /* ---------- SQL Arena ---------- */
 const AR = window.SQLP_ARENA || {ch:[], pred:[], pz:[], det:[]};
 const ARCH = {}; AR.ch.forEach(c=>ARCH[c.id]=c);
@@ -1768,6 +1816,7 @@ function prList(){
 }
 function viewPratik(){
   let h='<div class="wrap"><div class="sec-head" style="align-items:end"><div><h1>Pratik</h1><p class="muted" style="max-width:70ch;margin:6px 0 0">Konu anlatımı olmadan, seviyene göre '+PRACTICE.length+' SQL görevi. Her görevi istediğin SQL türünde çöz; sonuç otomatik denetlenir. Takılırsan her görevin çözümüne bakabilirsin.</p></div><div class="row" style="gap:8px"><button class="btn pri" data-act="pr-next">Sıradaki çözülmemiş</button><button class="btn" data-act="pr-rand">Rastgele soru</button></div></div>';
+  h+=merdivenHTML();
   h+='<div class="prstats">'+LEVELS.map(L=>{ const all=PRACTICE.filter(p=>p.L===L.id), dn=all.filter(prDone).length, pc=all.length?Math.round(dn/all.length*100):0; return '<button class="panel prstat'+(prFilter.L===L.id?' on':'')+'" data-prl="'+L.id+'">'+lvBadge(L.id)+'<b class="num">'+dn+' / '+all.length+'</b><span class="bar"><i style="width:'+pc+'%;background:var(--'+L.c+')"></i></span><small class="muted">'+esc(L.desc.split(',').slice(0,3).join(','))+'…</small></button>'; }).join('')+'</div>';
   const topics=Object.keys(PRT).filter(k=>PRACTICE.some(p=>p.t===k));
   h+='<div class="prfilters"><input class="input" id="prQ" aria-label="Görevlerde ara" placeholder="Görev ara: kohort, LEFT JOIN, medyan…" value="'+esc(prFilter.q)+'"><select class="input" id="prT" aria-label="Konu"><option value="">Tüm konular</option>'+topics.map(k=>'<option value="'+k+'"'+(prFilter.t===k?' selected':'')+'>'+esc(PRT[k])+' ('+PRACTICE.filter(p=>p.t===k).length+')</option>').join('')+'</select><div class="filters">'+[['','Tümü'],['todo','Çözülmedi'],['done','Çözüldü']].map(([k,t])=>'<button data-prs="'+k+'" aria-pressed="'+(prFilter.st===k)+'">'+t+'</button>').join('')+'</div><div class="filters">'+[[0,'Her zorluk'],[1,'★'],[2,'★★'],[3,'★★★']].map(([k,t])=>'<button data-prd="'+k+'" aria-pressed="'+(prFilter.d===k)+'">'+t+'</button>').join('')+'</div>'+(prFilter.L?'<button class="btn sm ghost" data-prl="">Seviye filtresini kaldır</button>':'')+'</div>';
@@ -1881,7 +1930,10 @@ function gradeCode(){
     const db=fresh(); const r=run(db,code,EX.d); let u=lastSet(r); if(!r.error&&p.check){ try{ u=db.exec(p.check).pop()||null; }catch(er){ u=null; } } db.close();
     if(r.error) return {ok:false, why:r.error};
     const s=solResult(p, prKey(p)); if(s.error) return {ok:false, why:'Çözüm çalışmadı'};
-    const c=compare(u,s.set,p.ord); return {ok:c.ok, why:c.ok?'':c.why}; });
+    const c=compare(u,s.set,p.ord); if(!c.ok) return {ok:false, why:c.why};
+    const mf=DX.mustFail(p,code,EX.d); if(mf) return {ok:false, why:mf};
+    if((r.ms||0)<=2000){ const vf=DX.varyantFail(p,code,EX.d,{fresh, run:(x,q,dd)=>DX.runDialect(x,q,dd,{env:{procs:{},funcs:{},tvfs:{},tran:0,nocount:false}}), esit:(a,b,o)=>compare(a,b,o).ok, beklenen:s.set}); if(vf) return {ok:false, why:vf}; }
+    return {ok:true, why:''}; });
 }
 function finishCode(){
   const e=EXMAP[EX.id]; const g=gradeCode(); const ok=g.filter(x=>x.ok).length, sc=Math.round(ok/EX.items.length*100);
@@ -1894,7 +1946,7 @@ function codeResultHTML(){
   const e=EXMAP[EX.id], pass=EX.score>=e.pass;
   let h='<div class="wrap" style="max-width:1000px"><div class="panel finish"><span class="eyebrow">'+esc(e.name)+' · '+esc(DNAME[EX.d])+' · sonuç</span><h2 style="margin:4px 0">%'+EX.score+' · '+(pass?'Geçtin':'Geçme notu %'+e.pass)+'</h2><p class="muted" style="margin:0">'+EX.ok+' / '+EX.items.length+' görev doğru · süre '+fmtTime(EX.secs)+' · +'+(EX.ok*12)+' XP</p><div class="bar" style="margin-top:10px"><i style="width:'+EX.score+'%;background:var(--'+(pass?'ok':'warn')+')"></i></div><div class="row" style="margin-top:12px"><button class="btn pri" data-exam="'+e.id+'">Yeni deneme</button><button class="btn" data-act="ex-list">Tüm sınavlar</button></div></div>';
   h+='<section class="lvl-block"><div class="sec-head"><h2>Görevler</h2></div>'+EX.items.map((id,i)=>{ const p=PRMAP[id], g=EX.grade[i]; const sol=exText(p.sol,p,EX.d,p.solv)||p.sol;
-    return '<div class="panel brief exrev"><div class="row" style="justify-content:space-between"><b>'+(i+1)+'. '+esc(p.title)+'</b><span class="chip'+(g.ok?' okc':'')+'">'+(g.ok?'Doğru':'Yanlış')+'</span></div><div class="q">'+p.q+'</div>'+(g.ok?'':'<div class="msg err"><b>Neden?</b>'+esc(g.why)+'</div>')+'<details><summary>Senin sorgun ve örnek çözüm</summary><div class="codebox" style="margin:8px 0 0"><div class="dtabs"><button aria-pressed="true">Senin sorgun</button></div><pre>'+hl(EX.codes[i]||'-- boş')+'</pre></div><div class="codebox" style="margin:8px 0 0"><div class="dtabs"><button aria-pressed="true">Örnek çözüm</button></div><pre>'+hl(fmtSQL?fmtSQL(sol):sol)+'</pre></div></details><div class="row"><button class="btn sm ghost" data-pr="'+p.id+'">Bu görevi Alıştırma\'da aç</button></div></div>'; }).join('')+'</section>';
+    return '<div class="panel brief exrev"><div class="row" style="justify-content:space-between"><b>'+(i+1)+'. '+esc(p.title)+'</b><span class="chip'+(g.ok?' okc':'')+'">'+(g.ok?'Doğru':'Yanlış')+'</span></div><div class="q">'+p.q+'</div>'+(g.ok?'':'<div class="msg err"><b>Neden?</b>'+esc(g.why)+'</div>')+'<details><summary>Senin sorgun ve örnek çözüm</summary><div class="codebox" style="margin:8px 0 0"><div class="dtabs"><button aria-pressed="true">Senin sorgun</button></div><pre>'+hl(EX.codes[i]||'-- boş')+'</pre></div><div class="codebox" style="margin:8px 0 0"><div class="dtabs"><button aria-pressed="true">Örnek çözüm</button></div><pre>'+hl(fmtSQL?fmtSQL(sol):sol)+'</pre></div></details>'+altHTML(p,EX.d)+'<div class="row"><button class="btn sm ghost" data-pr="'+p.id+'">Bu görevi Alıştırma\'da aç</button></div></div>'; }).join('')+'</section>';
   return h+'</div>';
 }
 
@@ -2043,6 +2095,11 @@ document.addEventListener('click', ev=>{
   else if(a==='ex-copy'){ const b=t.closest('.codebox')._b; const txt=boxText(b,b.cur); try{ navigator.clipboard.writeText(txt).then(()=>toast('Kopyalandı'),()=>toast('Kopyalanamadı; metni seçip kopyala')); }catch(e){ toast('Kopyalanamadı; metni seçip kopyala'); } }
   else if(a==='ex-play'){ const b=t.closest('.codebox')._b; playD=b.nr.includes(b.cur)?b.base:b.cur; S.pending=boxText(b,playD); const p=S.pending; go('serbest'); S.pending=null; if(ED){ ED.set(p); P.drafts['__pg:'+playD]=p; save(); onEngine(pgRun); } }
   else if(a==='pg-run'){ pgRun(); }
+  else if(a==='fd-run'){ fdRun(); }
+  else if(a==='fd-link'){ fdLink(); }
+  else if(a==='fd-md'){ fdMd(); }
+  else if(a==='fd-ornek'){ if(fdEdS&&ED){ fdEdS.set(FD_ORNEK.s); ED.set(FD_ORNEK.q); fdBoyut(); } }
+  else if(a==='alt-run'){ altRun(t); }
   else if(a==='ai-sql') aiCall('sql');
   else if(a==='ai-explain') aiCall('explain');
   else if(a==='ai-review') aiCall('review');
@@ -2171,6 +2228,7 @@ function fromHash(){
   else if(h.startsWith('patika-') && PMAP[h.slice(7)]) S={view:'path', id:h.slice(7), step:0, ctx:h.slice(7)};
   else if(h.startsWith('pratik-') && PRMAP[h.slice(7)]) S={view:'pratiksoru', id:h.slice(7), step:0, ctx:null};
   else if(h.startsWith('oyun-')) S={view:'play', id:h.slice(5), step:0, ctx:null};
+  else if(h==='fiddle'||h.startsWith('fiddle=')) S={view:'fiddle', id:h.startsWith('fiddle=')?h.slice(7):null, step:0, ctx:null};
   else if(['paths','curr','play','serbest','test','dict','data','review','profile','pratik','sinav','hakkinda','menu','mulakat','projeler','belgeler','hatalar'].includes(h)) S={view:h, id:null, step:0, ctx:null};
   else S={view:'home', id:null, step:0, ctx:null};
   render(); window.scrollTo(0,0);
