@@ -1,0 +1,57 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>İş metrikleri: ciro, sipariş, ortalama sepet | Kesit SQL</title><meta name="description" content="KPI tanımlamak ve tek sorguda KPI tablosu üretmek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/an-kpi/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="İş metrikleri: ciro, sipariş, ortalama sepet"><meta property="og:description" content="KPI tanımlamak ve tek sorguda KPI tablosu üretmek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/an-kpi/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"İş metrikleri: ciro, sipariş, ortalama sepet","description":"KPI tanımlamak ve tek sorguda KPI tablosu üretmek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/an-kpi/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veri Analisti</span><h1>İş metrikleri: ciro, sipariş, ortalama sepet</h1><p class="st-l">KPI tanımlamak ve tek sorguda KPI tablosu üretmek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-an-kpi">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Metrik tanımı her şeydir</h2>
+<p>“Ciro ne kadar?” sorusunun cevabı tanıma göre değişir: İptaller dahil mi? İndirim düşülmüş mü? İadeler? Bir analistin ilk işi metriği <b>yazılı ve tek</b> bir tanıma bağlamaktır. Bu kursta:</p>
+<ul>
+<li><b>Brüt ciro</b>: <code>quantity * unit_price</code></li>
+<li><b>Net ciro</b>: <code>quantity * unit_price * (1 - discount)</code>, sadece <code>status = 'delivered'</code></li>
+<li><b>Sipariş sayısı</b>: <code>COUNT(DISTINCT order_id)</code></li>
+<li><b>Ortalama sepet (AOV)</b>: net ciro / sipariş sayısı</li>
+<li><b>Aktif müşteri</b>: dönem içinde en az bir teslim edilmiş siparişi olan müşteri</li>
+<li><b>Brüt kâr</b>: net ciro − <code>quantity * cost</code></li>
+</ul>
+<h2>Aylık KPI tablosu</h2>
+<pre class="code">SELECT strftime('%Y-%m', o.order_date) AS ay,
+       COUNT(DISTINCT o.order_id) AS siparis,
+       COUNT(DISTINCT o.customer_id) AS aktif_musteri,
+       ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 0) AS net_ciro,
+       ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) / COUNT(DISTINCT o.order_id), 1) AS aov
+FROM orders o
+JOIN order_items oi ON oi.order_id = o.order_id
+WHERE o.status = 'delivered' AND o.order_date >= '2024-01-01'
+GROUP BY ay
+ORDER BY ay;</pre>
+<div class="tip"><b>Kontrol toplamı</b>Her KPI sorgusunu bilinen bir rakamla (finans raporu, önceki dashboard) karşılaştır. Farklıysa önce tanımı, sonra JOIN grain düzeyini kontrol et.</div>
+<h2>Derinleş: KPI ağacı ve grain hataları</h2>
+<p>Tek bir ciro rakamı “ne oldu?” sorusunu cevaplar, “neden?” sorusunu cevaplamaz. Bu yüzden analistler ciroyu çarpanlarına ayırır:</p>
+<p><b>Net ciro = aktif müşteri × müşteri başına sipariş (frekans) × ortalama sepet (AOV)</b></p>
+<p>Üç çarpandan hangisinin değiştiğini görmek aksiyonu belirler. Müşteri sayısı düştüyse sorun edinmededir, frekans düştüyse elde tutmada, AOV düştüyse fiyat ya da sepet büyüklüğündedir. Anadolu Market'te teslim edilmiş siparişlerde 2023'ten 2024'e ciro 335.573 TL'den 636.316 TL'ye çıktı. Aktif müşteri 74'ten 120'ye (%62), frekans 3,23'ten 3,51'e, AOV 1.404'ten 1.511 TL'ye yükseldi. Yani büyümenin büyük kısmı <b>yeni müşteriden</b> geliyor. Bu cümleyi tek bir ciro sayısından kuramazdın.</p>
+<h3>En sık hata: JOIN sonrası grain</h3>
+<p><code>orders</code> tablosunu <code>order_items</code> ile birleştirdiğinde her satır artık bir <b>sipariş kalemi</b> olur. Bu satırlarda <code>COUNT(*)</code> sipariş sayısını değil kalem sayısını verir. <code>AVG(tutar)</code> da sepet ortalamasını değil kalem ortalamasını verir:</p>
+<pre class="code">SELECT COUNT(*) AS satir,
+       COUNT(DISTINCT o.order_id) AS siparis,
+       ROUND(AVG(oi.quantity * oi.unit_price * (1 - oi.discount)), 1) AS kalem_ort,
+       ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) / COUNT(DISTINCT o.order_id), 1) AS aov
+FROM orders o
+JOIN order_items oi ON oi.order_id = o.order_id
+WHERE o.status = 'delivered'
+  AND o.order_date >= '2024-01-01' AND o.order_date &lt; '2025-01-01';</pre>
+<p>2024'te 421 sipariş 759 kaleme yayılıyor. “Ortalama sepet” diye 838 TL raporlamak, gerçek AOV'yi (1.511 TL) neredeyse yarıya indirir.</p>
+<table>
+<tr><th>Hata</th><th>Belirti</th><th>Doğrusu</th></tr>
+<tr><td>JOIN sonrası <code>COUNT(*)</code></td><td>Sipariş sayısı şişer</td><td><code>COUNT(DISTINCT order_id)</code></td></tr>
+<tr><td>Kalem ortalaması</td><td>AOV düşük çıkar</td><td>Toplam ciro ÷ tekil sipariş</td></tr>
+<tr><td>Payda kayması</td><td>İptal oranı %8,2 mi, %10,5 mi?</td><td>Payda tüm siparişler; teslim edilenler değil</td></tr>
+<tr><td>Oranların ortalaması</td><td>Küçük gruplar fazla ağırlık alır</td><td>Önce pay ve paydayı topla, sonra böl</td></tr>
+</table>
+<div class="tip"><b>Mini kontrol listesi</b>1) Metriğin tanımı yazılı mı? 2) Sorgunun her satırı neyi temsil ediyor (sipariş mi, kalem mi)? 3) Payda “bu olayı yaşayabilecek herkes” mi? 4) Sonucu bilinen bir toplamla karşılaştırdın mı?</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-an-kpi">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../plpgsql/">← PostgreSQL'de programlama: PL/pgSQL, DO blokları ve eklentiler</a><a href="../an-temizlik/">Veri temizleme →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,80 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Seçicilik (selectivity) ve istatistikler: motor neden o planı seçti? | Kesit SQL</title><meta name="description" content="Seçicilik hesabı, çarpık dağılım, indeksin işe yaramadığı değerler, ANALYZE, sqlite_stat1, bayat istatistik."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/opt-secicilik/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Seçicilik (selectivity) ve istatistikler: motor neden o planı seçti?"><meta property="og:description" content="Seçicilik hesabı, çarpık dağılım, indeksin işe yaramadığı değerler, ANALYZE, sqlite_stat1, bayat istatistik."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/opt-secicilik/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Seçicilik (selectivity) ve istatistikler: motor neden o planı seçti?","description":"Seçicilik hesabı, çarpık dağılım, indeksin işe yaramadığı değerler, ANALYZE, sqlite_stat1, bayat istatistik.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/opt-secicilik/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Sorgu Optimizasyonu</span><h1>Seçicilik (selectivity) ve istatistikler: motor neden o planı seçti?</h1><p class="st-l">Seçicilik hesabı, çarpık dağılım, indeksin işe yaramadığı değerler, ANALYZE, sqlite_stat1, bayat istatistik.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-secicilik">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory"><h2>Senaryo: aynı sorgu, iki farklı değer</h2>
+<p><code>txn_type</code> sütununa indeks kuruldu. Faiz işlemleri raporu çok hızlandı. Kart harcaması raporu ise hiç hızlanmadı. Aynı sorgu, aynı indeks. Fark değerin <b>seçiciliğinde</b>.</p>
+<h2>Seçicilik nedir?</h2>
+<p>Koşulun tabloyu ne kadar daralttığıdır: <code>eşleşen satır / toplam satır</code>. Oran küçükse seçicilik yüksektir. Sütunun kaç farklı değeri olduğu <b>kardinalite</b> (cardinality) adını alır.</p>
+<pre class="code">SELECT txn_type, COUNT(*) AS adet,
+       ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 1) AS pay
+FROM bank_txns
+GROUP BY txn_type
+ORDER BY adet DESC;</pre>
+<p>Veri çarpık: kart harcaması tablonun yarısına yakın, faiz ise çok küçük bir pay. Bu yüzden "bu sütunun seçiciliği" değil, <b>bu değerin seçiciliği</b> diye düşünmek gerekir.</p>
+<h2>Gerçek çıktı: nadir ve yaygın değer</h2>
+<div class="note"><b>PostgreSQL çıktıları</b>Bu derslerdeki PostgreSQL planları elle yazılmadı. Aynı veriyle PostgreSQL 16.4 üzerinde (PGlite, tarayıcıda çalışan WASM sürümü) üretildi. <code>VACUUM ANALYZE</code> çalıştırıldı, planlama satırları kısalık için çıkarıldı. Sayılar kendi sunucunda farklı olur; okuma biçimi aynıdır.</div>
+<p>Tablonun tamamını okumak (<code>Seq Scan</code>) bu veride 391 sayfa tutuyor. Nadir değer:</p>
+<pre class="code" data-norun>CREATE INDEX ix_tip ON bank_txns (txn_type);
+EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT txn_id, amount FROM bank_txns WHERE txn_type = 'faiz';</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">Bitmap Heap Scan on bank_txns  (cost=17.82..424.20 rows=1230 width=10) (actual rows=1262 loops=1)
+  Recheck Cond: ((txn_type)::text = 'faiz'::text)
+  Heap Blocks: exact=27
+  Buffers: shared hit=30
+  ->  Bitmap Index Scan on ix_tip  (cost=0.00..17.52 rows=1230 width=0) (actual rows=1262 loops=1)
+        Index Cond: ((txn_type)::text = 'faiz'::text)
+        Buffers: shared hit=3</pre>
+<p>Yaygın değer:</p>
+<pre class="code" data-norun>CREATE INDEX ix_tip ON bank_txns (txn_type);
+EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT txn_id, amount FROM bank_txns WHERE txn_type = 'kart_harcama';</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">Bitmap Heap Scan on bank_txns  (cost=234.88..881.67 rows=20463 width=10) (actual rows=20520 loops=1)
+  Recheck Cond: ((txn_type)::text = 'kart_harcama'::text)
+  Heap Blocks: exact=390
+  Buffers: shared hit=410
+  ->  Bitmap Index Scan on ix_tip  (cost=0.00..229.76 rows=20463 width=0) (actual rows=20520 loops=1)
+        Index Cond: ((txn_type)::text = 'kart_harcama'::text)
+        Buffers: shared hit=20</pre>
+<p>Yaygın değerde indeks kullanılıyor ama 410 sayfa okunuyor. Bu sayı tablonun tamamını okumaktan fazladır, çünkü üstüne indeks sayfaları biniyor. Satırların yarısı isteniyorsa neredeyse her sayfaya gidilir. Bu durumda motorun indeksi atlayıp tam tarama seçmesi hata değildir. "İndeks var ama kullanmıyor" şikâyetinin önemli bir kısmı budur.</p>
+<h2>İstatistikler</h2>
+<p>Motor kaç satır çıkacağını çalıştırmadan önce istatistiklerden tahmin eder. Plan seçimi bu tahmine dayanır.</p>
+<table>
+<tr><th>SQL türü</th><th>İstatistik toplama</th><th>Bakma yeri</th></tr>
+<tr><td>SQLite</td><td><code>ANALYZE</code>; önerilen yol <code>PRAGMA optimize</code></td><td><code>sqlite_stat1</code></td></tr>
+<tr><td>PostgreSQL</td><td><code>ANALYZE</code>, otomatik vacuum süreci</td><td><code>pg_stats</code>: <code>n_distinct</code>, <code>most_common_vals</code>, <code>histogram_bounds</code></td></tr>
+<tr><td>SQL Server</td><td>Varsayılan olarak otomatik, elle <code>UPDATE STATISTICS</code></td><td><code>DBCC SHOW_STATISTICS</code></td></tr>
+<tr><td>MySQL</td><td><code>ANALYZE TABLE</code></td><td><code>information_schema.STATISTICS</code></td></tr>
+<tr><td>Oracle</td><td><code>DBMS_STATS.GATHER_TABLE_STATS</code></td><td><code>ALL_TAB_STATISTICS</code>, <code>ALL_TAB_COL_STATISTICS</code></td></tr>
+<tr><td>BigQuery</td><td>Yönetilir, indeks seçimi yok. Taranan baytı bölüm ve kümeleme belirler</td><td>Yürütme ayrıntıları</td></tr>
+</table>
+<p>SQLite'ta istatistik tablosunu kendin okuyabilirsin. <code>stat</code> sütunundaki ilk sayı toplam satır, ikincisi indeksin ilk sütununda bir değere düşen ortalama satırdır:</p>
+<pre class="code" data-na="tsql pg mysql oracle bq">CREATE INDEX ix_tip ON bank_txns (txn_type);
+CREATE INDEX ix_hesap_zaman ON bank_txns (account_id, txn_time);
+ANALYZE;
+SELECT tbl, idx, stat FROM sqlite_stat1 WHERE tbl = 'bank_txns';</pre>
+<h2>Bayat istatistik (stale statistics)</h2>
+<p>Bir batch işi tablonun yapısını değiştirdi ama istatistik yenilenmedi. Aşağıda kart harcamalarının hepsi tek hesaba taşındı (yalnız bu deney için). <code>ANALYZE</code> çalışmadan önce motor 72 satır bekliyor, 20.562 satır geliyor, üstelik indeks yolunu seçiyor:</p>
+<pre class="plan-cikti" tabindex="0">Aggregate  (cost=214.69..214.70 rows=1 width=8) (actual rows=1 loops=1)
+  Buffers: shared hit=291
+  ->  Bitmap Heap Scan on tx_kopya  (cost=4.85..214.51 rows=72 width=0) (actual rows=20562 loops=1)
+        Recheck Cond: (account_id = 100019)
+        Heap Blocks: exact=273
+        Buffers: shared hit=291
+        ->  Bitmap Index Scan on ix_kopya_hesap  (cost=0.00..4.83 rows=72 width=0) (actual rows=20592 loops=1)
+              Index Cond: (account_id = 100019)
+              Buffers: shared hit=18</pre>
+<p><code>ANALYZE</code> sonrası tahmin neredeyse tam oturuyor ve plan <code>Seq Scan</code> oluyor:</p>
+<pre class="plan-cikti" tabindex="0">Aggregate  (cost=1233.81..1233.82 rows=1 width=8) (actual rows=1 loops=1)
+  Buffers: shared hit=654
+  ->  Seq Scan on tx_kopya  (cost=0.00..1182.55 rows=20502 width=0) (actual rows=20562 loops=1)
+        Filter: (account_id = 100019)
+        Rows Removed by Filter: 21722
+        Buffers: shared hit=654</pre>
+<p>Dikkat et: bu çıktıda taze planın okuduğu sayfa sayısı daha yüksek (654 ve 291). Toplu <code>UPDATE</code> tabloda ölü satır bıraktı ve bitmap yolu yalnız gerekli sayfaları okudu. Plan tahmine göre seçilir, doğru tahmin her zaman daha az sayfa demek değildir. Tek sorguyla hüküm verme: asıl risk, yanlış tahminin iç içe döngüye ya da küçük bellek ayrılmasına dönüştüğü birleştirmeli sorgulardır. Batch sonrasında <code>ANALYZE</code> iyi bir alışkanlıktır.</p>
+<h2>Parametreyle ilişkisi</h2>
+<p>Aynı sorgunun iki değeri farklı planı hak ediyorsa ve motor planı bir kez seçip saklıyorsa sorun çıkar. SQL Server'da buna parametre koklama (parameter sniffing) denir. Ayrıntısı <b>SQL türüne özgü optimizasyon</b> dersinde.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-secicilik">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../opt-indeks/">← İndeks tasarımı: bileşik ve kapsayan indeks (covering index), sütun sırası, bedel</a><a href="../opt-join/">JOIN, EXISTS, IN ve alt sorgu maliyeti: erken süzme, gereksiz DISTINCT, SELECT * →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

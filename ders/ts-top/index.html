@@ -1,0 +1,61 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TOP, WITH TIES, PERCENT ve OFFSET-FETCH | Kesit SQL</title><meta name="description" content="SQL Server'da ilk N satır, eşitleri dahil etmek ve sayfalama."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-top/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="TOP, WITH TIES, PERCENT ve OFFSET-FETCH"><meta property="og:description" content="SQL Server'da ilk N satır, eşitleri dahil etmek ve sayfalama."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-top/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"TOP, WITH TIES, PERCENT ve OFFSET-FETCH","description":"SQL Server'da ilk N satır, eşitleri dahil etmek ve sayfalama.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-top/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · T-SQL (SQL Server)</span><h1>TOP, WITH TIES, PERCENT ve OFFSET-FETCH</h1><p class="st-l">SQL Server'da ilk N satır, eşitleri dahil etmek ve sayfalama.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-top">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>TOP</h2>
+<p>SQL Server'da ilk N satır <code>TOP</code> ile alınır. TOP, SELECT'ten (ve varsa DISTINCT'ten) hemen sonra yazılır. Sıralama olmadan TOP rastgele N satır döndürür; her zaman ORDER BY ile kullan.</p>
+<pre class="code" data-v="{&quot;pg&quot;:&quot;SELECT name, price\nFROM products\nORDER BY price DESC\nLIMIT 5;&quot;,&quot;mysql&quot;:&quot;SELECT name, price\nFROM products\nORDER BY price DESC\nLIMIT 5;&quot;,&quot;sqlite&quot;:&quot;SELECT name, price\nFROM products\nORDER BY price DESC\nLIMIT 5;&quot;,&quot;oracle&quot;:&quot;SELECT name, price\nFROM products\nORDER BY price DESC\nFETCH FIRST 5 ROWS ONLY;&quot;}" data-base="tsql">SELECT TOP 5 name, price
+FROM products
+ORDER BY price DESC;</pre>
+<h2>WITH TIES: son sıradaki eşitleri de getir</h2>
+<p>En yüksek maaşlı 10 çalışanı istiyoruz ama 10. sıradaki maaşı alan başka biri de varsa onu dışarıda bırakmak haksızlık olur:</p>
+<pre class="code" data-v="{&quot;oracle&quot;:&quot;SELECT first_name, salary\nFROM employees\nORDER BY salary DESC\nFETCH FIRST 10 ROWS WITH TIES;&quot;,&quot;pg&quot;:&quot;-- PostgreSQL 13+\nSELECT first_name, salary\nFROM employees\nORDER BY salary DESC\nFETCH FIRST 10 ROWS WITH TIES;&quot;,&quot;mysql&quot;:&quot;SELECT first_name, salary FROM (\n  SELECT first_name, salary, RANK() OVER (ORDER BY salary DESC) AS rk\n  FROM employees\n) t\nWHERE rk &lt;= 10\nORDER BY salary DESC;&quot;,&quot;sqlite&quot;:&quot;SELECT first_name, salary FROM (\n  SELECT first_name, salary, RANK() OVER (ORDER BY salary DESC) AS rk\n  FROM employees\n) t\nWHERE rk &lt;= 10\nORDER BY salary DESC;&quot;}" data-base="tsql" data-nr="pg oracle">SELECT TOP 10 WITH TIES first_name, salary
+FROM employees
+ORDER BY salary DESC;</pre>
+<p>Sonuç 10 değil 11 satırdır; çünkü 10. ve 11. sıradaki çalışanların maaşı aynı.</p>
+<h2>TOP PERCENT</h2>
+<pre class="code" data-base="tsql">SELECT TOP 10 PERCENT name, price
+FROM products
+ORDER BY price DESC;</pre>
+<h2>OFFSET-FETCH ile sayfalama</h2>
+<p>Web sayfalarında “2. sayfa” gibi gösterimler için standart SQL'in OFFSET-FETCH yazımı kullanılır (SQL Server 2012+). ORDER BY zorunludur.</p>
+<pre class="code" data-base="tsql">DECLARE @sayfa INT = 2, @boyut INT = 5;
+
+SELECT name, price
+FROM products
+ORDER BY price DESC
+OFFSET (@sayfa - 1) * @boyut ROWS
+FETCH NEXT @boyut ROWS ONLY;</pre>
+<div class="note"><b>TOP başka yerlerde de</b><code>DELETE TOP (1000) FROM log WHERE ...</code> gibi büyük silmeleri parçalara bölmek için de kullanılır.</div>
+<h2>Derinleş: TOP'u doğru kullanmak ve sayfalama</h2>
+<p>TOP basit görünür ama üç inceliği vardır: <b>belirlilik</b>, <b>değişkenle kullanım</b> ve <b>büyük tablolarda sayfalama</b>.</p>
+<h3>Belirlilik</h3>
+<p>ORDER BY olmadan TOP “ilk N”i değil, motorun o an en kolay bulduğu N satırı verir; aynı sorgu yarın farklı satırlar döndürebilir. ORDER BY sütunu benzersiz değilse aynı sorun eşitliklerde yaşanır. Ya eşitlik bozucu ekle (<code>ORDER BY commission_pct DESC, restaurant_id</code>) ya da eşitleri bilerek dahil et (<code>WITH TIES</code>).</p>
+<h3>Değişkenle TOP</h3>
+<p>Satır sayısı değişkenden geliyorsa parantez zorunludur: <code>TOP (@n)</code>. Lezzet Kurye'de en yüksek komisyonlu 3 restoranı isteyelim:</p>
+<pre class="code" data-base="tsql">DECLARE @n INT = 3;
+
+SELECT TOP (@n) WITH TIES name, commission_pct
+FROM lk_restaurants
+ORDER BY commission_pct DESC;</pre>
+<p>Sonuç 3 değil 5 satırdır: beş restoranın komisyonu %22. “İlk 3” istenirken 5 satır gelmesi iş açısından doğru olabilir (ödül listesi) ya da yanlış (3 kişilik kontenjan); karar sorunun sahibine aittir.</p>
+<h3>OFFSET-FETCH'in gizli maliyeti ve keyset sayfalama</h3>
+<p><code>OFFSET 100000 ROWS FETCH NEXT 20 ROWS ONLY</code> yazdığında motor 100.020 satırı sıralayıp ilk 100.000'ini atar; sayfa numarası büyüdükçe sorgu yavaşlar. Ayrıca iki sayfa isteği arasında yeni satır eklenirse kayıtlar kayar (aynı satır iki sayfada görünür). <b>Keyset</b> (seek) sayfalamada önceki sayfanın son anahtarı hatırlanır ve indeks doğrudan oradan okunur:</p>
+<pre class="code" data-base="tsql">DECLARE @son_id INT = 40;   -- önceki sayfanın son customer_id değeri
+
+SELECT TOP 5 customer_id, first_name, city
+FROM customers
+WHERE customer_id > @son_id
+ORDER BY customer_id;</pre>
+<table><tr><th>Yöntem</th><th>Artı</th><th>Eksi</th></tr>
+<tr><td>OFFSET-FETCH</td><td>“5. sayfaya git” kolay</td><td>Derin sayfalarda yavaş, kayma olur</td></tr>
+<tr><td>Keyset</td><td>Her sayfa aynı hızda, kayma yok</td><td>Rastgele sayfaya atlanamaz, sıralama anahtarı benzersiz olmalı</td></tr>
+<tr><td>ROW_NUMBER + filtre</td><td>Taşınabilir</td><td>OFFSET gibi tüm önceki satırları işler</td></tr></table>
+<div class="note"><b>SQL türleri arası</b>PostgreSQL ve MySQL <code>LIMIT n OFFSET m</code>; Oracle 12c+ ve PostgreSQL 13+ <code>FETCH FIRST n ROWS WITH TIES</code>; MySQL ve SQLite'ta WITH TIES yoktur, <code>RANK() &lt;= n</code> ile yazılır.</div></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-top">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-giris/">← SQL Server ve T-SQL'e giriş</a><a href="../ts-metin/">T-SQL metin fonksiyonları →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

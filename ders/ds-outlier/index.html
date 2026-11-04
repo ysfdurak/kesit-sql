@@ -1,0 +1,40 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aykırı değer tespiti: z-skoru ve IQR | Kesit SQL</title><meta name="description" content="İstatistiksel olarak sıra dışı kayıtları SQL ile işaretlemek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ds-outlier/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Aykırı değer tespiti: z-skoru ve IQR"><meta property="og:description" content="İstatistiksel olarak sıra dışı kayıtları SQL ile işaretlemek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ds-outlier/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Aykırı değer tespiti: z-skoru ve IQR","description":"İstatistiksel olarak sıra dışı kayıtları SQL ile işaretlemek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ds-outlier/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veri Bilimi</span><h1>Aykırı değer tespiti: z-skoru ve IQR</h1><p class="st-l">İstatistiksel olarak sıra dışı kayıtları SQL ile işaretlemek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ds-outlier">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Z-skoru</h2>
+<p><code>z = (x − ortalama) / standart sapma</code>. |z| &gt; 3 genelde aykırı kabul edilir (daha küçük örneklerde 2–2.5).</p>
+<pre class="code">WITH sepet AS (
+  SELECT o.order_id, SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) AS tutar
+  FROM orders o JOIN order_items oi ON oi.order_id = o.order_id
+  GROUP BY o.order_id
+),
+istat AS (
+  SELECT AVG(tutar) AS ort, STDDEV(tutar) AS sd FROM sepet
+)
+SELECT s.order_id, ROUND(s.tutar) AS tutar, ROUND((s.tutar - i.ort) / i.sd, 2) AS z
+FROM sepet s CROSS JOIN istat i
+WHERE ABS((s.tutar - i.ort) / i.sd) > 3
+ORDER BY z DESC;</pre>
+<p>İstatistikleri tek satırlık bir CTE'de hesaplayıp CROSS JOIN ile her satıra taşımak taşınabilir bir kalıptır. PostgreSQL ve BigQuery'de <code>STDDEV(tutar) OVER ()</code> yazarak pencere fonksiyonu olarak da kullanabilirsin (bu uygulamadaki ek fonksiyonlar pencere olarak çalışmaz).</p>
+<h2>IQR yöntemi</h2>
+<p>Z-skoru normal dağılım varsayar; çarpık verilerde IQR daha sağlamdır: <code>IQR = Q3 − Q1</code>, aykırı sınırları <code>Q1 − 1.5·IQR</code> ve <code>Q3 + 1.5·IQR</code>.</p>
+<pre class="code">WITH s AS (
+  SELECT price, NTILE(4) OVER (ORDER BY price) AS q FROM products
+),
+sinir AS (
+  SELECT MAX(CASE WHEN q = 1 THEN price END) AS q1,
+         MAX(CASE WHEN q = 3 THEN price END) AS q3
+  FROM s
+)
+SELECT p.name, p.price
+FROM products p, sinir
+WHERE p.price > q3 + 1.5 * (q3 - q1) OR p.price < q1 - 1.5 * (q3 - q1);</pre>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ds-outlier">Alıştırmalara geç (4)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ds-dagilim/">← Dağılımlar ve histogram (binning)</a><a href="../ds-korelasyon/">Korelasyon ve basit doğrusal regresyon →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

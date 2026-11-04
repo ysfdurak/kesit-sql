@@ -1,0 +1,73 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dinamik SQL: EXEC ve sp_executesql | Kesit SQL</title><meta name="description" content="Sorgu metnini çalışma anında üretmek ve bunu güvenle yapmak."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-dinamik/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Dinamik SQL: EXEC ve sp_executesql"><meta property="og:description" content="Sorgu metnini çalışma anında üretmek ve bunu güvenle yapmak."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-dinamik/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Dinamik SQL: EXEC ve sp_executesql","description":"Sorgu metnini çalışma anında üretmek ve bunu güvenle yapmak.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-dinamik/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · T-SQL (SQL Server)</span><h1>Dinamik SQL: EXEC ve sp_executesql</h1><p class="st-l">Sorgu metnini çalışma anında üretmek ve bunu güvenle yapmak.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-dinamik">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Ne zaman gerekir?</h2>
+<p>Tablo adı, sütun listesi veya PIVOT değerleri gibi parametreyle verilemeyen kısımlar değişkense sorgu metni çalışma anında üretilir.</p>
+<pre class="code" data-base="tsql">DECLARE @tablo SYSNAME = N'products';
+DECLARE @sql NVARCHAR(MAX) = N'SELECT COUNT(*) AS satir FROM ' + QUOTENAME(@tablo) + N';';
+
+PRINT @sql;
+EXEC sp_executesql @sql;</pre>
+<p><code>QUOTENAME</code>, adı köşeli parantez içine alır ve içindeki <code>]</code> karakterlerini kaçışlar; tablo/sütun adı enjeksiyonuna karşı ilk savunmadır.</p>
+<h2>Değerleri her zaman parametre olarak ver</h2>
+<pre class="code" data-base="tsql">DECLARE @sql NVARCHAR(MAX) = N'
+    SELECT name, price
+    FROM products
+    WHERE category = @kat AND price &gt;= @min
+    ORDER BY price DESC;';
+
+EXEC sp_executesql
+     @sql,
+     N'@kat NVARCHAR(50), @min DECIMAL(12, 2)',
+     @kat = N'Elektronik', @min = 1000;</pre>
+<div class="warn"><b>SQL injection</b>Kullanıcı girdisini metne ekleyerek dinamik SQL üretmek (<code>'... WHERE city = ''' + @girdi + ''''</code>) saldırıya açıktır. Değerler için daima <code>sp_executesql</code> parametrelerini, adlar için <code>QUOTENAME</code> ve izin verilen değerler listesini kullan. <code>EXEC(@sql)</code> parametre desteklemez; plan önbelleğini de verimsiz kullanır.</div>
+<h2>Derinleş: enjeksiyonu önlemek ve beyaz liste</h2>
+<p><b>SQL enjeksiyonu</b>, kullanıcı girdisinin veri olarak değil <i>kod</i> olarak yorumlanmasıdır. Dinamik SQL'de metin birleştirme yapıldığı an risk doğar. Kötü örnek (çalıştırılmaz):</p>
+<pre class="code" data-norun>-- YAPMA: girdi doğrudan metne ekleniyor
+DECLARE @sehir NVARCHAR(50) = N'Bursa'' OR 1 = 1 --';
+DECLARE @sql NVARCHAR(MAX) = N'SELECT * FROM customers WHERE city = ''' + @sehir + N'''';
+EXEC (@sql);
+-- Üretilen metin: SELECT * FROM customers WHERE city = 'Bursa' OR 1 = 1 --'
+-- Sonuç: tüm müşteriler. Daha kötüsü: '; DROP TABLE customers; --</pre>
+<p>Doğru yol, değeri <b>parametre</b> olarak geçmektir: <code>sp_executesql</code> parametreyi her zaman veri olarak ele alır, içinde ne yazarsa yazsın kod olarak çalıştırmaz.</p>
+<h3>Adlar parametre olamaz: beyaz liste</h3>
+<p>Sıralama sütunu, tablo adı gibi tanımlayıcılar parametreyle verilemez. Bunlar için iki savunma birlikte kullanılır: <b>izin verilen değerler listesi</b> (beyaz liste) ve <code>QUOTENAME</code>.</p>
+<pre class="code" data-base="tsql">DECLARE @kolon SYSNAME = N'price';   -- kullanıcıdan gelen sıralama tercihi
+
+IF @kolon NOT IN (N'price', N'stock', N'name')
+    THROW 50001, N'Bu sütuna göre sıralama yapılamaz.', 1;
+
+DECLARE @sql NVARCHAR(MAX) =
+    N'SELECT TOP 3 name, ' + QUOTENAME(@kolon) + N' AS deger
+      FROM products
+      ORDER BY ' + QUOTENAME(@kolon) + N' DESC, product_id;';
+
+EXEC sp_executesql @sql;</pre>
+<h3>Katalogdan sorgu üretmek</h3>
+<p>Dinamik SQL'in meşru bir kullanımı, katalogdaki tablolar için tekrar eden sorguları otomatik üretmektir; ör. tüm Lezzet Kurye tablolarının satır sayıları:</p>
+<pre class="code" data-base="tsql">DECLARE @sql NVARCHAR(MAX);
+
+SELECT @sql = STRING_AGG(
+         CAST(N'SELECT N''' + TABLE_NAME + N''' AS tablo, COUNT(*) AS satir FROM '
+              + QUOTENAME(TABLE_NAME) AS NVARCHAR(MAX)),
+         N' UNION ALL ') WITHIN GROUP (ORDER BY TABLE_NAME)
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_NAME LIKE 'lk%';
+
+SET @sql = @sql + N' ORDER BY tablo;';
+PRINT @sql;
+EXEC sp_executesql @sql;</pre>
+<table><tr><th></th><th><code>EXEC (@sql)</code></th><th><code>sp_executesql</code></th></tr>
+<tr><td>Parametre</td><td>Yok</td><td>Var (girdi ve OUTPUT)</td></tr>
+<tr><td>Plan önbelleği</td><td>Her farklı değer yeni plan</td><td>Parametreli plan yeniden kullanılır</td></tr>
+<tr><td>Enjeksiyon</td><td>Birleştirme zorunlu, riskli</td><td>Değerler güvenli</td></tr></table>
+<p><b>Sessiz hata:</b> Dinamik metindeki herhangi bir parça NULL ise birleştirmenin tamamı NULL olur ve <code>sp_executesql</code> hiçbir şey yapmadan, hata da vermeden döner. <code>QUOTENAME</code> 128 karakterden uzun girdide NULL döndürdüğü için bu durum beklenmedik anda ortaya çıkabilir. Çalıştırmadan önce <code>IF @sql IS NULL THROW ...</code> ile kontrol et ve geliştirirken metni <code>PRINT</code> ile oku.</p>
+<div class="note"><b>OUTPUT parametresi</b>Gerçek SQL Server'da dinamik sorgudan değer almak için <code>EXEC sp_executesql @sql, N'@n INT OUTPUT', @n = @adet OUTPUT;</code> yazılır. Bu uygulamadaki öğrenme motoru OUTPUT parametrelerini desteklemez; alıştırmalarda sonucu SELECT ile döndür.</div></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-dinamik">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-temporal/">← Değişiklik geçmişi: temporal tablolar, CDC ve change tracking</a><a href="../ts-json/">SQL Server'da JSON: FOR JSON, OPENJSON, JSON_VALUE →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

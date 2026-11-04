@@ -1,0 +1,73 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aktif kullanıcı metrikleri: DAU, MAU ve yapışkanlık | Kesit SQL</title><meta name="description" content="Günlük/aylık tekil kullanıcılar, stickiness ve yeni kullanıcılar."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/an-aktif/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Aktif kullanıcı metrikleri: DAU, MAU ve yapışkanlık"><meta property="og:description" content="Günlük/aylık tekil kullanıcılar, stickiness ve yeni kullanıcılar."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/an-aktif/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Aktif kullanıcı metrikleri: DAU, MAU ve yapışkanlık","description":"Günlük/aylık tekil kullanıcılar, stickiness ve yeni kullanıcılar.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/an-aktif/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veri Analisti</span><h1>Aktif kullanıcı metrikleri: DAU, MAU ve yapışkanlık</h1><p class="st-l">Günlük/aylık tekil kullanıcılar, stickiness ve yeni kullanıcılar.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-an-aktif">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Ürün analitiğinin temel metrikleri</h2>
+<table>
+<tr><th>Metrik</th><th>Tanım</th></tr>
+<tr><td><b>DAU</b> (daily active users)</td><td>Bir günde en az bir olay yapan tekil kullanıcı sayısı</td></tr>
+<tr><td><b>WAU / MAU</b></td><td>Haftalık / aylık tekil aktif kullanıcı</td></tr>
+<tr><td><b>Yapışkanlık</b> (stickiness)</td><td>Ortalama DAU ÷ MAU. Kullanıcılar ayın kaçta kaçında geri geliyor?</td></tr>
+<tr><td><b>Yeni kullanıcı</b></td><td>İlk olayı o dönemde olan kullanıcı</td></tr>
+</table>
+<p>Hepsinin anahtarı <code>COUNT(DISTINCT user_id)</code>'dir: aynı kullanıcı bir günde 10 olay yapsa da bir kez sayılır.</p>
+<pre class="code">SELECT DATE(event_time) AS gun,
+       COUNT(DISTINCT user_id) AS dau,
+       COUNT(*) AS olay
+FROM web_events
+GROUP BY DATE(event_time)
+ORDER BY gun
+LIMIT 7;</pre>
+<div class="warn"><b>DAU'lar toplanamaz</b>Bir haftanın DAU'larını toplarsan WAU'yu bulamazsın; aynı kişi birden çok gün sayılır. WAU ve MAU her zaman kendi döneminde yeniden COUNT(DISTINCT) ile hesaplanır.</div>
+<h2>Yapışkanlık</h2>
+<p>Önce günlük DAU'ları, sonra aylık MAU'yu bulup birleştiririz. %20 üzeri yapışkanlık, kullanıcıların ayda ortalama altı günden fazla geri geldiği anlamına gelir.</p>
+<h2>Derinleş: Aktifliği tanımlamak ve yapışkanlığı doğru bölmek</h2>
+<p>DAU, WAU ve MAU'nun hepsi tek bir kelimeye dayanır: <b>aktif</b>. Uygulamayı açmak mı aktiflik, bir ürüne bakmak mı, satın almak mı? Bir haber sitesi için “sayfa açtı” yeterli olabilir. Bir e-ticaret şirketi ise genellikle “anlamlı olay” (ürün görüntüleme, sepete ekleme) ister. Tanımı genişletmek sayıları şişirir ama kararları iyileştirmez. Tanımı yaz ve her raporda aynı tanımı kullan.</p>
+<h3>Yapışkanlıkta payda</h3>
+<p>Yapışkanlık = ortalama DAU ÷ MAU. Ortalama DAU'yu hesaplarken iki hata yapılır:</p>
+<ul>
+<li><b>Olaysız günleri atlamak:</b> GROUP BY yalnızca olay olan günleri döndürür. Ortalama DAU'nun paydası ayın <b>takvim günü</b> olmalıdır, olaylı gün değil. Aksi halde sessiz günler ortalamayı yükseltir.</li>
+<li><b>Eksik ay:</b> <code>web_events</code> verisi 29 Kasım'da bitiyor. Kasım'ın MAU'su 30 günlük değil 29 günlük bir pencereden geliyor. Ekim'le kıyaslarken bunu not et ya da aynı gün sayısını karşılaştır.</li>
+</ul>
+<pre class="code">WITH g AS (
+  SELECT strftime('%Y-%m', event_time) AS ay, DATE(event_time) AS gun,
+         COUNT(DISTINCT user_id) AS dau
+  FROM web_events
+  GROUP BY strftime('%Y-%m', event_time), DATE(event_time)
+),
+m AS (
+  SELECT strftime('%Y-%m', event_time) AS ay, COUNT(DISTINCT user_id) AS mau
+  FROM web_events
+  GROUP BY strftime('%Y-%m', event_time)
+)
+SELECT m.ay, m.mau, COUNT(*) AS olayli_gun,
+       ROUND(1.0 * SUM(g.dau) / COUNT(*), 1) AS ort_dau,
+       ROUND(100.0 * SUM(g.dau) / COUNT(*) / m.mau, 1) AS yapiskanlik
+FROM m JOIN g ON g.ay = m.ay
+GROUP BY m.ay, m.mau
+ORDER BY m.ay;</pre>
+<p>Ekim'de 296 kişi aktif, ortalama DAU 14,6, yapışkanlık %4,9. Bu düşük bir değerdir. Sebebini aktif gün dağılımı gösterir: 600 kullanıcının 403'ü yalnızca <b>bir gün</b> görünmüş, en sık gelenler de 5 gün. Veri, kampanyayla gelen ve az geri dönen ziyaretçilerin hunisine benziyor. Burada yapışkanlıktan çok edinme ve dönüşüm metriklerine bakmak gerekir.</p>
+<pre class="code">WITH k AS (
+  SELECT user_id, COUNT(DISTINCT DATE(event_time)) AS aktif_gun
+  FROM web_events
+  GROUP BY user_id
+)
+SELECT aktif_gun, COUNT(*) AS kullanici
+FROM k
+GROUP BY aktif_gun
+ORDER BY aktif_gun;</pre>
+<table>
+<tr><th>Yapışkanlık</th><th>Yorum</th></tr>
+<tr><td>%5'in altı</td><td>Tek seferlik kullanım; ürün alışkanlık yaratmıyor</td></tr>
+<tr><td>%10–20</td><td>Haftada bir–iki gün dönen kullanıcılar</td></tr>
+<tr><td>%50 üzeri</td><td>Günlük alışkanlık (mesajlaşma, sosyal medya)</td></tr>
+</table>
+<div class="tip"><b>Takvim ayı mı, kayan 28 gün mü?</b>Takvim ayı MAU'su 28 ile 31 gün arasında değişen pencerelerden gelir. Ürün ekipleri bu yüzden çoğu zaman “son 28 gün” (4 tam hafta) kullanır. Hangisini seçtiysen grafiğin başlığına yaz.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-an-aktif">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../an-funnel/">← Dönüşüm hunisi (funnel) analizi</a><a href="../an-churn/">Müşteri kaybı (churn), ARPU ve yaşam boyu değer →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

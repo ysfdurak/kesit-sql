@@ -1,0 +1,42 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Veri setini tanıyalım | Kesit SQL</title><meta name="description" content="Tablolara, satır sayılarına ve ilişkilere ilk bakış."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/veri-seti/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Veri setini tanıyalım"><meta property="og:description" content="Tablolara, satır sayılarına ve ilişkilere ilk bakış."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/veri-seti/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Veri setini tanıyalım","description":"Tablolara, satır sayılarına ve ilişkilere ilk bakış.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/veri-seti/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Temeller</span><h1>Veri setini tanıyalım</h1><p class="st-l">Tablolara, satır sayılarına ve ilişkilere ilk bakış.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-veri-seti">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Önce veriye bak</h2>
+<p>İyi bir analist sorgu yazmadan önce veriyi tanır: Hangi tablolar var, kaç satır var, hangi sütunlar boş, tablolar birbirine nasıl bağlı? <b>Veri setleri</b> sayfasında tüm tabloların ilişki şemasını, sütunlarını ve verinin kendisini görebilirsin. Burada aynı keşfi SQL ile yapalım.</p>
+<h3>Her tabloda kaç satır var?</h3>
+<pre class="code">SELECT 'customers' AS tablo, COUNT(*) AS satir FROM customers
+UNION ALL SELECT 'orders', COUNT(*) FROM orders
+UNION ALL SELECT 'order_items', COUNT(*) FROM order_items
+UNION ALL SELECT 'products', COUNT(*) FROM products
+UNION ALL SELECT 'employees', COUNT(*) FROM employees
+UNION ALL SELECT 'departments', COUNT(*) FROM departments;</pre>
+<h3>Bir tablodan örnek satırlar</h3>
+<pre class="code">SELECT *
+FROM orders
+LIMIT 5;</pre>
+<h3>Veri hangi tarihleri kapsıyor?</h3>
+<pre class="code">SELECT MIN(order_date) AS ilk_siparis,
+       MAX(order_date) AS son_siparis,
+       COUNT(DISTINCT customer_id) AS siparis_veren_musteri
+FROM orders;</pre>
+<div class="tip"><b>Keşif kontrol listesi</b>Satır sayısı, tarih aralığı, benzersiz değer sayıları, NULL oranları ve kategorik sütunların değer listesi. Bu beş kontrol, raporlarda yapılan hataların çoğunu daha baştan önler.</div>
+<h2>Derinleş: altı veri seti</h2><p>Uygulamadaki veritabanında birbirinden bağımsız altı hayali şirketin verisi var. Hepsi aynı veritabanında durduğu için bir sorguda istediğin tabloyu kullanabilirsin.</p>
+<table><tr><th>Veri seti</th><th>Tablo öneki</th><th>Ne için iyi?</th></tr>
+<tr><td>Anadolu Market</td><td>customers, orders, products …</td><td>Temel sorgular, JOIN, ciro hesapları, çalışan hiyerarşisi</td></tr>
+<tr><td>Ilgaz Bank</td><td>bank_</td><td>Büyük işlem tablosu, zaman serisi, risk ve döviz</td></tr>
+<tr><td>Kanat Havayolları</td><td>hv_</td><td>Saat ve süre hesapları, rotalar, doluluk, gecikme</td></tr>
+<tr><td>Lezzet Kurye</td><td>lk_</td><td>Teslimat süreleri, sepet ve komisyon, davet zinciri, NULL içeren durumlar</td></tr>
+<tr><td>Pusula İK</td><td>ik_</td><td>Kadro ve devir hızı, ücret bantları, performans, işe alım hunisi, geçmiş (tarihli) tablolar</td></tr>
+<tr><td>Pedal İzmir</td><td>bk_</td><td>116.000 satırlık yolculuk tablosu: sorgu planı, indeks, zaman deseni, hava durumu birleştirme</td></tr></table>
+<pre class="code">SELECT 'Lezzet Kurye' AS veri_seti, COUNT(*) AS siparis FROM lk_orders
+UNION ALL
+SELECT 'Anadolu Market', COUNT(*) FROM orders;</pre>
+<p>Yeni bir veri setiyle karşılaştığında aynı dört soruyu sor: Hangi tablolar var? Her birinde bir satır neyi temsil ediyor? Anahtarlar neler? Hangi sütunlar boş olabilir?</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-veri-seti">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../select/">← İlk sorgu: SELECT ve FROM</a><a href="../alias-distinct/">Takma adlar (AS) ve DISTINCT →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

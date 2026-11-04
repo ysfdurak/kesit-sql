@@ -1,0 +1,47 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BI aracına veri hazırlamak: grain (tanecik), görünüm ve boyutlar | Kesit SQL</title><meta name="description" content="Power BI / Tableau için olgu (fact) görünümü ve boyut tabloları."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/bi-hazirlik/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="BI aracına veri hazırlamak: grain (tanecik), görünüm ve boyutlar"><meta property="og:description" content="Power BI / Tableau için olgu (fact) görünümü ve boyut tabloları."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/bi-hazirlik/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"BI aracına veri hazırlamak: grain (tanecik), görünüm ve boyutlar","description":"Power BI / Tableau için olgu (fact) görünümü ve boyut tabloları.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/bi-hazirlik/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · İş Zekâsı ve Raporlama</span><h1>BI aracına veri hazırlamak: grain (tanecik), görünüm ve boyutlar</h1><p class="st-l">Power BI / Tableau için olgu (fact) görünümü ve boyut tabloları.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-bi-hazirlik">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Raporu kim çizer, veriyi kim hazırlar?</h2>
+<p>Power BI, Tableau, Looker Studio gibi araçlar grafiği çizer; ama doğru, temiz ve tutarlı veriyi hazırlamak çoğu zaman SQL'in işidir. İyi bir BI veri hazırlığının adımları:</p>
+<ol>
+<li><b>Tanecik (grain) seç:</b> Bir satır neyi temsil edecek? Sipariş mi, sipariş satırı mı, gün mü? Her şey buna göre şekillenir.</li>
+<li><b>Olgu (fact) görünümü:</b> Ölçülebilir değerler (adet, tutar) ve boyutlara bağlanan anahtarlar.</li>
+<li><b>Boyutlar (dimension):</b> Müşteri, ürün, tarih. Okunur adlar, NULL yerine “Bilinmiyor”.</li>
+<li><b>İş kuralları tek yerde:</b> “Net ciro” tanımı her raporda ayrı formülle değil, görünümde bir kez yazılır.</li>
+</ol>
+<pre class="code">CREATE VIEW v_satis AS
+SELECT oi.item_id,
+       o.order_id,
+       o.order_date,
+       o.channel,
+       o.status,
+       o.customer_id,
+       oi.product_id,
+       oi.quantity,
+       ROUND(oi.quantity * oi.unit_price * (1 - oi.discount), 2) AS net_tutar
+FROM order_items oi
+JOIN orders o ON o.order_id = oi.order_id;
+
+SELECT channel, ROUND(SUM(net_tutar), 0) AS ciro
+FROM v_satis
+WHERE status = 'delivered'
+GROUP BY channel;</pre>
+<div class="tip"><b>Import mu, DirectQuery mi?</b>Power BI veriyi kendi belleğine alırsa (import) raporlar hızlıdır ama veri yenileme zamanına kadar eskidir. DirectQuery her tıklamada veritabanına sorgu gönderir; bu durumda görünümlerin ve indekslerin performansı doğrudan kullanıcı deneyimidir.</div>
+<h2>Yıldız şema</h2>
+<p>BI modelinin ortasında olgu tablosu, çevresinde boyutlar durur (yıldız şema). Ayrıntılar <b>Veri Modelleme</b> dersinde; burada SQL tarafında yapılacakları gördük.</p>
+<table>
+<tr><th>Kural</th><th>Neden?</th></tr>
+<tr><td>Boyut anahtarları tekil olsun</td><td>Yoksa BI aracı ilişkide satırları çoğaltır.</td></tr>
+<tr><td>Tarih için ayrı takvim tablosu</td><td>Zaman zekâsı (YTD, geçen yıl) hesapları bunu ister.</td></tr>
+<tr><td>Hesaplanmış oranları olgu tablosuna yazma</td><td>Oranlar toplanamaz; pay ve paydayı ayrı ver, oranı araç hesaplasın.</td></tr>
+<tr><td>Sütun adlarını işin diliyle ver</td><td>Raporu kullanan kişi <code>col_17</code> değil “Net Tutar” görmeli.</td></tr>
+</table>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-bi-hazirlik">Alıştırmalara geç (4)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ytd/">← Dönem karşılaştırmaları: YTD, MTD ve geçen yılın aynı dönemi</a><a href="../an-buyume/">Büyüme analizi: MoM ve YoY →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

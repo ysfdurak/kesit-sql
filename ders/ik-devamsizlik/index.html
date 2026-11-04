@@ -1,0 +1,51 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Devamsızlık ve izin analitiği: Bradford faktörü ve Pazartesi etkisi | Kesit SQL</title><meta name="description" content="İzin türlerine göre gün sayıları, sık ve kısa devamsızlığı öne çıkaran Bradford faktörü, haftanın gününe göre hastalık izinleri ve kullanılmayan yıllık…"><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ik-devamsizlik/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Devamsızlık ve izin analitiği: Bradford faktörü ve Pazartesi etkisi"><meta property="og:description" content="İzin türlerine göre gün sayıları, sık ve kısa devamsızlığı öne çıkaran Bradford faktörü, haftanın gününe göre hastalık izinleri ve kullanılmayan yıllık…"><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ik-devamsizlik/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Devamsızlık ve izin analitiği: Bradford faktörü ve Pazartesi etkisi","description":"İzin türlerine göre gün sayıları, sık ve kısa devamsızlığı öne çıkaran Bradford faktörü, haftanın gününe göre hastalık izinleri ve kullanılmayan yıllık…","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ik-devamsizlik/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · İK Analitiği</span><h1>Devamsızlık ve izin analitiği: Bradford faktörü ve Pazartesi etkisi</h1><p class="st-l">İzin türlerine göre gün sayıları, sık ve kısa devamsızlığı öne çıkaran Bradford faktörü, haftanın gününe göre hastalık izinleri ve kullanılmayan yıllık izin.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ik-devamsizlik">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Kısa ama sık devamsızlık</h2>
+<p>Bir yılda 10 gün hastalık izni iki biçimde olabilir: tek seferde 10 gün (ameliyat) ya da 10 ayrı 1 günlük izin. İkincisi işin akışını çok daha fazla bozar. <b>Bradford faktörü</b> bunu ölçer: <b>B = S² × D</b>; S izin sayısı (kaç kez), D toplam gün.</p>
+<table><tr><th>Örüntü</th><th>S</th><th>D</th><th>B</th></tr><tr><td>1 × 10 gün</td><td>1</td><td>10</td><td>10</td></tr><tr><td>5 × 2 gün</td><td>5</td><td>10</td><td>250</td></tr><tr><td>10 × 1 gün</td><td>10</td><td>10</td><td>1.000</td></tr></table>
+<pre class="code">SELECT emp_id, COUNT(*) AS s, SUM(days) AS d, COUNT(*) * COUNT(*) * SUM(days) AS bradford
+FROM ik_leaves
+WHERE leave_type = 'hastalık' AND start_date &gt;= '2024-01-01'
+GROUP BY emp_id
+ORDER BY bradford DESC
+LIMIT 10;</pre>
+<div class="note"><b>Dikkat</b>Bradford faktörü bir konuşma başlatmak içindir, otomatik yaptırım için değil. Kronik hastalık ya da engellilik durumları ayrıca ele alınmalıdır.</div>
+<h2>Haftanın günü</h2>
+<p>Hastalık izinlerinin Pazartesi günleri belirgin biçimde yoğunlaşması yaygın bir örüntüdür; hafta sonunu uzatma eğilimine işaret edebilir. SQLite’ta <code>strftime('%w', tarih)</code> pazar için 0, pazartesi için 1 döndürür.</p>
+<h2>Derinleş: Bradford faktörünü yorumlamak ve kayıp zaman oranı</h2>
+<p>Bradford faktörü <b>B = S² × D</b> formülüyle sıklığı (S) kareleyerek cezalandırır. Toplam gün sayısı aynı olan iki çalışan, izinlerini kaç parçada kullandıklarına göre çok farklı puan alır. 2024'te toplam 8 gün hastalık izni kullanan çalışanlara bakalım:</p>
+<pre class="code">WITH h AS (
+  SELECT emp_id, COUNT(*) AS s, SUM(days) AS d
+  FROM ik_leaves
+  WHERE leave_type = 'hastalık'
+    AND start_date >= '2024-01-01' AND start_date &lt; '2025-01-01'
+  GROUP BY emp_id
+)
+SELECT s AS izin_sayisi, COUNT(*) AS kisi, MIN(s * s * d) AS bradford
+FROM h
+WHERE d = 8
+GROUP BY s
+ORDER BY s;</pre>
+<p>Aynı 8 gün, 2 parçada kullanıldığında B = 32, 6 parçada kullanıldığında B = 288 olur. İşin akışı açısından mantıklıdır: habersiz tek günlük yokluklar planlamayı uzun bir rapordan çok daha fazla bozar.</p>
+<h3>Eşikler bir politika kararıdır</h3>
+<p>Şirketler genellikle bantlar tanımlar (ör. 0–49 izleme yok, 50–199 sözlü görüşme, 200–499 yazılı görüşme, 500+ İK ile görüşme). Bu sayılar evrensel değildir. Analistin görevi her bantta kaç kişinin olduğunu göstermektir; eşiği yönetim belirler. Pusula İK'da 2024'te hastalık izni olan 1.234 çalışanın 11'i 500'ün üzerindedir.</p>
+<h3>Kayıp zaman oranı</h3>
+<p>Bölümleri karşılaştırmak için kişi sayısından bağımsız bir oran gerekir: <b>kayıp zaman oranı = devamsızlık günü ÷ (çalışan × planlanan iş günü)</b>. Yıllık yaklaşık 250 iş günü varsayımıyla Çağrı Merkezi'nde bu oran %1,8'dir, Finans'ta %0,6. Fark tek başına bir yargı değildir: vardiyalı ve müşteriyle yüz yüze işlerde hastalık izni tüm sektörlerde daha yüksektir.</p>
+<table>
+<tr><th>Hata</th><th>Sonuç</th><th>Doğrusu</th></tr>
+<tr><td>Paydada yalnızca izin kullananlar</td><td>Ortalama şişer</td><td>LEFT JOIN, izinsiz çalışan 0 sayılır</td></tr>
+<tr><td>Yıl içinde gelen ve ayrılanlar tam yıl sayılır</td><td>Oran düşük çıkar</td><td>Yıl boyunca çalışanları al ya da çalışılan günle ağırlıklandır</td></tr>
+<tr><td>Takvim günü ile iş günü karışır</td><td>Hafta sonuna denk gelen izinler sorun olur</td><td>Tanımı yaz (bu veride <code>days</code> iş günüdür)</td></tr>
+<tr><td>Bradford'u otomatik yaptırım için kullanmak</td><td>Kronik hastalık ve engellilik durumlarında haksızlık</td><td>Konuşma başlatmak için kullan</td></tr>
+</table>
+<div class="note"><b>Haftanın günü</b>SQLite'ta <code>strftime('%w', start_date)</code> haftanın gününü verir (1 = Pazartesi). Bu veride hastalık izinlerinin yaklaşık 2.200'ü Pazartesi başlıyor; diğer günlerin her biri 1.130–1.210 arasında. Diğer SQL türlerinde bu hesap farklı fonksiyonlarla yapılır (SQL Server <code>DATEPART(weekday, …)</code>, PostgreSQL <code>EXTRACT(DOW FROM …)</code>).</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ik-devamsizlik">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ik-alim/">← İşe alım analitiği: huni, kaynak etkinliği ve doldurma süresi</a><a href="../ik-baglilik/">Bağlılık anketi analitiği: eNPS, katılım ve yönetici etkisi →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

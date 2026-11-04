@@ -1,0 +1,53 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Yedekleme ve geri yükleme: recovery model, RPO ve RTO | Kesit SQL</title><meta name="description" content="Tam, fark ve günlük yedekleri; zincir; belirli bir ana geri dönmek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/dba-yedek/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Yedekleme ve geri yükleme: recovery model, RPO ve RTO"><meta property="og:description" content="Tam, fark ve günlük yedekleri; zincir; belirli bir ana geri dönmek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/dba-yedek/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Yedekleme ve geri yükleme: recovery model, RPO ve RTO","description":"Tam, fark ve günlük yedekleri; zincir; belirli bir ana geri dönmek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/dba-yedek/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Veritabanı Yönetimi (DBA)</span><h1>Yedekleme ve geri yükleme: recovery model, RPO ve RTO</h1><p class="st-l">Tam, fark ve günlük yedekleri; zincir; belirli bir ana geri dönmek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-dba-yedek">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Önce iki soru: RPO ve RTO</h2>
+<ul>
+<li><b>RPO</b> (Recovery Point Objective): En fazla ne kadar veri kaybını kabul edebiliriz? (ör. 15 dakika)</li>
+<li><b>RTO</b> (Recovery Time Objective): Sistem en geç ne kadar sürede ayağa kalkmalı? (ör. 1 saat)</li>
+</ul>
+<p>Yedekleme stratejisi bu iki sayıdan türetilir. “Her gece tam yedek” stratejisinin RPO'su 24 saattir.</p>
+<h2>Recovery model</h2>
+<table>
+<tr><th>Model</th><th>Günlük yedeği</th><th>Belirli bir ana dönüş</th><th>Kullanım</th></tr>
+<tr><td><b>SIMPLE</b></td><td>Yok; günlük kendiliğinden temizlenir</td><td>Hayır, yalnızca son yedeğe</td><td>Test, geliştirme, kaybı tolere edilebilen veri</td></tr>
+<tr><td><b>FULL</b></td><td>Var ve zorunlu</td><td>Evet (point-in-time)</td><td>Canlı sistemler</td></tr>
+<tr><td><b>BULK_LOGGED</b></td><td>Var</td><td>Kısmen</td><td>Büyük toplu yüklemeler sırasında geçici</td></tr>
+</table>
+<div class="warn"><b>FULL modelde günlük yedeği almamak</b>.ldf dosyası sürekli büyür ve diski doldurur. Bu, en sık görülen DBA acil durumlarındandır.</div>
+<h2>Yedek türleri</h2>
+<ul>
+<li><b>Tam</b> (full): Veritabanının tamamı.</li>
+<li><b>Fark</b> (differential): Son <b>tam</b> yedekten beri değişen kapsamlar.</li>
+<li><b>Günlük</b> (log): Son günlük yedeğinden beri günlük kayıtları; zincir oluşturur.</li>
+</ul>
+<pre class="code" data-norun>BACKUP DATABASE anadolu TO DISK = N'D:\yedek\anadolu_full.bak' WITH COMPRESSION, CHECKSUM;
+BACKUP DATABASE anadolu TO DISK = N'D:\yedek\anadolu_diff.bak' WITH DIFFERENTIAL, COMPRESSION, CHECKSUM;
+BACKUP LOG anadolu TO DISK = N'D:\yedek\anadolu_1015.trn' WITH COMPRESSION, CHECKSUM;</pre>
+<h2>Geri yükleme sırası</h2>
+<p>Örnek strateji: Pazar 00:00 tam, her gece fark, her 15 dakikada günlük yedeği. Çarşamba 10:20'de bir tablo yanlışlıkla silindi; 10:19'a dönmek istiyoruz:</p>
+<p>Veritabanı hâlâ ayaktaysa ilk iş <b>son günlük yedeği (tail-log backup)</b> almaktır: son günlük yedeğinden sonraki işlemler başka yerde yoktur, geri yükleme başlayınca kaybolur. <code>WITH NORECOVERY</code> veritabanını geri yüklemeye hazır duruma alır; dosyalar hasarlıysa <code>NO_TRUNCATE</code> eklenir.</p>
+<pre class="code" data-norun>BACKUP LOG anadolu TO DISK = N'...tail.trn' WITH NORECOVERY;   -- önce son günlük yedeği
+RESTORE DATABASE anadolu FROM DISK = N'...full.bak' WITH NORECOVERY;   -- Pazar tam
+RESTORE DATABASE anadolu FROM DISK = N'...diff_sali.bak' WITH NORECOVERY;  -- son fark (Salı gecesi)
+RESTORE LOG anadolu FROM DISK = N'...0000.trn' WITH NORECOVERY;  -- farktan sonraki tüm günlükler, sırayla
+-- ...
+RESTORE LOG anadolu FROM DISK = N'...1030.trn'
+    WITH STOPAT = '2025-03-12 10:19:00', RECOVERY;  -- belirli ana kadar, sonra aç</pre>
+<p><code>NORECOVERY</code>, veritabanını sonraki yedekleri kabul edecek şekilde açık bırakır; son adımda <code>RECOVERY</code> ile kullanıma açılır.</p>
+<div class="tip"><b>Altın kurallar</b>Geri yüklenmemiş yedek, yedek değildir: düzenli olarak test sunucusuna geri yükle. 3-2-1 kuralı: 3 kopya, 2 farklı ortam, 1'i başka bir konumda. CHECKSUM ile yedek bozulmalarını erken yakala.</div>
+<table>
+<tr><th>SQL türü</th><th>Araçlar</th></tr>
+<tr><td>PostgreSQL</td><td><code>pg_dump</code> (mantıksal), <code>pg_basebackup</code> + WAL arşivi (fiziksel, belirli ana dönüş)</td></tr>
+<tr><td>MySQL</td><td><code>mysqldump</code>, binlog ile belirli ana dönüş; büyük sistemlerde Percona XtraBackup</td></tr>
+<tr><td>Oracle</td><td>RMAN (Recovery Manager)</td></tr>
+</table>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-dba-yedek">Alıştırmalara geç (4)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../dba-mimari/">← SQL Server mimarisi: instance, dosyalar ve sistem veritabanları</a><a href="../dba-bakim/">Bakım: indeks parçalanması, istatistikler, DBCC ve Agent işleri →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

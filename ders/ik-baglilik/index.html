@@ -1,0 +1,52 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bağlılık anketi analitiği: eNPS, katılım ve yönetici etkisi | Kesit SQL</title><meta name="description" content="eNPS hesabı, anket katılım oranı, dalgalar arası değişim, yöneticiye göre puanlar ve anket sonuçlarının sonraki ayrılmalarla ilişkisi."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ik-baglilik/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Bağlılık anketi analitiği: eNPS, katılım ve yönetici etkisi"><meta property="og:description" content="eNPS hesabı, anket katılım oranı, dalgalar arası değişim, yöneticiye göre puanlar ve anket sonuçlarının sonraki ayrılmalarla ilişkisi."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ik-baglilik/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Bağlılık anketi analitiği: eNPS, katılım ve yönetici etkisi","description":"eNPS hesabı, anket katılım oranı, dalgalar arası değişim, yöneticiye göre puanlar ve anket sonuçlarının sonraki ayrılmalarla ilişkisi.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ik-baglilik/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · İK Analitiği</span><h1>Bağlılık anketi analitiği: eNPS, katılım ve yönetici etkisi</h1><p class="st-l">eNPS hesabı, anket katılım oranı, dalgalar arası değişim, yöneticiye göre puanlar ve anket sonuçlarının sonraki ayrılmalarla ilişkisi.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ik-baglilik">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>eNPS</h2>
+<p>“Bu şirketi bir arkadaşına çalışma yeri olarak ne kadar tavsiye edersin?” sorusuna 0–10 arası cevap. <b>Destekçi</b> 9–10, <b>pasif</b> 7–8, <b>eleştirmen</b> 0–6. <b>eNPS = %destekçi − %eleştirmen</b>; −100 ile +100 arasında bir sayıdır. Payda yalnızca bu soruyu cevaplayanlardır (NULL’lar hariç).</p>
+<pre class="code">SELECT wave,
+       ROUND(100.0 * (SUM(CASE WHEN enps &gt;= 9 THEN 1 ELSE 0 END)
+                    - SUM(CASE WHEN enps &lt;= 6 THEN 1 ELSE 0 END)) / COUNT(enps), 1) AS enps
+FROM ik_survey
+GROUP BY wave;</pre>
+<h2>Katılım oranı</h2>
+<p>Bir dalganın katılım oranı = yanıt veren / anket tarihinde aktif olan. Katılımı düşük bir ekibin sonuçları temsil gücü zayıftır; ayrıca anonimliği korumak için küçük ekiplerin sonuçları raporlanmaz.</p>
+<h2>Yönetici etkisi</h2>
+<p>“İnsanlar şirketten değil yöneticiden ayrılır” sözünü veriyle sınayabilirsin: yöneticiye verilen ortalama puan ile o yöneticinin ekibindeki sonraki ayrılma oranını yan yana koy.</p>
+<h2>Derinleş: eNPS hesabının ince noktaları ve yanıt oranı</h2>
+<p>eNPS basit görünür ama iki küçük karar sonucu tamamen değiştirebilir: <b>eşikler</b> ve <b>payda</b>.</p>
+<ul>
+<li><b>Eşik:</b> Eleştirmen 0–6'dır, yani <code>enps &lt;= 6</code>. Yanlışlıkla <code>&lt; 6</code> yazarsan 6 verenler pasif sayılır. 6, 7 ve 8'den sonra en sık verilen puan olduğu için eNPS yapay olarak yükselir.</li>
+<li><b>Payda:</b> Yalnızca bu soruyu yanıtlayanlar, yani <code>COUNT(enps)</code>. <code>COUNT(*)</code> soruyu boş bırakanları da paydaya katar ve eNPS'i sıfıra doğru çeker.</li>
+</ul>
+<pre class="code">SELECT wave,
+       COUNT(*) AS anket_satiri,
+       COUNT(enps) AS yanit,
+       ROUND(100.0 * (SUM(CASE WHEN enps >= 9 THEN 1 ELSE 0 END)
+                    - SUM(CASE WHEN enps &lt;= 6 THEN 1 ELSE 0 END)) / COUNT(enps), 1) AS dogru,
+       ROUND(100.0 * (SUM(CASE WHEN enps >= 9 THEN 1 ELSE 0 END)
+                    - SUM(CASE WHEN enps &lt; 6 THEN 1 ELSE 0 END)) / COUNT(enps), 1) AS esik_hatasi,
+       ROUND(100.0 * (SUM(CASE WHEN enps >= 9 THEN 1 ELSE 0 END)
+                    - SUM(CASE WHEN enps &lt;= 6 THEN 1 ELSE 0 END)) / COUNT(*), 1) AS payda_hatasi
+FROM ik_survey
+GROUP BY wave
+ORDER BY wave;</pre>
+<p>2024-Q4'te doğru eNPS −2,8'dir. Eşik hatası aynı veriden +13,5 üretir: “negatiften iyi bir skora” geçmiş gibi görünür. Payda hatası burada küçük kalıyor (−2,7), çünkü boş bırakılan cevap az. Boş cevap oranı yükseldikçe fark büyür.</p>
+<h3>Yanıt oranı neden önemli?</h3>
+<p>2024-Q4'te anket tarihinde aktif olanların %79,4'ü katılmış. Bu iyi bir orandır, ama ortalama bölüm farklarını gizler. Katılmayanlar rastgele değildir: memnuniyetsiz ya da ayrılmayı düşünen çalışanlar ankete daha az katılma eğilimindedir. Bu yüzden düşük katılımlı bir ekibin skoru genellikle <b>olduğundan iyi</b> görünür.</p>
+<table>
+<tr><th>Kural</th><th>Neden</th></tr>
+<tr><td>En az 10 yanıtı olmayan grup raporlanmaz</td><td>Anonimlik; küçük grupta kişiler tanınır</td></tr>
+<tr><td>Katılım oranını skorla birlikte göster</td><td>%40 katılımla gelen +20, %90 katılımla gelen +5'ten daha az güvenilirdir</td></tr>
+<tr><td>Payda: anket tarihinde aktif olanlar</td><td>Bugün aktif olanları saymak, sonradan gelenleri ve ayrılanları karıştırır</td></tr>
+<tr><td>Dalgaları aynı kişilerle de karşılaştır</td><td>Değişim, kompozisyon değişiminden mi yoksa gerçek değişimden mi geliyor?</td></tr>
+</table>
+<p>Bölüm düzeyinde bakınca 2024-Q4'te Veri ve Analitik'in eNPS'i −46,2. Diğer bölümler −8 ile +7 arasında. Bu ekibin katılım oranı da en yüksek olanlardandır (%84,8). Yani kötü skor düşük katılımdan kaynaklanmıyor; sorun gerçek.</p>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ik-baglilik">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ik-devamsizlik/">← Devamsızlık ve izin analitiği: Bradford faktörü ve Pazartesi etkisi</a><a href="../ik-proje/">İK vakası: Veri ve Analitik ekibinde ne oldu? →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

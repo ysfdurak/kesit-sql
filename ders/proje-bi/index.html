@@ -1,0 +1,51 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bitirme projesi (İş Zekâsı): Anadolu Market yönetim KPI panosu için veri hazırlığı | Kesit SQL</title><meta name="description" content="Panoya beslenecek aylık KPI tablosu, kanal payları, yıllık karşılaştırma ve ürün liderleri."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/proje-bi/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Bitirme projesi (İş Zekâsı): Anadolu Market yönetim KPI panosu için veri hazırlığı"><meta property="og:description" content="Panoya beslenecek aylık KPI tablosu, kanal payları, yıllık karşılaştırma ve ürün liderleri."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/proje-bi/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Bitirme projesi (İş Zekâsı): Anadolu Market yönetim KPI panosu için veri hazırlığı","description":"Panoya beslenecek aylık KPI tablosu, kanal payları, yıllık karşılaştırma ve ürün liderleri.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/proje-bi/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Bitirme Projeleri</span><h1>Bitirme projesi (İş Zekâsı): Anadolu Market yönetim KPI panosu için veri hazırlığı</h1><p class="st-l">Panoya beslenecek aylık KPI tablosu, kanal payları, yıllık karşılaştırma ve ürün liderleri.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-bi">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Senaryo</h2>
+<p>Genel müdür her ay başında tek ekranda şirketin nabzını görmek istiyor. Power BI / Looker Studio panosunu kuracak ekip, senden <b>hazır hesaplanmış</b> tablolar bekliyor; panoda karmaşık hesap yapılmayacak.</p>
+<h2>Tanımlar (KPI sözlüğü)</h2>
+<table>
+<tr><th>KPI</th><th>Tanım</th></tr>
+<tr><td>Net ciro</td><td>Teslim edilen siparişlerin Σ adet × birim fiyat × (1 − indirim)</td></tr>
+<tr><td>Sipariş</td><td>Tüm durumlardaki sipariş sayısı</td></tr>
+<tr><td>Aktif müşteri</td><td>O ay en az bir sipariş veren tekil müşteri</td></tr>
+<tr><td>Ortalama sepet</td><td>Net ciro ÷ teslim edilen sipariş sayısı</td></tr>
+<tr><td>İptal oranı</td><td>İptal edilen sipariş ÷ tüm siparişler</td></tr>
+</table>
+<div class="tip"><b>BI ekibine iyilik</b>Her tabloya açık sütun adları ver, oranları yüzde değil 0–1 arası ya da tutarlı biçimde ver ve tanımları dokümante et. Tanım farkı, panolardaki tartışmaların bir numaralı nedenidir.</div>
+<h2>Derinleş: panoya güvenilir veri vermek</h2>
+<div class="note"><b>Brif: Genel müdür ve BI ekibi</b>“Panoyu her ayın ilk iş günü açıp büyüme ve iptal trendine göre satış ekibinin hedeflerini güncelleyeceğim. Panodaki sayı ile finansın sayısı tutmazsa panoya kimse bakmaz.” BI ekibi ekliyor: “Bize ay düzeyinde, sütun adları sabit tablolar ver.”</div>
+<h3>Çalışma planı</h3>
+<ol>
+<li><b>KPI sözlüğünü kilitle.</b> Her ölçüyü bir cümleyle tanımla ve hangi durumların dahil olduğunu yaz (ciro = yalnızca teslim; sipariş = tüm durumlar).</li>
+<li><b>Ölçüyü kendi grain düzeyinde hesapla.</b> Sipariş sayısı <code>orders</code>'tan, ciro <code>order_items</code>'tan gelir. İkisini aynı JOIN'de hesaplarsan sipariş sayısı kalem sayısına şişer (Ek görev 1).</li>
+<li><b>Boş ayları düşün.</b> Bir ayda hiç değer yoksa GROUP BY o ayı hiç üretmez; panoda çizgi “kopar”. Ek görev 2'de Kasım ve Aralık bu yüzden görünmez.</li>
+</ol>
+<h3>Kontrol listesi</h3>
+<ul>
+<li><b>Yıllık mutabakat.</b> Aylık net cirolar toplanınca yıllık toplamı vermeli. Aşağıdaki sorgu yıl düzeyinde hesaplar: 2024 için 636.316 TL; Adım 1'deki 12 ayın toplamı da bu olmalı.</li>
+<li><b>Paylar 100'e tamamlanıyor mu?</b> Kanal payları toplamı yuvarlama farkıyla 100,0 olmalı.</li>
+<li><b>Payda.</b> Ortalama sepet = ciro ÷ <b>teslim edilen</b> sipariş; tüm siparişe bölmek sepeti küçük gösterir.</li>
+<li><b>Uç değer.</b> 2023 Ocak gibi düşük tabanlı aylarda %200+ büyüme normaldir; panoda bu aylar için mutlak farkı da göster.</li>
+</ul>
+<pre class="code">SELECT strftime('%Y', o.order_date) AS yil,
+       COUNT(DISTINCT o.order_id) AS teslim_siparis,
+       ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 0) AS net_ciro
+FROM orders o
+JOIN order_items oi ON oi.order_id = o.order_id
+WHERE o.status = 'delivered' AND o.order_date >= '2023-01-01'
+GROUP BY strftime('%Y', o.order_date)
+ORDER BY yil;</pre>
+<h3>Teslim</h3>
+<p>BI ekibine görünüm(ler) + KPI sözlüğü; genel müdüre panonun üstünde dört KPI kartı ve aylık çizgi grafik.</p>
+<div class="tip"><b>Yönetici özeti örneği</b>2024 net cirosu 636.316 TL ile 2023'e göre %89,6 arttı. Son çeyrek yılın %35'ini getirdi; zirve Kasım (82.740 TL). İptal oranı Nisan'daki %13,8'den Aralık'ta %6,5'e indi; mobil kanal cironun %47,2'siyle en büyük pay.</div>
+<h3>Kendini değerlendir</h3>
+<table><tr><th>Ölçüt</th><th>Başlangıç</th><th>İyi</th><th>Mükemmel</th></tr><tr><td>Tanımlar</td><td>Örtük</td><td>KPI sözlüğü yazılı</td><td>Her sütun sözlükle birebir, durum filtreleri açık</td></tr><tr><td>Doğrulama</td><td>Yok</td><td>Yıllık toplam mutabık</td><td>Tanecik, pay ve boş ay kontrolleri yapılmış</td></tr><tr><td>Teslim</td><td>Tek seferlik sorgu</td><td>Görünüm</td><td>Görünüm + sözlük + pano taslağı</td></tr></table></article>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-bi">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../proje-analist/">← Bitirme projesi (Veri Analisti): Ilgaz Bank müşteri ve harcama analizi</a><a href="../proje-bilimci/">Bitirme projesi (Veri Bilimi): şüpheli işlem tespiti ve müşteri özellik tablosu →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

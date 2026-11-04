@@ -1,0 +1,56 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>T-SQL tarih ve saat fonksiyonları | Kesit SQL</title><meta name="description" content="GETDATE, DATEADD, DATEDIFF, DATEPART, DATENAME, EOMONTH, DATEFROMPARTS, FORMAT, CONVERT."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-tarih/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="T-SQL tarih ve saat fonksiyonları"><meta property="og:description" content="GETDATE, DATEADD, DATEDIFF, DATEPART, DATENAME, EOMONTH, DATEFROMPARTS, FORMAT, CONVERT."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-tarih/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"T-SQL tarih ve saat fonksiyonları","description":"GETDATE, DATEADD, DATEDIFF, DATEPART, DATENAME, EOMONTH, DATEFROMPARTS, FORMAT, CONVERT.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-tarih/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · T-SQL (SQL Server)</span><h1>T-SQL tarih ve saat fonksiyonları</h1><p class="st-l">GETDATE, DATEADD, DATEDIFF, DATEPART, DATENAME, EOMONTH, DATEFROMPARTS, FORMAT, CONVERT.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-tarih">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Tarih tipleri</h2>
+<table><tr><th>Tip</th><th>Örnek</th><th>Not</th></tr>
+<tr><td><code>DATE</code></td><td>2024-05-17</td><td>Sadece tarih (3 bayt)</td></tr>
+<tr><td><code>DATETIME2(n)</code></td><td>2024-05-17 14:30:00.0000000</td><td>Önerilen tarih-saat tipi</td></tr>
+<tr><td><code>DATETIME</code></td><td>2024-05-17 14:30:00.000</td><td>Eski tip, 3 ms hassasiyet</td></tr>
+<tr><td><code>DATETIMEOFFSET</code></td><td>... +03:00</td><td>Saat dilimiyle</td></tr>
+</table>
+<h2>Temel fonksiyonlar</h2>
+<pre class="code" data-base="tsql">SELECT CAST(GETDATE() AS DATE)          AS bugun,
+       DATEADD(day, 30, '2024-05-17')    AS otuz_gun_sonra,
+       DATEADD(month, -1, '2024-03-31')  AS bir_ay_once,
+       EOMONTH('2024-02-10')             AS ay_sonu,
+       DATEFROMPARTS(2024, 12, 1)        AS aralik_basi,
+       DATEPART(quarter, '2024-05-17')   AS ceyrek,
+       DATENAME(month, '2024-05-17')     AS ay_adi;</pre>
+<p><code>DATEADD(month, -1, '2024-03-31')</code> sonucu <b>2024-02-29</b>'dur: SQL Server ay sonunu korur.</p>
+<h2>Aylık rapor: FORMAT ve YEAR</h2>
+<pre class="code" data-base="tsql">SELECT FORMAT(order_date, 'yyyy-MM') AS ay,
+       COUNT(*) AS siparis
+FROM orders
+WHERE YEAR(order_date) = 2024
+GROUP BY FORMAT(order_date, 'yyyy-MM')
+ORDER BY ay;</pre>
+<div class="warn"><b>Performans notu</b><code>WHERE YEAR(order_date) = 2024</code> okunaklıdır ama indeks kullanılamaz. Büyük tablolarda <code>WHERE order_date &gt;= '2024-01-01' AND order_date &lt; '2025-01-01'</code> yaz. FORMAT da yavaş bir fonksiyondur; milyonlarca satırda <code>DATEFROMPARTS(YEAR(d), MONTH(d), 1)</code> veya 2022'deki <code>DATETRUNC(month, d)</code> tercih edilir.</div>
+<h2>Türkçe gün ve ay adları</h2>
+<pre class="code" data-base="tsql">SELECT FORMAT(order_date, 'dddd', 'tr-TR') AS gun,
+       COUNT(*) AS siparis
+FROM orders
+GROUP BY FORMAT(order_date, 'dddd', 'tr-TR'), DATEPART(weekday, order_date)
+ORDER BY DATEPART(weekday, order_date);</pre>
+<p>FORMAT'ın üçüncü parametresi kültürdür: <code>'tr-TR'</code> Türkçe ad verir. <code>DATENAME</code> ise sunucunun dil ayarını (varsayılan İngilizce) kullanır.</p>
+<h2>DATEDIFF sınır sayar</h2>
+<pre class="code" data-base="tsql">SELECT DATEDIFF(year,  '2024-12-31', '2025-01-01') AS yil_farki,
+       DATEDIFF(month, '2024-01-31', '2024-02-01') AS ay_farki,
+       DATEDIFF(day,   '2024-01-01', '2024-12-31') AS gun_farki;</pre>
+<p>İlk iki sonuç 1'dir: DATEDIFF geçen tam süreyi değil, aşılan yıl/ay sınırını sayar. Yaş veya kıdem hesaplarken gün farkını 365.25'e bölmek ya da doğum gününün geçip geçmediğini kontrol etmek gerekir.</p>
+<h2>CONVERT ile biçimli tarih metni</h2>
+<pre class="code" data-base="tsql">SELECT TOP 3 order_date,
+       CONVERT(VARCHAR(10), order_date, 104) AS tr_bicim,
+       CONVERT(VARCHAR(10), order_date, 103) AS ingiliz_bicim,
+       CONVERT(VARCHAR(8),  order_date, 112) AS iso_kompakt
+FROM orders
+ORDER BY order_id;</pre>
+<table><tr><th>Stil</th><th>Biçim</th></tr><tr><td>104</td><td>dd.mm.yyyy (Türkiye)</td></tr><tr><td>103</td><td>dd/mm/yyyy</td></tr><tr><td>23</td><td>yyyy-mm-dd</td></tr><tr><td>112</td><td>yyyymmdd</td></tr><tr><td>120</td><td>yyyy-mm-dd hh:mi:ss</td></tr></table>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-tarih">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-metin/">← T-SQL metin fonksiyonları</a><a href="../ts-donusum/">Dönüşümler ve koşullu fonksiyonlar: CAST, CONVERT, TRY_CAST, IIF, CHOOSE →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

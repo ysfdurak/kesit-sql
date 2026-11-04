@@ -1,0 +1,53 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Veri değiştirme ve bütünlük: iptal, yeni rota, kısıtlar ve işlemler | Kesit SQL</title><meta name="description" content="Rezervasyon ve uçuş iptali, INSERT ... SELECT ile rota ekleme, CHECK kısıtı ve tek işlemde birden çok değişiklik."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/hv-veri/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Veri değiştirme ve bütünlük: iptal, yeni rota, kısıtlar ve işlemler"><meta property="og:description" content="Rezervasyon ve uçuş iptali, INSERT ... SELECT ile rota ekleme, CHECK kısıtı ve tek işlemde birden çok değişiklik."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/hv-veri/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Veri değiştirme ve bütünlük: iptal, yeni rota, kısıtlar ve işlemler","description":"Rezervasyon ve uçuş iptali, INSERT ... SELECT ile rota ekleme, CHECK kısıtı ve tek işlemde birden çok değişiklik.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/hv-veri/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Kanat Havayolları</span><h1>Veri değiştirme ve bütünlük: iptal, yeni rota, kısıtlar ve işlemler</h1><p class="st-l">Rezervasyon ve uçuş iptali, INSERT ... SELECT ile rota ekleme, CHECK kısıtı ve tek işlemde birden çok değişiklik.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-hv-veri">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Operasyonda veri değişir</h2>
+<p>Bir uçuş iptal olduğunda yalnızca uçuşun durumu değişmez; o uçuştaki tüm rezervasyonlar da iptal edilmelidir. İki değişiklikten biri yapılıp diğeri yapılamazsa sistem tutarsız kalır. Bu yüzden birlikte, tek bir işlem içinde yapılır.</p>
+<pre class="code" data-norun>BEGIN;
+UPDATE hv_flights
+SET status = 'cancelled', actual_dep = NULL, actual_arr = NULL, pax = 0
+WHERE flight_id = 3000;
+UPDATE hv_bookings
+SET status = 'cancelled', seat = NULL
+WHERE flight_id = 3000;
+COMMIT;</pre>
+<h2>Var olan veriden yeni satır üretmek</h2>
+<p>ADB → FRA rotası planlandı ama dönüşü yok. Dönüş rotasını elle yazmak yerine mevcut rotadan türetebilirsin:</p>
+<pre class="code" data-norun>INSERT INTO hv_routes (route_id, origin, dest, distance_km, block_min)
+SELECT 46, dest, origin, distance_km, block_min
+FROM hv_routes
+WHERE origin = 'ADB' AND dest = 'FRA';</pre>
+<div class="warn"><b>Önce SELECT, sonra UPDATE</b>Bir UPDATE veya DELETE'i çalıştırmadan önce aynı WHERE koşuluyla SELECT çalıştırıp kaç satırın etkileneceğini gör. Bu derste her alıştırma veritabanının temiz bir kopyasında çalışır.</div>
+<h2>Derinleş: Bütünlük denetimi: kısıtların yakalayamadıkları</h2>
+<p>Kısıtlar (PRIMARY KEY, FOREIGN KEY, CHECK, UNIQUE) hatalı verinin <b>girişini</b> engeller. Ama her iş kuralı bir kısıtla ifade edilemez, eski veriler kısıtlar eklenmeden önce girilmiş olabilir ve toplu yüklemeler bazen kısıtları geçici olarak kapatır. Bu yüzden veri ekipleri düzenli bir <b>bütünlük karnesi</b> çalıştırır. Her satır bir kuralı test eder ve 0 dışındaki her sayı bir alarmdır:</p>
+<pre class="code">SELECT
+  (SELECT COUNT(*) FROM hv_flights f JOIN hv_aircraft a ON a.tail_no = f.tail_no
+    WHERE f.pax > a.seats) AS kapasite_asimi,
+  (SELECT COUNT(*) FROM hv_bookings b JOIN hv_flights f ON f.flight_id = b.flight_id
+    WHERE f.status = 'cancelled' AND b.status &lt;> 'cancelled') AS iptal_tutarsiz,
+  (SELECT COUNT(*) FROM hv_bookings b
+    WHERE NOT EXISTS (SELECT 1 FROM hv_flights f WHERE f.flight_id = b.flight_id)) AS yetim_rezervasyon,
+  (SELECT COUNT(*) FROM hv_flights WHERE actual_arr &lt; actual_dep) AS ters_zaman,
+  (SELECT COUNT(*) FROM (SELECT flight_id, seat FROM hv_bookings
+                         WHERE seat IS NOT NULL
+                         GROUP BY flight_id, seat HAVING COUNT(*) > 1) t) AS cift_koltuk;</pre>
+<p>Kanat'ın verisi dört kontrolden temiz geçiyor ama beşincide 20 uçuş–koltuk çifti çıkıyor. Örneğin 219 numaralı uçuşta 27B koltuğu iki ayrı yolcuya atanmış ve ikisi de “flown” görünüyor. <code>UNIQUE (flight_id, seat)</code> kısıtı olsaydı ikinci kayıt hiç girilemezdi.</p>
+<h3>UNIQUE ve NULL: SQL türleri ayrışır</h3>
+<p>İptal edilen rezervasyonların koltuğu NULL'dır. Standart SQL'de ve PostgreSQL, MySQL, Oracle, SQLite'ta birden çok NULL bir UNIQUE kısıtını ihlal etmez. <b>SQL Server ise UNIQUE sütunda yalnızca bir NULL'a izin verir.</b> Orada çözüm filtreli bir indekstir: <code>CREATE UNIQUE INDEX ... WHERE seat IS NOT NULL</code>.</p>
+<h3>Güvenli değişiklik akışı</h3>
+<ol>
+<li><b>Say:</b> Aynı WHERE koşuluyla <code>SELECT COUNT(*)</code> çalıştır, beklenen sayıyı yaz.</li>
+<li><b>Değiştir:</b> İşlem (transaction) içinde UPDATE / DELETE çalıştır; etkilenen satır sayısı beklenenle aynı mı?</li>
+<li><b>Doğrula:</b> Bütünlük karnesini yeniden çalıştır; sonra COMMIT, sorun varsa ROLLBACK.</li>
+<li><b>Tekrarlanabilirlik:</b> Değişikliği ikinci kez çalıştırmak zarar vermemeli (idempotent). <code>WHERE status &lt;&gt; 'cancelled'</code> gibi bir koşul bunu sağlar.</li>
+</ol>
+<div class="warn"><b>Uçak değişimi gibi toplu güncellemeler</b>Bir uçağı bakıma alıp uçuşlarını başka bir uçağa aktarırken WHERE koşulunu hem uçağa hem tarih aralığına bağla. Yalnızca <code>WHERE tail_no = ...</code> yazmak, uçağın geçmişteki bütün uçuşlarını da değiştirir ve geçmiş raporlar bozulur.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-hv-veri">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../hv-analitik/">← Havayolu metrikleri: doluluk, zamanında varış, yolcu-km ve sadakat</a><a href="../proje-hava/">Bitirme projesi (Kanat Havayolları): operasyon ve gelir raporu →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

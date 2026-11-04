@@ -1,0 +1,59 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tam metin arama: LIKE yerine dizinli kelime araması | Kesit SQL</title><meta name="description" content="PostgreSQL tsvector, SQL Server CONTAINS, MySQL MATCH AGAINST, SQLite FTS; sıralama ve Türkçe."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/tam-metin/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Tam metin arama: LIKE yerine dizinli kelime araması"><meta property="og:description" content="PostgreSQL tsvector, SQL Server CONTAINS, MySQL MATCH AGAINST, SQLite FTS; sıralama ve Türkçe."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/tam-metin/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Tam metin arama: LIKE yerine dizinli kelime araması","description":"PostgreSQL tsvector, SQL Server CONTAINS, MySQL MATCH AGAINST, SQLite FTS; sıralama ve Türkçe.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/tam-metin/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · SQL Türlerine Özgü</span><h1>Tam metin arama: LIKE yerine dizinli kelime araması</h1><p class="st-l">PostgreSQL tsvector, SQL Server CONTAINS, MySQL MATCH AGAINST, SQLite FTS; sıralama ve Türkçe.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-tam-metin">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>LIKE'ın sınırları</h2>
+<p><code>WHERE aciklama LIKE '%kablosuz%'</code> her satırı baştan sona tarar (baştaki % yüzünden indeks kullanılamaz), kelime köklerini bilmez (“kulaklıklar”ı bulmaz) ve sonuçları alaka düzeyine göre sıralayamaz. <b>Tam metin arama</b> metni kelimelere (token) ayırıp ters dizin (inverted index) oluşturur.</p>
+<h2>SQLite FTS ile deneyelim</h2>
+<pre class="code" data-na="tsql pg mysql oracle bq">CREATE VIRTUAL TABLE urun_ara USING fts4(name, category);
+INSERT INTO urun_ara (docid, name, category) SELECT product_id, name, category FROM products;
+
+SELECT docid AS product_id, name
+FROM urun_ara
+WHERE urun_ara MATCH 'kablosuz OR bluetooth';</pre>
+<h2>SQL türlerine göre</h2>
+<pre class="code" data-norun>-- PostgreSQL
+ALTER TABLE products ADD COLUMN arama tsvector
+  GENERATED ALWAYS AS (to_tsvector('turkish', coalesce(name, '') || ' ' || coalesce(category, ''))) STORED;
+CREATE INDEX ix_products_arama ON products USING GIN (arama);
+
+SELECT name, ts_rank(arama, q) AS puan
+FROM products, websearch_to_tsquery('turkish', 'kablosuz kulaklık') AS q
+WHERE arama @@ q
+ORDER BY puan DESC;
+
+-- Benzer yazım için: CREATE EXTENSION pg_trgm; WHERE name % 'kulaklik'
+
+-- SQL Server
+CREATE FULLTEXT CATALOG ftc AS DEFAULT;
+CREATE FULLTEXT INDEX ON dbo.products (name LANGUAGE 1055) KEY INDEX PK_products;  -- 1055 = Türkçe
+SELECT name FROM dbo.products WHERE CONTAINS(name, N'&quot;kablosuz*&quot;');
+SELECT name FROM dbo.products WHERE FREETEXT(name, N'kablosuz kulaklık');
+
+-- MySQL (InnoDB)
+ALTER TABLE products ADD FULLTEXT INDEX ft_name (name);
+SELECT name, MATCH(name) AGAINST('kablosuz kulaklık' IN NATURAL LANGUAGE MODE) AS puan
+FROM products WHERE MATCH(name) AGAINST('+kablosuz -hoparlör' IN BOOLEAN MODE);
+
+-- Oracle Text
+CREATE INDEX ix_ad ON products (name) INDEXTYPE IS CTXSYS.CONTEXT;
+SELECT name, SCORE(1) FROM products WHERE CONTAINS(name, 'kablosuz', 1) &gt; 0 ORDER BY SCORE(1) DESC;
+
+-- BigQuery
+CREATE SEARCH INDEX ix_ara ON anadolu.products (name);
+SELECT name FROM anadolu.products WHERE SEARCH(name, 'kablosuz');</pre>
+<h2>Türkçe dikkat noktaları</h2>
+<ul>
+<li>Kök bulma (stemming) dile özgüdür: PostgreSQL'de <code>'turkish'</code> yapılandırması, SQL Server'da dil kodu 1055.</li>
+<li>Büyük/küçük harf ve “İ/ı” dönüşümü için önce collation dersindeki normalleştirmeyi uygula.</li>
+<li>Yazım hatalı aramalar için trigram (pg_trgm) veya Levenshtein; anlam araması için vektör arama (Yapay Zekâ modülü).</li>
+<li>Çok büyük ve karmaşık arama ihtiyaçlarında Elasticsearch/OpenSearch gibi arama motorları kullanılır; veritabanı yine asıl kaynak olarak kalır.</li>
+</ul>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-tam-metin">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../mysql-ozel/">← MySQL'e özgü yazımlar ve tuzaklar</a><a href="../oracle-ozel/">Oracle'a özgü yazımlar →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

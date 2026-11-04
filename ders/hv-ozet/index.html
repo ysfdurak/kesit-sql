@@ -1,0 +1,53 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Uçuşları özetlemek: COUNT, SUM, AVG, GROUP BY ve HAVING | Kesit SQL</title><meta name="description" content="Durumlara, uçak tiplerine ve ücret sınıflarına göre özetler; koşullu sayım ve grup filtresi."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/hv-ozet/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Uçuşları özetlemek: COUNT, SUM, AVG, GROUP BY ve HAVING"><meta property="og:description" content="Durumlara, uçak tiplerine ve ücret sınıflarına göre özetler; koşullu sayım ve grup filtresi."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/hv-ozet/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Uçuşları özetlemek: COUNT, SUM, AVG, GROUP BY ve HAVING","description":"Durumlara, uçak tiplerine ve ücret sınıflarına göre özetler; koşullu sayım ve grup filtresi.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/hv-ozet/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Kanat Havayolları</span><h1>Uçuşları özetlemek: COUNT, SUM, AVG, GROUP BY ve HAVING</h1><p class="st-l">Durumlara, uçak tiplerine ve ücret sınıflarına göre özetler; koşullu sayım ve grup filtresi.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-hv-ozet">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Bir havayolunun temel sayıları</h2>
+<p>Yönetim her sabah birkaç soruya cevap ister: Kaç uçuş yapıldı, kaçı iptal oldu, kaç yolcu taşındı, ortalama bilet fiyatı ne? Bunların hepsi toplama fonksiyonları ve GROUP BY ile yanıtlanır.</p>
+<pre class="code">SELECT status, COUNT(*) AS ucus, SUM(pax) AS yolcu
+FROM hv_flights
+GROUP BY status;</pre>
+<h2>COUNT(*) ile COUNT(sütun) farkı burada çok işe yarar</h2>
+<pre class="code">SELECT COUNT(*)          AS planlanan,
+       COUNT(actual_dep) AS kalkan,
+       COUNT(actual_arr) AS inen
+FROM hv_flights;</pre>
+<p>İptal edilen uçuşun <code>actual_dep</code> değeri, yön değiştiren (diverted) uçuşun <code>actual_arr</code> değeri NULL'dır. COUNT(sütun) NULL'ları saymadığı için üç sayı farklı çıkar.</p>
+<h2>Koşullu sayım</h2>
+<pre class="code">SELECT tier,
+       COUNT(*) AS uye,
+       SUM(CASE WHEN email IS NULL THEN 1 ELSE 0 END) AS epostasiz
+FROM hv_passengers
+GROUP BY tier;</pre>
+<div class="warn"><b>Ortalama yolcu sayısında iptaller</b>İptal edilen uçuşlarda pax 0'dır. Uçuş başına ortalama yolcu hesaplarken iptalleri dahil edersen ortalama düşer. Ne ölçtüğünü sorudan çıkar ve gerekirse <code>WHERE status &lt;&gt; 'cancelled'</code> ekle.</div>
+<h2>Derinleş: Operasyon karnesi: iptal oranı ve zamanında kalkış</h2>
+<p>Bir havayolunun günlük operasyon raporunda iki oran mutlaka bulunur: <b>iptal oranı</b> (iptal ÷ planlanan uçuş) ve <b>zamanında kalkış oranı</b> (OTP, on-time performance). Sektörde yaygın tanım, planlanandan en fazla <b>15 dakika</b> geç kalkan uçuşu zamanında saymaktır. Varış için de aynı eşik kullanılır.</p>
+<h3>Payda kimdir?</h3>
+<p>İptal edilen uçuş hiç kalkmadığı için “zamanında mı?” sorusu ona sorulamaz. OTP'nin paydası <b>kalkan uçuşlardır</b>, yani <code>COUNT(actual_dep)</code>. <code>COUNT(*)</code> kullanırsan iptaller “geç kalkmış” gibi sayılır ve oran düşer:</p>
+<pre class="code">SELECT COUNT(*) AS planlanan,
+       COUNT(actual_dep) AS kalkan,
+       SUM(CASE WHEN ROUND((julianday(actual_dep) - julianday(sched_dep)) * 1440) &lt;= 15 THEN 1 ELSE 0 END) AS zamaninda,
+       ROUND(100.0 * SUM(CASE WHEN ROUND((julianday(actual_dep) - julianday(sched_dep)) * 1440) &lt;= 15 THEN 1 ELSE 0 END)
+             / COUNT(actual_dep), 1) AS otp,
+       ROUND(100.0 * SUM(CASE WHEN ROUND((julianday(actual_dep) - julianday(sched_dep)) * 1440) &lt;= 15 THEN 1 ELSE 0 END)
+             / COUNT(*), 1) AS yanlis_payda
+FROM hv_flights;</pre>
+<p>Doğru OTP %62,1, yanlış paydayla %60,9. Fark küçük görünür ama iptal oranının yükseldiği bir ayda büyür. Daha önemlisi, iptal ve gecikme iki ayrı sorundur ve ayrı raporlanmalıdır. NULL bir <code>actual_dep</code> karşılaştırmada ne doğru ne yanlış (UNKNOWN) sonuç verir; <code>CASE</code> bu yüzden onu 0 sayar ve pay doğru kalır.</p>
+<h3>Ortalama gecikme yanıltır</h3>
+<p>Gecikme dağılımı çok çarpıktır: uçuşların çoğu zamanında, birkaçı saatlerce geç kalkar. “Ortalama gecikme 25 dakika” cümlesi, yolcuların çoğunun 25 dakika beklediği izlenimini verir; oysa böyle değildir. Yönetim raporunda <b>oran</b> (OTP), <b>uzun gecikme sayısı</b> (ör. 60+ dk) ve gerekirse medyan birlikte verilir.</p>
+<table>
+<tr><th>Metrik</th><th>Pay</th><th>Payda</th></tr>
+<tr><td>İptal oranı</td><td><code>status = 'cancelled'</code></td><td>Tüm planlanan uçuşlar</td></tr>
+<tr><td>Zamanında kalkış</td><td>Kalkış gecikmesi ≤ 15 dk</td><td>Kalkan uçuşlar (<code>actual_dep</code> dolu)</td></tr>
+<tr><td>Zamanında varış</td><td>Varış gecikmesi ≤ 15 dk</td><td>İnen uçuşlar (<code>actual_arr</code> dolu; diverted hariç)</td></tr>
+<tr><td>Uçuş başına yolcu</td><td><code>SUM(pax)</code></td><td>İptal edilmeyen uçuşlar</td></tr>
+</table>
+<p>Aylık kırılım, tek sayının gizlediği trendi ortaya çıkarır. Kanat'ta OTP Eylül'de %70 civarındayken Aralık'ta %49'a düşüyor. Kış havası, yoğun bayram ve yılbaşı trafiği akla gelen ilk açıklamalardır. Bunu rötar nedenleri tablosuyla doğrulamak bir sonraki adımdır.</p>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-hv-ozet">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../hv-tanis/">← Kanat Havayolları: veri setini tanı, seç ve filtrele</a><a href="../hv-zaman/">Saat ve süre hesapları: rötar dakikası, saat dilimleri, zamanında kalkış →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

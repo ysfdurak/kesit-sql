@@ -1,0 +1,57 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kısıtlar (constraints) ayrıntılı: NOT NULL, UNIQUE, CHECK, DEFAULT, FOREIGN KEY eylemleri | Kesit SQL</title><meta name="description" content="Veri bütünlüğünü veritabanında güvenceye almak; ON DELETE CASCADE / SET NULL."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/kisitlar/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Kısıtlar (constraints) ayrıntılı: NOT NULL, UNIQUE, CHECK, DEFAULT, FOREIGN KEY eylemleri"><meta property="og:description" content="Veri bütünlüğünü veritabanında güvenceye almak; ON DELETE CASCADE / SET NULL."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/kisitlar/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Kısıtlar (constraints) ayrıntılı: NOT NULL, UNIQUE, CHECK, DEFAULT, FOREIGN KEY eylemleri","description":"Veri bütünlüğünü veritabanında güvenceye almak; ON DELETE CASCADE / SET NULL.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/kisitlar/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veritabanı Tasarımı</span><h1>Kısıtlar (constraints) ayrıntılı: NOT NULL, UNIQUE, CHECK, DEFAULT, FOREIGN KEY eylemleri</h1><p class="st-l">Veri bütünlüğünü veritabanında güvenceye almak; ON DELETE CASCADE / SET NULL.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-kisitlar">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Neden kısıt?</h2>
+<p>Uygulama kodu değişir, farklı ekipler aynı tabloya yazar; ama kısıtlar <b>her zaman</b> çalışır. Bozuk veri bir kez girdiğinde temizlemek, girmesini engellemekten çok daha pahalıdır.</p>
+<table>
+<tr><th>Kısıt</th><th>Ne sağlar?</th></tr>
+<tr><td><code>NOT NULL</code></td><td>Değer boş olamaz</td></tr>
+<tr><td><code>UNIQUE</code></td><td>Değer tekrar edemez (NULL'lar çoğu SQL türünde birden fazla olabilir)</td></tr>
+<tr><td><code>PRIMARY KEY</code></td><td>NOT NULL + UNIQUE; satırın kimliği</td></tr>
+<tr><td><code>CHECK (koşul)</code></td><td>Koşulu sağlamayan değer reddedilir</td></tr>
+<tr><td><code>DEFAULT</code></td><td>Değer verilmezse kullanılacak varsayılan (kısıt değil, sütun özelliği)</td></tr>
+<tr><td><code>FOREIGN KEY</code></td><td>Değer başka tablodaki bir anahtarda bulunmalı</td></tr>
+</table>
+<pre class="code" data-na="bq">CREATE TABLE kampanya (
+  kampanya_id INTEGER PRIMARY KEY,
+  kod         TEXT NOT NULL UNIQUE,
+  indirim     REAL NOT NULL CHECK (indirim > 0 AND indirim <= 0.5),
+  baslangic   TEXT NOT NULL,
+  bitis       TEXT NOT NULL,
+  aktif       INTEGER DEFAULT 1,
+  CHECK (bitis >= baslangic)
+);
+INSERT INTO kampanya (kampanya_id, kod, indirim, baslangic, bitis) VALUES (1, 'YILBASI', 0.2, '2024-12-20', '2025-01-05');
+SELECT * FROM kampanya;</pre>
+<pre class="code" data-err data-na="bq">-- CHECK ihlali: indirim %60 olamaz
+INSERT INTO kampanya (kampanya_id, kod, indirim, baslangic, bitis) VALUES (2, 'HATA', 0.6, '2024-12-01', '2024-12-10');</pre>
+<h2>Yabancı anahtar eylemleri</h2>
+<p>Ana tablodaki bir satır silinince veya anahtarı değişince alt tablodaki satırlara ne olacağını belirler:</p>
+<table>
+<tr><th>Eylem</th><th>Davranış</th></tr>
+<tr><td><code>NO ACTION</code> / <code>RESTRICT</code> (varsayılan)</td><td>Bağlı satır varsa silme reddedilir</td></tr>
+<tr><td><code>ON DELETE CASCADE</code></td><td>Bağlı satırlar da silinir (sipariş silinince satırları)</td></tr>
+<tr><td><code>ON DELETE SET NULL</code></td><td>Bağlı satırların yabancı anahtarı NULL olur (yönetici ayrılınca)</td></tr>
+<tr><td><code>ON DELETE SET DEFAULT</code></td><td>Varsayılan değere döner (her SQL türünde yok)</td></tr>
+</table>
+<pre class="code" data-norun>CREATE TABLE siparis_satiri (
+  satir_id   INT PRIMARY KEY,
+  siparis_id INT NOT NULL,
+  CONSTRAINT fk_satir_siparis FOREIGN KEY (siparis_id)
+    REFERENCES siparis (siparis_id) ON DELETE CASCADE
+);
+
+-- Kısıtı sonradan eklemek ve kaldırmak
+ALTER TABLE products ADD CONSTRAINT ck_fiyat CHECK (price &gt;= cost);
+ALTER TABLE products DROP CONSTRAINT ck_fiyat;</pre>
+<div class="note"><b>SQL türlerine göre</b>MySQL CHECK kısıtını 8.0.16'dan beri uygular; daha eski sürümler sessizce yok sayardı. Oracle'da NOT NULL yalnızca sütun düzeyinde (inline) yazılabilir ve kısıtlar <code>DEFERRABLE</code> yapılarak işlem sonunda denetlenebilir. BigQuery'de PRIMARY/FOREIGN KEY yalnızca bilgi amaçlıdır (NOT ENFORCED), UNIQUE ve CHECK yoktur.</div>
+<div class="tip"><b>Kısıtlara ad ver</b><code>CONSTRAINT ck_fiyat CHECK (...)</code> gibi adlandırılmış kısıtlar hata mesajlarında anlaşılır görünür ve kolayca kaldırılır.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-kisitlar">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../alter-drop/">← ALTER TABLE, DROP ve TRUNCATE</a><a href="../transaction/">Transaction: BEGIN, COMMIT, ROLLBACK →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

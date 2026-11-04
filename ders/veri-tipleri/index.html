@@ -1,0 +1,72 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Veri tipleri ayrıntılı: ondalık hassasiyet, Unicode metin ve saat dilimleri | Kesit SQL</title><meta name="description" content="FLOAT ile DECIMAL farkı, NVARCHAR ve N'..', DATE/DATETIME/TIMESTAMP, AT TIME ZONE."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/veri-tipleri/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Veri tipleri ayrıntılı: ondalık hassasiyet, Unicode metin ve saat dilimleri"><meta property="og:description" content="FLOAT ile DECIMAL farkı, NVARCHAR ve N'..', DATE/DATETIME/TIMESTAMP, AT TIME ZONE."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/veri-tipleri/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Veri tipleri ayrıntılı: ondalık hassasiyet, Unicode metin ve saat dilimleri","description":"FLOAT ile DECIMAL farkı, NVARCHAR ve N'..', DATE/DATETIME/TIMESTAMP, AT TIME ZONE.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/veri-tipleri/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Fonksiyonlar</span><h1>Veri tipleri ayrıntılı: ondalık hassasiyet, Unicode metin ve saat dilimleri</h1><p class="st-l">FLOAT ile DECIMAL farkı, NVARCHAR ve N'..', DATE/DATETIME/TIMESTAMP, AT TIME ZONE.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-veri-tipleri">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Para FLOAT'ta tutulmaz</h2>
+<p><code>FLOAT</code>/<code>REAL</code>/<code>DOUBLE</code> ikili kayan noktalı sayılardır; 0,1 gibi değerleri tam saklayamazlar. Küçük farklar toplamlarda büyür ve <code>=</code> karşılaştırmaları şaşırtıcı sonuç verir.</p>
+<pre class="code" data-v="{&quot;oracle&quot;:&quot;SELECT CAST(0.1 AS BINARY_DOUBLE) + CAST(0.2 AS BINARY_DOUBLE) AS toplam,\n       CASE WHEN CAST(0.1 AS BINARY_DOUBLE) + CAST(0.2 AS BINARY_DOUBLE) = CAST(0.3 AS BINARY_DOUBLE) THEN 'eşit' ELSE 'eşit değil' END AS karsilastirma\nFROM dual;&quot;}">SELECT CAST(0.1 AS FLOAT) + CAST(0.2 AS FLOAT) AS toplam,
+       CASE WHEN CAST(0.1 AS FLOAT) + CAST(0.2 AS FLOAT) = CAST(0.3 AS FLOAT) THEN 'eşit' ELSE 'eşit değil' END AS karsilastirma;</pre>
+<p>Tipi açıkça <code>FLOAT</code> yazdık, çünkü <code>0.1</code> gibi ondalık sabitler PostgreSQL, SQL Server, MySQL ve Oracle'da kesin türdedir: orada <code>0.1 + 0.2 = 0.3</code> doğru çıkar. Sorun sütun ya da ifade kayan noktalı olduğunda başlar. Bu örnekteki eşitsizliği PostgreSQL'de gerçek motorda doğruladık. Bu uygulamanın motoru SQLite olduğu için burada sabitler de kayan noktalı çalışır; bu, taklidin bilinen sınırlarından biridir.</p>
+<table>
+<tr><th>İhtiyaç</th><th>Tip</th></tr>
+<tr><td>Para, miktar, oran</td><td><code>DECIMAL(p,s)</code> / <code>NUMERIC(p,s)</code> (SQL Server'da <code>MONEY</code> da var ama hesaplamada yuvarlama riski nedeniyle DECIMAL önerilir; BigQuery'de <code>NUMERIC</code>)</td></tr>
+<tr><td>Ölçüm, bilimsel değer</td><td><code>FLOAT</code> / <code>DOUBLE PRECISION</code> / <code>FLOAT64</code></td></tr>
+<tr><td>Sayaç, kimlik</td><td><code>INT</code>, büyükse <code>BIGINT</code> (SQL Server INT sınırı ≈ 2,1 milyar)</td></tr>
+<tr><td>Evet/hayır</td><td><code>BIT</code> (SQL Server), <code>BOOLEAN</code> (PostgreSQL, MySQL), <code>BOOL</code> (BigQuery); Oracle'da 23ai öncesi <code>NUMBER(1)</code></td></tr>
+</table>
+<div class="tip"><b>Kural</b>Ondalıklı değerleri karşılaştırırken eşitlik yerine fark kullan: <code>ABS(a - b) &lt; 0.0001</code>. Raporlarda yuvarlamayı en sonda yap.</div>
+<h2>Metin: uzunluk ve Unicode</h2>
+<ul>
+<li><b>SQL Server</b>: <code>VARCHAR</code> tek baytlık kod sayfası, <code>NVARCHAR</code> Unicode. Türkçe karakterler için <code>NVARCHAR</code> ve sabitlerde <code>N'İstanbul'</code> kullan; aksi halde “ş, ğ, İ” soru işaretine dönebilir (UTF-8 collation'lı VARCHAR da bir seçenektir, SQL Server 2019+).</li>
+<li><b>PostgreSQL</b>: <code>TEXT</code> ve <code>VARCHAR(n)</code> aynı performanstadır; veritabanı UTF-8 ise sorun yoktur.</li>
+<li><b>MySQL</b>: <code>utf8mb4</code> karakter kümesi kullan (eski <code>utf8</code> emojileri saklayamaz).</li>
+<li><b>Oracle</b>: <code>VARCHAR2(n CHAR)</code>; bayt ve karakter uzunluğu farkına dikkat (<code>VARCHAR2(10 BYTE)</code> Türkçe karakterlerle 10 harf almayabilir).</li>
+</ul>
+<pre class="code">SELECT name, LENGTH(name) AS karakter
+FROM products
+WHERE name LIKE '%ş%' OR name LIKE '%ğ%' OR name LIKE '%ı%';</pre>
+<h2>Tarih ve saat tipleri</h2>
+<table>
+<tr><th></th><th>Yalnız tarih</th><th>Tarih + saat (bölgesiz)</th><th>Saat dilimli an</th></tr>
+<tr><td>SQL Server</td><td><code>DATE</code></td><td><code>DATETIME2</code> (<code>DATETIME</code> eski)</td><td><code>DATETIMEOFFSET</code></td></tr>
+<tr><td>PostgreSQL</td><td><code>DATE</code></td><td><code>TIMESTAMP</code></td><td><code>TIMESTAMPTZ</code> (UTC saklar, oturumun saat diliminde gösterir)</td></tr>
+<tr><td>MySQL</td><td><code>DATE</code></td><td><code>DATETIME</code></td><td><code>TIMESTAMP</code> (UTC'ye çevirip saklar)</td></tr>
+<tr><td>Oracle</td><td><code>DATE</code> (saat de içerir!)</td><td><code>TIMESTAMP</code></td><td><code>TIMESTAMP WITH TIME ZONE</code></td></tr>
+<tr><td>BigQuery</td><td><code>DATE</code></td><td><code>DATETIME</code></td><td><code>TIMESTAMP</code> (her zaman UTC an)</td></tr>
+</table>
+<h2>Saat dilimleri</h2>
+<p>Altın kural: <b>anları UTC olarak sakla, kullanıcıya gösterirken yerel saate çevir.</b> Türkiye 2016'dan beri yaz-kış saati uygulamadan UTC+3'tür ama müşterilerin veya sunucuların başka bölgelerde olabileceğini unutma.</p>
+<pre class="code" data-norun>-- SQL Server
+SELECT CAST('2024-11-29 21:30:00' AS DATETIME2) AT TIME ZONE 'UTC' AT TIME ZONE 'Turkey Standard Time' AS istanbul;
+SELECT SYSUTCDATETIME() AS utc_simdi, SYSDATETIMEOFFSET() AS yerel_simdi;
+
+-- PostgreSQL
+SELECT TIMESTAMPTZ '2024-11-29 21:30:00+00' AT TIME ZONE 'Europe/Istanbul' AS istanbul;
+SET TIME ZONE 'Europe/Istanbul';
+
+-- MySQL (saat dilimi tabloları yüklüyse)
+SELECT CONVERT_TZ('2024-11-29 21:30:00', 'UTC', 'Europe/Istanbul');
+
+-- Oracle
+SELECT FROM_TZ(TIMESTAMP '2024-11-29 21:30:00', 'UTC') AT TIME ZONE 'Europe/Istanbul' FROM dual;
+
+-- BigQuery
+SELECT DATETIME(TIMESTAMP '2024-11-29 21:30:00+00', 'Europe/Istanbul') AS istanbul;</pre>
+<div class="warn"><b>Gün sınırı</b>UTC'de saklanan olayları “günlük” raporlarken yerel saate çevirmeden <code>DATE(event_time)</code> alırsan, Türkiye için 00:00–03:00 arasındaki olaylar bir önceki güne yazılır.</div>
+<p>Bu uygulamadaki <code>web_events.event_time</code> değerlerini UTC kabul edip İstanbul saatine çevirelim (+3 saat):</p>
+<pre class="code">SELECT event_time AS utc,
+       datetime(event_time, '+3 hours') AS istanbul,
+       date(event_time) AS utc_gun,
+       date(datetime(event_time, '+3 hours')) AS istanbul_gun
+FROM web_events
+WHERE strftime('%H', event_time) IN ('21', '22', '23')
+ORDER BY event_id
+LIMIT 5;</pre>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-veri-tipleri">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../sayi-tip/">← Sayılar, veri tipleri ve CAST</a><a href="../tarih-fn/">Tarih ve saat fonksiyonları →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

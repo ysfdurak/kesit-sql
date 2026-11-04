@@ -1,0 +1,54 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bitirme projesi (T-SQL): şube raporu için saklı yordam ve hata yönetimi | Kesit SQL</title><meta name="description" content="Değişkenler, geçici tablo, saklı yordam, TRY/CATCH ve işlem yönetimi."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/proje-tsql/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Bitirme projesi (T-SQL): şube raporu için saklı yordam ve hata yönetimi"><meta property="og:description" content="Değişkenler, geçici tablo, saklı yordam, TRY/CATCH ve işlem yönetimi."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/proje-tsql/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Bitirme projesi (T-SQL): şube raporu için saklı yordam ve hata yönetimi","description":"Değişkenler, geçici tablo, saklı yordam, TRY/CATCH ve işlem yönetimi.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/proje-tsql/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Bitirme Projeleri</span><h1>Bitirme projesi (T-SQL): şube raporu için saklı yordam ve hata yönetimi</h1><p class="st-l">Değişkenler, geçici tablo, saklı yordam, TRY/CATCH ve işlem yönetimi.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-tsql">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Senaryo</h2>
+<p>Ilgaz Bank şube müdürleri kendi şubelerinin aylık özetini bir düğmeyle almak istiyor. Raporu SQL Server'da bir saklı yordam olarak yazacaksın; yanlış parametrede anlaşılır hata vermeli.</p>
+<p>Bu proje yalnızca SQL Server (T-SQL) yazımıyla çözülür. Varsayılan SQL türünün farklıysa adımlar yine SQL Server modunda açılır.</p>
+
+<h2>Kullanacağın tablolar</h2>
+<table>
+<tr><th>Tablo</th><th>Sütunlar</th><th>Bağlantı</th></tr>
+<tr><td><code>bank_branches</code></td><td>branch_id, name, city, opened_year</td><td></td></tr>
+<tr><td><code>bank_customers</code></td><td>customer_id, full_name, city, segment, branch_id, …</td><td>branch_id → bank_branches</td></tr>
+<tr><td><code>bank_accounts</code></td><td>account_id, customer_id, account_type, currency, status, …</td><td>customer_id → bank_customers</td></tr>
+<tr><td><code>bank_txns</code></td><td>txn_id, account_id, txn_time, amount, txn_type, channel</td><td>account_id → bank_accounts</td></tr>
+</table>
+<p>Bir şubenin hareketlerine ulaşmak için dört tablo zincirlenir: şube → müşteri → hesap → hareket. Ay filtresi için yarı açık aralık kullan: <code>txn_time &gt;= @bas AND txn_time &lt; DATEADD(month, 1, @bas)</code>.</p>
+<h2>Adımlar</h2>
+<table>
+<tr><th>Adım</th><th>T-SQL konusu</th></tr>
+<tr><td>1. Değişkenlerle sorgu</td><td><code>DECLARE</code>, tarih hesabı</td></tr>
+<tr><td>2. Geçici tablo</td><td><code>SELECT ... INTO #hareket</code></td></tr>
+<tr><td>3. Saklı yordam</td><td><code>CREATE OR ALTER PROCEDURE</code>, parametreler, <code>SET NOCOUNT ON</code></td></tr>
+<tr><td>4. Hata yönetimi</td><td><code>THROW</code>, <code>BEGIN TRY ... END CATCH</code></td></tr>
+</table>
+<h2>Yordam iskeleti</h2>
+<pre class="code" data-base="tsql" data-norun>CREATE OR ALTER PROCEDURE dbo.usp_ornek
+  @sube INT,
+  @ay   CHAR(7)          -- 'YYYY-AA'
+AS
+BEGIN
+  SET NOCOUNT ON;
+  IF NOT EXISTS (SELECT 1 FROM dbo.bank_branches WHERE branch_id = @sube)
+    THROW 50001, N'Şube bulunamadı', 1;
+
+  DECLARE @bas DATE = CAST(@ay + '-01' AS DATE);
+
+  SELECT t.txn_type, COUNT(*) AS adet
+  FROM dbo.bank_txns t
+  JOIN dbo.bank_accounts a  ON a.account_id = t.account_id
+  JOIN dbo.bank_customers c ON c.customer_id = a.customer_id
+  WHERE c.branch_id = @sube
+    AND t.txn_time &gt;= @bas AND t.txn_time &lt; DATEADD(month, 1, @bas)
+  GROUP BY t.txn_type;
+END;</pre>
+<div class="tip"><b>Önce sorgu, sonra yordam</b>Yordamın gövdesini önce değişkenli bir sorgu olarak çalıştır ve sonucu doğrula (Adım 1–2). Doğru çalışan sorguyu yordama sarmak en az hatalı yoldur.</div>
+<h3>Karar ve teslim</h3><p>Son üç adım projeyi rapordan karara taşır: Yordamın filtresini indekse uygun hâle getirirsin, şube toplamlarını doğrudan sayıyla sağlarsın, ardından kurula hangi şubelerin yükü taşıdığını gösterirsin. Teslim: yordam kodu, mutabakat sonucu ve ilk üç şube tablosu.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-tsql">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../proje-backend/">← Bitirme projesi (Backend): sepet özelliği için şema ve sorgular</a><a href="../ba-rol/">BT iş analisti (IT business analyst) ne yapar? →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

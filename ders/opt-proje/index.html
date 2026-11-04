@@ -1,0 +1,46 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bitirme projesi (Sorgu Optimizasyonu): yavaş müşteri raporunu ölç, oku, düzelt, kanıtla | Kesit SQL</title><meta name="description" content="Gerçekçi yavaş bir rapor üzerinde temel ölçüm, plan okuma, yeniden yazma, indeks tasarımı, mutabakat ve karar notu."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/opt-proje/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Bitirme projesi (Sorgu Optimizasyonu): yavaş müşteri raporunu ölç, oku, düzelt, kanıtla"><meta property="og:description" content="Gerçekçi yavaş bir rapor üzerinde temel ölçüm, plan okuma, yeniden yazma, indeks tasarımı, mutabakat ve karar notu."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/opt-proje/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Bitirme projesi (Sorgu Optimizasyonu): yavaş müşteri raporunu ölç, oku, düzelt, kanıtla","description":"Gerçekçi yavaş bir rapor üzerinde temel ölçüm, plan okuma, yeniden yazma, indeks tasarımı, mutabakat ve karar notu.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/opt-proje/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Bitirme Projeleri</span><h1>Bitirme projesi (Sorgu Optimizasyonu): yavaş müşteri raporunu ölç, oku, düzelt, kanıtla</h1><p class="st-l">Gerçekçi yavaş bir rapor üzerinde temel ölçüm, plan okuma, yeniden yazma, indeks tasarımı, mutabakat ve karar notu.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-proje">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory"><h2>Senaryo</h2>
+<p>Ilgaz Bank kart ekibi her ay müşteri başına kart harcaması raporu alıyor. Rapor yıllar içinde büyüdü, çalışırken ekran bekliyor. Birim yöneticisi soruyor: <b>"Bu raporu hızlandırabilir miyiz? Ne kadar güvenle, karşılığında ne ödeyerek?"</b> Senden sonuç değişmeden hızlandırılmış sorgu ve bir karar notu bekleniyor.</p>
+<h2>Rapor</h2>
+<pre class="code">SELECT DISTINCT c.customer_id, c.segment,
+  (SELECT COUNT(*) FROM bank_txns t
+   WHERE t.account_id IN (SELECT a.account_id FROM bank_accounts a WHERE a.customer_id = c.customer_id)
+     AND strftime('%Y-%m', t.txn_time) = '2024-12' AND t.txn_type = 'kart_harcama') AS islem,
+  (SELECT ROUND(SUM(t.amount)) FROM bank_txns t
+   WHERE t.account_id IN (SELECT a.account_id FROM bank_accounts a WHERE a.customer_id = c.customer_id)
+     AND strftime('%Y-%m', t.txn_time) = '2024-12' AND t.txn_type = 'kart_harcama') AS toplam
+FROM bank_customers c
+JOIN bank_accounts x ON x.customer_id = c.customer_id;</pre>
+<p>Çalıştır ve süreye bak. Bu süre bu tarayıcıda ölçülür, kendi ortamında farklı olur. Karşılaştırmayı süre yerine plana ve sağlamaya dayandıracağız.</p>
+<h2>Veri</h2>
+<table><tr><th>Tablo</th><th>Satır</th><th>Mevcut indeks</th></tr>
+<tr><td><code>bank_customers</code></td><td>500</td><td>Birincil anahtar</td></tr>
+<tr><td><code>bank_accounts</code></td><td>849</td><td>Birincil anahtar</td></tr>
+<tr><td><code>bank_txns</code></td><td>42.284</td><td>Birincil anahtar, <code>account_id</code></td></tr></table>
+<h2>Adımlar</h2>
+<table><tr><th>Adım</th><th>Çıktı</th></tr>
+<tr><td>1. Temel ölçüm</td><td>Satır sayısı, işlem toplamı, tutar toplamı: her değişiklik bunlarla sağlanır</td></tr>
+<tr><td>2. Plan</td><td>Eski raporun planı</td></tr>
+<tr><td>3. Darboğaz</td><td>Hangi satır sorun, neden</td></tr>
+<tr><td>4. Çekirdek sorgu</td><td>Aylık toplam, aranabilir filtre</td></tr>
+<tr><td>5. İndeks</td><td>Çekirdek sorguya kapsayan indeks</td></tr>
+<tr><td>6. Yeni rapor</td><td>İlişkili alt sorgu ve DISTINCT yok</td></tr>
+<tr><td>7. Mutabakat</td><td>Eski ve yeni arasında fark 0</td></tr>
+<tr><td>8-9. Karar</td><td>İndeks bedeli ve yönetici notu</td></tr></table>
+<div class="note"><b>Sınır</b>Motor SQLite. Planlar SQLite planıdır, başka motorda aynı yazım başka plan alabilir. Projedeki yaklaşım her motorda geçerlidir: Ölç, oku, tek değişiklik, sağla.</div>
+<h3>Teslim</h3>
+<p>Tek sayfa: eski ve yeni plan, mutabakat sonucu, eklenen indeks ve bedeli, öneri. Hız kazancını kendi ortamında ölçmeden yazma.</p>
+<h3>Kendini değerlendir</h3>
+<table><tr><th>Ölçüt</th><th>Başlangıç</th><th>İyi</th><th>Mükemmel</th></tr>
+<tr><td>Ölçüm</td><td>Süre yazılmış</td><td>Plan ve sağlama da var</td><td>Birkaç ölçüm, önbellek etkisi not edilmiş</td></tr>
+<tr><td>Doğruluk</td><td>Satır sayısı aynı</td><td>Toplamlar aynı</td><td>İki yönlü EXCEPT sıfır</td></tr>
+<tr><td>Karar</td><td>İndeks eklenmiş</td><td>Bedel yazılmış</td><td>Sıklık, yazma yükü ve alternatif birlikte tartılmış</td></tr></table></article>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-proje">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../mk-opt/">← Mülakat: yavaş sorgu ve performans soruları</a><a href="../bv-proje/">Bitirme projesi (Büyük Veri): Pedal İzmir kamyonet bütçesi nereden kısılır? →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

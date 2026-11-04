@@ -1,0 +1,52 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>İndeksler (index) ve sorgu planı | Kesit SQL</title><meta name="description" content="B-tree indeksler, sorgu planını okumak, ne zaman indeks?"><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/index/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="İndeksler (index) ve sorgu planı"><meta property="og:description" content="B-tree indeksler, sorgu planını okumak, ne zaman indeks?"><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/index/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"İndeksler (index) ve sorgu planı","description":"B-tree indeksler, sorgu planını okumak, ne zaman indeks?","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/index/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Performans</span><h1>İndeksler (index) ve sorgu planı</h1><p class="st-l">B-tree indeksler, sorgu planını okumak, ne zaman indeks?</p>
+<div class="st-c"><a class="st-p" href="../../#ders-index">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>İndeks = kitabın arkasındaki dizin</h2>
+<p>İndeks olmadan veritabanı bir koşulu sağlayan satırları bulmak için tüm tabloyu tarar (<i>full table scan</i> / SQL Server'da <i>Table Scan</i>). İndeks, sütun değerlerini sıralı bir <b>B-tree</b> yapısında tutar ve aramayı logaritmik zamana indirir.</p>
+<h2>Sorgu planını görmek</h2>
+<table><tr><th>SQL türü</th><th>Planı görme</th></tr>
+<tr><td>SQL Server</td><td>SSMS'te <b>Ctrl+M</b> (gerçek plan) veya <code>SET SHOWPLAN_TEXT ON</code></td></tr>
+<tr><td>PostgreSQL</td><td><code>EXPLAIN</code>, <code>EXPLAIN ANALYZE</code></td></tr>
+<tr><td>MySQL</td><td><code>EXPLAIN</code>, <code>EXPLAIN ANALYZE</code> (8.0.18+)</td></tr>
+<tr><td>Oracle</td><td><code>EXPLAIN PLAN FOR ...</code> + <code>DBMS_XPLAN.DISPLAY</code></td></tr>
+<tr><td>SQLite</td><td><code>EXPLAIN QUERY PLAN</code></td></tr>
+</table>
+<p>Tarayıcıdaki motor SQLite olduğu için aşağıdaki kutular hangi SQL türü seçersen seç SQLite planını gösterir; yazım farkını sekmelerde görebilirsin.</p>
+<pre class="code" data-v="{&quot;tsql&quot;:&quot;SET SHOWPLAN_TEXT ON;\nGO\nSELECT * FROM orders WHERE customer_id = 42;\nGO\nSET SHOWPLAN_TEXT OFF;&quot;,&quot;pg&quot;:&quot;EXPLAIN\nSELECT * FROM orders WHERE customer_id = 42;&quot;,&quot;mysql&quot;:&quot;EXPLAIN\nSELECT * FROM orders WHERE customer_id = 42;&quot;,&quot;oracle&quot;:&quot;EXPLAIN PLAN FOR\nSELECT * FROM orders WHERE customer_id = 42;\nSELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);&quot;}" data-nr="tsql pg mysql oracle">EXPLAIN QUERY PLAN
+SELECT * FROM orders WHERE customer_id = 42;</pre>
+<p>Çıktıda <code>SCAN orders</code> görürsün: tablo baştan sona taranıyor. Şimdi indeks ekleyelim:</p>
+<pre class="code" data-v="{&quot;tsql&quot;:&quot;CREATE NONCLUSTERED INDEX idx_orders_customer ON orders(customer_id);\nGO\nSET SHOWPLAN_TEXT ON;\nGO\nSELECT * FROM orders WHERE customer_id = 42;&quot;,&quot;pg&quot;:&quot;CREATE INDEX idx_orders_customer ON orders(customer_id);\nEXPLAIN SELECT * FROM orders WHERE customer_id = 42;&quot;,&quot;mysql&quot;:&quot;CREATE INDEX idx_orders_customer ON orders(customer_id);\nEXPLAIN SELECT * FROM orders WHERE customer_id = 42;&quot;,&quot;oracle&quot;:&quot;CREATE INDEX idx_orders_customer ON orders(customer_id);\nEXPLAIN PLAN FOR SELECT * FROM orders WHERE customer_id = 42;\nSELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);&quot;}" data-nr="tsql pg mysql oracle" data-na="bq">CREATE INDEX idx_orders_customer ON orders(customer_id);
+EXPLAIN QUERY PLAN
+SELECT * FROM orders WHERE customer_id = 42;</pre>
+<p>Artık <code>SEARCH orders USING INDEX idx_orders_customer</code> (SQL Server'da <i>Index Seek</i>, PostgreSQL'de <i>Index Scan</i>).</p>
+<h2>Ne zaman indeks?</h2>
+<ul>
+<li>WHERE, JOIN ON ve ORDER BY'da sık kullanılan, <b>seçici</b> (çok farklı değer içeren) sütunlar.</li>
+<li>Yabancı anahtar sütunları (JOIN'ler için).</li>
+<li><b>Bileşik indeks</b> <code>(a, b)</code>: <code>WHERE a = ?</code> ve <code>WHERE a = ? AND b = ?</code> için çalışır, sadece <code>WHERE b = ?</code> için genelde çalışmaz (soldan önek kuralı).</li>
+</ul>
+<div class="note" data-d="tsql"><b>SQL Server'da</b>Bir tabloda tek bir <b>clustered</b> indeks olur (veri bu sıraya göre fiziksel olarak dizilir, genelde birincil anahtar). Diğerleri <b>nonclustered</b>'dır. <code>INCLUDE (sütunlar)</code> ile kapsayan (covering) indeks yapılabilir. T-SQL modülünde ayrıntılı işliyoruz.</div>
+<h2>Bedeli</h2>
+<ul>
+<li>Her INSERT/UPDATE/DELETE indeksleri de günceller; yazma yavaşlar.</li>
+<li>Disk alanı kaplar.</li>
+<li>Sütuna fonksiyon uygularsan indeks kullanılamayabilir: <code>WHERE YEAR(order_date) = 2024</code> yerine aralık yaz: <code>order_date &gt;= '2024-01-01' AND order_date &lt; '2025-01-01'</code>. Bu kurala SQL Server dünyasında <b>SARGable</b> sorgu denir.</li>
+</ul>
+
+<h2>İş senaryosu: müşteri ekranı</h2>
+<p>Anadolu Market çağrı merkezi müşterinin siparişlerini açıyor. Sorgu <code>customer_id</code> ile arıyor ve günde binlerce kez çalışıyor. Önce planı oku, sonra indeks ekle. Plan <code>SCAN</code> iken indeks yoksa, indeks eklendikten sonra <code>SEARCH</code> olmalıdır. Hem <code>status</code> hem tarih aranıyorsa ve sütun sırası yanlışsa plan parantezinde tek sütun görünür.</p>
+<pre class="code" data-na="tsql pg mysql oracle bq">CREATE INDEX ix_orders_tarih_durum ON orders (order_date, status);
+EXPLAIN QUERY PLAN SELECT COUNT(*) FROM orders
+WHERE status = 'delivered' AND order_date >= '2024-11-01';</pre>
+<pre class="code" data-na="tsql pg mysql oracle bq">CREATE INDEX ix_orders_durum_tarih ON orders (status, order_date);
+EXPLAIN QUERY PLAN SELECT COUNT(*) FROM orders
+WHERE status = 'delivered' AND order_date >= '2024-11-01';</pre>
+<p>Devamı için <b>Sorgu Optimizasyonu</b> öğrenme yoluna bak: plan okuma, sütun sırası, kapsayan indeks, seçicilik ve yanlış optimizasyon örnekleri orada ayrı derslerdir.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-index">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../tasarim-kaliplari/">← Tasarım kalıpları ve kötü pratikler: soft delete, denetim sütunları, EAV, JSON mu tablo mu?</a><a href="../view/">View ve materialized view →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

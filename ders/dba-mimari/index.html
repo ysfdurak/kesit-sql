@@ -1,0 +1,40 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SQL Server mimarisi: instance, dosyalar ve sistem veritabanları | Kesit SQL</title><meta name="description" content="Veritabanı nasıl saklanır? mdf/ldf, sayfalar, tempdb, buffer pool."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/dba-mimari/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="SQL Server mimarisi: instance, dosyalar ve sistem veritabanları"><meta property="og:description" content="Veritabanı nasıl saklanır? mdf/ldf, sayfalar, tempdb, buffer pool."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/dba-mimari/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"SQL Server mimarisi: instance, dosyalar ve sistem veritabanları","description":"Veritabanı nasıl saklanır? mdf/ldf, sayfalar, tempdb, buffer pool.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/dba-mimari/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Veritabanı Yönetimi (DBA)</span><h1>SQL Server mimarisi: instance, dosyalar ve sistem veritabanları</h1><p class="st-l">Veritabanı nasıl saklanır? mdf/ldf, sayfalar, tempdb, buffer pool.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-dba-mimari">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Instance ve veritabanı</h2>
+<p>Bir sunucuya kurulan her SQL Server hizmetine <b>instance</b> denir; bir makinede birden çok instance olabilir. Her instance içinde birçok veritabanı bulunur.</p>
+<h3>Sistem veritabanları</h3>
+<table>
+<tr><th>Veritabanı</th><th>Görevi</th></tr>
+<tr><td><code>master</code></td><td>Instance'ın kaydı: login'ler, veritabanı listesi, ayarlar. Kaybı ciddi sorundur, yedeklenmelidir.</td></tr>
+<tr><td><code>model</code></td><td>Yeni veritabanları için şablon.</td></tr>
+<tr><td><code>msdb</code></td><td>SQL Server Agent işleri, yedekleme geçmişi, zamanlamalar.</td></tr>
+<tr><td><code>tempdb</code></td><td>Geçici tablolar, sıralama ve karma işlemleri, satır sürümleri. Her yeniden başlatmada sıfırlanır; performans için çok önemlidir.</td></tr>
+</table>
+<h2>Dosyalar</h2>
+<ul>
+<li><b>.mdf</b>: Birincil veri dosyası. <b>.ndf</b>: ek veri dosyaları.</li>
+<li><b>.ldf</b>: İşlem günlüğü (transaction log). Her değişiklik önce buraya yazılır (write-ahead logging); çökme sonrası kurtarma buradan yapılır.</li>
+<li><b>Dosya grupları</b> (filegroup): Veri dosyalarını mantıksal gruplar. Büyük tabloları farklı disklere dağıtmak için kullanılır.</li>
+</ul>
+<h2>Sayfa ve kapsam</h2>
+<p>Veri diskte <b>8 KB'lık sayfalar</b> halinde saklanır; 8 ardışık sayfa bir <b>kapsamdır</b> (extent, 64 KB). Bir satır (LOB hariç) bir sayfaya sığmalıdır. Sorgu performansındaki “mantıksal okuma” bu sayfaların sayısıdır.</p>
+<h2>Bellek: buffer pool</h2>
+<p>Okunan sayfalar bellekteki <b>buffer pool</b>'da tutulur. Değiştirilen (kirli) sayfalar hemen diske yazılmaz; <b>checkpoint</b> süreci periyodik olarak yazar. Günlük ise her COMMIT'te diske yazılır; dayanıklılığı (ACID'deki D) sağlayan budur.</p>
+<h3>Bilgi alma sorguları</h3>
+<pre class="code" data-norun>SELECT name, recovery_model_desc, state_desc FROM sys.databases;
+
+SELECT name, type_desc, physical_name, size * 8 / 1024 AS boyut_mb
+FROM sys.database_files;
+
+SELECT @@VERSION;</pre>
+<div class="note"><b>Diğer SQL türlerinde karşılıklar</b>PostgreSQL'de “cluster” bir instance'tır; veri dizini (PGDATA), WAL (günlük) ve <code>shared_buffers</code> vardır. Oracle'da instance ile veritabanı ayrı kavramlardır; redo log, tablespace ve SGA karşılık gelir.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-dba-mimari">Alıştırmalara geç (4)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-izolasyon/">← SQL Server'da kilitler, izolasyon ve NOLOCK</a><a href="../dba-yedek/">Yedekleme ve geri yükleme: recovery model, RPO ve RTO →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

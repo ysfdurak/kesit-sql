@@ -1,0 +1,44 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sorgu optimizasyonu: iyi alışkanlıklar | Kesit SQL</title><meta name="description" content="Hızlı ve ölçeklenebilir SQL yazmanın kuralları."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/performans/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Sorgu optimizasyonu: iyi alışkanlıklar"><meta property="og:description" content="Hızlı ve ölçeklenebilir SQL yazmanın kuralları."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/performans/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Sorgu optimizasyonu: iyi alışkanlıklar","description":"Hızlı ve ölçeklenebilir SQL yazmanın kuralları.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/performans/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Performans</span><h1>Sorgu optimizasyonu: iyi alışkanlıklar</h1><p class="st-l">Hızlı ve ölçeklenebilir SQL yazmanın kuralları.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-performans">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Büyük veride fark yaratan alışkanlıklar</h2>
+<ol>
+<li><b>SELECT * yazma.</b> Özellikle sütun tabanlı ambarlarda (BigQuery, Snowflake) okunan sütun kadar ödersin.</li>
+<li><b>Erken filtrele.</b> WHERE'i JOIN'den önce veriyi küçültecek şekilde kur; CTE'lerde ihtiyacın olan satırları en başta süz.</li>
+<li><b>Sütuna fonksiyon uygulama (SARGable yaz).</b> <code>WHERE YEAR(d) = 2024</code> yerine <code>WHERE d &gt;= '2024-01-01' AND d &lt; '2025-01-01'</code>; böylece indeks ve bölüm (partition) budaması çalışır.</li>
+<li><b>Gereksiz DISTINCT ve ORDER BY'dan kaçın.</b> İkisi de sıralama maliyeti getirir.</li>
+<li><b>UNION yerine UNION ALL</b>, tekrar olmayacağını biliyorsan.</li>
+<li><b>EXISTS ile IN</b>: Hangisinin hızlı olduğu motora bağlıdır, çoğu zaman plan aynıdır. Asıl fark <code>NOT IN</code> tarafındadır: alt sorguda NULL varsa hiç satır dönmez, bu yüzden <code>NOT EXISTS</code> tercih edilir.</li>
+<li><b>Önce topla, sonra birleştir.</b> Satır çoğalmasını önler. Hız kazancı motora bağlıdır, ölç.</li>
+<li><b>Planı oku.</b> Tam tarama, iç içe döngü ve tahmini satır sayılarını incele (<b>İndeksler ve sorgu planı</b> dersi).</li>
+</ol>
+<div class="note" data-d="tsql"><b>SQL Server'a özgü</b>Parameter sniffing, eksik istatistikler ve örtük tip dönüşümleri (ör. NVARCHAR sütunu VARCHAR parametreyle karşılaştırmak) en sık performans sorunlarıdır. <code>SET STATISTICS IO, TIME ON</code> ile okunan sayfa sayısını ölç.</div>
+<pre class="code" data-v="{&quot;tsql&quot;:&quot;-- Yavaş kalıp (SARGable değil)\nSET STATISTICS IO ON;\nSELECT COUNT(*) FROM orders WHERE YEAR(order_date) = 2024;&quot;,&quot;pg&quot;:&quot;EXPLAIN SELECT COUNT(*) FROM orders WHERE EXTRACT(YEAR FROM order_date) = 2024;&quot;,&quot;mysql&quot;:&quot;EXPLAIN SELECT COUNT(*) FROM orders WHERE YEAR(order_date) = 2024;&quot;,&quot;oracle&quot;:&quot;EXPLAIN PLAN FOR SELECT COUNT(*) FROM orders WHERE EXTRACT(YEAR FROM order_date) = 2024;&quot;}" data-nr="tsql pg mysql oracle">-- Yavaş kalıp: tarih fonksiyonu sütunu sarıyor
+EXPLAIN QUERY PLAN
+SELECT COUNT(*) FROM orders WHERE strftime('%Y', order_date) = '2024';</pre>
+<pre class="code" data-v="{&quot;tsql&quot;:&quot;CREATE INDEX idx_o_date ON orders(order_date);\nSELECT COUNT(*) FROM orders\nWHERE order_date &gt;= '2024-01-01' AND order_date &lt; '2025-01-01';&quot;,&quot;pg&quot;:&quot;CREATE INDEX idx_o_date ON orders(order_date);\nEXPLAIN SELECT COUNT(*) FROM orders WHERE order_date &gt;= DATE '2024-01-01' AND order_date &lt; DATE '2025-01-01';&quot;,&quot;mysql&quot;:&quot;CREATE INDEX idx_o_date ON orders(order_date);\nEXPLAIN SELECT COUNT(*) FROM orders WHERE order_date &gt;= '2024-01-01' AND order_date &lt; '2025-01-01';&quot;,&quot;oracle&quot;:&quot;CREATE INDEX idx_o_date ON orders(order_date);\nEXPLAIN PLAN FOR SELECT COUNT(*) FROM orders WHERE order_date &gt;= DATE '2024-01-01' AND order_date &lt; DATE '2025-01-01';&quot;}" data-nr="tsql pg mysql oracle" data-na="bq">-- Daha iyi: aralık + indeks
+CREATE INDEX idx_o_date ON orders(order_date);
+EXPLAIN QUERY PLAN
+SELECT COUNT(*) FROM orders WHERE order_date &gt;= '2024-01-01' AND order_date &lt; '2025-01-01';</pre>
+
+<h2>Yavaş sorgu kontrol listesi</h2>
+<table>
+<tr><th>Planda gördüğün</th><th>Olası sebep</th><th>İlk deneme</th></tr>
+<tr><td>Büyük tabloda tam tarama, az satır dönüyor</td><td>Uygun indeks yok ya da koşul sütunu sarıyor</td><td>Koşulu sade yaz, sonra indeks</td></tr>
+<tr><td>Filtre çok satır eliyor</td><td>Bileşik indeks eksik ya da sütun sırası yanlış</td><td>Eşitlik, aralık, sıralama</td></tr>
+<tr><td>Tahmin ve gerçek çok farklı</td><td>Bayat istatistik, fonksiyonlu koşul, çarpık veri</td><td>İstatistiği yenile, koşulu düzelt</td></tr>
+<tr><td>Her satır için alt sorgu</td><td>İlişkili alt sorgu</td><td>Önce topla ve birleştir, ya da iç tarafa indeks</td></tr>
+<tr><td>Sıralama ya da geçici yapı</td><td>Sıra indeksten gelmiyor</td><td>Sıralama sütununu indekse ekle</td></tr>
+<tr><td>Tabloya geri dönüş (Key Lookup)</td><td>İndeks sütunları kapsamıyor</td><td>Sütunları daralt, sonra <code>INCLUDE</code></td></tr>
+<tr><td>DISTINCT ve çok satır</td><td>Birleştirme çoğaltıyor</td><td><code>EXISTS</code> ya da önce toplama</td></tr>
+<tr><td>Derin OFFSET</td><td>Atlanan satırlar yine işleniyor</td><td>Keyset sayfalama</td></tr>
+</table>
+<p>Her satırın ayrı dersi <b>Sorgu Optimizasyonu</b> öğrenme yolunda. Değişiklikten sonra üç soruyu yanıtla: Sonuç aynı mı? Hangi sayı düştü? Karşılığında ne ödedim?</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-performans">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../trigger/">← Trigger</a><a href="../sargable/">Hızlı sorgu yazmak: SARGable koşullar ve sık yapılan performans hataları →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

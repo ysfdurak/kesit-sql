@@ -1,0 +1,75 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KVKK ve kişisel veri: maskeleme, takma adlandırma, saklama ve silme | Kesit SQL</title><meta name="description" content="Veri sorumlusu olarak SQL tarafında yapılacaklar: en az veri, maskeleme, k-anonimlik, imha."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/kvkk/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="KVKK ve kişisel veri: maskeleme, takma adlandırma, saklama ve silme"><meta property="og:description" content="Veri sorumlusu olarak SQL tarafında yapılacaklar: en az veri, maskeleme, k-anonimlik, imha."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/kvkk/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"KVKK ve kişisel veri: maskeleme, takma adlandırma, saklama ve silme","description":"Veri sorumlusu olarak SQL tarafında yapılacaklar: en az veri, maskeleme, k-anonimlik, imha.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/kvkk/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Modern SQL</span><h1>KVKK ve kişisel veri: maskeleme, takma adlandırma, saklama ve silme</h1><p class="st-l">Veri sorumlusu olarak SQL tarafında yapılacaklar: en az veri, maskeleme, k-anonimlik, imha.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-kvkk">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Neden SQL geliştiricisini ilgilendirir?</h2>
+<p>6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) ve AB'deki GDPR, kişisel verinin işlenmesine, saklanmasına ve silinmesine kurallar getirir. Kuralları hukuk ekibi yorumlar ama uygulama çoğu zaman veritabanında yapılır: kimin hangi sütunu gördüğü, test ortamına ne kopyalandığı, verinin ne zaman imha edildiği.</p>
+<div class="note"><b>Hukuki not</b>Bu ders teknik uygulamaları anlatır; hukuki danışmanlık değildir. Kurumunun KVKK politikası ve veri envanteri esas alınmalıdır.</div>
+<h2>Temel ilkeler ve SQL karşılıkları</h2>
+<table>
+<tr><th>İlke</th><th>Veritabanında</th></tr>
+<tr><td>Amaçla sınırlı ve ölçülü işleme</td><td>Raporlara yalnızca gereken sütunlar; <code>SELECT *</code> ile kişisel veriyi gereksiz taşımama</td></tr>
+<tr><td>Erişimin sınırlanması</td><td>Rol bazlı yetki, görünüm üzerinden erişim, satır düzeyinde güvenlik, dinamik veri maskeleme</td></tr>
+<tr><td>Veri güvenliği</td><td>Şifreleme (diskte ve iletimde), denetim kayıtları</td></tr>
+<tr><td>Saklama süresi ve imha</td><td>Süresi dolan verinin silinmesi, anonimleştirilmesi; imha kayıtları</td></tr>
+<tr><td>İlgili kişinin hakları</td><td>Kişinin verilerini bulup raporlayabilmek, düzeltebilmek, silebilmek</td></tr>
+</table>
+<h2>Maskeleme</h2>
+<p>Raporu veya test verisini hazırlarken değerin bir kısmını gizlemek:</p>
+<pre class="code">SELECT customer_id,
+       SUBSTR(first_name, 1, 1) || '***'                         AS ad,
+       SUBSTR(last_name, 1, 1) || '.'                             AS soyad,
+       SUBSTR(email, 1, 2) || '***' || SUBSTR(email, INSTR(email, '@')) AS email_maskeli,
+       2024 - birth_year - (2024 - birth_year) % 10               AS yas_grubu
+FROM customers
+WHERE email IS NOT NULL
+ORDER BY customer_id
+LIMIT 5;</pre>
+<pre class="code" data-norun>-- SQL Server: dinamik veri maskeleme (veri değişmez, yetkisiz kullanıcı maskeli görür)
+ALTER TABLE dbo.customers ALTER COLUMN email ADD MASKED WITH (FUNCTION = 'email()');
+ALTER TABLE dbo.customers ALTER COLUMN last_name ADD MASKED WITH (FUNCTION = 'partial(1, &quot;***&quot;, 0)');
+GRANT UNMASK TO rapor_yoneticisi;
+
+-- PostgreSQL: maskeli görünüm ve yetki
+CREATE VIEW rapor.v_musteri AS
+SELECT customer_id, left(first_name, 1) || '***' AS ad, city, segment FROM customers;
+REVOKE ALL ON customers FROM analist;
+GRANT SELECT ON rapor.v_musteri TO analist;</pre>
+<h2>Takma adlandırma (pseudonymization)</h2>
+<p>Kimlik bilgisini, geri döndürülmesi zor bir anahtarla değiştirmek: e-posta yerine e-postanın tuzlu özeti (hash). Analizde aynı kişiyi takip edebilirsin ama kim olduğunu doğrudan göremezsin. Tuz (salt) ayrı ve güvenli saklanmalı.</p>
+<pre class="code" data-norun>-- SQL Server
+SELECT CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', CONCAT(@tuz, LOWER(email))), 2) AS kisi_anahtari FROM dbo.customers;
+-- PostgreSQL (pgcrypto)
+SELECT encode(digest(:tuz || lower(email), 'sha256'), 'hex') AS kisi_anahtari FROM customers;
+-- BigQuery
+SELECT TO_HEX(SHA256(CONCAT(@tuz, LOWER(email)))) AS kisi_anahtari FROM anadolu.customers;</pre>
+<div class="warn"><b>Takma ad ≠ anonim</b>Takma adlandırılmış veri hâlâ kişisel veridir; anahtar ve başka bilgilerle kişiye ulaşılabilir. Anonim veri için kişiyi tekrar tanımlamak makul yollarla mümkün olmamalıdır.</div>
+<h2>Yeniden tanınma riski: k-anonimlik</h2>
+<p>Ad soyad silinse bile “şehir + doğum yılı + cinsiyet” birleşimi tek bir kişiye işaret edebilir. Bir veri setinde bu tür <b>yarı tanımlayıcıların</b> her birleşiminin en az <i>k</i> kişide görünmesi istenir. SQL ile kontrol:</p>
+<pre class="code">SELECT city, birth_year, gender, COUNT(*) AS kisi
+FROM customers
+WHERE city IS NOT NULL
+GROUP BY city, birth_year, gender
+HAVING COUNT(*) < 3
+ORDER BY kisi, city
+LIMIT 8;</pre>
+<p>Çözüm genellikle genelleştirmedir: doğum yılı yerine 10'luk yaş grubu, şehir yerine bölge.</p>
+<h2>Saklama süresi ve imha</h2>
+<pre class="code" data-norun>-- 10 yılı dolmuş, ilişkisi bitmiş müşterilerin kişisel alanlarını anonimleştir
+UPDATE customers
+SET first_name = 'Anonim', last_name = 'Anonim', email = NULL, birth_year = NULL
+WHERE iliski_bitis &lt; DATEADD(year, -10, GETDATE());
+
+-- İmha kaydı
+INSERT INTO imha_kaydi (tablo, kayit_sayisi, yontem, tarih)
+VALUES ('customers', @@ROWCOUNT, 'anonimleştirme', SYSDATETIME());</pre>
+<h2>İlgili kişinin talebi</h2>
+<p>“Hakkımda hangi verileri tutuyorsunuz?” sorusuna yanıt verebilmek için kişiye bağlı tüm tabloları bilmek gerekir (veri envanteri). Yabancı anahtarlar ve iyi adlandırılmış sütunlar bu işi kolaylaştırır.</p>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-kvkk">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../guvenlik/">← Güvenlik: SQL injection ve yetkilendirme</a><a href="../ileri-desenler/">İleri desenler: gaps &amp; islands, ardışık seriler →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,37 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>INNER JOIN | Kesit SQL</title><meta name="description" content="İki tablonun eşleşen satırlarını birleştirmek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/inner-join/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="INNER JOIN"><meta property="og:description" content="İki tablonun eşleşen satırlarını birleştirmek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/inner-join/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"INNER JOIN","description":"İki tablonun eşleşen satırlarını birleştirmek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/inner-join/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Tabloları Birleştirme</span><h1>INNER JOIN</h1><p class="st-l">İki tablonun eşleşen satırlarını birleştirmek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-inner-join">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Eşleşenleri birleştir</h2>
+<p><b>INNER JOIN</b>, ON koşulunu sağlayan satır çiftlerini birleştirir. Eşi olmayan satırlar sonuçta yer almaz.</p>
+<pre class="code">SELECT o.order_id, o.order_date, c.first_name, c.last_name
+FROM orders AS o
+INNER JOIN customers AS c
+        ON o.customer_id = c.customer_id
+LIMIT 10;</pre>
+<ul>
+<li><code>o</code> ve <code>c</code> tablo takma adlarıdır; sorguyu kısaltır.</li>
+<li>Aynı adlı sütun iki tabloda varsa (<code>customer_id</code> gibi) hangi tablodan geldiğini belirtmen gerekir: <code>o.customer_id</code>.</li>
+<li><code>INNER</code> kelimesi isteğe bağlıdır; sadece <code>JOIN</code> yazmak aynı şeydir.</li>
+</ul>
+<h2>Join'den sonra gruplama</h2>
+<p>Kategori bazında satılan adet:</p>
+<pre class="code">SELECT p.category, SUM(oi.quantity) AS adet
+FROM order_items oi
+JOIN products p ON p.product_id = oi.product_id
+GROUP BY p.category
+ORDER BY adet DESC;</pre>
+<h2>Eski usul yazım</h2>
+<p>Eski kodlarda <code>FROM a, b WHERE a.id = b.a_id</code> görebilirsin. Aynı sonucu verir ama birleştirme koşulunu WHERE'e karıştırdığı için okunması zordur ve koşul unutulursa her satırı her satırla eşleştirir. Açık <code>JOIN ... ON</code> yazımını tercih et.</p>
+<div class="tip"><b>USING</b>Birleştirilen sütunun adı iki tabloda aynıysa <code>JOIN customers USING (customer_id)</code> kısaltması kullanılabilir.</div>
+<h2>Derinleş: bir JOIN'i doğrulamak</h2><p>Birleştirmeden sonra hep iki şeyi kontrol et: <b>satır sayısı</b> beklediğin gibi mi ve <b>anahtar benzersiz mi?</b> Siparişleri restoranlarla birleştirmek sipariş sayısını değiştirmemelidir, çünkü her siparişin tek bir restoranı vardır:</p><pre class="code">SELECT COUNT(*) AS siparis,
+       (SELECT COUNT(*) FROM lk_orders o JOIN lk_restaurants r ON r.restaurant_id = o.restaurant_id) AS birlesik
+FROM lk_orders;</pre>
+<p>İki sayı farklıysa ya eşleşmeyen satırlar düşmüştür (INNER JOIN eşi olmayanları atar) ya da “bir” sandığın taraf aslında “çok”tur.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-inner-join">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../iliskiler/">← İlişkiler: bire-bir, bire-çok, çoka-çok</a><a href="../left-join/">LEFT JOIN ve eşi olmayanları bulmak →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,58 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Coğrafi veri: mesafe, en yakın nokta ve uzamsal tipler | Kesit SQL</title><meta name="description" content="Haversine ile mesafe, PostGIS, SQL Server geography, BigQuery GEOGRAPHY."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/cografi/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Coğrafi veri: mesafe, en yakın nokta ve uzamsal tipler"><meta property="og:description" content="Haversine ile mesafe, PostGIS, SQL Server geography, BigQuery GEOGRAPHY."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/cografi/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Coğrafi veri: mesafe, en yakın nokta ve uzamsal tipler","description":"Haversine ile mesafe, PostGIS, SQL Server geography, BigQuery GEOGRAPHY.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/cografi/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Modern SQL</span><h1>Coğrafi veri: mesafe, en yakın nokta ve uzamsal tipler</h1><p class="st-l">Haversine ile mesafe, PostGIS, SQL Server geography, BigQuery GEOGRAPHY.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-cografi">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Konum sorguları</h2>
+<p>“Müşteriye en yakın mağaza”, “5 km içindeki kuryeler”, “hangi ilçede?” gibi sorular coğrafi (uzamsal) veri gerektirir. Basit mesafe hesabı düz SQL ile yapılabilir; ciddi işler için uzamsal tipler ve indeksler kullanılır.</p>
+<h2>Haversine: iki koordinat arasındaki mesafe</h2>
+<p>Dünyayı küre kabul ederek iki enlem/boylam arasındaki büyük daire mesafesi (km):</p>
+<pre class="code">WITH sehir AS (
+  SELECT 'İstanbul' AS ad, 41.0082 AS enlem, 28.9784 AS boylam UNION ALL
+  SELECT 'Ankara',   39.9334, 32.8597 UNION ALL
+  SELECT 'İzmir',    38.4237, 27.1428 UNION ALL
+  SELECT 'Bursa',    40.1885, 29.0610 UNION ALL
+  SELECT 'Antalya',  36.8969, 30.7133
+)
+SELECT a.ad AS nereden, b.ad AS nereye,
+       ROUND(6371 * 2 * ASIN(SQRT(
+         POWER(SIN((b.enlem - a.enlem) * 0.0174532925 / 2), 2) +
+         COS(a.enlem * 0.0174532925) * COS(b.enlem * 0.0174532925) *
+         POWER(SIN((b.boylam - a.boylam) * 0.0174532925 / 2), 2))), 0) AS km
+FROM sehir a JOIN sehir b ON a.ad = 'İstanbul' AND b.ad <> a.ad
+ORDER BY km;</pre>
+<p>(0.0174532925 = π/180, dereceyi radyana çevirir; 6371 km Dünya'nın ortalama yarıçapı.)</p>
+<h2>Uzamsal tipler</h2>
+<pre class="code" data-norun>-- PostgreSQL + PostGIS
+CREATE EXTENSION postgis;
+ALTER TABLE magaza ADD COLUMN konum geography(Point, 4326);
+UPDATE magaza SET konum = ST_SetSRID(ST_MakePoint(boylam, enlem), 4326)::geography;
+CREATE INDEX ix_magaza_konum ON magaza USING GIST (konum);
+
+-- 5 km içindeki mağazalar ve en yakın 3
+SELECT ad, ST_Distance(konum, ST_MakePoint(28.98, 41.01)::geography) / 1000 AS km
+FROM magaza
+WHERE ST_DWithin(konum, ST_MakePoint(28.98, 41.01)::geography, 5000)
+ORDER BY konum &lt;-&gt; ST_MakePoint(28.98, 41.01)::geography
+LIMIT 3;
+
+-- SQL Server
+DECLARE @ben geography = geography::Point(41.01, 28.98, 4326);
+SELECT TOP (3) ad, konum.STDistance(@ben) / 1000 AS km FROM dbo.magaza ORDER BY konum.STDistance(@ben);
+
+-- BigQuery
+SELECT ad, ST_DISTANCE(konum, ST_GEOGPOINT(28.98, 41.01)) / 1000 AS km
+FROM anadolu.magaza
+WHERE ST_DWITHIN(konum, ST_GEOGPOINT(28.98, 41.01), 5000);
+
+-- MySQL 8
+SELECT ad, ST_Distance_Sphere(konum, POINT(28.98, 41.01)) / 1000 AS km FROM magaza;</pre>
+<div class="warn"><b>Sıra tuzağı</b>Fonksiyonların çoğu nokta için <b>(boylam, enlem)</b> sırası ister (x, y); SQL Server'ın <code>geography::Point</code> fonksiyonu ise (enlem, boylam). Ters yazılan koordinatlar okyanusun ortasında nokta üretir.</div>
+<p>SRID 4326 = WGS 84 (GPS koordinatları). <code>geography</code> mesafeyi metre olarak küre üzerinde, <code>geometry</code> düzlemde hesaplar.</p>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-cografi">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../json/">← SQL ile JSON verisi</a><a href="../dwh/">OLTP ve OLAP, yıldız şema, fact ve dimension →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

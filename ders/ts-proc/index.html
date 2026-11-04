@@ -1,0 +1,64 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Saklı yordamlar (stored procedure) | Kesit SQL</title><meta name="description" content="Parametreli, yeniden kullanılabilir ve güvenli iş mantığı."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-proc/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Saklı yordamlar (stored procedure)"><meta property="og:description" content="Parametreli, yeniden kullanılabilir ve güvenli iş mantığı."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-proc/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Saklı yordamlar (stored procedure)","description":"Parametreli, yeniden kullanılabilir ve güvenli iş mantığı.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-proc/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · T-SQL (SQL Server)</span><h1>Saklı yordamlar (stored procedure)</h1><p class="st-l">Parametreli, yeniden kullanılabilir ve güvenli iş mantığı.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-proc">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Neden saklı yordam?</h2>
+<ul>
+<li><b>Yeniden kullanım</b>: Aynı mantık uygulamadan, raporlardan ve zamanlanmış işlerden çağrılır.</li>
+<li><b>Güvenlik</b>: Kullanıcıya tabloya değil yalnızca yordama yetki verilebilir; parametreler SQL injection'ı önler.</li>
+<li><b>Performans</b>: Yürütme planı önbelleğe alınır.</li>
+</ul>
+<pre class="code" data-base="tsql">CREATE OR ALTER PROCEDURE dbo.usp_MusteriSiparisleri
+    @musteri_id INT,
+    @yil INT = NULL          -- varsayılan değerli (isteğe bağlı) parametre
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT order_id, order_date, status, channel
+    FROM orders
+    WHERE customer_id = @musteri_id
+      AND (@yil IS NULL OR YEAR(order_date) = @yil)
+    ORDER BY order_date;
+END;
+GO
+
+EXEC dbo.usp_MusteriSiparisleri @musteri_id = 7, @yil = 2024;</pre>
+<h2>OUTPUT parametreleri</h2>
+<pre class="code" data-base="tsql">CREATE OR ALTER PROCEDURE dbo.usp_KategoriOzet
+    @kategori NVARCHAR(50),
+    @adet INT OUTPUT,
+    @ortalama DECIMAL(12, 2) OUTPUT
+AS
+BEGIN
+    SELECT @adet = COUNT(*), @ortalama = AVG(price)
+    FROM products
+    WHERE category = @kategori;
+END;
+GO
+
+DECLARE @a INT, @o DECIMAL(12, 2);
+EXEC dbo.usp_KategoriOzet @kategori = N'Kitap', @adet = @a OUTPUT, @ortalama = @o OUTPUT;
+SELECT @a AS urun_sayisi, @o AS ortalama_fiyat;</pre>
+<h2>RETURN ile durum kodu</h2>
+<pre class="code" data-base="tsql">CREATE OR ALTER PROCEDURE dbo.usp_StokDus @urun INT, @adet INT
+AS
+BEGIN
+    IF (SELECT stock FROM products WHERE product_id = @urun) &lt; @adet
+        RETURN 1;   -- yetersiz stok
+    UPDATE products SET stock = stock - @adet WHERE product_id = @urun;
+    RETURN 0;
+END;
+GO
+
+DECLARE @sonuc INT;
+EXEC @sonuc = dbo.usp_StokDus @urun = 39, @adet = 1;
+SELECT @sonuc AS durum_kodu;</pre>
+<div class="note"><b>Adlandırma</b>Yordamlarda <code>usp_</code> (user stored procedure) öneki yaygındır. <code>sp_</code> önekinden kaçın: SQL Server bu öneki önce master veritabanında arar.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-proc">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-merge/">← MERGE: eşitle, güncelle, ekle, sil</a><a href="../ts-func/">Kullanıcı tanımlı fonksiyonlar (UDF) →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

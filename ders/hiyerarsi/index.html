@@ -1,0 +1,66 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hiyerarşik veriler: CONNECT BY, özyinelemeli CTE, hierarchyid ve yol yöntemi | Kesit SQL</title><meta name="description" content="Oracle START WITH / CONNECT BY PRIOR, LEVEL, SYS_CONNECT_BY_PATH; diğer SQL türlerinde karşılıkları."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/hiyerarsi/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Hiyerarşik veriler: CONNECT BY, özyinelemeli CTE, hierarchyid ve yol yöntemi"><meta property="og:description" content="Oracle START WITH / CONNECT BY PRIOR, LEVEL, SYS_CONNECT_BY_PATH; diğer SQL türlerinde karşılıkları."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/hiyerarsi/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Hiyerarşik veriler: CONNECT BY, özyinelemeli CTE, hierarchyid ve yol yöntemi","description":"Oracle START WITH / CONNECT BY PRIOR, LEVEL, SYS_CONNECT_BY_PATH; diğer SQL türlerinde karşılıkları.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/hiyerarsi/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · İleri Sorgu Yapıları</span><h1>Hiyerarşik veriler: CONNECT BY, özyinelemeli CTE, hierarchyid ve yol yöntemi</h1><p class="st-l">Oracle START WITH / CONNECT BY PRIOR, LEVEL, SYS_CONNECT_BY_PATH; diğer SQL türlerinde karşılıkları.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-hiyerarsi">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Ağaç yapıları</h2>
+<p>Organizasyon şeması, kategori ağacı, ürün reçetesi (bill of materials), yorum yanıtları… Hepsi bir satırın başka bir satıra “ebeveyn” olarak bağlandığı yapılardır. En yaygın saklama biçimi <b>komşuluk listesi</b>dir: <code>employees.manager_id → employees.emp_id</code>.</p>
+<h2>Oracle: CONNECT BY</h2>
+<p>Oracle'ın özyinelemeli CTE'den önce de var olan ve hâlâ çok kullanılan sözdizimi:</p>
+<pre class="code" data-base="oracle">SELECT LPAD(' ', 2 * (LEVEL - 1)) || first_name AS agac,
+       LEVEL,
+       SYS_CONNECT_BY_PATH(first_name, '/') AS yol,
+       CONNECT_BY_ISLEAF AS yaprak
+FROM employees
+START WITH manager_id IS NULL
+CONNECT BY PRIOR emp_id = manager_id
+ORDER SIBLINGS BY first_name;</pre>
+<table>
+<tr><th>Öğe</th><th>Anlamı</th></tr>
+<tr><td><code>START WITH</code></td><td>Kök satır(lar)</td></tr>
+<tr><td><code>CONNECT BY PRIOR emp_id = manager_id</code></td><td>Ebeveynin emp_id'si çocuğun manager_id'sine eşit (yukarıdan aşağı)</td></tr>
+<tr><td><code>LEVEL</code></td><td>Derinlik (kök = 1)</td></tr>
+<tr><td><code>SYS_CONNECT_BY_PATH(sütun, '/')</code></td><td>Kökten satıra kadar yol</td></tr>
+<tr><td><code>CONNECT_BY_ROOT sütun</code></td><td>Satırın kökündeki değer</td></tr>
+<tr><td><code>CONNECT_BY_ISLEAF</code></td><td>Yaprak mı (çocuğu yok)?</td></tr>
+<tr><td><code>ORDER SIBLINGS BY</code></td><td>Ağaç düzenini bozmadan kardeşleri sırala</td></tr>
+<tr><td><code>NOCYCLE</code></td><td>Döngü varsa durdur</td></tr>
+</table>
+<h3>Satır üreteci</h3>
+<pre class="code" data-base="oracle">SELECT LEVEL AS gun_no,
+       DATE '2024-12-01' + LEVEL - 1 AS gun
+FROM dual
+CONNECT BY LEVEL &lt;= 7;</pre>
+<h2>Standart yol: özyinelemeli CTE</h2>
+<pre class="code">WITH RECURSIVE agac AS (
+  SELECT emp_id, first_name, manager_id, 1 AS duzey, '/' || first_name AS yol
+  FROM employees WHERE manager_id IS NULL
+  UNION ALL
+  SELECT e.emp_id, e.first_name, e.manager_id, a.duzey + 1, a.yol || '/' || e.first_name
+  FROM employees e JOIN agac a ON e.manager_id = a.emp_id
+)
+SELECT duzey, yol FROM agac ORDER BY yol;</pre>
+<h2>Diğer saklama yöntemleri</h2>
+<table>
+<tr><th>Yöntem</th><th>Nasıl?</th><th>Güçlü yanı</th></tr>
+<tr><td>Komşuluk listesi</td><td>parent_id sütunu</td><td>Basit, güncellemesi kolay; derin sorgular özyineleme ister</td></tr>
+<tr><td>Yol (materialized path)</td><td><code>'/1/3/7/'</code> metni; <code>WHERE yol LIKE '/1/3/%'</code></td><td>Alt ağaç sorgusu hızlı; taşıma pahalı</td></tr>
+<tr><td>SQL Server <code>hierarchyid</code></td><td><code>node.IsDescendantOf(@kok)</code>, <code>GetLevel()</code></td><td>Yerleşik tip ve indeks</td></tr>
+<tr><td>PostgreSQL <code>ltree</code></td><td><code>yol &lt;@ 'genel.satis'</code></td><td>GiST indeksli yol sorgusu</td></tr>
+<tr><td>Kapanış tablosu (closure)</td><td>(ata, torun, derinlik) satırları</td><td>Her sorgu hızlı; yazma maliyeti yüksek</td></tr>
+</table>
+<pre class="code" data-norun>-- SQL Server hierarchyid
+SELECT ad, dugum.ToString() AS yol, dugum.GetLevel() AS duzey
+FROM dbo.org
+WHERE dugum.IsDescendantOf(hierarchyid::Parse('/1/')) = 1;
+
+-- PostgreSQL ltree
+CREATE EXTENSION ltree;
+SELECT ad FROM kategori WHERE yol &lt;@ 'elektronik.ses';</pre>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-hiyerarsi">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../recursive-cte/">← Özyinelemeli CTE (recursive CTE, WITH RECURSIVE)</a><a href="../takvim/">Tarih serisi ve takvim tablosu: eksik günleri doldurmak →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

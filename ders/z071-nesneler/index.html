@@ -1,0 +1,43 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>1Z0-071: Şema nesneleri: view, sequence, synonym, index | Kesit SQL</title><meta name="description" content="Görünüm kuralları, NEXTVAL/CURRVAL, açık/özel eşanlamlılar, indeks türleri."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/z071-nesneler/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="1Z0-071: Şema nesneleri: view, sequence, synonym, index"><meta property="og:description" content="Görünüm kuralları, NEXTVAL/CURRVAL, açık/özel eşanlamlılar, indeks türleri."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/z071-nesneler/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"1Z0-071: Şema nesneleri: view, sequence, synonym, index","description":"Görünüm kuralları, NEXTVAL/CURRVAL, açık/özel eşanlamlılar, indeks türleri.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/z071-nesneler/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Sertifika Hazırlık</span><h1>1Z0-071: Şema nesneleri: view, sequence, synonym, index</h1><p class="st-l">Görünüm kuralları, NEXTVAL/CURRVAL, açık/özel eşanlamlılar, indeks türleri.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-z071-nesneler">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Sequence (dizi)</h2>
+<pre class="code" data-base="oracle">CREATE SEQUENCE seq_kampanya START WITH 100 INCREMENT BY 10;
+SELECT seq_kampanya.NEXTVAL AS ilk FROM dual;
+SELECT seq_kampanya.NEXTVAL AS ikinci, seq_kampanya.CURRVAL AS su_an FROM dual;</pre>
+<ul>
+<li><code>CURRVAL</code>, oturumda en az bir kez <code>NEXTVAL</code> çağrılmadan kullanılamaz.</li>
+<li>Seçenekler: <code>MINVALUE</code>, <code>MAXVALUE</code>, <code>CYCLE</code> (sona gelince başa döner), <code>CACHE n</code> (performans; çökmede boşluk oluşabilir), <code>NOCACHE</code>.</li>
+<li>NEXTVAL; alt sorguda, GROUP BY / ORDER BY / DISTINCT içeren SELECT'te, view tanımında ve CHECK kısıtında kullanılamaz.</li>
+<li>Sequence değerleri ROLLBACK ile geri alınmaz; numaralarda <b>boşluk</b> olabilir.</li>
+<li>12c'den beri sütun varsayılanı olabilir: <code>DEFAULT seq.NEXTVAL</code> veya <code>GENERATED ALWAYS AS IDENTITY</code>.</li>
+</ul>
+<h2>Synonym (eşanlamlı)</h2>
+<pre class="code" data-norun>CREATE SYNONYM urunler FOR satis.products;            -- özel (yalnızca senin şemanda)
+CREATE PUBLIC SYNONYM urunler FOR satis.products;     -- herkese açık (yetki gerekir)
+DROP SYNONYM urunler;</pre>
+<p>Eşanlamlı yalnızca bir <b>ad</b>dır; nesneye erişim yetkisi vermez.</p>
+<h2>Görünüm kuralları (sınav)</h2>
+<ul>
+<li>Basit görünüm (tek tablo, fonksiyon/grup yok) üzerinden DML yapılabilir.</li>
+<li>Grup fonksiyonu, GROUP BY, DISTINCT, ROWNUM veya ifadeyle tanımlanmış sütun varsa: o sütuna INSERT/UPDATE yapılamaz.</li>
+<li>Görünüm alttaki tablonun NOT NULL sütunlarını içermiyorsa görünüm üzerinden INSERT başarısız olur.</li>
+<li><code>CREATE OR REPLACE VIEW</code> yetkileri korur; <code>DROP VIEW</code> alttaki veriyi silmez.</li>
+</ul>
+<h2>İndeksler</h2>
+<ul>
+<li>PRIMARY KEY ve UNIQUE kısıtları otomatik <b>benzersiz indeks</b> oluşturur; FOREIGN KEY oluşturmaz.</li>
+<li><b>Bileşik indeks</b>: sütun sırası önemlidir; ilk sütunu içermeyen koşullar indeksten tam yararlanamaz.</li>
+<li><b>Fonksiyon tabanlı indeks</b>: <code>CREATE INDEX ix ON employees (UPPER(last_name));</code></li>
+<li><b>Görünmez indeks</b>: <code>ALTER INDEX ix INVISIBLE;</code></li>
+<li>Aynı sütun kümesinde birden fazla indeks ancak türleri (B-tree/bitmap) veya benzersizlik/bölümleme farklıysa olabilir ve yalnızca biri görünür olabilir.</li>
+</ul>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-z071-nesneler">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../z071-ddl/">← 1Z0-071: Oracle veri tipleri, tablo oluşturma ve değiştirme</a><a href="../dp300-yonetim/">DP-300: Azure SQL'de güvenlik, izleme ve otomasyon →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

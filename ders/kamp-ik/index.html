@@ -1,0 +1,26 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Alıştırma Kampı: İnsan kaynakları (10 soru) | Kesit SQL</title><meta name="description" content="Çalışanlar ve departmanlar: JOIN, self join, alt sorgu ve pencere pratiği."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/kamp-ik/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Alıştırma Kampı: İnsan kaynakları (10 soru)"><meta property="og:description" content="Çalışanlar ve departmanlar: JOIN, self join, alt sorgu ve pencere pratiği."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/kamp-ik/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Alıştırma Kampı: İnsan kaynakları (10 soru)","description":"Çalışanlar ve departmanlar: JOIN, self join, alt sorgu ve pencere pratiği.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/kamp-ik/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Alıştırma Kampı</span><h1>Alıştırma Kampı: İnsan kaynakları (10 soru)</h1><p class="st-l">Çalışanlar ve departmanlar: JOIN, self join, alt sorgu ve pencere pratiği.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-kamp-ik">Uygulamada aç, 10 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>İK veritabanı senaryosu</h2>
+<p>İK müdürü maaş dengesini, yönetici yapısını ve kıdemi inceliyor. <code>employees</code> ve <code>departments</code> tablolarıyla 10 soru. Self join (çalışan–yönetici), alt sorgu ve pencere fonksiyonları sık geçecek.</p>
+<div class="tip"><b>Tablolar</b><code>employees</code>: emp_id, first_name, last_name, dept_id, manager_id, title, salary, hire_date, email. <code>departments</code>: dept_id, name, city.</div>
+
+<h2>Nasıl çalışmalı?</h2>
+<ol>
+<li>Soruyu oku ve sonuçta hangi sütunların, kaç satırın bekleneceğini tahmin et.</li>
+<li>Önce <code>SELECT *</code> ile ilgili satırlara bak; sonra sütunları ve koşulları ekle.</li>
+<li><b>Kontrol et</b>'e basmadan önce <b>Sadece çalıştır</b> ile sonucu incele.</li>
+<li>İki denemede çözemezsen ipucuna bak; çözümü görmek XP'yi azaltır ama soruyu Tekrar listesine ekler.</li>
+</ol>
+<h2>Bu kampta en çok kullanacağın kalıplar</h2>
+<table><tr><th>İhtiyaç</th><th>Kalıp</th></tr><tr><td>Departman adı</td><td><code>JOIN departments d ON d.dept_id = e.dept_id</code></td></tr><tr><td>Yönetici adı</td><td><code>LEFT JOIN employees m ON m.emp_id = e.manager_id</code></td></tr><tr><td>Eşi olmayan da kalsın</td><td><code>departments d LEFT JOIN employees e ... COUNT(e.emp_id)</code></td></tr><tr><td>Ortalamaya göre</td><td><code>WHERE salary > (SELECT AVG(salary) FROM employees)</code></td></tr><tr><td>Departman içi sıra</td><td><code>DENSE_RANK() OVER (PARTITION BY dept_id ORDER BY salary DESC)</code></td></tr><tr><td>Departman ortalaması</td><td><code>AVG(salary) OVER (PARTITION BY dept_id)</code></td></tr></table>
+<div class="note"><b>Tablolar</b><code>employees</code> ve <code>departments</code>. Yönetici ilişkisi <code>employees.manager_id → employees.emp_id</code> ile kurulur. Sütunların açıklamaları ve örnek satırlar Veri setleri sayfasında.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-kamp-ik">Alıştırmalara geç (10)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../kamp-musteri/">← Alıştırma Kampı: Müşteri verisi (10 soru)</a><a href="../kamp-eticaret/">Alıştırma Kampı: E-ticaret (10 soru) →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

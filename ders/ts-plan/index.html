@@ -1,0 +1,52 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Yürütme planı ve STATISTICS IO: sorgu neden yavaş? | Kesit SQL</title><meta name="description" content="Plan operatörleri, mantıksal okuma, SARGable koşullar ve parameter sniffing."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-plan/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Yürütme planı ve STATISTICS IO: sorgu neden yavaş?"><meta property="og:description" content="Plan operatörleri, mantıksal okuma, SARGable koşullar ve parameter sniffing."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-plan/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Yürütme planı ve STATISTICS IO: sorgu neden yavaş?","description":"Plan operatörleri, mantıksal okuma, SARGable koşullar ve parameter sniffing.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-plan/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · T-SQL (SQL Server)</span><h1>Yürütme planı ve STATISTICS IO: sorgu neden yavaş?</h1><p class="st-l">Plan operatörleri, mantıksal okuma, SARGable koşullar ve parameter sniffing.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-plan">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Plan: motorun yol haritası</h2>
+<p>SQL Server bir sorguyu çalıştırmadan önce <b>sorgu iyileştirici</b> (optimizer) birçok olası yol arasından en ucuz görüneni seçer. Bu seçim <b>yürütme planıdır</b>. SSMS'te <b>Ctrl+L</b> tahmini planı, <b>Ctrl+M</b> ile açılan “gerçek plan” ise sorguyla birlikte gerçekleşen planı gösterir.</p>
+<table>
+<tr><th>Operatör</th><th>Anlamı</th><th>İpucu</th></tr>
+<tr><td>Table / Clustered Index <b>Scan</b></td><td>Tüm tabloyu okur</td><td>Büyük tabloda seçici bir filtre varsa şüphelen.</td></tr>
+<tr><td>Index <b>Seek</b></td><td>İndeks ağacında doğrudan ilgili satırlara gider</td><td>Genellikle istediğimiz.</td></tr>
+<tr><td><b>Key Lookup</b></td><td>İndekste olmayan sütunlar için ana tabloya geri döner</td><td>Çok satırda pahalı; <code>INCLUDE</code> ile kapsayan indeks çözer.</td></tr>
+<tr><td><b>Nested Loops</b></td><td>Her dış satır için iç tabloyu arar</td><td>Az satırda hızlı.</td></tr>
+<tr><td><b>Hash Match</b></td><td>Bellekte karma tablo kurar</td><td>Büyük ve sırasız girdilerde.</td></tr>
+<tr><td><b>Sort</b></td><td>Sıralar</td><td>Belleğe sığmazsa tempdb'ye taşar (spill).</td></tr>
+</table>
+<h2>STATISTICS IO ve TIME</h2>
+<pre class="code" data-norun>SET STATISTICS IO ON;
+SET STATISTICS TIME ON;
+
+SELECT COUNT(*) FROM orders WHERE YEAR(order_date) = 2024;
+
+-- Mesajlar sekmesinde:
+-- Her tablo için okuma sayıları: Scan count, logical reads, physical reads ...
+-- Sürenin altında: CPU time, elapsed time</pre>
+<p><b>Mantıksal okuma</b> (logical reads), bellekten okunan 8 KB'lık sayfa sayısıdır ve sorgunun ne kadar iş yaptığının en güvenilir ölçüsüdür. Süre, sunucunun o anki yüküne göre değişir; mantıksal okuma değişmez. İyileştirme yaptıktan sonra bu sayının düştüğünü görmelisin.</p>
+<h2>SARGable koşullar</h2>
+<p>Bir koşulun indeksi kullanabilmesi için sütun <b>çıplak</b> olmalıdır. Sütunu bir fonksiyona sokarsan motor her satırı hesaplamak zorunda kalır:</p>
+<table>
+<tr><th>İndeksi kullanamaz</th><th>İndeksi kullanır</th></tr>
+<tr><td><code>WHERE YEAR(order_date) = 2024</code></td><td><code>WHERE order_date &gt;= '2024-01-01' AND order_date &lt; '2025-01-01'</code></td></tr>
+<tr><td><code>WHERE LEFT(name, 3) = 'Kab'</code></td><td><code>WHERE name LIKE 'Kab%'</code></td></tr>
+<tr><td><code>WHERE price * 1.2 &gt; 1200</code></td><td><code>WHERE price &gt; 1000</code></td></tr>
+<tr><td><code>WHERE ISNULL(city, '') = 'Ankara'</code></td><td><code>WHERE city = 'Ankara'</code></td></tr>
+</table>
+<pre class="code" data-base="tsql">-- İki sorgu aynı sonucu verir; yalnızca ikincisi order_date indeksini kullanabilir
+SELECT COUNT(*) AS adet FROM orders WHERE YEAR(order_date) = 2024;
+SELECT COUNT(*) AS adet FROM orders WHERE order_date &gt;= '2024-01-01' AND order_date &lt; '2025-01-01';</pre>
+<h2>Gizli tuzaklar</h2>
+<ul>
+<li><b>Örtük dönüşüm</b>: VARCHAR bir sütunu NVARCHAR bir parametreyle (<code>N'...'</code>) karşılaştırmak, sütunun her satırda dönüştürülmesine ve Seek yerine Scan'e yol açabilir. Planda sarı ünlem ile uyarılır.</li>
+<li><b>Parameter sniffing</b> (parametreye göre plan seçimi): Prosedür ilk çağrıldığındaki parametreye göre plan seçilir ve önbellekte kalır. Veri çok dengesizse diğer değerler için kötü bir plan kullanılır. Çözümler: <code>OPTION (RECOMPILE)</code>, <code>OPTIMIZE FOR</code>, sorguyu ayırmak.</li>
+<li><b>Güncel olmayan istatistikler</b>: Optimizer satır sayısını yanlış tahmin eder. Planda “tahmini” ile “gerçek” satır sayısı arasındaki büyük fark bunun işaretidir.</li>
+</ul>
+<div class="tip"><b>Query Store</b>SQL Server 2016+'da sorguların plan geçmişini ve performansını saklar. “Dün hızlıydı, bugün yavaş” sorununda hangi planın değiştiğini gösterir ve eski planı zorlamana izin verir.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-plan">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-index/">← SQL Server indeksleri: clustered, nonclustered, INCLUDE, filtreli</a><a href="../ts-izolasyon/">SQL Server'da kilitler, izolasyon ve NOLOCK →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

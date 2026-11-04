@@ -1,0 +1,82 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Önce ölç, sonra düzelt: yavaş sorguda çalışma akışı | Kesit SQL</title><meta name="description" content="Yavaş sorguda tahminle değil ölçümle ilerlemek: temel ölçüm, plan, tek değişiklik, yeniden ölçüm ve sonuç sağlaması."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/opt-olc/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Önce ölç, sonra düzelt: yavaş sorguda çalışma akışı"><meta property="og:description" content="Yavaş sorguda tahminle değil ölçümle ilerlemek: temel ölçüm, plan, tek değişiklik, yeniden ölçüm ve sonuç sağlaması."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/opt-olc/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Önce ölç, sonra düzelt: yavaş sorguda çalışma akışı","description":"Yavaş sorguda tahminle değil ölçümle ilerlemek: temel ölçüm, plan, tek değişiklik, yeniden ölçüm ve sonuç sağlaması.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/opt-olc/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Sorgu Optimizasyonu</span><h1>Önce ölç, sonra düzelt: yavaş sorguda çalışma akışı</h1><p class="st-l">Yavaş sorguda tahminle değil ölçümle ilerlemek: temel ölçüm, plan, tek değişiklik, yeniden ölçüm ve sonuç sağlaması.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-olc">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory"><h2>Senaryo: "Rapor yavaş, indeks ekleyelim"</h2>
+<p>Ilgaz Bank'ta operasyon ekibi aylık hareket raporunun yavaşladığını söylüyor. Biri hemen "indeks ekleyelim" diyor. Belki doğrudur, ama henüz kimse hangi sorgunun neden yavaş olduğunu görmedi. Optimizasyon işi tahminle başlarsa yanlış yere indeks eklersin, yazmayı yavaşlatırsın, rapor yine yavaş kalır.</p>
+<h2>Altı adımlık akış</h2>
+<ol>
+<li><b>Sorunu tanımla.</b> Hangi sorgu? Ne sıklıkla çalışıyor? Kabul edilebilir süre ne? Günde bir çalışan rapor ile saniyede yüz kez çalışan ekran aynı öncelikte değildir.</li>
+<li><b>Temel ölçümü al (baseline).</b> Süreyi birkaç kez ölç. İş ölçüsünü de yaz: okunan sayfa ya da satır. Sonucun sağlamasını sakla: satır sayısı ve toplam.</li>
+<li><b>Planı oku.</b> Tabloyu baştan sona mı okuyor, indeks mi kullanıyor, nerede satır çok?</li>
+<li><b>Tek değişiklik yap.</b> Aynı anda üç şey değiştirirsen hangisinin işe yaradığını bilemezsin.</li>
+<li><b>Yeniden ölç ve sonucu karşılaştır.</b> Hızlı ama yanlış sorgu, yavaş ve doğru sorgudan kötüdür.</li>
+<li><b>Bedeli yaz.</b> İndeks yazmayı yavaşlatır ve yer kaplar. Kararı ve ölçümü bir yere not et.</li>
+</ol>
+<h2>Bu raporla deneyelim</h2>
+<pre class="code">SELECT txn_type, COUNT(*) AS adet, ROUND(SUM(amount)) AS toplam
+FROM bank_txns
+WHERE strftime('%Y-%m', txn_time) = '2024-11'
+GROUP BY txn_type;</pre>
+<div class="note"><b>Süreler hakkında</b>Kod kutusunun altındaki süre bu tarayıcıda, SQLite motorunda ölçülür. Kendi ortamında farklı olur. Burada yalnız yönüne bak. Planlar da motordan motora değişir.</div>
+<p>Planı görelim. Bu görevlerde tarayıcıdaki motor SQLite olduğu için <code>EXPLAIN QUERY PLAN</code> kullanıyoruz:</p>
+<pre class="code" data-na="tsql pg mysql oracle bq">EXPLAIN QUERY PLAN
+SELECT txn_type, COUNT(*) AS adet, ROUND(SUM(amount)) AS toplam
+FROM bank_txns
+WHERE strftime('%Y-%m', txn_time) = '2024-11'
+GROUP BY txn_type;</pre>
+<p>Satırları oku: <code>SCAN bank_txns</code> tablonun tamamını okuduğunu, <code>USE TEMP B-TREE FOR GROUP BY</code> gruplama için geçici yapı kurduğunu söylüyor. Üstelik bir ay isteniyor. Peki okunan satırların ne kadarı gerçekten kullanılıyor? Bunu da sorguyla ölçebilirsin:</p>
+<pre class="code">SELECT COUNT(*) AS okunan,
+       SUM(CASE WHEN txn_time >= '2024-11-01' AND txn_time &lt; '2024-12-01' THEN 1 ELSE 0 END) AS kullanilan
+FROM bank_txns;</pre>
+<h2>Tek değişiklik: sütunu serbest bırak ve indeks ekle</h2>
+<pre class="code" data-na="tsql pg mysql oracle bq">CREATE INDEX ix_txn_time ON bank_txns (txn_time);
+EXPLAIN QUERY PLAN
+SELECT txn_type, COUNT(*) AS adet, ROUND(SUM(amount)) AS toplam
+FROM bank_txns
+WHERE txn_time >= '2024-11-01' AND txn_time &lt; '2024-12-01'
+GROUP BY txn_type;</pre>
+<p>Plan <code>SEARCH bank_txns USING INDEX ix_txn_time (txn_time&gt;? AND txn_time&lt;?)</code> oldu: motor yalnız o ayın satırlarına gidiyor.</p>
+<h2>Sonuç aynı mı?</h2>
+<p>Sağlama yapmadan bitmedi. İki sorgunun farkı boş kalmalı. Her iki yönü de dene:</p>
+<pre class="code">SELECT txn_type, COUNT(*) AS adet FROM bank_txns WHERE strftime('%Y-%m', txn_time) = '2024-11' GROUP BY txn_type
+EXCEPT
+SELECT txn_type, COUNT(*) AS adet FROM bank_txns WHERE txn_time >= '2024-11-01' AND txn_time &lt; '2024-12-01' GROUP BY txn_type;</pre>
+<h2>Gerçek bir PostgreSQL'de aynı değişiklik</h2>
+<div class="note"><b>PostgreSQL çıktıları</b>Bu derslerdeki PostgreSQL planları elle yazılmadı. Aynı veriyle PostgreSQL 16.4 üzerinde (PGlite, tarayıcıda çalışan WASM sürümü) üretildi. <code>VACUUM ANALYZE</code> çalıştırıldı, planlama satırları kısalık için çıkarıldı. Sayılar kendi sunucunda farklı olur; okuma biçimi aynıdır.</div>
+<p>PostgreSQL planını bir sonraki derste ayrıntılı okuyacağız. Şimdilik üç satır yeter. <code>Seq Scan</code> tablonun tamamını okur, <code>Index Only Scan</code> yalnız indeksi okur. <code>Rows Removed by Filter</code> okunup atılan satırdır. <code>Buffers: shared hit</code> okunan sayfa sayısıdır.</p>
+<p>İndeks yokken:</p>
+<pre class="code" data-norun>EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT COUNT(*) FROM bank_txns WHERE txn_time >= '2024-11-01' AND txn_time &lt; '2024-12-01';</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">Aggregate  (cost=1034.37..1034.38 rows=1 width=8) (actual rows=1 loops=1)
+  Buffers: shared hit=391
+  ->  Seq Scan on bank_txns  (cost=0.00..1025.26 rows=3644 width=0) (actual rows=3590 loops=1)
+        Filter: ((txn_time >= '2024-11-01 00:00:00'::timestamp without time zone) AND (txn_time &lt; '2024-12-01 00:00:00'::timestamp without time zone))
+        Rows Removed by Filter: 38694
+        Buffers: shared hit=391</pre>
+<p>İndeks varken:</p>
+<pre class="code" data-norun>CREATE INDEX ix_txn_time ON bank_txns (txn_time);
+EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT COUNT(*) FROM bank_txns WHERE txn_time >= '2024-11-01' AND txn_time &lt; '2024-12-01';</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">Aggregate  (cost=121.16..121.17 rows=1 width=8) (actual rows=1 loops=1)
+  Buffers: shared hit=13
+  ->  Index Only Scan using ix_txn_time on bank_txns  (cost=0.29..112.17 rows=3594 width=0) (actual rows=3590 loops=1)
+        Index Cond: ((txn_time >= '2024-11-01 00:00:00'::timestamp without time zone) AND (txn_time &lt; '2024-12-01 00:00:00'::timestamp without time zone))
+        Heap Fetches: 0
+        Buffers: shared hit=13</pre>
+<p>Süre yerine iş ölçüsüne bak: okunan sayfa sayısı 391'den 13'e indi. Filtrenin elediği satırlar da (<code>Rows Removed by Filter</code>) kayboldu. İki çıktının gerçek satır sayısı aynı: 3.590.</p>
+<h2>Her SQL türünde ne ölçülür?</h2>
+<table>
+<tr><th>SQL türü</th><th>Plan ve ölçüm</th><th>Asıl bakılacak sayı</th></tr>
+<tr><td>SQL Server</td><td>Gerçek plan (SSMS'te Ctrl+M), <code>SET STATISTICS IO, TIME ON</code></td><td>Mantıksal okuma (logical reads)</td></tr>
+<tr><td>PostgreSQL</td><td><code>EXPLAIN (ANALYZE, BUFFERS)</code></td><td>Buffers, tahmini ve gerçek satır</td></tr>
+<tr><td>MySQL</td><td><code>EXPLAIN ANALYZE</code> (8.0.18 ve sonrası)</td><td>Tahmini ve gerçek satır, döngü sayısı</td></tr>
+<tr><td>Oracle</td><td><code>DBMS_XPLAN.DISPLAY_CURSOR</code>, <code>ALLSTATS LAST</code> biçimi</td><td><code>E-Rows</code> ve <code>A-Rows</code></td></tr>
+<tr><td>BigQuery</td><td>Kuru çalıştırma (dry run), yürütme ayrıntıları</td><td>İşlenen bayt</td></tr>
+<tr><td>SQLite</td><td><code>EXPLAIN QUERY PLAN</code></td><td>SCAN ve SEARCH, geçici yapılar</td></tr>
+</table>
+<div class="tip"><b>Mülakatta</b>"Bu sorgu yavaş, ne yaparsın?" sorusuna "indeks eklerim" ile başlama. "Önce ne kadar yavaş ve ne sıklıkla çalıştığını öğrenir, planı okur, tek değişiklik yapar, ölçer ve sonucun aynı kaldığını doğrularım" de. Ardından indeksten söz et.</div></article>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-olc">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ba-mulakat/">← Mülakat: BT iş analisti için SQL ve senaryo soruları</a><a href="../opt-plan/">Sorgu planı okumak (query plan): tarama, arama, birleştirme, tahmin ve gerçek →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

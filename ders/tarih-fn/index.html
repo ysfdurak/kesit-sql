@@ -1,0 +1,46 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tarih ve saat fonksiyonları | Kesit SQL</title><meta name="description" content="Yıl/ay çıkarmak, tarih farkı ve tarih aritmetiği; SQL türleri arası en büyük fark burada."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/tarih-fn/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Tarih ve saat fonksiyonları"><meta property="og:description" content="Yıl/ay çıkarmak, tarih farkı ve tarih aritmetiği; SQL türleri arası en büyük fark burada."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/tarih-fn/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Tarih ve saat fonksiyonları","description":"Yıl/ay çıkarmak, tarih farkı ve tarih aritmetiği; SQL türleri arası en büyük fark burada.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/tarih-fn/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Fonksiyonlar</span><h1>Tarih ve saat fonksiyonları</h1><p class="st-l">Yıl/ay çıkarmak, tarih farkı ve tarih aritmetiği; SQL türleri arası en büyük fark burada.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-tarih-fn">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Analistin en çok kullandığı fonksiyonlar</h2>
+<p>Satış trendleri, kohortlar, büyüme oranları… hepsi tarihle başlar. Tarih fonksiyonları SQL türleri arasında <b>en çok fark gösteren</b> alandır. Aşağıdaki her kod kutusunda SQL türü sekmesini değiştirerek aynı işin nasıl yazıldığını gör.</p>
+<h3>Yıl, ay, gün parçaları</h3>
+<div class="tbl-wrap"><table><tr><th>İşlem</th><th>SQL Server</th><th>PostgreSQL / Oracle</th><th>MySQL</th><th>SQLite</th></tr>
+<tr><td>Yıl</td><td><code>YEAR(d)</code></td><td><code>EXTRACT(YEAR FROM d)</code></td><td><code>YEAR(d)</code></td><td><code>strftime('%Y', d)</code></td></tr>
+<tr><td>Ay (sayı)</td><td><code>MONTH(d)</code></td><td><code>EXTRACT(MONTH FROM d)</code></td><td><code>MONTH(d)</code></td><td><code>strftime('%m', d)</code></td></tr>
+<tr><td>“2024-05” biçimi</td><td><code>FORMAT(d, 'yyyy-MM')</code></td><td><code>TO_CHAR(d, 'YYYY-MM')</code></td><td><code>DATE_FORMAT(d, '%Y-%m')</code></td><td><code>strftime('%Y-%m', d)</code></td></tr>
+<tr><td>Haftanın günü</td><td><code>DATEPART(weekday, d)</code></td><td><code>EXTRACT(DOW FROM d)</code> / <code>TO_CHAR(d,'D')</code></td><td><code>DAYOFWEEK(d)</code></td><td><code>strftime('%w', d)</code></td></tr>
+<tr><td>Bugün</td><td><code>GETDATE()</code></td><td><code>CURRENT_DATE</code> / <code>SYSDATE</code></td><td><code>CURDATE()</code></td><td><code>date('now')</code></td></tr>
+</table></div>
+<pre class="code">SELECT strftime('%Y-%m', order_date) AS ay,
+       COUNT(*) AS siparis
+FROM orders
+GROUP BY strftime('%Y-%m', order_date)
+ORDER BY ay;</pre>
+<h3>Tarih aritmetiği</h3>
+<div class="tbl-wrap"><table><tr><th>İşlem</th><th>SQL Server</th><th>PostgreSQL</th><th>MySQL</th><th>Oracle</th></tr>
+<tr><td>7 gün ekle</td><td><code>DATEADD(day, 7, d)</code></td><td><code>d + INTERVAL '7 day'</code></td><td><code>DATE_ADD(d, INTERVAL 7 DAY)</code></td><td><code>d + 7</code></td></tr>
+<tr><td>1 ay ekle</td><td><code>DATEADD(month, 1, d)</code></td><td><code>d + INTERVAL '1 month'</code></td><td><code>DATE_ADD(d, INTERVAL 1 MONTH)</code></td><td><code>ADD_MONTHS(d, 1)</code></td></tr>
+<tr><td>Ayın ilk günü</td><td><code>DATEFROMPARTS(YEAR(d), MONTH(d), 1)</code></td><td><code>DATE_TRUNC('month', d)</code></td><td><code>DATE_FORMAT(d, '%Y-%m-01')</code></td><td><code>TRUNC(d, 'MM')</code></td></tr>
+<tr><td>Gün farkı</td><td><code>DATEDIFF(day, d1, d2)</code></td><td><code>d2 - d1</code></td><td><code>DATEDIFF(d2, d1)</code></td><td><code>d2 - d1</code></td></tr>
+</table></div>
+<pre class="code">SELECT date('2024-01-15', '+1 month') AS bir_ay_sonra,
+       date('2024-03-15', 'start of month') AS ay_basi,
+       date('2024-03-15', '-7 days') AS bir_hafta_once,
+       julianday('2024-12-31') - julianday('2024-01-01') AS gun_farki;</pre>
+<div class="warn"><b>Ay sonu tuzağı</b>31 Ocak'a 1 ay eklemek: SQL Server, PostgreSQL, MySQL ve Oracle <code>2024-02-29</code> (ayın son günü) verir; SQLite ise taşmayı sonraki aya aktarır ve <code>2024-03-02</code> verir. Ay sonu tarihleriyle çalışırken SQL türünün davranışını mutlaka test et.</div>
+<div class="note" data-d="tsql"><b>SQL Server'da DATEDIFF</b><code>DATEDIFF(month, '2024-01-31', '2024-02-01')</code> sonucu 1'dir; çünkü DATEDIFF geçen tam süreyi değil, <b>aşılan sınır sayısını</b> sayar. Yaş hesaplarken bu fark önemlidir.</div>
+<p>Çalışanların işe girişinden bu yana geçen gün:</p>
+<pre class="code">SELECT first_name, hire_date,
+       CAST(julianday('2025-01-01') - julianday(hire_date) AS INTEGER) AS gun
+FROM employees
+ORDER BY gun DESC
+LIMIT 5;</pre>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-tarih-fn">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../veri-tipleri/">← Veri tipleri ayrıntılı: ondalık hassasiyet, Unicode metin ve saat dilimleri</a><a href="../tarih-filtre/">Tarihlerle filtreleme ve gruplama: aralıklar, aylar, haftanın günleri →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

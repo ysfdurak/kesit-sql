@@ -1,0 +1,52 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Veri içe ve dışa aktarma: BULK INSERT, COPY, linked server, OPENROWSET | Kesit SQL</title><meta name="description" content="CSV/Excel yükleme, sunucular arası sorgu, toplu aktarım araçları."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/veri-aktarim/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Veri içe ve dışa aktarma: BULK INSERT, COPY, linked server, OPENROWSET"><meta property="og:description" content="CSV/Excel yükleme, sunucular arası sorgu, toplu aktarım araçları."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/veri-aktarim/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Veri içe ve dışa aktarma: BULK INSERT, COPY, linked server, OPENROWSET","description":"CSV/Excel yükleme, sunucular arası sorgu, toplu aktarım araçları.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/veri-aktarim/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Veritabanı Yönetimi (DBA)</span><h1>Veri içe ve dışa aktarma: BULK INSERT, COPY, linked server, OPENROWSET</h1><p class="st-l">CSV/Excel yükleme, sunucular arası sorgu, toplu aktarım araçları.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-veri-aktarim">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Dosyadan tabloya</h2>
+<table>
+<tr><th>SQL türü</th><th>Komut / araç</th></tr>
+<tr><td>SQL Server</td><td><code>BULK INSERT</code>, <code>bcp</code> komut satırı aracı, SSMS “Import Flat File”, <code>OPENROWSET(BULK ...)</code></td></tr>
+<tr><td>PostgreSQL</td><td><code>COPY tablo FROM 'dosya.csv'</code> (sunucu), <code>\copy</code> (psql istemcisi)</td></tr>
+<tr><td>MySQL</td><td><code>LOAD DATA [LOCAL] INFILE</code></td></tr>
+<tr><td>Oracle</td><td>SQL*Loader, harici tablo (external table)</td></tr>
+<tr><td>BigQuery</td><td><code>LOAD DATA INTO</code>, <code>bq load</code>, Cloud Storage'dan harici tablo</td></tr>
+</table>
+<pre class="code" data-norun>-- SQL Server: CSV'yi tabloya yükle
+BULK INSERT dbo.raw_signups
+FROM 'D:\\veri\\signups.csv'
+WITH (FORMAT = 'CSV', FIRSTROW = 2, FIELDTERMINATOR = ';', CODEPAGE = '65001');
+
+-- PostgreSQL
+COPY raw_signups FROM '/veri/signups.csv' WITH (FORMAT csv, HEADER true, DELIMITER ';');
+
+-- MySQL
+LOAD DATA LOCAL INFILE '/veri/signups.csv' INTO TABLE raw_signups
+FIELDS TERMINATED BY ';' IGNORE 1 LINES;
+
+-- BigQuery
+LOAD DATA INTO anadolu.raw_signups
+FROM FILES (format = 'CSV', skip_leading_rows = 1, uris = ['gs://kova/signups.csv']);</pre>
+<div class="tip"><b>Önce staging</b>Dosyayı doğrudan asıl tabloya değil, tüm sütunları metin olan bir ara tabloya yükle. Tip dönüşümü ve temizliği SQL ile yaparsın; hatalı satır yüzünden yükleme yarıda kalmaz.</div>
+<div class="warn"><b>Türkçe karakterler</b>Dosyanın kodlaması (UTF-8 mi Windows-1254 mü?) belirtilmezse “ş, ğ, İ” bozuk görünür. SQL Server'da <code>CODEPAGE = '65001'</code> UTF-8 demektir.</div>
+<h2>Sunucular arası sorgu</h2>
+<ul>
+<li><b>Linked server</b> (SQL Server): Başka bir sunucuyu (SQL Server, Oracle, Excel…) tanımlayıp dört parçalı adla sorgularsın: <code>SUNUCU.veritabani.dbo.tablo</code>. <code>OPENQUERY</code> sorguyu uzak sunucuda çalıştırır.</li>
+<li><b>OPENROWSET</b>: Tek seferlik, tanımsız bağlantı (genellikle kapalıdır, güvenlik için açılması onay ister).</li>
+<li><b>PostgreSQL</b>: <code>postgres_fdw</code> / <code>dblink</code>. <b>Oracle</b>: database link (<code>tablo@uzak_db</code>). <b>BigQuery</b>: federasyon sorguları (<code>EXTERNAL_QUERY</code>).</li>
+</ul>
+<pre class="code" data-norun>-- Uzak sunucudaki Oracle tablosunu sorgula
+SELECT * FROM OPENQUERY(ORA_MUHASEBE, 'SELECT fatura_no, tutar FROM faturalar WHERE yil = 2024');
+
+-- Excel dosyasını oku (Ad Hoc Distributed Queries açık olmalı)
+SELECT * FROM OPENROWSET('Microsoft.ACE.OLEDB.12.0',
+  'Excel 12.0;Database=D:\\veri\\hedefler.xlsx', 'SELECT * FROM [Sayfa1$]');</pre>
+<h2>Tablodan dosyaya</h2>
+<p>SQL Server'da <code>bcp "SELECT ..." queryout dosya.csv</code>, PostgreSQL'de <code>COPY (SELECT ...) TO</code>, MySQL'de <code>SELECT ... INTO OUTFILE</code>, BigQuery'de <code>EXPORT DATA OPTIONS(uri = 'gs://...')</code>.</p>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-veri-aktarim">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../dba-ha/">← Yüksek erişilebilirlik ve ölçekleme: Always On, replikasyon, sharding</a><a href="../azure-sql/">Bulutta SQL Server: Azure SQL seçenekleri ve DP-300 konuları →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

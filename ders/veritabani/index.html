@@ -1,0 +1,37 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Veritabanı, tablo, satır ve sütun | Kesit SQL</title><meta name="description" content="İlişkisel veritabanının yapı taşları ve Anadolu Market veri seti."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/veritabani/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Veritabanı, tablo, satır ve sütun"><meta property="og:description" content="İlişkisel veritabanının yapı taşları ve Anadolu Market veri seti."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/veritabani/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Veritabanı, tablo, satır ve sütun","description":"İlişkisel veritabanının yapı taşları ve Anadolu Market veri seti.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/veritabani/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Temeller</span><h1>Veritabanı, tablo, satır ve sütun</h1><p class="st-l">İlişkisel veritabanının yapı taşları ve Anadolu Market veri seti.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-veritabani">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Veritabanı nedir?</h2>
+<p>Veritabanı, düzenli şekilde saklanan ve sorgulanabilen veri topluluğudur. <b>İlişkisel veritabanı yönetim sistemi</b> (RDBMS) bu veriyi tablolarda tutar, tablolar arasında ilişki kurar ve SQL ile erişim sağlar.</p>
+<h2>Tablo = Excel sayfası gibi, ama kurallı</h2>
+<p>Bir tabloyu bir elektronik tablo sayfası gibi düşünebilirsin:</p>
+<ul>
+<li><b>Sütun (column / field)</b>: Bir özellik. Ör. <code>first_name</code>, <code>city</code>. Her sütunun bir <b>veri tipi</b> vardır.</li>
+<li><b>Satır (row / record)</b>: Bir kayıt. Ör. bir müşteri.</li>
+<li><b>Birincil anahtar (primary key)</b>: Her satırı benzersiz tanımlayan sütun. Ör. <code>customer_id</code>.</li>
+<li><b>Yabancı anahtar (foreign key)</b>: Başka bir tablonun birincil anahtarını gösteren sütun. Ör. <code>orders.customer_id</code>, hangi müşterinin sipariş verdiğini söyler.</li>
+</ul>
+<p>Excel'den farkı: Bir sütuna rastgele her şeyi yazamazsın; tipler, kısıtlar ve ilişkiler veri bütünlüğünü korur. Milyonlarca satırla hızlı çalışır ve aynı anda birçok kişi kullanabilir.</p>
+<h2>Bu uygulamadaki veritabanı: Anadolu Market</h2>
+<p>Tüm alıştırmalar, hayali bir e-ticaret şirketi olan <b>Anadolu Market</b>'in verisi üzerinde çalışır:</p>
+<table><tr><th>Tablo</th><th>İçerik</th></tr>
+<tr><td><code>customers</code></td><td>Müşteriler: ad, şehir, e-posta, kayıt tarihi, segment</td></tr>
+<tr><td><code>products</code></td><td>Ürünler: ad, kategori, fiyat, maliyet, stok</td></tr>
+<tr><td><code>orders</code></td><td>Siparişler: müşteri, tarih, durum, kanal</td></tr>
+<tr><td><code>order_items</code></td><td>Sipariş satırları: hangi siparişte hangi üründen kaç adet</td></tr>
+<tr><td><code>employees</code>, <code>departments</code></td><td>Çalışanlar ve departmanlar</td></tr>
+<tr><td><code>web_events</code>, <code>ab_test</code></td><td>Web sitesi olayları ve A/B testi (analitik dersleri için)</td></tr>
+</table>
+<p>Tüm tabloları, sütunlarını ve verinin kendisini <b>Veri setleri</b> sayfasında inceleyebilirsin. Bir tablonun tamamını görmek için aşağıdaki sorguyu çalıştır. Kod kutularındaki <b>Çalıştır</b> düğmesi sorguyu gerçek veritabanında çalıştırır.</p>
+<div class="tip"><b>Hangi SQL türü kullanıyorsun?</b>SQL bir standarttır ama SQL Server, PostgreSQL, MySQL, Oracle, BigQuery ve SQLite onu biraz farklı yazar. Menüden <b>varsayılan SQL türünü</b> seç; tüm kodlar o SQL türünün yazımıyla gösterilir. Bir kod kutusunun üstündeki sekmelerle, varsayılanı değiştirmeden aynı sorgunun başka bir SQL türündeki yazılışını ve çıktısını görebilirsin.</div>
+<pre class="code">SELECT * FROM departments;</pre>
+<div class="tip"><b>SQL komut grupları</b>SQL komutları dört aileye ayrılır: <b>DQL</b> (sorgulama: SELECT), <b>DML</b> (veri değiştirme: INSERT, UPDATE, DELETE), <b>DDL</b> (yapı tanımlama: CREATE, ALTER, DROP), <b>DCL/TCL</b> (yetki ve işlem: GRANT, COMMIT, ROLLBACK). Önce DQL ile başlıyoruz.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-veritabani">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ilk-sorgu/">← 1 dakikada ilk sorgun</a><a href="../select/">İlk sorgu: SELECT ve FROM →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,139 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JOIN, EXISTS, IN ve alt sorgu maliyeti: erken süzme, gereksiz DISTINCT, SELECT * | Kesit SQL</title><meta name="description" content="Aynı sonucu veren yazımların planı, ilişkili alt sorgu, WHERE ve HAVING, DISTINCT ile örtülen çoğalma, SELECT * bedeli."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/opt-join/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="JOIN, EXISTS, IN ve alt sorgu maliyeti: erken süzme, gereksiz DISTINCT, SELECT *"><meta property="og:description" content="Aynı sonucu veren yazımların planı, ilişkili alt sorgu, WHERE ve HAVING, DISTINCT ile örtülen çoğalma, SELECT * bedeli."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/opt-join/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"JOIN, EXISTS, IN ve alt sorgu maliyeti: erken süzme, gereksiz DISTINCT, SELECT *","description":"Aynı sonucu veren yazımların planı, ilişkili alt sorgu, WHERE ve HAVING, DISTINCT ile örtülen çoğalma, SELECT * bedeli.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/opt-join/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Sorgu Optimizasyonu</span><h1>JOIN, EXISTS, IN ve alt sorgu maliyeti: erken süzme, gereksiz DISTINCT, SELECT *</h1><p class="st-l">Aynı sonucu veren yazımların planı, ilişkili alt sorgu, WHERE ve HAVING, DISTINCT ile örtülen çoğalma, SELECT * bedeli.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-join">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory"><h2>Senaryo: "Hesabı olan müşteriler"</h2>
+<p>Bu soruyu üç biçimde yazabilirsin. Hangisi hızlı? İnternette kesin cevaplar göreceksin. Doğrusu: <b>motora ve veriye bağlı, ölç.</b></p>
+<pre class="code">-- 1) EXISTS
+SELECT c.customer_id FROM bank_customers c
+WHERE EXISTS (SELECT 1 FROM bank_accounts a WHERE a.customer_id = c.customer_id);</pre>
+<pre class="code">-- 2) IN
+SELECT c.customer_id FROM bank_customers c
+WHERE c.customer_id IN (SELECT a.customer_id FROM bank_accounts a);</pre>
+<pre class="code">-- 3) JOIN + DISTINCT
+SELECT DISTINCT c.customer_id FROM bank_customers c
+JOIN bank_accounts a ON a.customer_id = c.customer_id;</pre>
+<h3>PostgreSQL ne yapıyor?</h3>
+<div class="note"><b>PostgreSQL çıktıları</b>Bu derslerdeki PostgreSQL planları elle yazılmadı. Aynı veriyle PostgreSQL 16.4 üzerinde (PGlite, tarayıcıda çalışan WASM sürümü) üretildi. <code>VACUUM ANALYZE</code> çalıştırıldı, planlama satırları kısalık için çıkarıldı. Sayılar kendi sunucunda farklı olur; okuma biçimi aynıdır.</div>
+<p>EXISTS ve IN için plan <b>birebir aynı</b>: motor ikisini de yarı birleştirmeye (semi join) çevirdi.</p>
+<pre class="code" data-norun>EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT c.customer_id FROM bank_customers c WHERE EXISTS (SELECT 1 FROM bank_accounts a WHERE a.customer_id = c.customer_id);</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">Hash Semi Join  (cost=26.10..44.60 rows=500 width=4) (actual rows=500 loops=1)
+  Hash Cond: (c.customer_id = a.customer_id)
+  Buffers: shared hit=13
+  ->  Seq Scan on bank_customers c  (cost=0.00..11.00 rows=500 width=4) (actual rows=500 loops=1)
+        Buffers: shared hit=6
+  ->  Hash  (cost=15.49..15.49 rows=849 width=4) (actual rows=849 loops=1)
+        Buckets: 1024  Batches: 1  Memory Usage: 28kB
+        Buffers: shared hit=7
+        ->  Seq Scan on bank_accounts a  (cost=0.00..15.49 rows=849 width=4) (actual rows=849 loops=1)
+              Buffers: shared hit=7</pre>
+<pre class="code" data-norun>EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT c.customer_id FROM bank_customers c WHERE c.customer_id IN (SELECT a.customer_id FROM bank_accounts a);</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">Hash Semi Join  (cost=26.10..44.60 rows=500 width=4) (actual rows=500 loops=1)
+  Hash Cond: (c.customer_id = a.customer_id)
+  Buffers: shared hit=13
+  ->  Seq Scan on bank_customers c  (cost=0.00..11.00 rows=500 width=4) (actual rows=500 loops=1)
+        Buffers: shared hit=6
+  ->  Hash  (cost=15.49..15.49 rows=849 width=4) (actual rows=849 loops=1)
+        Buckets: 1024  Batches: 1  Memory Usage: 28kB
+        Buffers: shared hit=7
+        ->  Seq Scan on bank_accounts a  (cost=0.00..15.49 rows=849 width=4) (actual rows=849 loops=1)
+              Buffers: shared hit=7</pre>
+<p>JOIN + DISTINCT ise önce satırları çoğaltıyor (849 eşleşme), sonra tekilleştiriyor (500 müşteri):</p>
+<pre class="code" data-norun>EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT DISTINCT c.customer_id FROM bank_customers c JOIN bank_accounts a ON a.customer_id = c.customer_id;</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">HashAggregate  (cost=37.11..42.11 rows=500 width=4) (actual rows=500 loops=1)
+  Group Key: c.customer_id
+  Batches: 1  Memory Usage: 65kB
+  Buffers: shared hit=13
+  ->  Hash Join  (cost=17.25..34.99 rows=849 width=4) (actual rows=849 loops=1)
+        Hash Cond: (a.customer_id = c.customer_id)
+        Buffers: shared hit=13
+        ->  Seq Scan on bank_accounts a  (cost=0.00..15.49 rows=849 width=4) (actual rows=849 loops=1)
+              Buffers: shared hit=7
+        ->  Hash  (cost=11.00..11.00 rows=500 width=4) (actual rows=500 loops=1)
+              Buckets: 1024  Batches: 1  Memory Usage: 18kB
+              Buffers: shared hit=6
+              ->  Seq Scan on bank_customers c  (cost=0.00..11.00 rows=500 width=4) (actual rows=500 loops=1)
+                    Buffers: shared hit=6</pre>
+<h3>SQLite ne yapıyor?</h3>
+<p>Aynı üç sorgunun planlarına bak ve süreleri karşılaştır. Burada indeks yokken <code>EXISTS</code> her müşteri için hesap tablosunu ilk eşleşmeye kadar tarar. "EXISTS her zaman hızlıdır" kuralının bu motorda geçerli olmadığını kendin görürsün.</p>
+<pre class="code" data-na="tsql pg mysql oracle bq">EXPLAIN QUERY PLAN SELECT c.customer_id FROM bank_customers c
+WHERE EXISTS (SELECT 1 FROM bank_accounts a WHERE a.customer_id = c.customer_id);
+EXPLAIN QUERY PLAN SELECT c.customer_id FROM bank_customers c
+WHERE c.customer_id IN (SELECT a.customer_id FROM bank_accounts a);</pre>
+<p>Çıkarım: kuralı ezberleme. <code>bank_accounts (customer_id)</code> indeksi eklenince SQLite'ta <code>EXISTS</code> de arama yapar. Yöntemi anlama göre seç: varlık soruyorsan <code>EXISTS</code> ya da <code>IN</code>, satırı çoğaltmak gerekmiyorsa <code>JOIN + DISTINCT</code> yazma.</p>
+<div class="note"><b>NOT IN başka bir konu</b><code>NOT IN</code> ile <code>NOT EXISTS</code> farkı hız değil anlamdır. Alt sorguda tek bir NULL varsa <code>NOT IN</code> hiç satır döndürmez. Bu yüzden <code>NOT EXISTS</code> tercih edilir.</div>
+<h2>İlişkili alt sorgu (correlated subquery)</h2>
+<p><code>SELECT</code> listesindeki ilişkili alt sorgu dış sorgunun her satırı için çalışır. İç tarafta indeks yoksa satır × satır iş çıkar.</p>
+<pre class="code" data-na="tsql pg mysql oracle bq">EXPLAIN QUERY PLAN
+SELECT c.customer_id, c.city,
+       (SELECT COUNT(*) FROM orders o WHERE o.customer_id = c.customer_id) AS siparis
+FROM customers c;</pre>
+<p>Plandaki <code>CORRELATED SCALAR SUBQUERY</code> ve altındaki <code>SCAN a</code> satırları bunu söylüyor. Önce toplayıp sonra birleştirince alt sorgu bir kez çalışır:</p>
+<pre class="code">SELECT c.customer_id, c.city, COALESCE(o.siparis, 0) AS siparis
+FROM customers c
+LEFT JOIN (SELECT customer_id, COUNT(*) AS siparis FROM orders GROUP BY customer_id) o
+  ON o.customer_id = c.customer_id;</pre>
+<p><code>LEFT JOIN</code> ve <code>COALESCE</code> önemli: siparişi olmayan müşteride alt sorgu 0 veriyordu, düz <code>JOIN</code> o satırı kaybederdi.</p>
+<h2>Erken süzme</h2>
+<p>Mantıksal sırada <code>HAVING</code> gruplamadan sonra çalışır. Grup sütunu üzerindeki koşul için öğüt nettir: <code>WHERE</code>'de yaz. Ama hız farkı beklemeden önce planlara bak:</p>
+<pre class="code" data-na="tsql pg mysql oracle bq">CREATE INDEX ix_tip ON bank_txns (txn_type);
+EXPLAIN QUERY PLAN SELECT txn_type, COUNT(*) FROM bank_txns GROUP BY txn_type HAVING txn_type = 'faiz';
+EXPLAIN QUERY PLAN SELECT txn_type, COUNT(*) FROM bank_txns WHERE txn_type = 'faiz' GROUP BY txn_type;</pre>
+<p>İki kutu da aynı planı veriyor: bu basit durumda motor koşulu kendisi öne alıyor. PostgreSQL de aynı şeyi yapıyor:</p>
+<pre class="code" data-norun>CREATE INDEX ix_tip ON bank_txns (txn_type);
+EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT txn_type, COUNT(*) FROM bank_txns GROUP BY txn_type HAVING txn_type = 'faiz';</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">GroupAggregate  (cost=0.29..33.98 rows=1 width=18) (actual rows=1 loops=1)
+  Buffers: shared hit=4
+  ->  Index Only Scan using ix_tip on bank_txns  (cost=0.29..30.76 rows=1284 width=10) (actual rows=1262 loops=1)
+        Index Cond: (txn_type = 'faiz'::text)
+        Heap Fetches: 0
+        Buffers: shared hit=4</pre>
+<p>Yine de <code>WHERE</code> yaz. Niyetin açık kalır, ayrıca motorun koşulu öne alamadığı durumlar vardır. Birleştirmeli sorgularda da sor: "Bu büyük tablo birleşmeden önce daralabilir mi?" İyileştiriciler <code>WHERE</code> koşulunu çoğunlukla kendileri aşağı iter, ama <code>LEFT JOIN</code>, pencere fonksiyonu ve <code>DISTINCT</code> içeren alt sorgular bunu engelleyebilir. Emin olmanın yolu plandır.</p>
+<h2>CTE her zaman bedava değildir</h2>
+<p>PostgreSQL'de CTE (12 ve sonrası) tek kullanılıyorsa sorguya gömülür, <code>MATERIALIZED</code> yazarsan önce hesaplanıp saklanır:</p>
+<pre class="code" data-norun>CREATE INDEX ix_txn_time ON bank_txns (txn_time);
+EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+WITH t AS (SELECT txn_id, txn_time FROM bank_txns) SELECT COUNT(*) FROM t WHERE txn_time >= '2024-11-01' AND txn_time &lt; '2024-11-02';</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">Aggregate  (cost=7.78..7.79 rows=1 width=8) (actual rows=1 loops=1)
+  Buffers: shared hit=3
+  ->  Index Only Scan using ix_txn_time on bank_txns  (cost=0.29..7.39 rows=155 width=0) (actual rows=120 loops=1)
+        Index Cond: ((txn_time >= '2024-11-01 00:00:00'::timestamp without time zone) AND (txn_time &lt; '2024-11-02 00:00:00'::timestamp without time zone))
+        Heap Fetches: 0
+        Buffers: shared hit=3</pre>
+<pre class="code" data-norun>CREATE INDEX ix_txn_time ON bank_txns (txn_time);
+EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+WITH t AS MATERIALIZED (SELECT txn_id, txn_time FROM bank_txns) SELECT COUNT(*) FROM t WHERE txn_time >= '2024-11-01' AND txn_time &lt; '2024-11-02';</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">Aggregate  (cost=1871.47..1871.48 rows=1 width=8) (actual rows=1 loops=1)
+  Buffers: shared hit=391
+  CTE t
+    ->  Seq Scan on bank_txns  (cost=0.00..813.84 rows=42284 width=12) (actual rows=42284 loops=1)
+          Buffers: shared hit=391
+  ->  CTE Scan on t  (cost=0.00..1057.10 rows=211 width=0) (actual rows=120 loops=1)
+        Filter: ((txn_time >= '2024-11-01 00:00:00'::timestamp without time zone) AND (txn_time &lt; '2024-11-02 00:00:00'::timestamp without time zone))
+        Rows Removed by Filter: 42164
+        Buffers: shared hit=391</pre>
+<p>Birinde 3 sayfa, diğerinde 391 sayfa. <code>MATERIALIZED</code> her zaman kötü de değildir: pahalı bir alt sonuç birkaç kez kullanılıyorsa kazandırabilir. BigQuery belgesi de CTE'nin okunabilirlik için olduğunu, performans için olmadığını ve birden çok kez değerlendirilebileceğini yazar.</p>
+<h2>Gereksiz DISTINCT ve SELECT *</h2>
+<ul>
+<li><b>DISTINCT çoğalmayı gizler.</b> Birleştirme satırları çoğaltıyorsa önce nedenini düzelt. Sonuç doğru görünse bile iş iki kat yapılmıştır.</li>
+<li><b>SELECT *</b> kapsayan indeksi işe yaramaz hâle getirir ve sıralama belleğini büyütür. Aşağıdaki iki planda satır sayısı aynı, sıralama belleği farklı.</li>
+<li><b>Sütun tabanlı ambarda fatura farkı:</b> BigQuery'de okunan sütun kadar ödersin. Belgeye göre <code>SELECT *</code> sorgusuna <code>LIMIT</code> eklemek okunan veri miktarını değiştirmez.</li>
+</ul>
+<pre class="code" data-norun>EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT * FROM bank_txns ORDER BY amount DESC;</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">Sort  (cost=4062.91..4168.62 rows=42284 width=46) (actual rows=42284 loops=1)
+  Sort Key: amount DESC
+  Sort Method: quicksort  Memory: 3688kB
+  Buffers: shared hit=391
+  ->  Seq Scan on bank_txns  (cost=0.00..813.84 rows=42284 width=46) (actual rows=42284 loops=1)
+        Buffers: shared hit=391</pre>
+<pre class="code" data-norun>EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT txn_id, amount FROM bank_txns ORDER BY amount DESC;</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">Sort  (cost=4062.91..4168.62 rows=42284 width=10) (actual rows=42284 loops=1)
+  Sort Key: amount DESC
+  Sort Method: quicksort  Memory: 2676kB
+  Buffers: shared hit=391
+  ->  Seq Scan on bank_txns  (cost=0.00..813.84 rows=42284 width=10) (actual rows=42284 loops=1)
+        Buffers: shared hit=391</pre></article>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-join">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../opt-secicilik/">← Seçicilik (selectivity) ve istatistikler: motor neden o planı seçti?</a><a href="../opt-toplama/">Toplama ve pencere fonksiyonu maliyeti: önce topla, sırala, özetle →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

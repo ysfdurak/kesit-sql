@@ -1,0 +1,51 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Geçici tablolar, tablo değişkenleri ve SELECT INTO | Kesit SQL</title><meta name="description" content="#temp, ##global, @tablo ve ara sonuçları saklamak."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-gecici/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Geçici tablolar, tablo değişkenleri ve SELECT INTO"><meta property="og:description" content="#temp, ##global, @tablo ve ara sonuçları saklamak."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-gecici/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Geçici tablolar, tablo değişkenleri ve SELECT INTO","description":"#temp, ##global, @tablo ve ara sonuçları saklamak.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-gecici/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · T-SQL (SQL Server)</span><h1>Geçici tablolar, tablo değişkenleri ve SELECT INTO</h1><p class="st-l">#temp, ##global, @tablo ve ara sonuçları saklamak.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-gecici">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Ara sonucu saklamak</h2>
+<p>Karmaşık raporlarda bir ara sonucu birden çok kez kullanmak gerekir. CTE yalnızca tek bir ifadede geçerlidir; birden çok sorguda kullanmak için <b>geçici tablo</b> gerekir.</p>
+<table><tr><th>Tür</th><th>Yazım</th><th>Kapsam</th><th>Not</th></tr>
+<tr><td>Yerel geçici tablo</td><td><code>#ad</code></td><td>Oturum</td><td>tempdb'de tutulur, indeks eklenebilir, istatistik tutar</td></tr>
+<tr><td>Global geçici tablo</td><td><code>##ad</code></td><td>Tüm oturumlar</td><td>Nadiren gerekir</td></tr>
+<tr><td>Tablo değişkeni</td><td><code>DECLARE @ad TABLE (...)</code></td><td>Toplu iş (batch)</td><td>Küçük veriler için; istatistik tutmaz</td></tr>
+<tr><td>CTE</td><td><code>WITH ad AS (...)</code></td><td>Tek ifade</td><td>Saklanmaz, okunabilirlik içindir</td></tr>
+</table>
+<h2>SELECT ... INTO #tablo</h2>
+<pre class="code" data-base="tsql">DROP TABLE IF EXISTS #musteri_ciro;
+
+SELECT o.customer_id,
+       SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) AS ciro
+INTO #musteri_ciro
+FROM orders o
+JOIN order_items oi ON oi.order_id = o.order_id
+WHERE o.status = 'delivered'
+GROUP BY o.customer_id;
+
+SELECT TOP 5 c.first_name, c.last_name, ROUND(m.ciro, 2) AS ciro
+FROM #musteri_ciro m
+JOIN customers c ON c.customer_id = m.customer_id
+ORDER BY m.ciro DESC;</pre>
+<p><code>SELECT ... INTO yeni_tablo</code>, tabloyu sorgunun sütunlarıyla otomatik oluşturur ve doldurur. Kalıcı tablolar için de çalışır.</p>
+<h2>Önce tanımla, sonra doldur</h2>
+<pre class="code" data-base="tsql">CREATE TABLE #sehir_ozet (
+    sehir NVARCHAR(50),
+    musteri INT,
+    PRIMARY KEY (sehir)
+);
+
+INSERT INTO #sehir_ozet (sehir, musteri)
+SELECT city, COUNT(*)
+FROM customers
+WHERE city IS NOT NULL
+GROUP BY city;
+
+SELECT * FROM #sehir_ozet WHERE musteri &gt;= 10 ORDER BY musteri DESC;</pre>
+<div class="tip"><b>Ne zaman hangisi?</b>Birkaç yüz satır ve tek kullanım: tablo değişkeni veya CTE. Binlerce satır, birden çok sorguda kullanım veya indeks ihtiyacı: <code>#temp</code>.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-gecici">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-degisken/">← Değişkenler ve akış kontrolü: DECLARE, IF, WHILE</a><a href="../ts-pivot/">PIVOT ve UNPIVOT →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

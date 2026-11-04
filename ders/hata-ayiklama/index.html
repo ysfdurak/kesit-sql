@@ -1,0 +1,42 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sorgu hata ayıklama: yanlış sonucu adım adım bulmak | Kesit SQL</title><meta name="description" content="Hata vermeyen ama yanlış sonuç döndüren sorguları bulmak için kontrol sorguları: satır sayısı, anahtar benzersizliği, toplam uzlaştırma ve ara adımları…"><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/hata-ayiklama/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Sorgu hata ayıklama: yanlış sonucu adım adım bulmak"><meta property="og:description" content="Hata vermeyen ama yanlış sonuç döndüren sorguları bulmak için kontrol sorguları: satır sayısı, anahtar benzersizliği, toplam uzlaştırma ve ara adımları…"><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/hata-ayiklama/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Sorgu hata ayıklama: yanlış sonucu adım adım bulmak","description":"Hata vermeyen ama yanlış sonuç döndüren sorguları bulmak için kontrol sorguları: satır sayısı, anahtar benzersizliği, toplam uzlaştırma ve ara adımları…","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/hata-ayiklama/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Küme ve Alt Sorgular</span><h1>Sorgu hata ayıklama: yanlış sonucu adım adım bulmak</h1><p class="st-l">Hata vermeyen ama yanlış sonuç döndüren sorguları bulmak için kontrol sorguları: satır sayısı, anahtar benzersizliği, toplam uzlaştırma ve ara adımları görmek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-hata-ayiklama">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Sessiz hatayı yakalamanın yolu: kontrol sorguları</h2>
+<p>Bir sorgu hata vermiyorsa doğru olduğu anlamına gelmez. Deneyimli analistler sonucu raporlamadan önce birkaç küçük <b>kontrol sorgusu</b> çalıştırır. Bu ders, Lezzet Kurye verisi üzerinde bu alışkanlığı kazandırır.</p>
+<h2>1. Anahtar gerçekten benzersiz mi?</h2>
+<p>Bir tabloyu “bir” taraf sanarak birleştirmeden önce anahtarın tekrar etmediğini doğrula:</p>
+<pre class="code">SELECT order_id, COUNT(*) AS adet
+FROM lk_ratings
+GROUP BY order_id
+HAVING COUNT(*) > 1;</pre>
+<p>Hiç satır dönmüyorsa her siparişin en fazla bir değerlendirmesi var; siparişlerle güvenle birleştirebilirsin.</p>
+<h2>2. Her JOIN'den sonra satır sayısı</h2>
+<pre class="code">SELECT
+  (SELECT COUNT(*) FROM lk_orders) AS siparis,
+  (SELECT COUNT(*) FROM lk_orders o JOIN lk_order_lines ol ON ol.order_id = o.order_id) AS siparis_x_satir,
+  (SELECT COUNT(*) FROM lk_orders o LEFT JOIN lk_ratings r ON r.order_id = o.order_id) AS siparis_x_puan;</pre>
+<p>Siparişleri satırlarla birleştirince sayı artar (fan-out); değerlendirmelerle LEFT JOIN ise sayıyı değiştirmez. Beklediğinden farklı bir sayı, yanlış bir varsayımın işaretidir.</p>
+<h2>3. Toplamları uzlaştır</h2>
+<p>Bir kırılımın parçalarının toplamı, kırılımsız toplama eşit olmalıdır. Şehir bazında sipariş sayılarının toplamı tüm sipariş sayısını vermiyorsa, bazı satırlar JOIN'de düşmüş ya da iki kez sayılmıştır:</p>
+<pre class="code">SELECT SUM(siparis) AS kirilim_toplami, (SELECT COUNT(*) FROM lk_orders) AS genel
+FROM (SELECT r.city, COUNT(*) AS siparis
+      FROM lk_orders o JOIN lk_restaurants r ON r.restaurant_id = o.restaurant_id
+      GROUP BY r.city) t;</pre>
+<h2>4. Ara adımı gör</h2>
+<p>Uzun bir CTE zincirinde son SELECT'i geçici olarak bir ara adıma çevir: <code>SELECT * FROM adim2 LIMIT 20</code>. Ara sonucun grain düzeyi (bir satır neyi temsil ediyor?) beklediğin gibi mi?</p>
+<h2>5. Uç değerlere bak</h2>
+<p>MIN, MAX ve NULL sayısı çoğu veri sorununu hemen gösterir: negatif tutar, gelecekte bir tarih, beklenmedik boşluk.</p>
+<pre class="code">SELECT MIN(placed_at), MAX(placed_at),
+       SUM(CASE WHEN delivered_at < placed_at THEN 1 ELSE 0 END) AS ters_zaman,
+       COUNT(*) - COUNT(courier_id) AS kuryesiz
+FROM lk_orders;</pre>
+<div class="tip"><b>Alışkanlık</b>Raporladığın her sayının yanında, onu doğrulayan bir kontrol sorgusu olsun. Mülakatlarda da görüşmeciler bunu ayrıca puanlar.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-hata-ayiklama">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../sik-hatalar/">← Sık yapılan SQL hataları: düzelt ve öğren</a><a href="../cte/">CTE: WITH ile okunabilir sorgular →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,44 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CTE: WITH ile okunabilir sorgular | Kesit SQL</title><meta name="description" content="Karmaşık sorguları adım adım, isimli bloklara bölmek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/cte/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="CTE: WITH ile okunabilir sorgular"><meta property="og:description" content="Karmaşık sorguları adım adım, isimli bloklara bölmek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/cte/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"CTE: WITH ile okunabilir sorgular","description":"Karmaşık sorguları adım adım, isimli bloklara bölmek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/cte/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · İleri Sorgu Yapıları</span><h1>CTE: WITH ile okunabilir sorgular</h1><p class="st-l">Karmaşık sorguları adım adım, isimli bloklara bölmek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-cte">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Common Table Expression</h2>
+<p>CTE, sorgunun başında <b>WITH</b> ile tanımlanan, isim verilmiş geçici bir sonuç kümesidir. İç içe alt sorgular yerine yukarıdan aşağı okunan adımlar yazmanı sağlar.</p>
+<pre class="code">WITH musteri_ciro AS (
+  SELECT o.customer_id,
+         SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) AS ciro
+  FROM orders o
+  JOIN order_items oi ON oi.order_id = o.order_id
+  WHERE o.status = 'delivered'
+  GROUP BY o.customer_id
+)
+SELECT c.first_name, c.last_name, ROUND(mc.ciro, 2) AS ciro
+FROM musteri_ciro mc
+JOIN customers c ON c.customer_id = mc.customer_id
+ORDER BY mc.ciro DESC
+LIMIT 5;</pre>
+<h2>Birden fazla CTE</h2>
+<p>Virgülle ayrılır; sonraki CTE öncekileri kullanabilir:</p>
+<pre class="code">WITH aylik AS (
+  SELECT strftime('%Y-%m', o.order_date) AS ay,
+         SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) AS ciro
+  FROM orders o JOIN order_items oi ON oi.order_id = o.order_id
+  WHERE o.status = 'delivered'
+  GROUP BY ay
+),
+ortalama AS (
+  SELECT AVG(ciro) AS ort FROM aylik
+)
+SELECT a.ay, ROUND(a.ciro) AS ciro
+FROM aylik a, ortalama
+WHERE a.ciro > ortalama.ort
+ORDER BY a.ay;</pre>
+<div class="tip"><b>Ne zaman CTE?</b>Aynı alt sonucu birden çok kez kullanacaksan, sorgu üç seviyeden fazla iç içe geçiyorsa veya başkası okuyacaksa. Analist ekiplerinde CTE ile yazmak neredeyse standarttır.</div>
+<h2>Derinleş: CTE ile adım adım doğrulama</h2><p>CTE'nin en büyük faydası her adımı ayrı ayrı çalıştırabilmendir. Uzun bir sorgu yazarken son SELECT'i geçici olarak <code>SELECT * FROM adim2 LIMIT 10</code> yap; her adımın çıktısının beklediğin taneciğe sahip olduğunu gör, sonra bir sonraki adıma geç. Bu alışkanlık mülakatta da, iş hayatında da hataların çoğunu erkenden yakalar.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-cte">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../hata-ayiklama/">← Sorgu hata ayıklama: yanlış sonucu adım adım bulmak</a><a href="../recursive-cte/">Özyinelemeli CTE (recursive CTE, WITH RECURSIVE) →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,41 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Toplama fonksiyonları: COUNT, SUM, AVG, MIN, MAX | Kesit SQL</title><meta name="description" content="Bir tablodan tek bir özet değer üretmek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/aggregate/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Toplama fonksiyonları: COUNT, SUM, AVG, MIN, MAX"><meta property="og:description" content="Bir tablodan tek bir özet değer üretmek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/aggregate/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Toplama fonksiyonları: COUNT, SUM, AVG, MIN, MAX","description":"Bir tablodan tek bir özet değer üretmek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/aggregate/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Özetleme</span><h1>Toplama fonksiyonları: COUNT, SUM, AVG, MIN, MAX</h1><p class="st-l">Bir tablodan tek bir özet değer üretmek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-aggregate">Uygulamada aç, 10 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Satırlardan tek değere</h2>
+<p>Toplama (aggregate) fonksiyonları çok sayıda satırı alıp <b>tek bir değer</b> üretir.</p>
+<table><tr><th>Fonksiyon</th><th>Ne yapar?</th></tr>
+<tr><td><code>COUNT(*)</code></td><td>Satır sayısı</td></tr>
+<tr><td><code>COUNT(sutun)</code></td><td>O sütunda NULL olmayan değer sayısı</td></tr>
+<tr><td><code>COUNT(DISTINCT sutun)</code></td><td>Farklı değer sayısı</td></tr>
+<tr><td><code>SUM</code>, <code>AVG</code></td><td>Toplam, ortalama (NULL'ları yok sayar)</td></tr>
+<tr><td><code>MIN</code>, <code>MAX</code></td><td>En küçük, en büyük (metin ve tarihte de çalışır)</td></tr>
+</table>
+<pre class="code">SELECT COUNT(*) AS musteri_sayisi,
+       COUNT(email) AS emaili_olan,
+       COUNT(DISTINCT city) AS sehir_sayisi
+FROM customers;</pre>
+<pre class="code">SELECT MIN(price) AS en_ucuz,
+       MAX(price) AS en_pahali,
+       ROUND(AVG(price), 2) AS ortalama
+FROM products;</pre>
+<p>WHERE ile birlikte: önce satırlar süzülür, sonra özetlenir.</p>
+<pre class="code">SELECT COUNT(*) AS iptal_sayisi
+FROM orders
+WHERE status = 'cancelled';</pre>
+<div class="warn"><b>AVG ve NULL</b>AVG, NULL değerleri paydaya katmaz. NULL'ları 0 saymak istiyorsan <code>AVG(COALESCE(x, 0))</code> kullanmalısın. Bu fark raporlarda büyük sapmalara yol açabilir.</div>
+<h2>Derinleş: toplama fonksiyonlarını birlikte kullanmak</h2><p>Tek satırda hem sayıyı hem toplamı hem ortalamayı görmek, verinin genel resmini hızla verir. Lezzet Kurye'nin teslim siparişleri:</p><pre class="code">SELECT COUNT(*)               AS siparis,
+       SUM(tip)               AS toplam_bahsis,
+       ROUND(AVG(tip), 2)     AS ort_bahsis,
+       MIN(placed_at)         AS ilk,
+       MAX(placed_at)         AS son
+FROM lk_orders
+WHERE status = 'teslim';</pre>
+<ul><li>Hiç satır yoksa <code>COUNT</code> 0, <code>SUM</code> ve <code>AVG</code> NULL döner.</li><li>Tam sayı sütunlarında <code>AVG</code> bazı SQL türlerinde tam sayı döndürür (SQL Server); <code>AVG(1.0 * x)</code> güvenlidir.</li><li><code>SUM(DISTINCT x)</code> tekrar eden değerleri bir kez toplar; nadiren istenen şeydir.</li></ul></article>
+<div class="st-c"><a class="st-p" href="../../#ders-aggregate">Alıştırmalara geç (10)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../tarih/">← SQL'in tarihi: bir makaleden dünya standardına (isteğe bağlı okuma)</a><a href="../group-by/">GROUP BY: gruplara göre özet →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

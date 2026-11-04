@@ -1,0 +1,60 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard için sorgu tasarımı | Kesit SQL</title><meta name="description" content="Tarih iskeleti, sıfır doldurma ve BI aracına hazır tablolar."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/an-dashboard/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Dashboard için sorgu tasarımı"><meta property="og:description" content="Tarih iskeleti, sıfır doldurma ve BI aracına hazır tablolar."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/an-dashboard/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Dashboard için sorgu tasarımı","description":"Tarih iskeleti, sıfır doldurma ve BI aracına hazır tablolar.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/an-dashboard/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veri Analisti</span><h1>Dashboard için sorgu tasarımı</h1><p class="st-l">Tarih iskeleti, sıfır doldurma ve BI aracına hazır tablolar.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-an-dashboard">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Grafikte boşluk olmasın</h2>
+<p>Bir günde hiç sipariş yoksa GROUP BY o günü hiç döndürmez ve çizgi grafik yanlış görünür. Çözüm: <b>tarih iskeleti</b> (date spine) üret, LEFT JOIN yap, NULL'ları 0 yap.</p>
+<pre class="code">WITH RECURSIVE gun(d) AS (
+  SELECT '2024-12-01' UNION ALL SELECT date(d, '+1 day') FROM gun WHERE d < '2024-12-31'
+),
+satis AS (
+  SELECT order_date, COUNT(*) AS siparis FROM orders GROUP BY order_date
+)
+SELECT g.d AS tarih, COALESCE(s.siparis, 0) AS siparis
+FROM gun g LEFT JOIN satis s ON s.order_date = g.d
+ORDER BY g.d;</pre>
+<h2>BI aracına hazır tablo ilkeleri</h2>
+<ul>
+<li><b>Uzun format</b>: <code>(tarih, boyut, metrik_değeri)</code> şeklinde tablolar Tableau, Power BI, Looker gibi araçlarda en esnek kullanımı sağlar.</li>
+<li><b>Hesaplamayı veritabanında yap</b>, aracın içinde değil; tanım tek yerde kalır.</li>
+<li><b>Tanecik düzeyini adlandır</b>: <code>agg_daily_channel</code> gibi.</li>
+<li><b>Oranları ayrı sütunlarda payda ve pay olarak da ver</b>; böylece araç farklı düzeylerde doğru toplayabilir (oranların ortalaması alınmaz!).</li>
+</ul>
+<div class="warn"><b>Oranların ortalaması tuzağı</b>Günlük dönüşüm oranlarının ortalaması, dönemin dönüşüm oranı değildir. Doğrusu: <code>SUM(donusen) / SUM(ziyaret)</code>.</div>
+<h2>Derinleş: Dönem karşılaştırması, kümülatif ve hareketli ortalama</h2>
+<p>Yönetici bir dashboard'a baktığında hep aynı üç soruyu sorar: “Geçen yıla göre nasılız?”, “Yıl başından beri neredeyiz?”, “Gidişat ne yönde?”. Bunların SQL karşılıkları sırasıyla <b>yıllık karşılaştırma</b> (YoY), <b>kümülatif toplam</b> (YTD) ve <b>hareketli ortalama</b>dır.</p>
+<h3>Yıl içi kümülatif</h3>
+<pre class="code">WITH a AS (
+  SELECT strftime('%Y-%m', o.order_date) AS ay,
+         SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) AS ciro
+  FROM orders o JOIN order_items oi ON oi.order_id = o.order_id
+  WHERE o.status = 'delivered'
+    AND o.order_date >= '2024-01-01' AND o.order_date &lt; '2025-01-01'
+  GROUP BY strftime('%Y-%m', o.order_date)
+)
+SELECT ay, ROUND(ciro) AS ciro,
+       ROUND(SUM(ciro) OVER (ORDER BY ay ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)) AS ytd
+FROM a
+ORDER BY ay;</pre>
+<h3>Yıllık karşılaştırmada üç tuzak</h3>
+<ul>
+<li><b>Eksik ay:</b> <code>LAG(ciro, 12)</code> ancak her ay satırı varsa “12 ay önce”dir. Bir ay eksikse 12 satır geri gitmek başka bir aya düşer. Güvenli yol, tabloyu kendisiyle <code>yıl − 1</code> ve aynı ay üzerinden birleştirmek ya da önce tarih iskeleti kurmaktır.</li>
+<li><b>Küçük taban:</b> Ocak 2024 cirosu, Ocak 2023'e göre %227 artmış görünüyor. Çünkü Ocak 2023'te yalnızca 13 bin TL'lik satış vardı. Yüzdenin yanına her zaman mutlak değeri de koy.</li>
+<li><b>Yarım dönem:</b> Ayın 15'inde bakılan “bu ay”, geçen yılın tam ayıyla karşılaştırılmaz. Ya aynı gün sayısını (ay başından bugüne) karşılaştır ya da tamamlanmamış dönemi grafikte ayrı işaretle.</li>
+</ul>
+<h3>Hareketli ortalama</h3>
+<p>Günlük sipariş sayısı gürültülüdür; 7 günlük hareketli ortalama haftanın günü etkisini düzler. <code>ROWS BETWEEN 6 PRECEDING AND CURRENT ROW</code> “son 7 <b>satır</b>” demektir, “son 7 gün” değil. Sipariş olmayan günler tabloda yoksa pencere 7 günden daha geriye uzanır. Bu yüzden hareketli ortalamayı her zaman tarih iskeletinin üzerinde hesapla. Pencerenin ilk 6 gününde de 7'den az değer vardır. Raporda bu “ısınma” dönemini ya göstermez ya da önceki ayın verisini pencereye katarsın.</p>
+<table>
+<tr><th>Soru</th><th>Kalıp</th><th>Dikkat</th></tr>
+<tr><td>Geçen yıla göre?</td><td>Kendine JOIN (yıl − 1, aynı ay)</td><td>Küçük taban, yarım dönem</td></tr>
+<tr><td>Yıl başından beri?</td><td><code>SUM() OVER (ORDER BY ay)</code></td><td>Yıl değişince <code>PARTITION BY yil</code></td></tr>
+<tr><td>Gidişat?</td><td><code>AVG() OVER (ROWS 6 PRECEDING)</code></td><td>Önce tarih iskeleti</td></tr>
+</table>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-an-dashboard">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../an-eda/">← Keşifsel veri analizi (EDA): bir tabloyu tanımak</a><a href="../python-sql/">Python ile SQL: pandas, parametreli sorgu ve SQLAlchemy →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

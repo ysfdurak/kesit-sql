@@ -1,0 +1,56 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Büyük sorgu 6: SCD 2 fiyat boyutu ve nokta-zaman birleştirme | Kesit SQL</title><meta name="description" content="Fiyat geçmişinden geçerlilik aralıkları kurmak, satışları satış anındaki fiyatla eşleştirmek ve sapmaları ölçmek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/bs-scd/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Büyük sorgu 6: SCD 2 fiyat boyutu ve nokta-zaman birleştirme"><meta property="og:description" content="Fiyat geçmişinden geçerlilik aralıkları kurmak, satışları satış anındaki fiyatla eşleştirmek ve sapmaları ölçmek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/bs-scd/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Büyük sorgu 6: SCD 2 fiyat boyutu ve nokta-zaman birleştirme","description":"Fiyat geçmişinden geçerlilik aralıkları kurmak, satışları satış anındaki fiyatla eşleştirmek ve sapmaları ölçmek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/bs-scd/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Büyük Sorgular</span><h1>Büyük sorgu 6: SCD 2 fiyat boyutu ve nokta-zaman birleştirme</h1><p class="st-l">Fiyat geçmişinden geçerlilik aralıkları kurmak, satışları satış anındaki fiyatla eşleştirmek ve sapmaları ölçmek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-bs-scd">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Soru</h2>
+<p>Finans ekibi soruyor: “Satış satırlarındaki birim fiyat, o gün geçerli liste fiyatıyla tutarlı mı?” Ürün tablosu yalnızca <b>güncel</b> fiyatı tutar; geçmişi <code>price_updates</code> tablosundaki güncellemelerden geri kurmak gerekir. Bu, veri ambarlarında “yavaş değişen boyut Tip 2” ve “nokta-zaman (as-of) birleştirme” olarak bilinir.</p>
+<h2>Sorgu</h2>
+<div class="note"><b>Büyük sorgu nasıl okunur?</b>Yukarıdan aşağı, her CTE'yi ayrı bir tablo gibi düşün. Bir adımı anlamadıysan o CTE'nin adını en sondaki SELECT'e yazıp yalnızca onu çalıştır: <code>SELECT * FROM adim_adi LIMIT 20;</code></div>
+<pre class="code">WITH olay AS (           -- 1) Fiyat olayları: başlangıç fiyatı + her güncelleme
+  SELECT product_id, price AS fiyat, '2000-01-01 00:00:00' AS baslangic, 0 AS kaynak
+  FROM products
+  WHERE product_id IN (SELECT product_id FROM price_updates)
+  UNION ALL
+  SELECT product_id, new_price, updated_at, 1
+  FROM price_updates
+),
+aralik AS (              -- 2) Her fiyatın geçerli olduğu aralık: bir sonraki olayın başlangıcına kadar
+  SELECT product_id, fiyat, baslangic,
+         LEAD(baslangic) OVER (PARTITION BY product_id ORDER BY baslangic) AS bitis
+  FROM olay
+),
+boyut AS (               -- 3) SCD 2 boyutu: açık uçlu aralığa uzak bir tarih ver, güncel bayrağı ekle
+  SELECT product_id, fiyat, baslangic,
+         COALESCE(bitis, '9999-12-31 00:00:00') AS bitis,
+         CASE WHEN bitis IS NULL THEN 1 ELSE 0 END AS guncel
+  FROM aralik
+),
+satis AS (               -- 4) Ekim–Aralık 2024 satış satırları
+  SELECT oi.product_id, o.order_date, oi.unit_price, oi.quantity
+  FROM order_items oi
+  JOIN orders o ON o.order_id = oi.order_id
+  WHERE o.order_date >= '2024-10-01'
+)
+SELECT s.product_id,          -- 5) Nokta-zaman birleştirme: satış anında geçerli fiyat satırı
+       COUNT(*) AS satir,
+       ROUND(AVG(s.unit_price), 2) AS ort_satis_fiyati,
+       ROUND(AVG(b.fiyat), 2) AS ort_liste_fiyati,
+       SUM(CASE WHEN b.guncel = 1 THEN 1 ELSE 0 END) AS guncel_fiyatla
+FROM satis s
+JOIN boyut b ON b.product_id = s.product_id
+            AND s.order_date >= b.baslangic AND s.order_date < b.bitis
+GROUP BY s.product_id
+ORDER BY s.product_id;</pre>
+<h2>Adım adım</h2>
+<table><tr><th>Adım</th><th>Ne yapar?</th><th>Çıktının bir satırı</th></tr><tr><td><code>olay</code></td><td>Her fiyatın başladığı an: başlangıç fiyatı (çok eski bir tarih) ve her güncelleme</td><td>31, 520, 2000-01-01 / 31, 550, 2024-10-11</td></tr><tr><td><code>aralik</code></td><td>LEAD ile bir sonraki olayın başlangıcı = bu fiyatın bitişi</td><td>31, 520, 2000-01-01 → 2024-10-11</td></tr><tr><td><code>boyut</code></td><td>Açık uçlu aralığa 9999 tarihi, güncel satıra bayrak</td><td>31, 550, 2024-10-11 → 9999-12-31, 1</td></tr><tr><td><code>satis</code></td><td>Ekim 2024 sonrası satış satırları</td><td>31, 2024-10-20, 549, 1</td></tr><tr><td><code>son SELECT</code></td><td>Satışı, tarihi aralığın içine düşen boyut satırıyla birleştirir</td><td>31, 4, 548.75, 535, 3</td></tr></table>
+<h2>Yarı açık aralık burada da kritik</h2>
+<p>Birleştirme koşulu <code>s.order_date &gt;= b.baslangic AND s.order_date &lt; b.bitis</code> şeklindedir. Bitişi dahil etseydin (<code>&lt;=</code>), tam güncelleme anına denk gelen bir satış iki fiyat satırıyla eşleşir ve satır çoğalırdı.</p>
+<div class="note"><b>Bilerek bırakılmış bir basitleştirme</b>Başlangıç fiyatı, products tablosundaki güncel fiyattan türetilemez; gerçek bir sistemde ilk fiyat ayrı bir kaynaktan gelir. Bu örnekte ilk aralık için güncel fiyat kullanıldı; alıştırmalardan biri bunu düzeltiyor.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-bs-scd">Alıştırmalara geç (4)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../bs-aml/">← Büyük sorgu 5: bankada şüpheli işlem kural motoru</a><a href="../mulakat-1/">Mülakat soruları 1: klasikler →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

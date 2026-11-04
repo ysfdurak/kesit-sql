@@ -1,0 +1,67 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Örnekleme ve eğitim/test ayrımı | Kesit SQL</title><meta name="description" content="Rastgele örnek, tekrarlanabilir hash tabanlı bölme."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ds-ornekleme/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Örnekleme ve eğitim/test ayrımı"><meta property="og:description" content="Rastgele örnek, tekrarlanabilir hash tabanlı bölme."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ds-ornekleme/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Örnekleme ve eğitim/test ayrımı","description":"Rastgele örnek, tekrarlanabilir hash tabanlı bölme.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ds-ornekleme/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veri Bilimi</span><h1>Örnekleme ve eğitim/test ayrımı</h1><p class="st-l">Rastgele örnek, tekrarlanabilir hash tabanlı bölme.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ds-ornekleme">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Rastgele örnek</h2>
+<pre class="code" data-diff="tsql pg mysql oracle bq">SELECT * FROM customers ORDER BY RANDOM() LIMIT 5;</pre>
+<p>Her çalıştırmada farklı sonuç verir. Büyük tablolarda tüm tabloyu sıraladığı için pahalıdır; ambarlarda <code>TABLESAMPLE SYSTEM (10 PERCENT)</code> gibi yöntemler kullanılır.</p>
+<h2>Tekrarlanabilir bölme</h2>
+<p>Model eğitiminde aynı müşterinin her seferinde aynı kümeye düşmesi gerekir. Anahtarın hash'ine (veya burada basitçe ID'ye) göre mod almak bunu sağlar:</p>
+<pre class="code">SELECT CASE WHEN customer_id % 10 < 8 THEN 'train' ELSE 'test' END AS kume,
+       COUNT(*) AS n
+FROM customers
+GROUP BY kume;</pre>
+<p>BigQuery'de <code>MOD(ABS(FARM_FINGERPRINT(CAST(id AS STRING))), 10)</code>, PostgreSQL'de <code>hashtext(id::text)</code> benzeri fonksiyonlar kullanılır.</p>
+<h2>Tabakalı örnekleme</h2>
+<p>Her segmentten eşit oranda örnek almak için ROW_NUMBER ile segment içinde sıra ver ve oranla filtrele.</p>
+<pre class="code">WITH s AS (
+  SELECT customer_id, segment,
+         ROW_NUMBER() OVER (PARTITION BY segment ORDER BY customer_id) AS rn,
+         COUNT(*) OVER (PARTITION BY segment) AS n
+  FROM customers
+)
+SELECT segment, COUNT(*) AS ornek
+FROM s WHERE rn <= n * 0.2
+GROUP BY segment;</pre>
+<h2>Derinleş: sızıntısız ve tekrarlanabilir bölme</h2>
+<p>Eğitim/test ayrımının amacı, modelin <b>hiç görmediği</b> veride nasıl çalışacağını dürüstçe ölçmektir. Bu amaç üç yoldan bozulur: aynı varlığın iki kümeye birden düşmesi, gelecekteki verinin eğitime karışması ve her çalıştırmada farklı bir bölme yapılması.</p>
+<h3>1. Bölme birimini doğru seç</h3>
+<p>Müşteri davranışını tahmin eden bir modelde birim <b>müşteridir</b>, sipariş değil. Siparişleri rastgele bölersen aynı müşterinin bazı siparişleri eğitimde, bazıları testte kalır; model müşteriyi “ezberler” ve test skoru şişer:</p>
+<pre class="code">WITH a AS (
+  SELECT customer_id,
+         MAX(CASE WHEN order_id % 5 = 0 THEN 1 ELSE 0 END) AS testte,
+         MAX(CASE WHEN order_id % 5 &lt;> 0 THEN 1 ELSE 0 END) AS egitimde
+  FROM orders
+  GROUP BY customer_id
+)
+SELECT SUM(testte * egitimde) AS iki_kumede, COUNT(*) AS musteri
+FROM a;</pre>
+<p>Sipariş bazlı bölmede 136 müşterinin 108'i iki kümede birden yer alıyor. Müşteri bazlı bölmede (<code>customer_id % 5</code>) bu sayı tanım gereği 0'dır.</p>
+<h3>2. Zaman varsa zamana göre böl</h3>
+<p>Tahmin gelecekte kullanılacaksa test kümesi eğitimden <b>sonraki</b> dönem olmalı (ör. 2024-07-01 öncesi eğitim, sonrası test). Rastgele bölme, modelin “gelecekten” öğrenmesine izin verir.</p>
+<h3>3. Tabakalı ve tekrarlanabilir örnek</h3>
+<p>Küçük segmentler rastgele örnekte kaybolabilir. Tabakalı örneklemede her tabakadan aynı oranda kayıt alınır. <code>RANDOM()</code> yerine kimlikten türetilen sabit bir “karıştırma anahtarı” kullanırsan örnek her çalıştırmada aynı çıkar:</p>
+<pre class="code">WITH s AS (
+  SELECT customer_id, segment,
+         ROW_NUMBER() OVER (PARTITION BY segment
+                            ORDER BY (customer_id * 7919) % 1000, customer_id) AS rn,
+         COUNT(*) OVER (PARTITION BY segment) AS n
+  FROM bank_customers
+)
+SELECT segment, MAX(n) AS tabaka, SUM(CASE WHEN rn * 10 &lt;= n THEN 1 ELSE 0 END) AS ornek
+FROM s
+GROUP BY segment
+ORDER BY segment;</pre>
+<p>Bireysel 400 müşteriden 40, KOBİ 48'den 4, Özel Bankacılık 52'den 5 kayıt seçilir: her tabakada yaklaşık %10. Gerçek projelerde karıştırma anahtarı bir hash fonksiyonudur (BigQuery <code>FARM_FINGERPRINT</code>, PostgreSQL <code>hashtext</code>, SQL Server <code>CHECKSUM</code>).</p>
+<table><tr><th>Yöntem</th><th>Ne zaman?</th><th>Risk</th></tr>
+<tr><td><code>ORDER BY RANDOM()</code></td><td>Hızlı keşif</td><td>Tekrarlanamaz, büyük tabloda pahalı</td></tr>
+<tr><td>Kimlik/hash modu</td><td>Kalıcı eğitim/test ayrımı</td><td>Kimlik sırası anlamlıysa (ör. kayıt tarihi) yanlı olabilir</td></tr>
+<tr><td>Zaman kesimi</td><td>Tahmin modelleri</td><td>Mevsimsellik varsa test dönemi temsil gücü düşük</td></tr>
+<tr><td>Tabakalı</td><td>Dengesiz sınıflar, küçük segmentler</td><td>Tabaka tanımı yanlışsa yanlılık sürer</td></tr></table></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ds-ornekleme">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ds-ab/">← A/B testi analizi</a><a href="../ds-feature/">Özellik mühendisliği (feature engineering) →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

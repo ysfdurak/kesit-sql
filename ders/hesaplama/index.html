@@ -1,0 +1,52 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hesaplanan sütunlar ve aritmetik | Kesit SQL</title><meta name="description" content="Dört işlem, mod, yuvarlama ve kâr marjı gibi türetilmiş sütunlar."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/hesaplama/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Hesaplanan sütunlar ve aritmetik"><meta property="og:description" content="Dört işlem, mod, yuvarlama ve kâr marjı gibi türetilmiş sütunlar."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/hesaplama/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Hesaplanan sütunlar ve aritmetik","description":"Dört işlem, mod, yuvarlama ve kâr marjı gibi türetilmiş sütunlar.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/hesaplama/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Temeller</span><h1>Hesaplanan sütunlar ve aritmetik</h1><p class="st-l">Dört işlem, mod, yuvarlama ve kâr marjı gibi türetilmiş sütunlar.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-hesaplama">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Sütunlarla hesap yapmak</h2>
+<p>SELECT listesinde yalnızca sütun değil, <b>ifade</b> de yazabilirsin. Her satır için hesaplanır ve sonuçta yeni bir sütun olarak görünür. Bu sütuna <code>AS</code> ile anlamlı bir ad vermek iyi bir alışkanlıktır.</p>
+<pre class="code">SELECT name,
+       price,
+       cost,
+       price - cost AS birim_kar,
+       ROUND(100.0 * (price - cost) / price, 1) AS kar_marji
+FROM products
+ORDER BY kar_marji DESC
+LIMIT 5;</pre>
+<table>
+<tr><th>Operatör</th><th>Anlamı</th><th>Örnek</th></tr>
+<tr><td><code>+ - * /</code></td><td>Dört işlem</td><td><code>price * 1.2</code></td></tr>
+<tr><td><code>%</code></td><td>Bölümden kalan (Oracle'da <code>MOD(a, b)</code>)</td><td><code>order_id % 2</code></td></tr>
+<tr><td><code>( )</code></td><td>Öncelik</td><td><code>(price - cost) / price</code></td></tr>
+</table>
+<h2>İşlem önceliği</h2>
+<p>Matematikteki gibi önce çarpma ve bölme, sonra toplama ve çıkarma yapılır. <code>price - cost / price</code> ile <code>(price - cost) / price</code> çok farklı sonuç verir. Emin değilsen parantez kullan.</p>
+<h2>Tam sayı bölmesi tuzağı</h2>
+<p>İki tam sayıyı bölmek, SQL türüne göre farklı sonuç verir. SQL Server, PostgreSQL ve SQLite küsuratı atar; MySQL ve Oracle ondalıklı sonuç döndürür. SQL türü sekmelerini değiştirip çıktıya bak:</p>
+<pre class="code" data-v="{&quot;oracle&quot;:&quot;SELECT 7 / 2 AS tam_bolme,\n       MOD(7, 2) AS kalan,\n       7 / 2.0 AS ondalikli\nFROM dual;&quot;}" data-diff="mysql oracle bq">SELECT 7 / 2 AS tam_bolme,
+       7 % 2 AS kalan,
+       7 / 2.0 AS ondalikli;</pre>
+<div class="tip"><b>Oran hesaplarken</b>Sayılardan birini ondalıklı yap: <code>100.0 * a / b</code> veya <code>CAST(a AS DECIMAL(10,2)) / b</code>. Bu tek alışkanlık, raporlardaki en yaygın hatayı önler.</div>
+<h2>Yuvarlama ve matematik fonksiyonları</h2>
+<pre class="code">SELECT name,
+       price,
+       ROUND(price / 3.0, 2) AS ucte_bir,
+       FLOOR(price / 1000) AS bin_tl_dilimi,
+       ABS(cost - price) AS fark
+FROM products
+LIMIT 5;</pre>
+<table>
+<tr><th>Fonksiyon</th><th>Ne yapar?</th></tr>
+<tr><td><code>ROUND(x, n)</code></td><td>n basamağa yuvarlar</td></tr>
+<tr><td><code>FLOOR(x)</code> / <code>CEILING(x)</code></td><td>Aşağı / yukarı tam sayıya (PostgreSQL ve Oracle'da <code>CEIL</code>)</td></tr>
+<tr><td><code>ABS(x)</code></td><td>Mutlak değer</td></tr>
+<tr><td><code>POWER(x, y)</code>, <code>SQRT(x)</code></td><td>Üs alma, karekök</td></tr>
+</table>
+<div class="warn"><b>NULL ile aritmetik</b>Bir işlemde değerlerden biri NULL ise sonuç da NULL olur: <code>100 + NULL = NULL</code>. Bunu COALESCE dersinde çözeceğiz.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-hesaplama">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../alias-distinct/">← Takma adlar (AS) ve DISTINCT</a><a href="../where/">WHERE ile filtreleme →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,57 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Veritabanında yapay zekâ: embedding ve vektör benzerlik araması | Kesit SQL</title><meta name="description" content="Anlamsal arama, kosinüs benzerliği, pgvector, SQL Server 2025 VECTOR, BigQuery VECTOR_SEARCH."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ai-vektor/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Veritabanında yapay zekâ: embedding ve vektör benzerlik araması"><meta property="og:description" content="Anlamsal arama, kosinüs benzerliği, pgvector, SQL Server 2025 VECTOR, BigQuery VECTOR_SEARCH."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ai-vektor/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Veritabanında yapay zekâ: embedding ve vektör benzerlik araması","description":"Anlamsal arama, kosinüs benzerliği, pgvector, SQL Server 2025 VECTOR, BigQuery VECTOR_SEARCH.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/ai-vektor/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Yapay Zekâ ile SQL</span><h1>Veritabanında yapay zekâ: embedding ve vektör benzerlik araması</h1><p class="st-l">Anlamsal arama, kosinüs benzerliği, pgvector, SQL Server 2025 VECTOR, BigQuery VECTOR_SEARCH.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ai-vektor">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Kelimeyle değil anlamla aramak</h2>
+<p>“Kablosuz kulaklık” arayan biri “Bluetooth hoparlör”ü de görmek isteyebilir; LIKE bunu bulamaz. Yapay zekâ modelleri bir metni (veya görseli) yüzlerce sayıdan oluşan bir <b>vektöre</b> (embedding) çevirir. Anlamca yakın metinlerin vektörleri birbirine yakındır. Veritabanı bu vektörleri saklayıp “en yakın olanları” bulduğunda <b>anlamsal arama</b> yapmış olur. RAG (retrieval-augmented generation) denen, şirket belgeleriyle konuşan sohbet botları da bu yöntemle çalışır.</p>
+<h2>Kosinüs benzerliği</h2>
+<p>İki vektör arasındaki açının kosinüsüdür: 1'e ne kadar yakınsa o kadar benzerdir.</p>
+<p style="font-family:var(--f-mono)">benzerlik = Σ(aᵢ·bᵢ) ÷ ( √Σaᵢ² · √Σbᵢ² )</p>
+<p>Gerçek embedding'ler 384–3072 boyutludur; fikri görmek için 3 boyutlu küçük bir örneği düz SQL ile hesaplayalım:</p>
+<pre class="code">WITH emb AS (
+    SELECT 1 AS product_id, 0.90 AS x, 0.10 AS y, 0.05 AS z UNION ALL   -- Kablosuz Kulaklık
+    SELECT 3, 0.80, 0.20, 0.10 UNION ALL                                  -- Bluetooth Hoparlör
+    SELECT 9, 0.05, 0.90, 0.20 UNION ALL                                  -- Suç ve Ceza
+    SELECT 28, 0.10, 0.20, 0.95                                           -- Yoga Matı
+)
+SELECT b.product_id,
+       p.name,
+       ROUND((a.x * b.x + a.y * b.y + a.z * b.z)
+             / (SQRT(a.x * a.x + a.y * a.y + a.z * a.z) * SQRT(b.x * b.x + b.y * b.y + b.z * b.z)), 3) AS benzerlik
+FROM emb a
+JOIN emb b ON b.product_id <> a.product_id
+JOIN products p ON p.product_id = b.product_id
+WHERE a.product_id = 1
+ORDER BY benzerlik DESC;</pre>
+<h2>SQL türlerinde vektör desteği</h2>
+<table>
+<tr><th>SQL türü</th><th>Nasıl?</th></tr>
+<tr><td>SQL Server 2025 / Azure SQL</td><td><code>VECTOR(1536)</code> veri tipi, <code>VECTOR_DISTANCE('cosine', a, b)</code>, vektör indeksi</td></tr>
+<tr><td>PostgreSQL</td><td><b>pgvector</b> eklentisi: <code>vector(1536)</code> tipi, <code>a &lt;=&gt; b</code> (kosinüs mesafesi), HNSW indeksi</td></tr>
+<tr><td>Oracle 23ai</td><td><code>VECTOR</code> tipi, <code>VECTOR_DISTANCE</code>, AI Vector Search</td></tr>
+<tr><td>BigQuery</td><td><code>ML.GENERATE_EMBEDDING</code> ile embedding üretme, <code>VECTOR_SEARCH</code> ile arama</td></tr>
+<tr><td>MySQL 9</td><td><code>VECTOR</code> tipi (HeatWave'de vektör araması)</td></tr>
+</table>
+<pre class="code" data-norun>-- PostgreSQL + pgvector
+CREATE EXTENSION IF NOT EXISTS vector;
+ALTER TABLE products ADD COLUMN embedding vector(1536);
+
+SELECT name
+FROM products
+ORDER BY embedding &lt;=&gt; (SELECT embedding FROM products WHERE product_id = 1)
+LIMIT 5;
+
+-- SQL Server 2025
+SELECT TOP (5) name,
+       VECTOR_DISTANCE('cosine', embedding, @soru_vektoru) AS mesafe
+FROM dbo.products
+ORDER BY mesafe;</pre>
+<div class="note"><b>Mesafe mi benzerlik mi?</b>Çoğu veritabanı <b>mesafe</b> döndürür (kosinüs mesafesi = 1 − benzerlik); bu yüzden küçükten büyüğe sıralanır.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ai-vektor">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ai-dogrulama/">← Yapay zekânın yazdığı SQL'i doğrulamak: hata avı</a><a href="../ai-ml/">SQL ile makine öğrenmesi ve üretken YZ: BigQuery ML ve benzerleri →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

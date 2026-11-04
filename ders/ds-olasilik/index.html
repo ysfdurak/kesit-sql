@@ -1,0 +1,33 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SQL ile olasılık ve koşullu olasılık | Kesit SQL</title><meta name="description" content="Frekanslardan olasılık, P(A|B), bağımsızlık ve beklenen değer."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ds-olasilik/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="SQL ile olasılık ve koşullu olasılık"><meta property="og:description" content="Frekanslardan olasılık, P(A|B), bağımsızlık ve beklenen değer."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ds-olasilik/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"SQL ile olasılık ve koşullu olasılık","description":"Frekanslardan olasılık, P(A|B), bağımsızlık ve beklenen değer.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ds-olasilik/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veri Bilimi</span><h1>SQL ile olasılık ve koşullu olasılık</h1><p class="st-l">Frekanslardan olasılık, P(A|B), bağımsızlık ve beklenen değer.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ds-olasilik">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Olasılık = oran</h2>
+<p>Elinde geçmiş veri varsa, bir olayın olasılığını <b>görülme oranıyla</b> tahmin edersin: P(iptal) = iptal edilen sipariş ÷ tüm siparişler. SQL'de bu, koşullu sayımın ta kendisidir.</p>
+<pre class="code">SELECT ROUND(AVG(CASE WHEN status = 'cancelled' THEN 1.0 ELSE 0 END), 3) AS p_iptal
+FROM orders;</pre>
+<h2>Koşullu olasılık: P(A | B)</h2>
+<p>“B olduğunu bildiğimizde A'nın olasılığı” = A ve B birlikte ÷ B. Örneğin mobil kanaldan gelen bir siparişin iptal olasılığı:</p>
+<pre class="code">SELECT channel,
+       COUNT(*) AS siparis,
+       ROUND(AVG(CASE WHEN status = 'cancelled' THEN 1.0 ELSE 0 END), 3) AS p_iptal
+FROM orders
+GROUP BY channel;</pre>
+<p>Kanallar arasında P(iptal | kanal) belirgin biçimde farklıysa, iptal ile kanal <b>bağımsız değildir</b>. Farkın tesadüf olup olmadığını anlamak için A/B testi dersindeki istatistiksel testlere başvurulur.</p>
+<h2>Beklenen değer</h2>
+<p>Bir rastgele değişkenin ortalama sonucudur: E[gelir] = Σ (değer × olasılık). Gözlem verisinde bu basitçe ortalamadır; A/B testinde her varyantın kullanıcı başına beklenen geliri şöyle bulunur:</p>
+<pre class="code">SELECT variant,
+       COUNT(*) AS kullanici,
+       ROUND(AVG(converted * 1.0), 3) AS p_donusum,
+       ROUND(AVG(revenue), 2) AS beklenen_gelir
+FROM ab_test
+GROUP BY variant;</pre>
+<div class="tip"><b>Bayes kuralı</b>P(A|B) = P(B|A) × P(A) ÷ P(B). Örneğin “satın alan kullanıcıların %90'ı sepete ekledi” bilgisinden “sepete ekleyenin satın alma olasılığına” geçmek için kullanılır. SQL ile her terimi ayrı ayrı sayıp hesaplayabilirsin.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ds-olasilik">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ds-tanimsal/">← SQL ile tanımlayıcı istatistik</a><a href="../ds-dagilim/">Dağılımlar ve histogram (binning) →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

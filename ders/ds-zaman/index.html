@@ -1,0 +1,56 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zaman serisi özellikleri | Kesit SQL</title><meta name="description" content="Gecikmeli değerler, hareketli ortalamalar, mevsimsel özellikler."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ds-zaman/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Zaman serisi özellikleri"><meta property="og:description" content="Gecikmeli değerler, hareketli ortalamalar, mevsimsel özellikler."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ds-zaman/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Zaman serisi özellikleri","description":"Gecikmeli değerler, hareketli ortalamalar, mevsimsel özellikler.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/ds-zaman/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Veri Bilimi</span><h1>Zaman serisi özellikleri</h1><p class="st-l">Gecikmeli değerler, hareketli ortalamalar, mevsimsel özellikler.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ds-zaman">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Tahmin modelleri için tablo</h2>
+<p>Günlük sipariş tahmini yapan bir model; dünün, geçen haftanın aynı gününün değerine ve hareketli ortalamalara ihtiyaç duyar.</p>
+<pre class="code">WITH RECURSIVE gun(d) AS (
+  SELECT '2024-10-01' UNION ALL SELECT date(d, '+1 day') FROM gun WHERE d < '2024-12-31'
+),
+g AS (
+  SELECT gun.d, COUNT(o.order_id) AS y
+  FROM gun LEFT JOIN orders o ON o.order_date = gun.d
+  GROUP BY gun.d
+)
+SELECT d, y,
+       LAG(y, 1) OVER w AS lag_1,
+       LAG(y, 7) OVER w AS lag_7,
+       ROUND(AVG(y) OVER (ORDER BY d ROWS BETWEEN 7 PRECEDING AND 1 PRECEDING), 2) AS ort_7_onceki,
+       CAST(strftime('%w', d) AS INTEGER) AS hafta_gunu,
+       CASE WHEN CAST(strftime('%w', d) AS INTEGER) IN (0, 6) THEN 1 ELSE 0 END AS hafta_sonu
+FROM g
+WINDOW w AS (ORDER BY d)
+ORDER BY d;</pre>
+<p>Dikkat: Hareketli ortalama <code>1 PRECEDING</code>'de bitiyor. Bugünün değerini içeren bir özellik, bugünü tahmin ederken sızıntı olur.</p>
+
+<h2>Özellik türleri</h2>
+<table>
+<tr><th>Tür</th><th>Örnek</th><th>SQL</th></tr>
+<tr><td>Gecikme (lag)</td><td>Dünün, geçen haftanın aynı gününün değeri</td><td><code>LAG(y, 1)</code>, <code>LAG(y, 7)</code></td></tr>
+<tr><td>Hareketli istatistik</td><td>Son 7 günün ortalaması, en büyüğü</td><td><code>AVG(y) OVER (ORDER BY d ROWS BETWEEN 7 PRECEDING AND 1 PRECEDING)</code></td></tr>
+<tr><td>Takvim</td><td>Haftanın günü, ay, hafta sonu, tatil</td><td>Tarih fonksiyonları ve bir tatil tablosuyla birleştirme</td></tr>
+<tr><td>Fark ve oran</td><td>Geçen haftaya göre değişim</td><td><code>y - LAG(y, 7)</code>, <code>y * 1.0 / NULLIF(LAG(y, 7), 0)</code></td></tr>
+</table>
+<h2>Boş günleri doldurmak şart</h2>
+<p>Sipariş olmayan günler tabloda yoksa <code>LAG(y, 7)</code> yedi takvim günü öncesine değil, yedi <b>satır</b> öncesine bakar. Bu yüzden yukarıdaki örnek önce özyinelemeli CTE ile tüm günleri üretiyor, siparişleri LEFT JOIN ile bağlıyor ve eksik günler 0 sayılıyor.</p>
+<h2>Eğitim ve test ayrımı zamana göre yapılır</h2>
+<p>Zaman serisinde satırları rastgele bölmek, modelin geleceği görerek geçmişi tahmin etmesine yol açar. Bir kesim tarihi seçilir: öncesi eğitim, sonrası test.</p>
+<pre class="code">WITH m AS (
+  SELECT strftime('%Y-%m', order_date) AS ay, COUNT(*) AS y
+  FROM orders
+  GROUP BY strftime('%Y-%m', order_date)
+)
+SELECT ay, y,
+       LAG(y) OVER (ORDER BY ay) AS lag_1,
+       CASE WHEN ay < '2024-10' THEN 'egitim' ELSE 'test' END AS bolum
+FROM m
+ORDER BY ay;</pre>
+<div class="warn"><b>Özellikler de kesim tarihine uymalı</b>Test dönemindeki bir satırın özellikleri yalnızca o satırdan önceki veriden hesaplanabilir. Pencere çerçevesini <code>1 PRECEDING</code>'de bitirmek bu kuralın SQL'deki karşılığıdır.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ds-zaman">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ds-feature/">← Özellik mühendisliği (feature engineering)</a><a href="../de-etl/">ETL, ELT ve veri katmanları →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

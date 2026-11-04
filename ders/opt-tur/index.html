@@ -1,0 +1,74 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tür dönüşümü ve fonksiyon tuzakları: indeks var ama kullanılmıyor | Kesit SQL</title><meta name="description" content="Sütunu sargan fonksiyon ve dönüşümler, sabiti dönüştürmek, ifade indeksi, yeniden yazarken sonucu bozmamak."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/opt-tur/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Tür dönüşümü ve fonksiyon tuzakları: indeks var ama kullanılmıyor"><meta property="og:description" content="Sütunu sargan fonksiyon ve dönüşümler, sabiti dönüştürmek, ifade indeksi, yeniden yazarken sonucu bozmamak."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/opt-tur/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Tür dönüşümü ve fonksiyon tuzakları: indeks var ama kullanılmıyor","description":"Sütunu sargan fonksiyon ve dönüşümler, sabiti dönüştürmek, ifade indeksi, yeniden yazarken sonucu bozmamak.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/opt-tur/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Sorgu Optimizasyonu</span><h1>Tür dönüşümü ve fonksiyon tuzakları: indeks var ama kullanılmıyor</h1><p class="st-l">Sütunu sargan fonksiyon ve dönüşümler, sabiti dönüştürmek, ifade indeksi, yeniden yazarken sonucu bozmamak.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-tur">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory"><h2>Senaryo: "İndeks var ama sorgu yine tarıyor"</h2>
+<p>Bir mühendis <code>txn_time</code> üzerine indeks eklemiş, rapor hızlanmamış. Sebep çoğu zaman indeksin kendisi değil, koşulun yazımıdır. İndeks sütunun <b>ham değerlerine</b> göre sıralıdır. Sütunu bir ifadenin içine koyarsan motor o sıradan yararlanamaz.</p>
+<pre class="code" data-na="tsql pg mysql oracle bq">CREATE INDEX ix_txn_time ON bank_txns (txn_time);
+EXPLAIN QUERY PLAN SELECT COUNT(*) FROM bank_txns WHERE date(txn_time) = '2024-12-31';
+EXPLAIN QUERY PLAN SELECT COUNT(*) FROM bank_txns WHERE txn_time >= '2024-12-31' AND txn_time &lt; '2025-01-01';</pre>
+<p>İlkinde <code>SCAN bank_txns USING COVERING INDEX</code> görürsün: indeks baştan sona okunuyor, arama yok. "Index" sözcüğü seni yanıltmasın, önemli olan <code>SCAN</code> ve <code>SEARCH</code> ayrımıdır.</p>
+<h2>Sık görülen biçimler</h2>
+<table>
+<tr><th>Tuzak</th><th>Sorun</th><th>Düzeltme</th></tr>
+<tr><td><code>WHERE date(txn_time) = '2024-12-31'</code></td><td>Tarih fonksiyonu</td><td>Yarı açık aralık</td></tr>
+<tr><td><code>WHERE amount * -1 &gt; 1000</code></td><td>Sütunda aritmetik</td><td>Sabit tarafa taşı: <code>amount &lt; -1000</code></td></tr>
+<tr><td><code>WHERE COALESCE(merchant_category, '') = 'market'</code></td><td>NULL dönüşümü</td><td><code>merchant_category = 'market'</code> (NULL zaten eşleşmez)</td></tr>
+<tr><td><code>WHERE CAST(account_id AS TEXT) = '100019'</code></td><td>Sütunda tür dönüşümü</td><td><code>account_id = 100019</code></td></tr>
+<tr><td><code>WHERE account_id + 0 = 100019</code></td><td>Etkisiz işlem</td><td><code>account_id = 100019</code></td></tr>
+<tr><td><code>WHERE LOWER(channel) = 'atm'</code></td><td>Harf dönüşümü</td><td>Veriyi standart tut ya da ifade indeksi kur</td></tr>
+</table>
+<h2>Gerçek çıktı: dönüşüm hangi tarafta?</h2>
+<div class="note"><b>PostgreSQL çıktıları</b>Bu derslerdeki PostgreSQL planları elle yazılmadı. Aynı veriyle PostgreSQL 16.4 üzerinde (PGlite, tarayıcıda çalışan WASM sürümü) üretildi. <code>VACUUM ANALYZE</code> çalıştırıldı, planlama satırları kısalık için çıkarıldı. Sayılar kendi sunucunda farklı olur; okuma biçimi aynıdır.</div>
+<p>Sabit sütunun türüne uyunca:</p>
+<pre class="code" data-norun>EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT COUNT(*) FROM bank_txns WHERE account_id = 100019;</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">Aggregate  (cost=5.27..5.28 rows=1 width=8) (actual rows=1 loops=1)
+  Buffers: shared hit=3
+  ->  Index Only Scan using bank_txns_account_id_idx on bank_txns  (cost=0.29..5.15 rows=49 width=0) (actual rows=72 loops=1)
+        Index Cond: (account_id = 100019)
+        Heap Fetches: 0
+        Buffers: shared hit=3</pre>
+<p>Sütun metne dönüştürülünce aynı indeksin tamamı okunuyor, koşul <code>Filter</code> satırına düşüyor:</p>
+<pre class="code" data-norun>EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT COUNT(*) FROM bank_txns WHERE account_id::text = '100019';</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">Aggregate  (cost=1108.21..1108.22 rows=1 width=8) (actual rows=1 loops=1)
+  Buffers: shared hit=39
+  ->  Index Only Scan using bank_txns_account_id_idx on bank_txns  (cost=0.29..1107.68 rows=211 width=0) (actual rows=72 loops=1)
+        Filter: ((account_id)::text = '100019'::text)
+        Rows Removed by Filter: 42212
+        Heap Fetches: 0
+        Buffers: shared hit=39</pre>
+<h2>Örtük dönüşüm (implicit conversion)</h2>
+<p>Dönüşümü sen yazmasan da motor yapabilir. SQL türleri burada çok farklıdır:</p>
+<table>
+<tr><th>SQL türü</th><th>Davranış</th></tr>
+<tr><td>SQL Server</td><td>Karşılaştırmada veri türü önceliği (data type precedence) kuralı geçerlidir: düşük öncelikli taraf yüksek olana çevrilir. <code>nvarchar</code>, <code>varchar</code>'dan yüksektir. <code>varchar</code> sütunu <code>N'...'</code> ya da <code>nvarchar</code> parametreyle karşılaştırılırsa sütun çevrilir, arama yapılamayabilir. Planda <code>CONVERT_IMPLICIT</code> olarak görünür. Uygulama sürücüsünün metin parametrelerini <code>nvarchar</code> gönderip göndermediğine bak.</td></tr>
+<tr><td>MySQL</td><td>Belgeye göre metin sütunu sayıyla karşılaştırılırsa o sütundaki indeks arama için kullanılamaz, çünkü farklı metinler aynı sayıya dönüşebilir (<code>'1'</code>, <code>' 1'</code>, <code>'1a'</code>). Sabiti tırnak içinde yaz.</td></tr>
+<tr><td>PostgreSQL</td><td>Sayı ve metin arasında örtük karşılaştırma yoktur, hata verir. Tırnaklı sabit ise sütunun türüne uyarlanır, indeks kullanılır.</td></tr>
+<tr><td>SQLite</td><td>Sütun yakınlığı (type affinity) sabite uygulanır: <code>account_id = '100019'</code> yine arama yapar. Sütuna dönüşüm yazarsan yapamaz.</td></tr>
+<tr><td>BigQuery</td><td>İndeks yerine bölüm kullanılır. Bölüm sütununu yalnız bırak: belgedeki desteklenen fonksiyonlar dışında bölüm eleme yapılmaz, tablonun tamamı taranır.</td></tr>
+</table>
+<h2>Fonksiyon şartsa: ifade indeksi</h2>
+<p>Bazen sorguyu değiştiremezsin (hazır rapor aracı, ORM). O zaman indeksi ifadeye kurarsın. Sorgudaki ifade, indeksteki ifadeyle aynı yazılmalıdır.</p>
+<pre class="code" data-na="tsql pg mysql oracle bq">CREATE INDEX ix_gun ON bank_txns (date(txn_time));
+EXPLAIN QUERY PLAN SELECT COUNT(*) FROM bank_txns WHERE date(txn_time) = '2024-12-31';</pre>
+<pre class="code" data-norun>CREATE INDEX ix_gun ON bank_txns ((txn_time::date));
+EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT COUNT(*) FROM bank_txns WHERE txn_time::date = '2024-11-01';</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">Aggregate  (cost=10.35..10.36 rows=1 width=8) (actual rows=1 loops=1)
+  Buffers: shared hit=4
+  ->  Index Scan using ix_gun on bank_txns  (cost=0.29..10.09 rows=103 width=0) (actual rows=120 loops=1)
+        Index Cond: ((txn_time)::date = '2024-11-01'::date)
+        Buffers: shared hit=4</pre>
+<p>SQL Server'da aynı iş hesaplanmış sütun (computed column) üzerine indeksle, Oracle'da fonksiyon tabanlı indeksle yapılır. Her ifade indeksi bir indeks daha demektir: yazma bedeli aynen ödenir.</p>
+<h2>Yeniden yazarken sonucu bozma</h2>
+<ul>
+<li><b>Tarih sınırı:</b> <code>txn_time BETWEEN '2024-11-01' AND '2024-11-30'</code>, saatli sütunda 30 Kasım'ın saatli kayıtlarını kaçırır. Yarı açık aralık kullan.</li>
+<li><b>NULL:</b> <code>WHERE COALESCE(stok, 0) &lt; 20</code> NULL olanı da alır; <code>stok &lt; 20</code> almaz. Eşdeğeri <code>stok &lt; 20 OR stok IS NULL</code> olur.</li>
+<li><b>Negatif çarpım:</b> <code>amount * -1 &gt; 1000</code> yeniden yazılırken eşitsizlik yön değiştirir: <code>amount &lt; -1000</code>.</li>
+<li><b>LIKE ve harf:</b> SQLite varsayılan ayarda <code>LIKE</code> harf duyarsız çalıştığı için normal indeksten yararlanamaz. <code>name LIKE 'Ko%'</code> diğer motorlarda aramaya dönebilse de burada <code>SCAN</code> görürsün. <code>LIKE '%ko'</code> ise normal B-tree indeksle aramaya dönüşmez.</li>
+</ul></article>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-tur">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../opt-plan/">← Sorgu planı okumak (query plan): tarama, arama, birleştirme, tahmin ve gerçek</a><a href="../opt-indeks/">İndeks tasarımı: bileşik ve kapsayan indeks (covering index), sütun sırası, bedel →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

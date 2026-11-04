@@ -1,0 +1,41 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kohort ve elde tutma (retention) analizi | Kesit SQL</title><meta name="description" content="Müşteriler ilk alışverişlerinden sonra geri geliyor mu?"><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/an-kohort/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Kohort ve elde tutma (retention) analizi"><meta property="og:description" content="Müşteriler ilk alışverişlerinden sonra geri geliyor mu?"><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/an-kohort/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Kohort ve elde tutma (retention) analizi","description":"Müşteriler ilk alışverişlerinden sonra geri geliyor mu?","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/an-kohort/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veri Analisti</span><h1>Kohort ve elde tutma (retention) analizi</h1><p class="st-l">Müşteriler ilk alışverişlerinden sonra geri geliyor mu?</p>
+<div class="st-c"><a class="st-p" href="../../#ders-an-kohort">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Kohort nedir?</h2>
+<p>Kohort, aynı dönemde başlayan kullanıcı grubudur. En yaygını: <b>ilk sipariş ayına göre kohort</b>. Sonra her kohortun sonraki aylarda yüzde kaçının tekrar sipariş verdiği izlenir.</p>
+<h2>Üç adım</h2>
+<ol><li>Her müşterinin kohort ayını bul (ilk sipariş ayı).</li><li>Her siparişin kohort ayından kaç ay sonra olduğunu hesapla (ay_farki).</li><li>Kohort × ay_farki için aktif müşteri sayısını say, kohort büyüklüğüne böl.</li></ol>
+<pre class="code">WITH ilk AS (
+  SELECT customer_id, MIN(order_date) AS ilk_tarih
+  FROM orders GROUP BY customer_id
+),
+akt AS (
+  SELECT o.customer_id,
+         strftime('%Y-%m', i.ilk_tarih) AS kohort,
+         (CAST(strftime('%Y', o.order_date) AS INTEGER) - CAST(strftime('%Y', i.ilk_tarih) AS INTEGER)) * 12
+         + CAST(strftime('%m', o.order_date) AS INTEGER) - CAST(strftime('%m', i.ilk_tarih) AS INTEGER) AS ay_farki
+  FROM orders o JOIN ilk i ON i.customer_id = o.customer_id
+),
+tablo AS (
+  SELECT kohort, ay_farki, COUNT(DISTINCT customer_id) AS musteri
+  FROM akt GROUP BY kohort, ay_farki
+)
+SELECT t.kohort,
+       MAX(CASE WHEN ay_farki = 0 THEN musteri END) AS boyut,
+       ROUND(100.0 * MAX(CASE WHEN ay_farki = 1 THEN musteri END) / MAX(CASE WHEN ay_farki = 0 THEN musteri END), 1) AS ay1,
+       ROUND(100.0 * MAX(CASE WHEN ay_farki = 3 THEN musteri END) / MAX(CASE WHEN ay_farki = 0 THEN musteri END), 1) AS ay3,
+       ROUND(100.0 * MAX(CASE WHEN ay_farki = 6 THEN musteri END) / MAX(CASE WHEN ay_farki = 0 THEN musteri END), 1) AS ay6
+FROM tablo t
+WHERE kohort >= '2023-01'
+GROUP BY t.kohort
+ORDER BY t.kohort;</pre>
+<div class="tip"><b>Okuma ipucu</b>Kohort tablosunda satırlar başlangıç dönemini, sütunlar yaşı gösterir. Bir sütunu yukarıdan aşağı okumak, ürün değişikliklerinin elde tutmayı iyileştirip iyileştirmediğini gösterir.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-an-kohort">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../an-pareto/">← Pareto ve ABC analizi</a><a href="../an-funnel/">Dönüşüm hunisi (funnel) analizi →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

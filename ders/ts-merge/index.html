@@ -1,0 +1,50 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MERGE: eşitle, güncelle, ekle, sil | Kesit SQL</title><meta name="description" content="Kaynak ile hedefi tek ifadede eşitlemek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-merge/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="MERGE: eşitle, güncelle, ekle, sil"><meta property="og:description" content="Kaynak ile hedefi tek ifadede eşitlemek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-merge/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"MERGE: eşitle, güncelle, ekle, sil","description":"Kaynak ile hedefi tek ifadede eşitlemek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-merge/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · T-SQL (SQL Server)</span><h1>MERGE: eşitle, güncelle, ekle, sil</h1><p class="st-l">Kaynak ile hedefi tek ifadede eşitlemek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-merge">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Tek ifadede üç işlem</h2>
+<p><code>MERGE</code>, bir kaynak tablo ile hedef tabloyu bir anahtara göre karşılaştırır: eşleşenleri günceller, hedefte olmayanları ekler, istenirse kaynakta olmayanları siler. Veri ambarı yüklemelerinin temel aracıdır.</p>
+<pre class="code" data-norun>MERGE INTO hedef AS t
+USING kaynak AS s
+   ON t.anahtar = s.anahtar
+WHEN MATCHED [AND ek_koşul] THEN UPDATE SET ...
+WHEN NOT MATCHED [BY TARGET] THEN INSERT (...) VALUES (...)
+WHEN NOT MATCHED BY SOURCE THEN DELETE;   -- MERGE ; ile bitmek zorundadır</pre>
+<h2>En son fiyatları ürün tablosuna işlemek</h2>
+<pre class="code" data-base="tsql">WITH son AS (
+    SELECT product_id, new_price,
+           ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY updated_at DESC) AS rn
+    FROM price_updates
+)
+MERGE INTO products AS t
+USING (SELECT product_id, new_price FROM son WHERE rn = 1) AS s
+   ON t.product_id = s.product_id
+WHEN MATCHED AND t.price &lt;&gt; s.new_price THEN
+    UPDATE SET price = s.new_price;
+
+SELECT p.product_id, p.name, p.price
+FROM products p
+WHERE p.product_id IN (SELECT product_id FROM price_updates)
+ORDER BY p.product_id;</pre>
+<h2>Tam eşitleme: ekle, güncelle, sil</h2>
+<pre class="code" data-base="tsql">CREATE TABLE #hedef (dept_id INT PRIMARY KEY, name NVARCHAR(50), city NVARCHAR(50));
+INSERT INTO #hedef SELECT dept_id, name, city FROM departments WHERE dept_id &lt;= 4;
+UPDATE #hedef SET city = N'Eski Şehir' WHERE dept_id = 2;
+
+MERGE INTO #hedef AS t
+USING (SELECT dept_id, name, city FROM departments WHERE dept_id &gt;= 2) AS s
+   ON t.dept_id = s.dept_id
+WHEN MATCHED AND t.city &lt;&gt; s.city THEN UPDATE SET city = s.city
+WHEN NOT MATCHED BY TARGET THEN INSERT (dept_id, name, city) VALUES (s.dept_id, s.name, s.city)
+WHEN NOT MATCHED BY SOURCE THEN DELETE;
+
+SELECT * FROM #hedef ORDER BY dept_id;</pre>
+<div class="warn"><b>Dikkat</b>Kaynakta aynı anahtar birden fazla kez geçerse MERGE hata verir (“The MERGE statement attempted to UPDATE or DELETE the same row more than once”). Kaynağı önce tekilleştir (yukarıdaki ROW_NUMBER gibi). <code>OUTPUT $action, inserted.*, deleted.*</code> ile hangi satıra ne yapıldığını raporlayabilirsin.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-merge">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-sequence/">← SEQUENCE, IDENTITY ve anahtar üretimi</a><a href="../ts-proc/">Saklı yordamlar (stored procedure) →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

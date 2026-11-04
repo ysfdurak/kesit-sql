@@ -1,0 +1,46 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kullanıcı tanımlı fonksiyonlar (UDF) | Kesit SQL</title><meta name="description" content="Skaler fonksiyonlar ve satır içi tablo değerli fonksiyonlar."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-func/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Kullanıcı tanımlı fonksiyonlar (UDF)"><meta property="og:description" content="Skaler fonksiyonlar ve satır içi tablo değerli fonksiyonlar."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-func/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Kullanıcı tanımlı fonksiyonlar (UDF)","description":"Skaler fonksiyonlar ve satır içi tablo değerli fonksiyonlar.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-func/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · T-SQL (SQL Server)</span><h1>Kullanıcı tanımlı fonksiyonlar (UDF)</h1><p class="st-l">Skaler fonksiyonlar ve satır içi tablo değerli fonksiyonlar.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-func">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Skaler fonksiyon: tek değer döner</h2>
+<pre class="code" data-base="tsql">CREATE OR ALTER FUNCTION dbo.fn_NetTutar (@adet INT, @fiyat DECIMAL(12, 2), @indirim DECIMAL(4, 2))
+RETURNS DECIMAL(12, 2)
+AS
+BEGIN
+    RETURN @adet * @fiyat * (1 - @indirim);
+END;
+GO
+
+SELECT TOP 5 order_id, product_id,
+       dbo.fn_NetTutar(quantity, unit_price, discount) AS net
+FROM order_items
+ORDER BY net DESC;</pre>
+<div class="warn"><b>Performans</b>Skaler fonksiyonlar her satır için ayrı çalışır ve eski sürümlerde sorgunun paralel çalışmasını engeller. SQL Server 2019'daki <i>scalar UDF inlining</i> bunu büyük ölçüde iyileştirdi; yine de çok büyük tablolarda ifadeyi doğrudan sorguya yazmak veya tablo değerli fonksiyon kullanmak daha hızlıdır.</div>
+<h2>Satır içi tablo değerli fonksiyon (inline TVF)</h2>
+<p>Parametre alan bir view gibidir; tek bir SELECT döndürür ve sorgu iyileştiricisi onu çağıran sorguya gömer.</p>
+<pre class="code" data-base="tsql">CREATE OR ALTER FUNCTION dbo.fn_KategoriUrunleri (@kategori NVARCHAR(50))
+RETURNS TABLE
+AS
+RETURN (
+    SELECT product_id, name, price
+    FROM products
+    WHERE category = @kategori
+);
+GO
+
+SELECT * FROM dbo.fn_KategoriUrunleri(N'Spor') ORDER BY price DESC;</pre>
+<p>TVF'ler APPLY ile her satır için çağrılabilir: <code>FROM kategoriler k CROSS APPLY dbo.fn_KategoriUrunleri(k.ad)</code>.</p>
+<table><tr><th></th><th>Saklı yordam</th><th>Fonksiyon</th></tr>
+<tr><td>SELECT içinde kullanım</td><td>Hayır</td><td>Evet</td></tr>
+<tr><td>Veri değiştirme (INSERT/UPDATE)</td><td>Evet</td><td>Hayır</td></tr>
+<tr><td>Transaction / TRY-CATCH</td><td>Evet</td><td>Hayır</td></tr>
+<tr><td>Çıktı</td><td>Sonuç kümeleri, OUTPUT parametreleri</td><td>Tek değer veya tablo</td></tr>
+</table>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-func">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-proc/">← Saklı yordamlar (stored procedure)</a><a href="../ts-hata/">Hata yönetimi: TRY/CATCH, THROW ve işlemler →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,36 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zaman desenleri ve hava durumu: ne zaman, neden binilir? | Kesit SQL</title><meta name="description" content="Saat ve gün desenleri, hafta içi ile hafta sonu farkı, saatlik hava durumuyla birleştirip yağmur ve sıcaklık etkisini ölçmek; saat başına normalize etmek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/bv-zaman/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Zaman desenleri ve hava durumu: ne zaman, neden binilir?"><meta property="og:description" content="Saat ve gün desenleri, hafta içi ile hafta sonu farkı, saatlik hava durumuyla birleştirip yağmur ve sıcaklık etkisini ölçmek; saat başına normalize etmek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/bv-zaman/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Zaman desenleri ve hava durumu: ne zaman, neden binilir?","description":"Saat ve gün desenleri, hafta içi ile hafta sonu farkı, saatlik hava durumuyla birleştirip yağmur ve sıcaklık etkisini ölçmek; saat başına normalize etmek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/bv-zaman/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Büyük Veriyle Çalışmak</span><h1>Zaman desenleri ve hava durumu: ne zaman, neden binilir?</h1><p class="st-l">Saat ve gün desenleri, hafta içi ile hafta sonu farkı, saatlik hava durumuyla birleştirip yağmur ve sıcaklık etkisini ölçmek; saat başına normalize etmek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-bv-zaman">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>İki farklı kullanıcı, iki farklı desen</h2>
+<p>Hafta içi yolculuklar sabah 8 ve akşam 18 civarında iki zirve yapar: işe gidiş ve dönüş. Hafta sonu ise öğleden sonraya yayılan tek bir tepe vardır. Bu deseni görmek için saat × gün türü çapraz tablosu yeterlidir.</p>
+<h2>Normalizasyon: sayı değil oran</h2>
+<p>“Yağmurlu saatlerde kaç yolculuk oldu?” sorusunun cevabı yanıltıcıdır, çünkü yağmurlu saat sayısı kuru saatlerden çok azdır. Doğru karşılaştırma <b>saat başına ortalama yolculuktur</b>: önce saat başına yolculuk sayısını bul, sonra hava koşuluna göre ortalamasını al.</p>
+<pre class="code">WITH s AS (     -- saat başına yolculuk (yalnızca yolculuk olan saatler)
+  SELECT strftime('%Y-%m-%d %H:00:00', started_at) AS saat, COUNT(*) AS n
+  FROM bk_trips GROUP BY strftime('%Y-%m-%d %H:00:00', started_at)
+),
+h AS (          -- payda: her koşulda kaç saat var (hava tablosundan)
+  SELECT CASE WHEN w.rain_mm &gt; 0 THEN 'yağmurlu' ELSE 'kuru' END AS hava, COUNT(*) AS saat_sayisi
+  FROM bk_weather w
+  WHERE CAST(strftime('%H', w.obs_hour) AS INTEGER) BETWEEN 10 AND 19
+  GROUP BY CASE WHEN w.rain_mm &gt; 0 THEN 'yağmurlu' ELSE 'kuru' END
+),
+y AS (          -- pay: bu saatlerde başlayan yolculuklar
+  SELECT CASE WHEN w.rain_mm &gt; 0 THEN 'yağmurlu' ELSE 'kuru' END AS hava, SUM(s.n) AS yolculuk
+  FROM s JOIN bk_weather w ON w.obs_hour = s.saat
+  WHERE CAST(strftime('%H', w.obs_hour) AS INTEGER) BETWEEN 10 AND 19
+  GROUP BY CASE WHEN w.rain_mm &gt; 0 THEN 'yağmurlu' ELSE 'kuru' END
+)
+SELECT h.hava, h.saat_sayisi, ROUND(1.0 * COALESCE(y.yolculuk, 0) / h.saat_sayisi, 1) AS saat_basina
+FROM h LEFT JOIN y ON y.hava = h.hava;</pre>
+<p>Pay ve paydayı ayrı hesaplamanın bir nedeni daha var: bazı yağmurlu saatlerde <b>hiç</b> yolculuk yoktur. Saatleri yolculuk tablosundan türetirsen bu sıfırlı saatler kaybolur ve yağmurlu saatin ortalaması olduğundan yüksek çıkar. Payda her zaman olası tüm saatleri içeren hava tablosundan gelmelidir. Hava tablosundan başlayıp her saat için saatlik özeti LEFT JOIN ile aramak da doğru sonucu verir, ancak büyük tabloda çok daha yavaştır.</p>
+<p>Yalnızca 10:00–19:00 arasına bakmak adil bir karşılaştırma sağlar, çünkü yağmurlar bu saatlerde yağmış; gece saatleri zaten sakindir. Bu tür <b>karıştırıcı değişkenleri</b> kontrol etmek analizin kalitesini belirler.</p>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-bv-zaman">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../bv-plan/">← Sorgu planı ve indeks: büyük tabloda hız farkı</a><a href="../bv-istasyon/">İstasyon dengesi ve güzergâhlar: sistemi işletmek →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

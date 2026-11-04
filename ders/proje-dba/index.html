@@ -1,0 +1,46 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bitirme projesi (DBA): yavaş raporu hızlandır ve veritabanını güvenceye al | Kesit SQL</title><meta name="description" content="Sorgu analizi, indeks tasarımı, SARGable yeniden yazım, salt okunur rapor katmanı."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/proje-dba/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Bitirme projesi (DBA): yavaş raporu hızlandır ve veritabanını güvenceye al"><meta property="og:description" content="Sorgu analizi, indeks tasarımı, SARGable yeniden yazım, salt okunur rapor katmanı."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/proje-dba/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Bitirme projesi (DBA): yavaş raporu hızlandır ve veritabanını güvenceye al","description":"Sorgu analizi, indeks tasarımı, SARGable yeniden yazım, salt okunur rapor katmanı.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/proje-dba/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Bitirme Projeleri</span><h1>Bitirme projesi (DBA): yavaş raporu hızlandır ve veritabanını güvenceye al</h1><p class="st-l">Sorgu analizi, indeks tasarımı, SARGable yeniden yazım, salt okunur rapor katmanı.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-dba">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Senaryo</h2>
+<p>Ilgaz Bank'ın gün sonu raporu yavaşladı ve denetçiler, analistlerin ham hesap tablolarına doğrudan eriştiğini fark etti. Görevin: raporu hızlandırmak ve raporlama için güvenli bir katman kurmak.</p>
+<h2>Yavaş rapor</h2>
+<pre class="code">SELECT date(txn_time) AS gun, txn_type, COUNT(*) AS adet, ROUND(SUM(amount), 0) AS toplam
+FROM bank_txns
+WHERE strftime('%Y-%m', txn_time) = '2024-12'
+GROUP BY date(txn_time), txn_type
+ORDER BY gun, txn_type;</pre>
+<p>Sorunlar: tarih sütunu fonksiyon içinde (SARGable değil), <code>txn_time</code> üzerinde indeks yok.</p>
+<div class="note"><b>SQL türleri</b>İndeks adımları BigQuery dışındaki tüm SQL türlerinde yapılabilir; BigQuery'de karşılığı bölümleme ve kümelemedir.</div>
+<h2>Derinleş: değişikliği güvenle üretime almak</h2>
+<div class="note"><b>Brif: BT müdürü ve iç denetim</b>“Gün sonu raporu sabah ekibini bekletiyor ve denetim raporunda analistlerin ham müşteri verisine eriştiği yazıyor. Değişiklik kurulunda onay isteyeceksin: ne değişiyor, sonuç aynı kalıyor mu, geri alma planı ne?”</div>
+<h3>Çalışma planı</h3>
+<ol>
+<li><b>Ölç, sonra değiştir.</b> Değişiklikten önce raporun süresini, okuduğu satır sayısını ve sorgu planını kaydet. Ölçüm yoksa “hızlandı” iddiası da yoktur.</li>
+<li><b>Sonucun aynı kaldığını kanıtla.</b> SARGable yazım bir yeniden yazımdır; çıktı satır satır aynı olmalı (Ek görev 1).</li>
+<li><b>İndeksi seçerken seçiciliğe bak.</b> 8 farklı değeri olan <code>txn_type</code> tek başına zayıf bir indekstir; tarih ya da hesap sütunu çok daha seçicidir (Ek görev 2).</li>
+<li><b>Geri alma planı.</b> <code>DROP INDEX</code> ve <code>DROP VIEW</code> komutlarını değişiklik notuna önceden yaz.</li>
+</ol>
+<h3>Kontrol listesi</h3>
+<ul>
+<li><b>Aralık sınırı.</b> <code>txn_time &lt;= '2024-12-31'</code> yazmak 31 Aralık'ı gece yarısında keser. Aşağıdaki sorgu farkı gösterir: doğru aralık 3.584 hareket, hatalı aralık 3.383; 201 hareket sessizce kaybolur.</li>
+<li><b>Satır ve toplam mutabakatı.</b> Eski ve yeni rapor aynı adet ve tutarı vermeli: 3.584 hareket, 10.832.255 TL net.</li>
+<li><b>Yetki testi.</b> Analist rolüyle ham tabloya SELECT denemesi hata vermeli; görünüme SELECT çalışmalı.</li>
+<li><b>Yazma maliyeti.</b> Her yeni indeks INSERT'leri yavaşlatır; günde kaç hareket yazıldığını not et.</li>
+</ul>
+<pre class="code">SELECT SUM(CASE WHEN txn_time >= '2024-12-01' AND txn_time &lt; '2025-01-01' THEN 1 ELSE 0 END) AS dogru_aralik,
+       SUM(CASE WHEN txn_time >= '2024-12-01' AND txn_time &lt;= '2024-12-31' THEN 1 ELSE 0 END) AS hatali_aralik
+FROM bank_txns;</pre>
+<p>Planı görmek için SQL türüne göre <code>EXPLAIN</code> (PostgreSQL, MySQL), <code>EXPLAIN QUERY PLAN</code> (SQLite) ya da gerçek yürütme planı (SQL Server) kullan; indeks öncesi ve sonrası planı yan yana koy.</p>
+<h3>Teslim</h3>
+<p>Değişiklik kuruluna tek sayfa: önce/sonra ölçüm tablosu, mutabakat sonucu, yetki matrisi (rol × nesne × izin), geri alma komutları.</p>
+<div class="tip"><b>Yönetici özeti örneği</b>Gün sonu raporu tarih filtresi SARGable yazılarak ve <code>txn_time</code> indeksi eklenerek tam tablo taraması yerine aralık taraması yapıyor; çıktı eskisiyle birebir aynı (153 satır, 3.584 hareket). Analistler artık ham tablolar yerine iki görünüme erişiyor ve ad soyad maskeli. Kalan risk raporun canlı sistemde çalışması; okuma replikasına taşınmasını öneriyoruz.</div>
+<h3>Kendini değerlendir</h3>
+<table><tr><th>Ölçüt</th><th>Başlangıç</th><th>İyi</th><th>Mükemmel</th></tr><tr><td>Performans</td><td>İndeks eklenmiş</td><td>Önce/sonra plan karşılaştırılmış</td><td>Ölçüm, plan ve yazma maliyeti birlikte değerlendirilmiş</td></tr><tr><td>Doğruluk</td><td>Rapor çalışıyor</td><td>Satır sayısı aynı</td><td>Adet ve tutar mutabakatı sıfır fark</td></tr><tr><td>Güvenlik</td><td>Görünüm var</td><td>Kişisel veri maskeli</td><td>Yetki matrisi, test ve geri alma planı hazır</td></tr></table></article>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-dba">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../proje-muhendis/">← Bitirme projesi (Veri Mühendisi): ham kayıttan temiz boyut tablosuna ve veri testlerine</a><a href="../proje-backend/">Bitirme projesi (Backend): sepet özelliği için şema ve sorgular →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

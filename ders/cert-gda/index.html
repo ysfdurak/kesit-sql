@@ -1,0 +1,50 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Google Data Analytics sertifikasındaki SQL: BigQuery ile analiz adımları | Kesit SQL</title><meta name="description" content="Ask–Prepare–Process–Analyze–Share–Act döngüsünde SQL; temizleme ve doğrulama kalıpları."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/cert-gda/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Google Data Analytics sertifikasındaki SQL: BigQuery ile analiz adımları"><meta property="og:description" content="Ask–Prepare–Process–Analyze–Share–Act döngüsünde SQL; temizleme ve doğrulama kalıpları."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/cert-gda/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Google Data Analytics sertifikasındaki SQL: BigQuery ile analiz adımları","description":"Ask–Prepare–Process–Analyze–Share–Act döngüsünde SQL; temizleme ve doğrulama kalıpları.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/cert-gda/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Sertifika Hazırlık</span><h1>Google Data Analytics sertifikasındaki SQL: BigQuery ile analiz adımları</h1><p class="st-l">Ask–Prepare–Process–Analyze–Share–Act döngüsünde SQL; temizleme ve doğrulama kalıpları.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-cert-gda">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Sertifikanın SQL tarafı</h2>
+<p>Google'ın Coursera'daki veri analitiği sertifikası analiz sürecini altı adımda anlatır: <b>Sor, Hazırla, İşle, Analiz et, Paylaş, Harekete geç</b>. SQL özellikle <b>İşle</b> (temizleme) ve <b>Analiz et</b> adımlarında BigQuery üzerinden kullanılır. SQL türü BigQuery'ye alıp aşağıdaki kalıpları çalıştırabilirsin.</p>
+<h2>İşle: temizleme kalıpları</h2>
+<table>
+<tr><th>Amaç</th><th>BigQuery kalıbı</th></tr>
+<tr><td>Tekrarları görmek</td><td><code>SELECT id, COUNT(*) FROM t GROUP BY id HAVING COUNT(*) &gt; 1</code></td></tr>
+<tr><td>Tekrarsız satırlar</td><td><code>SELECT DISTINCT ...</code></td></tr>
+<tr><td>Boşluk ve büyük/küçük harf</td><td><code>TRIM</code>, <code>LOWER</code>, <code>UPPER</code></td></tr>
+<tr><td>Uzunluk kontrolü</td><td><code>WHERE LENGTH(posta_kodu) &lt;&gt; 5</code></td></tr>
+<tr><td>Tip dönüşümü</td><td><code>CAST(x AS INT64)</code>, hatalı değerde NULL için <code>SAFE_CAST</code></td></tr>
+<tr><td>Eksik değer</td><td><code>WHERE x IS NULL</code>, <code>COALESCE</code>, <code>IFNULL</code></td></tr>
+<tr><td>Birleştirme</td><td><code>CONCAT(ad, ' ', soyad)</code></td></tr>
+<tr><td>Ara sonuç</td><td><code>WITH</code> (geçici tablo gibi), <code>CREATE TEMP TABLE</code> betiklerde</td></tr>
+</table>
+<pre class="code" data-base="bq">SELECT id,
+       TRIM(full_name)                AS ad,
+       LOWER(TRIM(email))             AS email,
+       LENGTH(TRIM(email))            AS uzunluk
+FROM raw_signups
+WHERE email IS NOT NULL
+LIMIT 6;</pre>
+<h2>Analiz et: toplama ve birleştirme</h2>
+<pre class="code" data-base="bq">SELECT c.segment,
+       COUNT(DISTINCT o.customer_id) AS musteri,
+       COUNT(*) AS siparis,
+       ROUND(SAFE_DIVIDE(COUNT(*), COUNT(DISTINCT o.customer_id)), 2) AS musteri_basina
+FROM anadolu.orders AS o
+JOIN anadolu.customers AS c ON c.customer_id = o.customer_id
+GROUP BY c.segment
+ORDER BY siparis DESC;</pre>
+<h2>Doğrulama alışkanlıkları</h2>
+<ul>
+<li>Temizlikten önce ve sonra satır sayısını karşılaştır.</li>
+<li><code>MIN</code>/<code>MAX</code> ile aralık dışı değerleri ara (gelecek tarihli sipariş, negatif fiyat).</li>
+<li>Kategorik sütunlarda <code>SELECT DISTINCT</code> ile yazım farklarını gör (İstanbul / ISTANBUL / istanbul).</li>
+<li>Sonucu bir kaynakla (finans raporu) sağla.</li>
+</ul>
+<div class="note"><b>SQL türünün diğer kısımları</b>Sertifika ayrıca tablolama (spreadsheet), R programlama ve Tableau ile görselleştirmeyi kapsar; bunlar bu uygulamanın dışında.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-cert-gda">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../dp300-yonetim/">← DP-300: Azure SQL'de güvenlik, izleme ve otomasyon</a><a href="../cert-dbx-snow/">Databricks Data Analyst ve SnowPro Core: platforma özgü SQL konuları →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

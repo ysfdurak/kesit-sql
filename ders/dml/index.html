@@ -1,0 +1,35 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>INSERT, UPDATE, DELETE | Kesit SQL</title><meta name="description" content="Tabloya satır eklemek, satırları güncellemek ve silmek; WHERE'siz UPDATE felaketinden korunmak."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/dml/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="INSERT, UPDATE, DELETE"><meta property="og:description" content="Tabloya satır eklemek, satırları güncellemek ve silmek; WHERE'siz UPDATE felaketinden korunmak."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/dml/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"INSERT, UPDATE, DELETE","description":"Tabloya satır eklemek, satırları güncellemek ve silmek; WHERE'siz UPDATE felaketinden korunmak.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/dml/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Veri Değiştirme</span><h1>INSERT, UPDATE, DELETE</h1><p class="st-l">Tabloya satır eklemek, satırları güncellemek ve silmek; WHERE'siz UPDATE felaketinden korunmak.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-dml">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>INSERT: veri eklemek</h2>
+<pre class="code">INSERT INTO departments (dept_id, name, city)
+VALUES (8, 'Lojistik', 'Kocaeli');
+
+INSERT INTO departments (dept_id, name, city)
+VALUES (9, 'Müşteri Hizmetleri', 'Ankara'),
+       (10, 'Ar-Ge', 'İzmir');
+
+SELECT * FROM departments;</pre>
+<p>Sütun listesini her zaman yaz; tabloya ileride sütun eklenirse sorgun bozulmaz. Sorgu sonucundan da ekleyebilirsin: <code>INSERT INTO t (a, b) SELECT x, y FROM ...</code>. Mesajlar bölümünde kaç satırın etkilendiğini görürsün.</p>
+<h2>UPDATE: güncellemek</h2>
+<pre class="code">UPDATE products
+SET price = ROUND(price * 1.10, 0), stock = stock - 1
+WHERE category = 'Kitap';
+SELECT name, price, stock FROM products WHERE category = 'Kitap';</pre>
+<h2>DELETE: silmek</h2>
+<pre class="code">DELETE FROM orders WHERE status = 'cancelled' AND order_date < '2023-01-01';
+SELECT COUNT(*) AS kalan_iptal FROM orders WHERE status = 'cancelled';</pre>
+<div class="warn"><b>WHERE'siz UPDATE / DELETE</b><code>UPDATE employees SET salary = 0;</code> tüm çalışanların maaşını sıfırlar. Gerçek sistemlerde değiştirmeden önce aynı WHERE ile bir SELECT çalıştırıp etkilenecek satırları gör, işlemi transaction içinde yap.</div>
+<div class="note"><b>Bu uygulamada</b>Ders alıştırmaları her denemede veritabanının temiz bir kopyası üzerinde çalışır. Rahatça silip güncelleyebilirsin.</div>
+<h2>Derinleş: güvenli değişiklik alışkanlıkları</h2><ol><li>Önce aynı WHERE ile <b>SELECT</b> çalıştır, kaç satırın etkileneceğini gör.</li><li>Değişikliği bir işlem (transaction) içinde yap; sonucu kontrol edip COMMIT veya ROLLBACK de.</li><li>Toplu silmede önce yedek tablo oluştur: <code>CREATE TABLE yedek AS SELECT ...</code>.</li><li>UPDATE'te başka bir tablodan değer alırken birden çok eşleşme olmadığından emin ol.</li></ol>
+<pre class="code">SELECT COUNT(*) AS etkilenecek
+FROM lk_orders
+WHERE status = 'teslim' AND tip = 0 AND placed_at >= '2024-12-01';</pre></article>
+<div class="st-c"><a class="st-p" href="../../#ders-dml">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../kosullu/">← Koşullu sayım ve oranlar: SUM(CASE WHEN …)</a><a href="../iliskiler/">İlişkiler: bire-bir, bire-çok, çoka-çok →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

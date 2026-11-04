@@ -1,0 +1,49 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>1Z0-071: Dönüşüm fonksiyonları ve biçim modelleri (TO_CHAR, TO_DATE, TO_NUMBER) | Kesit SQL</title><meta name="description" content="Örtük ve açık dönüşüm, tarih ve sayı biçim öğeleri, fm ve RR."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/z071-donusum/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="1Z0-071: Dönüşüm fonksiyonları ve biçim modelleri (TO_CHAR, TO_DATE, TO_NUMBER)"><meta property="og:description" content="Örtük ve açık dönüşüm, tarih ve sayı biçim öğeleri, fm ve RR."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/z071-donusum/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"1Z0-071: Dönüşüm fonksiyonları ve biçim modelleri (TO_CHAR, TO_DATE, TO_NUMBER)","description":"Örtük ve açık dönüşüm, tarih ve sayı biçim öğeleri, fm ve RR.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/z071-donusum/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Sertifika Hazırlık</span><h1>1Z0-071: Dönüşüm fonksiyonları ve biçim modelleri (TO_CHAR, TO_DATE, TO_NUMBER)</h1><p class="st-l">Örtük ve açık dönüşüm, tarih ve sayı biçim öğeleri, fm ve RR.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-z071-donusum">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Örtük ve açık dönüşüm</h2>
+<p>Oracle bazı durumlarda tipi kendiliğinden çevirir (<code>WHERE hire_date = '01-MAR-15'</code> oturumun NLS_DATE_FORMAT ayarına göre çevrilir). Bu davranış ortama bağlı olduğu için güvenilmezdir; her zaman <b>açık dönüşüm</b> kullan.</p>
+<table>
+<tr><th>Fonksiyon</th><th>Yön</th></tr>
+<tr><td><code>TO_CHAR(tarih|sayı, 'biçim')</code></td><td>tarih/sayı → metin</td></tr>
+<tr><td><code>TO_DATE('metin', 'biçim')</code></td><td>metin → tarih</td></tr>
+<tr><td><code>TO_NUMBER('metin', 'biçim')</code></td><td>metin → sayı</td></tr>
+<tr><td><code>CAST(x AS tip)</code></td><td>standart dönüşüm</td></tr>
+</table>
+<h2>Tarih biçim öğeleri</h2>
+<table>
+<tr><th>Öğe</th><th>Anlamı</th><th>Örnek</th></tr>
+<tr><td><code>YYYY</code> / <code>YY</code> / <code>RR</code></td><td>Yıl (RR: 50–99 → 1900'ler, 00–49 → 2000'ler)</td><td>2024</td></tr>
+<tr><td><code>MM</code> / <code>MON</code> / <code>MONTH</code></td><td>Ay numarası / kısa ad / uzun ad</td><td>12 / DEC / DECEMBER</td></tr>
+<tr><td><code>DD</code> / <code>DY</code> / <code>DAY</code></td><td>Gün / kısa gün adı / uzun gün adı</td><td>25 / WED / WEDNESDAY</td></tr>
+<tr><td><code>HH24:MI:SS</code></td><td>Saat:dakika:saniye</td><td>14:05:09</td></tr>
+<tr><td><code>Q</code>, <code>WW</code>, <code>D</code></td><td>Çeyrek, yılın haftası, haftanın günü</td><td>4</td></tr>
+<tr><td><code>fm</code></td><td>Dolgu boşluklarını ve baştaki sıfırları kaldırır</td><td><code>fmMonth</code></td></tr>
+<tr><td><code>"metin"</code></td><td>Biçime sabit metin ekler</td><td><code>'DD "Aralık"'</code></td></tr>
+</table>
+<pre class="code" data-base="oracle">SELECT TO_CHAR(DATE '2024-12-05', 'DD.MM.YYYY')         AS tr_tarih,
+       TO_CHAR(DATE '2024-12-05', 'YYYY-&quot;Q&quot;Q')         AS ceyrek,
+       TO_DATE('31.12.2024', 'DD.MM.YYYY')            AS tarih,
+       TO_CHAR(1234567.891, '9,999,999.99')           AS sayi,
+       TO_CHAR(42, '00000')                           AS sifirli,
+       TO_NUMBER('1,250.75', '9,999.99')              AS metinden_sayi
+FROM dual;</pre>
+<h2>Sayı biçim öğeleri</h2>
+<table>
+<tr><th>Öğe</th><th>Anlamı</th></tr>
+<tr><td><code>9</code></td><td>Rakam (baştaki sıfırlar boşluk)</td></tr>
+<tr><td><code>0</code></td><td>Rakam (baştaki sıfırlar yazılır)</td></tr>
+<tr><td><code>,</code> <code>.</code></td><td>Binlik ve ondalık ayırıcı (<code>G</code> ve <code>D</code> yerel ayara göre)</td></tr>
+<tr><td><code>$</code>, <code>L</code></td><td>Para birimi</td></tr>
+<tr><td><code>MI</code>, <code>PR</code></td><td>Negatifi sonda eksi / açılı parantezle göster</td></tr>
+</table>
+<div class="warn"><b>Sınav tuzağı</b>Biçimdeki basamak sayısı yetmezse <code>TO_CHAR</code> sonucu <code>#####</code> olur. <code>TO_DATE</code>'te metin biçimle uyuşmazsa hata (ORA-01861) verir.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-z071-donusum">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../z071-fonksiyon/">← 1Z0-071: Oracle tek satır fonksiyonları (karakter, sayı, tarih, genel)</a><a href="../z071-dml-tcl/">1Z0-071: DML ve işlem kontrolü (INSERT/UPDATE/DELETE, COMMIT, SAVEPOINT, TRUNCATE) →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

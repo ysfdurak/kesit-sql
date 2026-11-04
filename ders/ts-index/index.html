@@ -1,0 +1,43 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SQL Server indeksleri: clustered, nonclustered, INCLUDE, filtreli | Kesit SQL</title><meta name="description" content="Doğru indeks tasarımı ve yürütme planının okunması."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-index/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="SQL Server indeksleri: clustered, nonclustered, INCLUDE, filtreli"><meta property="og:description" content="Doğru indeks tasarımı ve yürütme planının okunması."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-index/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"SQL Server indeksleri: clustered, nonclustered, INCLUDE, filtreli","description":"Doğru indeks tasarımı ve yürütme planının okunması.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-index/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · T-SQL (SQL Server)</span><h1>SQL Server indeksleri: clustered, nonclustered, INCLUDE, filtreli</h1><p class="st-l">Doğru indeks tasarımı ve yürütme planının okunması.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-index">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Clustered ve nonclustered</h2>
+<table><tr><th></th><th>Clustered</th><th>Nonclustered</th></tr>
+<tr><td>Tabloda kaç tane?</td><td>En fazla 1</td><td>Çok sayıda (999'a kadar)</td></tr>
+<tr><td>Ne saklar?</td><td>Verinin kendisi bu sıraya göre dizilir</td><td>Anahtar + satıra işaretçi (clustered anahtar)</td></tr>
+<tr><td>Varsayılan</td><td>PRIMARY KEY ile otomatik</td><td>CREATE INDEX ile</td></tr>
+</table>
+<p>Clustered indeksi olmayan tabloya <b>heap</b> denir. İyi bir clustered anahtar dar, benzersiz, sürekli artan ve değişmeyen olmalıdır (ör. IDENTITY).</p>
+<h2>Kapsayan (covering) indeks: INCLUDE</h2>
+<p>Sorgunun ihtiyaç duyduğu tüm sütunlar indekste varsa SQL Server tabloya hiç gitmez (<i>Key Lookup</i> ortadan kalkar):</p>
+<pre class="code" data-base="tsql">CREATE NONCLUSTERED INDEX ix_orders_customer
+    ON orders (customer_id, order_date)
+    INCLUDE (status, channel);
+
+EXEC sp_helpindex 'orders';</pre>
+<h2>Filtreli indeks</h2>
+<p>Yalnızca bir alt kümeyi indeksler: daha küçük, daha hızlı. Örneğin sadece iptal edilmiş siparişleri sık sorguluyorsan:</p>
+<pre class="code" data-base="tsql">CREATE NONCLUSTERED INDEX ix_orders_iptal
+    ON orders (order_date)
+    WHERE status = 'cancelled';
+
+SELECT COUNT(*) FROM orders WHERE status = 'cancelled' AND order_date &gt;= '2024-01-01';</pre>
+<h2>Columnstore</h2>
+<p>Analitik sorgular için veriyi sütun sütun, sıkıştırılmış saklar: milyonlarca satırlık toplamlarda 10 kat ve üzeri hız. <code>CREATE CLUSTERED COLUMNSTORE INDEX cci_sales ON fact_sales;</code></p>
+<h2>Yürütme planında neye bakılır?</h2>
+<ul>
+<li><b>Index Seek</b> iyi, <b>Index/Table Scan</b> büyük tabloda genelde kötü.</li>
+<li><b>Key Lookup</b>: Eksik sütun → INCLUDE ile çöz.</li>
+<li>Tahmini ve gerçek satır sayısı arasında büyük fark: güncel olmayan istatistik (<code>UPDATE STATISTICS</code>).</li>
+<li>Uyarı simgeleri: örtük dönüşüm, tempdb'ye taşma (spill).</li>
+</ul>
+<div class="note"><b>Bakım</b>Zamanla indeksler parçalanır (fragmentation). <code>sys.dm_db_index_physical_stats</code> ile ölçülür; yaygın başlangıç kuralı %5–30 için <code>REORGANIZE</code>, %30 üzeri için <code>ALTER INDEX ... REBUILD</code>, 1000 sayfadan küçük indekse dokunmamaktır; ayrıntı ve bu eşiklerin tartışması <b>Bakım</b> dersinde (<code>dba-bakim</code>). <code>sys.dm_db_missing_index_details</code> eksik indeks önerileri verir (körü körüne uygulama!).</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-index">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-json/">← SQL Server'da JSON: FOR JSON, OPENJSON, JSON_VALUE</a><a href="../ts-plan/">Yürütme planı ve STATISTICS IO: sorgu neden yavaş? →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

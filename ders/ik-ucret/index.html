@@ -1,0 +1,39 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ücret analitiği: güncel maaş, bant konumu ve ücret eşitliği | Kesit SQL</title><meta name="description" content="Maaş geçmişinden güncel ve bir tarihteki maaşı bulmak, compa-ratio ile bant konumu, zam oranları ve ham ile seviye içi cinsiyet ücret farkı."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ik-ucret/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Ücret analitiği: güncel maaş, bant konumu ve ücret eşitliği"><meta property="og:description" content="Maaş geçmişinden güncel ve bir tarihteki maaşı bulmak, compa-ratio ile bant konumu, zam oranları ve ham ile seviye içi cinsiyet ücret farkı."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ik-ucret/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Ücret analitiği: güncel maaş, bant konumu ve ücret eşitliği","description":"Maaş geçmişinden güncel ve bir tarihteki maaşı bulmak, compa-ratio ile bant konumu, zam oranları ve ham ile seviye içi cinsiyet ücret farkı.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ik-ucret/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · İK Analitiği</span><h1>Ücret analitiği: güncel maaş, bant konumu ve ücret eşitliği</h1><p class="st-l">Maaş geçmişinden güncel ve bir tarihteki maaşı bulmak, compa-ratio ile bant konumu, zam oranları ve ham ile seviye içi cinsiyet ücret farkı.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ik-ucret">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Güncel maaş: en son kayıt</h2>
+<p><code>ik_salaries</code> bir değişiklik günlüğüdür. Bir kişinin bir tarihteki maaşı, o tarihten önceki <b>en son</b> kayıttır. İki yazım:</p>
+<pre class="code">-- ilişkili alt sorgu
+SELECT s.emp_id, s.monthly_gross
+FROM ik_salaries s
+WHERE s.effective_date = (SELECT MAX(x.effective_date) FROM ik_salaries x
+                          WHERE x.emp_id = s.emp_id AND x.effective_date &lt;= '2024-12-31');
+
+-- pencere fonksiyonu
+SELECT emp_id, monthly_gross FROM (
+  SELECT emp_id, monthly_gross,
+         ROW_NUMBER() OVER (PARTITION BY emp_id ORDER BY effective_date DESC) AS rn
+  FROM ik_salaries WHERE effective_date &lt;= '2024-12-31'
+) t WHERE rn = 1;</pre>
+<h2>Compa-ratio: bant içinde nerede?</h2>
+<p><b>compa-ratio = maaş / bant ortası</b>. 1,00 bandın tam ortası; 0,90’ın altı genellikle “bandın altında”, 1,10’un üstü “bandın üstünde” kabul edilir. Bant ortası burada (band_min + band_max) / 2.</p>
+<h2>Ücret farkı: ham ve düzeltilmiş</h2>
+<p><b>Ham fark</b>, kadınların ve erkeklerin ortalama maaşları arasındaki farktır. Ama gruplar farklı seviyelerde yoğunlaşmışsa (ör. üst seviyelerde daha az kadın), ham fark seviye karışımını da içerir. <b>Seviye içi (düzeltilmiş) fark</b>, aynı seviye ve bölümde karşılaştırma yapar. İkisi de önemlidir: ham fark temsil sorununu, seviye içi fark eşit işe eşit ücret sorununu gösterir.</p>
+<pre class="code" data-norun>WITH cur AS (...güncel maaş...)
+SELECT p.level,
+       ROUND(AVG(CASE WHEN e.gender = 'K' THEN c.monthly_gross END)) AS kadin,
+       ROUND(AVG(CASE WHEN e.gender = 'E' THEN c.monthly_gross END)) AS erkek
+FROM ik_employees e JOIN cur c ON c.emp_id = e.emp_id
+JOIN ik_positions p ON p.position_id = e.position_id
+WHERE e.term_date IS NULL
+GROUP BY p.level;</pre>
+<div class="note"><b>Yorum</b>Ortalama yerine medyan kullanmak birkaç yüksek maaşın etkisini azaltır. Ayrıca bir seviyede bir cinsiyetten 5’ten az kişi varsa o hücreyi raporlama.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ik-ucret">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ik-devir/">← Devir hızı (turnover): kim, ne zaman, neden ayrılıyor?</a><a href="../ik-performans/">Performans analitiği: dağılım, kalibrasyon ve 9-kutu →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

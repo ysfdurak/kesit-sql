@@ -1,0 +1,64 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>İstasyon dengesi ve güzergâhlar: sistemi işletmek | Kesit SQL</title><meta name="description" content="İstasyon bazında giren–çıkan farkıyla yeniden dağıtım ihtiyacı, en yoğun güzergâhlar, doluluk baskısı ve veri kalitesi kontrolleri (kapanmamış yolculuk,…"><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/bv-istasyon/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="İstasyon dengesi ve güzergâhlar: sistemi işletmek"><meta property="og:description" content="İstasyon bazında giren–çıkan farkıyla yeniden dağıtım ihtiyacı, en yoğun güzergâhlar, doluluk baskısı ve veri kalitesi kontrolleri (kapanmamış yolculuk,…"><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/bv-istasyon/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"İstasyon dengesi ve güzergâhlar: sistemi işletmek","description":"İstasyon bazında giren–çıkan farkıyla yeniden dağıtım ihtiyacı, en yoğun güzergâhlar, doluluk baskısı ve veri kalitesi kontrolleri (kapanmamış yolculuk,…","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/bv-istasyon/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Büyük Veriyle Çalışmak</span><h1>İstasyon dengesi ve güzergâhlar: sistemi işletmek</h1><p class="st-l">İstasyon bazında giren–çıkan farkıyla yeniden dağıtım ihtiyacı, en yoğun güzergâhlar, doluluk baskısı ve veri kalitesi kontrolleri (kapanmamış yolculuk, aynı anda iki yolculukta görünen bisiklet).</p>
+<div class="st-c"><a class="st-p" href="../../#ders-bv-istasyon">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Net akış</h2>
+<p>Bir istasyondan çıkan bisiklet sayısı gelen sayısından fazlaysa istasyon boşalır; tersi doluysa yer kalmaz. İşletme ekibi günde iki tur kamyonetle bisikletleri yeniden dağıtır (<code>bk_rebalancing</code>). Hangi istasyonların kronik olarak boşaldığını <b>net akış = gelen − giden</b> ile bulursun.</p>
+<div class="note"><b>Pratik not</b>Pedal İzmir'de bisiklet son bıraktığı istasyondan kalkar, bu yüzden net akış gerçek bir ihtiyacı gösterir. Alsancak Çarşı üç ayda −708 net akışa sahip; kamyonet oraya 893 bisiklet getirip 203'ünü götürmüş, net +690. Net akışı <code>bk_rebalancing</code> ile yan yana koyarsan hangi istasyonun kamyonete bağımlı olduğunu görürsün.</div>
+<p>Net akışı iki ayrı toplamın birleşimiyle yazmak, büyük tabloyu OR koşuluyla birleştirmekten çok daha hızlıdır:</p>
+<pre class="code">WITH cikis AS (SELECT start_station AS st, COUNT(*) AS n FROM bk_trips GROUP BY start_station),
+     giris AS (SELECT end_station AS st, COUNT(*) AS n FROM bk_trips WHERE end_station IS NOT NULL GROUP BY end_station)
+SELECT s.name, COALESCE(g.n, 0) - COALESCE(c.n, 0) AS net
+FROM bk_stations s
+LEFT JOIN cikis c ON c.st = s.station_id
+LEFT JOIN giris g ON g.st = s.station_id
+ORDER BY net
+LIMIT 5;</pre>
+<h2>Veri kalitesi</h2>
+<p>Büyük sistemlerde veri hatası kaçınılmazdır. İki kontrol:</p>
+<ul><li><b>Kapanmamış yolculuk:</b> <code>ended_at</code> boş; kilit sinyali gelmemiş ya da bisiklet kaybolmuş olabilir.</li>
+<li><b>Aynı bisiklet aynı anda iki yolculukta:</b> aralıkları çakışan iki yolculuk aynı <code>bike_id</code>’yi taşıyorsa ya kayıt hatası ya da bisiklet kimliği yanlış okunmuştur. Pedal İzmir'de bilerek bırakılmış tam 25 çakışan çift var. Bu kontrol büyük tabloda kendine birleştirme gerektirir; önce dar bir tarih aralığında dene.</li></ul>
+<h2>Derinleş: Yeniden dağıtım ve istasyon doluluk baskısı</h2>
+<p>Paylaşımlı bisiklet sistemlerinin en pahalı operasyonel kalemi <b>yeniden dağıtım</b>dır (rebalancing). Kamyonetler dolu istasyonlardan bisiklet alıp boş istasyonlara taşır. Kullanıcı için iki kötü an vardır: istasyonda bisiklet bulamamak ve bisikleti bırakacak yer bulamamak. İkisi de gelir kaybı ve şikâyet demektir.</p>
+<div class="note"><b>Pratik not</b>Pedal İzmir'de kamyonet taşımaları <code>bk_rebalancing</code> tablosundadır: üç ayda 7.422 yükte 28.180 bisiklet. İstasyon net akışı ile kamyonet net akışı neredeyse birebir ters orantılıdır (korelasyon −0,99). Yani net akış buradaki dengeleme ihtiyacını gerçekten gösterir.</div>
+<h3>Ham net akış yetmez: kapasiteye böl</h3>
+<p>Üç ayda −700 net akış, 30 yuvalı bir istasyon için yönetilebilir olabilir, 15 yuvalı bir istasyon için ise her gün boşalmak demektir. Karşılaştırılabilir ölçü <b>doluluk baskısı</b>dır: <b>günlük ortalama net akış ÷ kapasite</b>. Alsancak Çarşı (15 yuva) günde ortalama 7,7 bisiklet kaybediyor; baskısı −0,51. Yani her gün kapasitesinin yarısı kadar bisiklet getirilmesi gerekiyor.</p>
+<h3>Günün saatine göre akış</h3>
+<p>Toplam net akış, gün içindeki dalgalanmayı gizler. Konut bölgesindeki bir istasyon sabah boşalır, akşam dolar. Merkezdeki bir istasyonda tersi olur. Aşağıdaki sorgu iki istasyonun çıkış ve girişlerini <code>UNION ALL</code> ile tek bir akış listesine çevirir. Bu yöntem 116.500 satırlık tabloyu yalnızca iki kez tarar ve <code>OR</code> içeren birleştirmelerden çok daha hızlıdır:</p>
+<pre class="code">WITH akis AS (
+  SELECT start_station AS st, CAST(strftime('%H', started_at) AS INTEGER) AS saat, -1 AS d
+  FROM bk_trips WHERE start_station IN (12, 51)
+  UNION ALL
+  SELECT end_station, CAST(strftime('%H', started_at) AS INTEGER), 1
+  FROM bk_trips WHERE end_station IN (12, 51)
+),
+h AS (
+  SELECT st,
+         CASE WHEN saat BETWEEN 7 AND 9 THEN '1 sabah 07-10'
+              WHEN saat BETWEEN 16 AND 19 THEN '3 akşam 16-20'
+              ELSE '2 diğer' END AS dilim,
+         SUM(d) AS net
+  FROM akis
+  GROUP BY st, CASE WHEN saat BETWEEN 7 AND 9 THEN '1 sabah 07-10'
+                    WHEN saat BETWEEN 16 AND 19 THEN '3 akşam 16-20'
+                    ELSE '2 diğer' END
+)
+SELECT s.name, h.dilim, h.net, ROUND(h.net / 92.0, 1) AS gunluk
+FROM h JOIN bk_stations s ON s.station_id = h.st
+ORDER BY s.name, h.dilim;</pre>
+<p>Göztepe Park sabah 07–10 arasında üç ayda 237 bisiklet kaybediyor (günde ~2,6), akşam ise az da olsa kazanıyor. Konut bölgesinden işe gidiş örüntüsü budur. Alsancak Çarşı'nın en büyük kaybı ise akşam 16–20 arasında (−342). Kamyonetin <b>ne zaman</b> nereye gideceğini bu tablo belirler: Göztepe'ye sabahtan önce, Alsancak'a öğleden sonra.</p>
+<table>
+<tr><th>Ölçü</th><th>Soru</th><th>Dikkat</th></tr>
+<tr><td>Net akış</td><td>İstasyon boşalıyor mu?</td><td>Kapanmamış yolculukların bitişi yok (<code>end_station IS NULL</code>)</td></tr>
+<tr><td>Doluluk baskısı</td><td>Ne kadar acil?</td><td>Payda: kapasite × gün sayısı (92)</td></tr>
+<tr><td>Saatlik akış</td><td>Ne zaman müdahale?</td><td>Yolculuğun başlangıç saati, varış saatinden farklı olabilir</td></tr>
+</table>
+<div class="note"><b>Basitleştirme</b>Buradaki akış hesabı başlangıçta istasyonda kaç bisiklet olduğunu ve gece yapılan taşımaları bilmez; yalnızca kullanıcı hareketini ölçer. Gerçek sistemlerde istasyonların dakikalık doluluk kayıtları (dock status) ayrıca tutulur.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-bv-istasyon">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../bv-zaman/">← Zaman desenleri ve hava durumu: ne zaman, neden binilir?</a><a href="../bv-gelir/">Ücret ve kullanıcı segmentleri: aboneler mi, tek seferlikler mi? →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

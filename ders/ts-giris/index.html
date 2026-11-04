@@ -1,0 +1,29 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SQL Server ve T-SQL'e giriş | Kesit SQL</title><meta name="description" content="Veritabanı, şema, dbo, köşeli parantez, N'..' ve GO."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-giris/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="SQL Server ve T-SQL'e giriş"><meta property="og:description" content="Veritabanı, şema, dbo, köşeli parantez, N'..' ve GO."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-giris/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"SQL Server ve T-SQL'e giriş","description":"Veritabanı, şema, dbo, köşeli parantez, N'..' ve GO.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-giris/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · T-SQL (SQL Server)</span><h1>SQL Server ve T-SQL'e giriş</h1><p class="st-l">Veritabanı, şema, dbo, köşeli parantez, N'..' ve GO.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-giris">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>T-SQL nedir?</h2>
+<p><b>Transact-SQL (T-SQL)</b>, Microsoft SQL Server ve Azure SQL'in SQL lehçesidir. Standart SQL'e değişkenler, akış kontrolü (IF, WHILE), hata yönetimi (TRY/CATCH), saklı yordamlar ve zengin bir fonksiyon kütüphanesi ekler. Türkiye'de bankacılık, perakende ve kamu sektöründe en yaygın kurumsal veritabanlarından biridir; bu yüzden veri analisti ve veri mühendisi ilanlarında sıkça istenir.</p>
+<h2>Nesne adları: veritabanı.şema.nesne</h2>
+<p>SQL Server'da her tablo bir <b>şemaya</b> aittir; varsayılan şema <code>dbo</code>'dur (database owner). Tam ad: <code>anadolu.dbo.customers</code>. Sorgularda şemayı yazmak iyi bir alışkanlıktır.</p>
+<ul>
+<li><b>[köşeli parantez]</b>: Boşluk içeren veya ayrılmış kelimeyle çakışan adlar için: <code>[Order Date]</code>, <code>[user]</code>.</li>
+<li><b>N'...'</b>: Unicode metin sabiti. Türkçe karakterli değerleri <code>NVARCHAR</code> sütunlara yazarken <code>N'İzmir'</code> biçiminde kullan; yoksa “ş, ğ, ı” gibi harfler bozulabilir.</li>
+<li><b>GO</b>: SQL değil, SSMS/sqlcmd'nin <i>toplu iş ayırıcısıdır</i>. Kendisinden önceki komutları ayrı bir paket olarak gönderir. CREATE PROCEDURE gibi bazı komutlar paketteki tek komut olmak zorundadır.</li>
+<li>İfadeleri <code>;</code> ile bitirmek isteğe bağlıdır ama önerilir (CTE ve MERGE öncesinde gereklidir).</li>
+</ul>
+<pre class="code" data-base="tsql">SELECT @@VERSION AS surum;
+
+SELECT TOP 5 [first_name], [last_name], [city]
+FROM dbo.customers
+WHERE city = N'İzmir';</pre>
+<div class="note"><b>Araçlar</b>SQL Server Management Studio (SSMS) en yaygın araçtır; Azure Data Studio ve VS Code eklentisi de kullanılır. Ücretsiz <b>Developer</b> ve <b>Express</b> sürümleriyle kendi bilgisayarında çalışabilirsin. Örnek veritabanı olarak Microsoft'un <i>AdventureWorks</i> ve <i>WideWorldImporters</i> veritabanları popülerdir.</div>
+<div class="tip"><b>Bu modül nasıl çalışır?</b>T-SQL modülündeki alıştırmalar SQL Server sözdizimiyle yazılır. Tarayıcıdaki motor, SQL Server'ın davranışını taklit eder: TOP, değişkenler, IF/WHILE, TRY/CATCH, geçici tablolar, saklı yordamlar, fonksiyonlar, MERGE, PIVOT ve APPLY çalışır. Hata mesajları SQL Server'ın biçimindedir (ör. <code>Msg 208 Invalid object name</code>).</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-giris">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../modern-ekosistem/">← Modern veri ekosistemi ve SQL'in geleceği</a><a href="../ts-top/">TOP, WITH TIES, PERCENT ve OFFSET-FETCH →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

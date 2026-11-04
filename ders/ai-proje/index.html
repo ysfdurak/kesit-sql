@@ -1,0 +1,40 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bitirme projesi (Yapay Zekâ Destekli SQL): asistanın yazdığı prim sorgusunu doğrula | Kesit SQL</title><meta name="description" content="Yapay zekâ asistanının ürettiği makul görünen sorgudaki hataları sağlamayla bulmak, düzeltmek, etkisini ölçmek ve karar vermek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ai-proje/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Bitirme projesi (Yapay Zekâ Destekli SQL): asistanın yazdığı prim sorgusunu doğrula"><meta property="og:description" content="Yapay zekâ asistanının ürettiği makul görünen sorgudaki hataları sağlamayla bulmak, düzeltmek, etkisini ölçmek ve karar vermek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ai-proje/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Bitirme projesi (Yapay Zekâ Destekli SQL): asistanın yazdığı prim sorgusunu doğrula","description":"Yapay zekâ asistanının ürettiği makul görünen sorgudaki hataları sağlamayla bulmak, düzeltmek, etkisini ölçmek ve karar vermek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ai-proje/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Bitirme Projeleri</span><h1>Bitirme projesi (Yapay Zekâ Destekli SQL): asistanın yazdığı prim sorgusunu doğrula</h1><p class="st-l">Yapay zekâ asistanının ürettiği makul görünen sorgudaki hataları sağlamayla bulmak, düzeltmek, etkisini ölçmek ve karar vermek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ai-proje">Uygulamada aç, 10 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory"><h2>Senaryo</h2>
+<p>Lezzet Kurye operasyon müdürü yapay zekâ asistanına şunu sordu: <b>"Kuryeleri zamanında teslim oranına göre sırala. En az 100 teslimatı olan ve oranı %85 ve üstü olanlara prim vereceğiz."</b> Asistan aşağıdaki sorguyu yazdı. Sonuç listesi makul görünüyor, müdür listeyi insan kaynaklarına göndermek üzere. Senden önce bir kontrol istiyor.</p>
+<pre class="code">SELECT c.full_name, COUNT(*) AS teslimat,
+       ROUND(100.0 * SUM(CASE WHEN (julianday(o.delivered_at) - julianday(o.placed_at)) * 1440 &lt;= 45 THEN 1 ELSE 0 END) / COUNT(*), 1) AS oran
+FROM lk_orders o
+JOIN lk_couriers c ON c.courier_id = o.courier_id
+JOIN lk_order_lines l ON l.order_id = o.order_id
+GROUP BY c.full_name
+HAVING COUNT(*) >= 100 AND ROUND(100.0 * SUM(CASE WHEN (julianday(o.delivered_at) - julianday(o.placed_at)) * 1440 &lt;= 45 THEN 1 ELSE 0 END) / COUNT(*), 1) >= 85
+ORDER BY oran DESC;</pre>
+<p>İş kuralı: Zamanında teslim, sipariş verildikten sonra en çok 45 dakika (2.700 saniye) demektir. Yalnız <code>status = 'teslim'</code> sayılır: <code>iptal</code> ve <code>iade</code> teslimat değildir. Kurye kimliği <code>courier_id</code> ile belirlenir.</p>
+<h2>Adımlar</h2>
+<table><tr><th>Adım</th><th>Soru</th></tr>
+<tr><td>1</td><td>Asistana ne verilmeliydi?</td></tr>
+<tr><td>2</td><td>Satır sayısı neyi saydığını söylüyor mu?</td></tr>
+<tr><td>3</td><td>Her durumdan kaçı sayılmış?</td></tr>
+<tr><td>4</td><td>Ad ile gruplamak güvenli mi?</td></tr>
+<tr><td>5</td><td>Düzeltilmiş sorgu</td></tr>
+<tr><td>6</td><td>Düzeltilmiş sonuç kaynakla tutuyor mu?</td></tr>
+<tr><td>7</td><td>Hata kimi etkiledi?</td></tr>
+<tr><td>8</td><td>Tek tanım: görünüm</td></tr>
+<tr><td>9-10</td><td>Karar ve güvenli kullanım</td></tr></table>
+<div class="note"><b>Sınır</b>Bu projede gerçek bir yapay zekâ modeli çalışmıyor: taslak sorgu sabittir ve yaygın hatalar bilerek konmuştur. Öğrendiğin doğrulama yöntemi hangi aracı kullanırsan kullan geçerlidir.</div>
+<h3>Teslim</h3>
+<p>Kısa not: Bulunan hatalar, her birinin sayısal etkisi, doğru liste ve bundan sonra kullanılacak görünüm.</p>
+<h3>Kendini değerlendir</h3>
+<table><tr><th>Ölçüt</th><th>Başlangıç</th><th>İyi</th><th>Mükemmel</th></tr>
+<tr><td>Doğrulama</td><td>Sorgu çalıştı</td><td>Toplamlar kaynakla sağlandı</td><td>Her hatanın etkisi sayıyla gösterildi</td></tr>
+<tr><td>Düzeltme</td><td>Liste düzeldi</td><td>İş kuralı yazılı</td><td>Tek tanım görünüme alındı</td></tr>
+<tr><td>Karar</td><td>Liste gönderildi</td><td>Etkilenenler söylendi</td><td>İnsan onayı ve veri paylaşım kuralı belirlendi</td></tr></table></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ai-proje">Alıştırmalara geç (10)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../bv-proje/">← Bitirme projesi (Büyük Veri): Pedal İzmir kamyonet bütçesi nereden kısılır?</a><span></span></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

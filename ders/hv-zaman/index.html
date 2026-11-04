@@ -1,0 +1,37 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Saat ve süre hesapları: rötar dakikası, saat dilimleri, zamanında kalkış | Kesit SQL</title><meta name="description" content="İki zaman arasındaki dakika farkı, saate ve aya göre gruplama, zamanında kalkış oranı ve rezervasyon öncesi gün sayısı."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/hv-zaman/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Saat ve süre hesapları: rötar dakikası, saat dilimleri, zamanında kalkış"><meta property="og:description" content="İki zaman arasındaki dakika farkı, saate ve aya göre gruplama, zamanında kalkış oranı ve rezervasyon öncesi gün sayısı."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/hv-zaman/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Saat ve süre hesapları: rötar dakikası, saat dilimleri, zamanında kalkış","description":"İki zaman arasındaki dakika farkı, saate ve aya göre gruplama, zamanında kalkış oranı ve rezervasyon öncesi gün sayısı.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/hv-zaman/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Kanat Havayolları</span><h1>Saat ve süre hesapları: rötar dakikası, saat dilimleri, zamanında kalkış</h1><p class="st-l">İki zaman arasındaki dakika farkı, saate ve aya göre gruplama, zamanında kalkış oranı ve rezervasyon öncesi gün sayısı.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-hv-zaman">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>İki zaman arasındaki fark</h2>
+<p>Havayolunda her şey dakikayla ölçülür. Kalkış gecikmesi = gerçek kalkış − planlanan kalkış. Her SQL türünün yazımı farklıdır:</p>
+<table>
+<tr><th>SQL türü</th><th>Dakika farkı</th></tr>
+<tr><td>SQL Server</td><td><code>DATEDIFF(minute, sched_dep, actual_dep)</code></td></tr>
+<tr><td>PostgreSQL</td><td><code>EXTRACT(EPOCH FROM (actual_dep - sched_dep)) / 60</code></td></tr>
+<tr><td>MySQL</td><td><code>TIMESTAMPDIFF(MINUTE, sched_dep, actual_dep)</code></td></tr>
+<tr><td>Oracle</td><td><code>(actual_dep - sched_dep) * 1440</code> (DATE farkı gün cinsindendir)</td></tr>
+<tr><td>BigQuery</td><td><code>DATETIME_DIFF(actual_dep, sched_dep, MINUTE)</code></td></tr>
+<tr><td>SQLite</td><td><code>(julianday(actual_dep) - julianday(sched_dep)) * 1440</code></td></tr>
+</table>
+<pre class="code">SELECT f.flight_id, f.flight_no, f.sched_dep, f.actual_dep,
+       ROUND((julianday(f.actual_dep) - julianday(f.sched_dep)) * 1440) AS gecikme_dk
+FROM hv_flights f
+WHERE f.sched_dep >= '2024-12-24' AND f.sched_dep < '2024-12-25'
+ORDER BY f.sched_dep
+LIMIT 5;</pre>
+<div class="warn"><b>Gün farkı ile dakika farkı aynı şey değil</b>SQL Server'da <code>DATEDIFF(day, a, b)</code> arada geçen gece yarısı sayısını verir: 23:50 ile ertesi gün 00:10 arasında 20 dakika olsa da sonuç 1'dir. Süre ölçerken her zaman küçük birimle (dakika) hesapla, sonra gerekirse böl.</div>
+<h2>Zamanında kalkış (on-time performance)</h2>
+<p>Sektörde bir uçuş planlanan saatten en fazla <b>15 dakika</b> sonra kalktıysa “zamanında” sayılır. Oran hesabında iptal edilen uçuşlar paydaya girmez:</p>
+<pre class="code">SELECT ROUND(100.0 * SUM(CASE WHEN ROUND((julianday(f.actual_dep) - julianday(f.sched_dep)) * 1440) <= 15 THEN 1 ELSE 0 END) / COUNT(*), 1) AS otp
+FROM hv_flights f
+WHERE f.actual_dep IS NOT NULL;</pre>
+<h2>Saate ve aya göre gruplamak</h2>
+<p>Kalkış saati için saat parçasını al, ay için yıl-ay metnini kullan. Takvim gün farkı gerektiğinde iki tarafı da önce güne çevir; böylece saat kesirleri sonucu kaydırmaz.</p>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-hv-zaman">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../hv-ozet/">← Uçuşları özetlemek: COUNT, SUM, AVG, GROUP BY ve HAVING</a><a href="../hv-join/">Uçuş, rota, havalimanı ve uçak: JOIN zinciri →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,56 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bitirme projesi (Backend): sepet özelliği için şema ve sorgular | Kesit SQL</title><meta name="description" content="Kısıtlı tablo tasarımı, idempotent ekleme, anahtar tabanlı sayfalama, işlemle sipariş oluşturma."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/proje-backend/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Bitirme projesi (Backend): sepet özelliği için şema ve sorgular"><meta property="og:description" content="Kısıtlı tablo tasarımı, idempotent ekleme, anahtar tabanlı sayfalama, işlemle sipariş oluşturma."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/proje-backend/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Bitirme projesi (Backend): sepet özelliği için şema ve sorgular","description":"Kısıtlı tablo tasarımı, idempotent ekleme, anahtar tabanlı sayfalama, işlemle sipariş oluşturma.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/proje-backend/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Bitirme Projeleri</span><h1>Bitirme projesi (Backend): sepet özelliği için şema ve sorgular</h1><p class="st-l">Kısıtlı tablo tasarımı, idempotent ekleme, anahtar tabanlı sayfalama, işlemle sipariş oluşturma.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-backend">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Senaryo</h2>
+<p>Anadolu Market mobil uygulamasına kalıcı sepet özelliği eklenecek. Kullanıcı sepete ürün ekler, adet değiştirir, siparişe çevirir. API ekibi senden şemayı ve uç noktaların çalıştıracağı sorguları istiyor.</p>
+<h2>Gereksinimler</h2>
+<ul>
+<li>Bir müşterinin tek açık sepeti olur; sepette aynı ürün bir kez bulunur (adet artar).</li>
+<li>Adet 1–20 arasında olmalı.</li>
+<li>Ürün listesi sayfalaması derin sayfalarda da hızlı olmalı.</li>
+<li>Siparişe çevirme tek işlemde yapılmalı; yarım kalırsa hiçbir şey değişmemeli.</li>
+</ul>
+<div class="tip"><b>Kısıt veritabanında</b>Uygulama kodundaki doğrulamalar değişebilir; veritabanı kısıtları her zaman çalışır.</div>
+
+<h2>Adımlar ve beklenen çıktı</h2>
+<table>
+<tr><th>Adım</th><th>Ne yapacaksın?</th><th>Ders</th></tr>
+<tr><td>1. Şema</td><td>Sepet ve sepet satırı tabloları; tekillik, yabancı anahtar ve CHECK kısıtları</td><td>Kısıtlar ayrıntılı</td></tr>
+<tr><td>2. Sepete ekle</td><td>Ürün sepette varsa adedi artıran, yoksa ekleyen tek ifade (upsert)</td><td>UPSERT ve MERGE</td></tr>
+<tr><td>3. Ürün listesi</td><td>OFFSET yerine son görülen anahtardan devam eden sayfalama</td><td>Uygulamalarda sayfalama</td></tr>
+<tr><td>4. Sepet özeti</td><td>Satır tutarları ve genel toplam</td><td>JOIN ile özetleme</td></tr>
+<tr><td>5–6. Tasarım soruları</td><td>İşlem bütünlüğü ve tekrar eden istekler</td><td>Transaction, Uygulama veritabanı desenleri</td></tr>
+</table>
+<h2>Tasarım notları</h2>
+<ul>
+<li><b>“Bir müşterinin tek açık sepeti”</b> kuralı <code>UNIQUE (customer_id)</code> ile veritabanında korunur.</li>
+<li><b>“Aynı ürün sepette bir kez”</b> kuralı bileşik birincil anahtarla sağlanır: <code>PRIMARY KEY (cart_id, product_id)</code>. Bu aynı zamanda upsert'in çakışma hedefidir.</li>
+<li><b>Adet sınırı</b> <code>CHECK (quantity BETWEEN 1 AND 20)</code> ile yazılır; uygulama bir hata yapsa bile geçersiz adet kaydedilemez.</li>
+</ul>
+<h2>Siparişe çevirme işleminin iskeleti</h2>
+<pre class="code" data-norun>BEGIN;
+-- 1) Sipariş başlığı
+INSERT INTO orders (order_id, customer_id, order_date, status, channel)
+VALUES (:yeni_id, :musteri, :bugun, 'shipped', 'mobile');
+-- 2) Sepet satırlarını sipariş satırına kopyala (fiyat o anki fiyattır)
+INSERT INTO order_items (order_id, product_id, quantity, unit_price, discount)
+SELECT :yeni_id, ci.product_id, ci.quantity, p.price, 0
+FROM cart_item ci JOIN products p ON p.product_id = ci.product_id
+WHERE ci.cart_id = :sepet;
+-- 3) Stok düş; stok yetmezse işlemi geri al
+UPDATE products SET stock = stock - (SELECT ci.quantity FROM cart_item ci
+                                     WHERE ci.cart_id = :sepet AND ci.product_id = products.product_id)
+WHERE product_id IN (SELECT product_id FROM cart_item WHERE cart_id = :sepet);
+-- 4) Sepeti boşalt
+DELETE FROM cart_item WHERE cart_id = :sepet;
+COMMIT;</pre>
+<p>Adımlardan biri hata verirse uygulama <code>ROLLBACK</code> çalıştırır ve hiçbir tablo değişmez. Stok kontrolü için 3. adımdan önce yetersiz stoklu satır olup olmadığı sorgulanabilir ya da <code>CHECK (stock &gt;= 0)</code> kısıtı ihlali hatası yakalanabilir.</p>
+<h3>Karar</h3><p>Uç noktaları yayına almadan önce sepet okuma ve ürün listesi sorgularının planını al, indeks kararını ve yazma bedelini kısa bir notla ekibe yaz. Sorgu ne sıklıkla çalışıyor, tablo ne sıklıkla yazılıyor? Bu proje sonunda şema, sorgular ve indeks birlikte teslim edilir.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-backend">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../proje-dba/">← Bitirme projesi (DBA): yavaş raporu hızlandır ve veritabanını güvenceye al</a><a href="../proje-tsql/">Bitirme projesi (T-SQL): şube raporu için saklı yordam ve hata yönetimi →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

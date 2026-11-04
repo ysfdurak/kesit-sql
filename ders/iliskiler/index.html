@@ -1,0 +1,30 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>İlişkiler: bire-bir, bire-çok, çoka-çok | Kesit SQL</title><meta name="description" content="Tablolar neden ayrı tutulur ve anahtarlar onları nasıl bağlar?"><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/iliskiler/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="İlişkiler: bire-bir, bire-çok, çoka-çok"><meta property="og:description" content="Tablolar neden ayrı tutulur ve anahtarlar onları nasıl bağlar?"><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/iliskiler/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"İlişkiler: bire-bir, bire-çok, çoka-çok","description":"Tablolar neden ayrı tutulur ve anahtarlar onları nasıl bağlar?","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/iliskiler/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Tabloları Birleştirme</span><h1>İlişkiler: bire-bir, bire-çok, çoka-çok</h1><p class="st-l">Tablolar neden ayrı tutulur ve anahtarlar onları nasıl bağlar?</p>
+<div class="st-c"><a class="st-p" href="../../#ders-iliskiler">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Neden her şey tek tabloda değil?</h2>
+<p>Her siparişin içine müşterinin adını, şehrini, e-postasını tekrar tekrar yazsaydık: veri şişer, müşteri adres değiştirdiğinde yüzlerce satırı güncellememiz gerekir ve tutarsızlık kaçınılmaz olur. İlişkisel tasarım her bilgiyi <b>bir kez</b> saklar ve anahtarlarla bağlar.</p>
+<h2>İlişki türleri</h2>
+<table><tr><th>Tür</th><th>Örnek</th><th>Nasıl kurulur?</th></tr>
+<tr><td>Bire-çok (1:N)</td><td>Bir müşterinin çok siparişi olur</td><td><code>orders.customer_id</code> → <code>customers.customer_id</code></td></tr>
+<tr><td>Çoka-çok (N:M)</td><td>Bir siparişte çok ürün, bir ürün çok siparişte</td><td>Ara tablo: <code>order_items</code> (order_id, product_id)</td></tr>
+<tr><td>Bire-bir (1:1)</td><td>Bir çalışanın bir özlük dosyası</td><td>Aynı anahtarı paylaşan iki tablo</td></tr>
+<tr><td>Kendine referans</td><td>Çalışanın yöneticisi de bir çalışandır</td><td><code>employees.manager_id</code> → <code>employees.emp_id</code></td></tr>
+</table>
+<h2>Anadolu Market şeması</h2>
+<pre class="code" data-norun>customers (customer_id PK)
+   └─< orders (order_id PK, customer_id FK)
+          └─< order_items (item_id PK, order_id FK, product_id FK) >─┐
+products (product_id PK) ────────────────────────────────────────────┘
+departments (dept_id PK) ─< employees (emp_id PK, dept_id FK, manager_id FK → emp_id)</pre>
+<p><code>─&lt;</code> işareti “bire-çok” demektir. JOIN, bu okları takip ederek tabloları birleştirmektir.</p>
+<h2>Derinleş: ilişkileri veriyle doğrulamak</h2><p>Bir ilişkinin türünü varsaymak yerine sorgula. “Her siparişin en fazla bir değerlendirmesi var mı?” sorusu bire-bir mi bire-çok mu olduğunu söyler:</p><pre class="code">SELECT MAX(n) AS en_fazla_degerlendirme
+FROM (SELECT order_id, COUNT(*) AS n FROM lk_ratings GROUP BY order_id) t;</pre>
+<p>Sonuç 1 ise ilişki siparişten değerlendirmeye bire-birdir (ya da değerlendirme yoktur). Benzer biçimde öksüz kayıtları (karşılığı olmayan yabancı anahtar) NOT EXISTS ile ara.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-iliskiler">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../dml/">← INSERT, UPDATE, DELETE</a><a href="../inner-join/">INNER JOIN →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,37 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HAVING: grupları filtrelemek | Kesit SQL</title><meta name="description" content="WHERE satırları, HAVING grupları süzer."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/having/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="HAVING: grupları filtrelemek"><meta property="og:description" content="WHERE satırları, HAVING grupları süzer."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/having/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"HAVING: grupları filtrelemek","description":"WHERE satırları, HAVING grupları süzer.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/having/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Özetleme</span><h1>HAVING: grupları filtrelemek</h1><p class="st-l">WHERE satırları, HAVING grupları süzer.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-having">Uygulamada aç, 10 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>WHERE ile HAVING farkı</h2>
+<ul>
+<li><b>WHERE</b>, gruplamadan <b>önce</b> tek tek satırları süzer. İçinde toplama fonksiyonu kullanılamaz.</li>
+<li><b>HAVING</b>, gruplamadan <b>sonra</b> grupları süzer. Toplama fonksiyonlarıyla çalışır.</li>
+</ul>
+<pre class="code">-- 5'ten fazla ürünü olan kategoriler
+SELECT category, COUNT(*) AS urun_sayisi
+FROM products
+GROUP BY category
+HAVING COUNT(*) > 5;</pre>
+<p>İkisini birlikte kullanmak çok yaygındır:</p>
+<pre class="code">-- Teslim edilmiş siparişlerde, 10'dan fazla siparişi olan müşteriler
+SELECT customer_id, COUNT(*) AS siparis
+FROM orders
+WHERE status = 'delivered'
+GROUP BY customer_id
+HAVING COUNT(*) > 10
+ORDER BY siparis DESC;</pre>
+<div class="tip"><b>Performans</b>Satır düzeyinde süzebileceğin her koşulu WHERE'e koy. HAVING'e sadece toplama sonucuna bağlı koşullar kalsın. Böylece veritabanı daha az satırı gruplar.</div>
+<h2>Derinleş: WHERE mi HAVING mi?</h2><p>Karar kuralı basit: koşul <b>tek bir satıra bakarak</b> değerlendirilebiliyorsa WHERE, <b>bir grubun özetine</b> bakmayı gerektiriyorsa HAVING.</p><table><tr><th>Koşul</th><th>Yer</th></tr><tr><td>Durumu teslim olan siparişler</td><td>WHERE</td></tr><tr><td>100'den fazla siparişi olan restoranlar</td><td>HAVING</td></tr><tr><td>Ortalama bahşişi 10 TL'yi aşan kuryeler</td><td>HAVING</td></tr><tr><td>Aralık siparişleri</td><td>WHERE</td></tr></table>
+<pre class="code">SELECT courier_id, COUNT(*) AS siparis, ROUND(AVG(tip), 2) AS ort_bahsis
+FROM lk_orders
+WHERE status = 'teslim'
+GROUP BY courier_id
+HAVING AVG(tip) > 8
+ORDER BY ort_bahsis DESC;</pre></article>
+<div class="st-c"><a class="st-p" href="../../#ders-having">Alıştırmalara geç (10)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../group-by/">← GROUP BY: gruplara göre özet</a><a href="../metin-birlestir/">Satırları tek metinde toplamak: STRING_AGG, LISTAGG, GROUP_CONCAT →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

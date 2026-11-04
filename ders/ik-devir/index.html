@@ -1,0 +1,32 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Devir hızı (turnover): kim, ne zaman, neden ayrılıyor? | Kesit SQL</title><meta name="description" content="Yıllık devir hızı formülü, gönüllü ve gönülsüz ayrılma, ilk yılda kayıp, bölüm ve yönetici kırılımı, işe giriş kohortlarında elde tutma."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ik-devir/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Devir hızı (turnover): kim, ne zaman, neden ayrılıyor?"><meta property="og:description" content="Yıllık devir hızı formülü, gönüllü ve gönülsüz ayrılma, ilk yılda kayıp, bölüm ve yönetici kırılımı, işe giriş kohortlarında elde tutma."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ik-devir/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Devir hızı (turnover): kim, ne zaman, neden ayrılıyor?","description":"Yıllık devir hızı formülü, gönüllü ve gönülsüz ayrılma, ilk yılda kayıp, bölüm ve yönetici kırılımı, işe giriş kohortlarında elde tutma.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ik-devir/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · İK Analitiği</span><h1>Devir hızı (turnover): kim, ne zaman, neden ayrılıyor?</h1><p class="st-l">Yıllık devir hızı formülü, gönüllü ve gönülsüz ayrılma, ilk yılda kayıp, bölüm ve yönetici kırılımı, işe giriş kohortlarında elde tutma.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ik-devir">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Formül</h2>
+<p>Yıllık devir hızı = <b>yıl içinde ayrılan kişi sayısı / ortalama kadro</b>. Ortalama kadro genellikle (yıl başı kadrosu + yıl sonu kadrosu) / 2 alınır; daha hassası aylık kadroların ortalamasıdır.</p>
+<pre class="code">WITH k AS (
+  SELECT
+    SUM(CASE WHEN hire_date &lt;= '2023-12-31' AND (term_date IS NULL OR term_date &gt; '2023-12-31') THEN 1 ELSE 0 END) AS bas,
+    SUM(CASE WHEN hire_date &lt;= '2024-12-31' AND (term_date IS NULL OR term_date &gt; '2024-12-31') THEN 1 ELSE 0 END) AS son,
+    SUM(CASE WHEN term_date BETWEEN '2024-01-01' AND '2024-12-31' THEN 1 ELSE 0 END) AS ayrilan,
+    SUM(CASE WHEN term_date BETWEEN '2024-01-01' AND '2024-12-31' AND term_type = 'gönüllü' THEN 1 ELSE 0 END) AS gonullu
+  FROM ik_employees
+)
+SELECT ROUND(100.0 * ayrilan / ((bas + son) / 2.0), 1) AS devir,
+       ROUND(100.0 * gonullu / ((bas + son) / 2.0), 1) AS gonullu_devir
+FROM k;</pre>
+<h2>Neden ayrı ayrı bakılır?</h2>
+<ul><li><b>Gönüllü</b> ayrılma (kişi kendisi ayrılır) bağlılık, ücret ve yönetici kalitesiyle ilgilidir; şirketin kontrolündedir.</li>
+<li><b>Gönülsüz</b> ayrılma (işten çıkarma) performans ve yeniden yapılanmayla ilgilidir.</li>
+<li><b>İlk yıl devri</b>: işe girdikten sonraki 12 ay içinde ayrılanlar. Yüksekse işe alım ya da uyum (onboarding) sorunu vardır.</li></ul>
+<h2>Kohort elde tutma</h2>
+<p>Aynı çeyrekte işe girenlerin yüzde kaçı 12 ay sonra hâlâ şirkette? Bu, işe alım kalitesini zaman içinde izlemenin en adil yoludur, çünkü herkes aynı süre izlenir. Son 12 ay içinde işe girenler henüz 12 ay doldurmadığı için hesaba katılmamalıdır.</p>
+<div class="note"><b>Küçük ekip uyarısı</b>10 kişilik bir ekipte 2 ayrılma %20 devir demektir. Oranın yanında her zaman kişi sayısını da göster.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ik-devir">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ik-kadro/">← Kadro (headcount): bir tarihte, her ay ve kırılımlarıyla</a><a href="../ik-ucret/">Ücret analitiği: güncel maaş, bant konumu ve ücret eşitliği →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

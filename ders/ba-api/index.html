@@ -1,0 +1,63 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>API sözleşmesini okumak (API contract): REST, JSON, durum kodları, idempotency, hata durumları | Kesit SQL</title><meta name="description" content="Bir iş analisti için REST ve JSON, durum kodları, aynı isteğin tekrarı, hata senaryoları ve API alanlarını tablolara eşlemek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ba-api/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="API sözleşmesini okumak (API contract): REST, JSON, durum kodları, idempotency, hata durumları"><meta property="og:description" content="Bir iş analisti için REST ve JSON, durum kodları, aynı isteğin tekrarı, hata senaryoları ve API alanlarını tablolara eşlemek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ba-api/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"API sözleşmesini okumak (API contract): REST, JSON, durum kodları, idempotency, hata durumları","description":"Bir iş analisti için REST ve JSON, durum kodları, aynı isteğin tekrarı, hata senaryoları ve API alanlarını tablolara eşlemek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ba-api/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · BT İş Analizi</span><h1>API sözleşmesini okumak (API contract): REST, JSON, durum kodları, idempotency, hata durumları</h1><p class="st-l">Bir iş analisti için REST ve JSON, durum kodları, aynı isteğin tekrarı, hata senaryoları ve API alanlarını tablolara eşlemek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ba-api">Uygulamada aç, 10 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory"><p>Kupon servisi, sipariş servisi ve bildirim servisi birbirini <b>API</b> (application programming interface) üzerinden çağırır. Sözleşmeyi (contract) geliştirici yazar, sen okursun: yazdığın kural sözleşmede bir yere oturuyor mu? Bu tarayıcıda gerçek bir servis çalışmıyor; bu ders okumaya ve çıkan veriyi SQL ile doğrulamaya dayanır.</p>
+<h2>REST'in dört fiili</h2>
+<table><tr><th>Fiil (verb)</th><th>Ne yapar?</th><th>Kupon örneği</th></tr>
+<tr><td><code>GET</code></td><td>Okur, hiçbir şey değiştirmez</td><td><code>GET /musteriler/162/kuponlar</code></td></tr>
+<tr><td><code>POST</code></td><td>Yeni kayıt ya da işlem başlatır</td><td><code>POST /kuponlar</code></td></tr>
+<tr><td><code>PUT</code> / <code>PATCH</code></td><td>Günceller (tamamını / bir kısmını)</td><td><code>PATCH /kuponlar/88</code> ile kullanım zamanı</td></tr>
+<tr><td><code>DELETE</code></td><td>Siler ya da pasifleştirir</td><td><code>DELETE /kuponlar/88</code></td></tr></table>
+<h2>İstek ve cevap</h2>
+<p>JSON, anahtar-değer çiftlerinden oluşan metin biçimidir. Aşağıdaki sözleşme parçasını oku:</p>
+<pre class="code" data-norun>POST /kuponlar
+Idempotency-Key: siparis-5045
+
+{
+  "order_id": 5045,
+  "neden": "gec_teslim"
+}
+
+201 Created
+{
+  "kupon_id": 88,
+  "order_id": 5045,
+  "customer_id": 162,
+  "tutar": 30.00,
+  "para_birimi": "TRY",
+  "son_kullanim": "2025-01-07T14:01:48+03:00"
+}</pre>
+<p>Okurken soracakların: Tutarı kim hesaplıyor, çağıran mı, servis mi? (Burada servis; iyi, kural tek yerde kalır.) Saat dilimi yazıyor mu? (Evet, <code>+03:00</code>.) Tutar sayı mı, metin mi? <code>son_kullanim</code> bir iş kuralı getirdi: 30 gün mü, bu BRD'de yazıyor mu?</p>
+<h2>Durum kodları</h2>
+<table><tr><th>Kod</th><th>Anlamı</th><th>Kuponda ne zaman?</th></tr>
+<tr><td><code>200 OK</code></td><td>İstek başarılı</td><td>Aynı istek ikinci kez geldi, mevcut kupon döndü</td></tr>
+<tr><td><code>201 Created</code></td><td>Yeni kayıt oluştu</td><td>Kupon ilk kez üretildi</td></tr>
+<tr><td><code>400 Bad Request</code></td><td>İstek biçimi bozuk</td><td><code>order_id</code> metin geldi</td></tr>
+<tr><td><code>401</code> / <code>403</code></td><td>Kimlik yok / yetki yok</td><td>Çağıran servisin izni yok</td></tr>
+<tr><td><code>404 Not Found</code></td><td>Kayıt yok</td><td>Böyle bir sipariş yok</td></tr>
+<tr><td><code>409 Conflict</code></td><td>Mevcut durumla çakışıyor</td><td>Aynı siparişe farklı anahtarla ikinci kupon</td></tr>
+<tr><td><code>422 Unprocessable Content</code></td><td>Biçim doğru, iş kuralı uymuyor</td><td>Sipariş iptal, kupon verilemez</td></tr>
+<tr><td><code>500</code> / <code>503</code></td><td>Sunucu tarafı hata</td><td>Veritabanı yanıt vermedi; yeniden denenebilir</td></tr></table>
+<p>Sınır çizgisi ekipten ekibe değişir: bazı ekipler iş kuralı ihlalini <code>400</code> ile döner. Önemli olan her hata senaryosunun sözleşmede yazılı olması ve aynı anlamda kullanılmasıdır.</p>
+<h2>Idempotency</h2>
+<p>Ağ kopar, çağıran taraf cevabı alamadığı için isteği tekrarlar. Servis ikinci kupon üretirse şirket para kaybeder. <b>Idempotent</b> işlem, kaç kez çalışırsa çalışsın sonucu aynı olan işlemdir. <code>GET</code> doğası gereği böyledir; <code>POST</code> için özel önlem gerekir: <code>Idempotency-Key</code> başlığı ya da tablodaki <code>UNIQUE</code> kısıtı. Gereksinim cümlesi: “Aynı sipariş için tekrarlanan istek yeni kupon üretmez, ilk kuponu döner.”</p>
+<h2>Hata durumları tablosu</h2>
+<table><tr><th>Durum</th><th>Çağıran ne yapar?</th><th>Müşteri ne görür?</th></tr>
+<tr><td>Kupon servisi 5 saniyede cevap vermedi</td><td>En çok 3 kez yeniden dener</td><td>Hiçbir şey; kupon sonra gelir</td></tr>
+<tr><td>3 denemede de <code>500</code></td><td>Kaydı hata kuyruğuna yazar</td><td>Operasyon inceler, sonra kupon gelir</td></tr>
+<tr><td><code>422</code> (kural dışı)</td><td>Yeniden denemez, loglar</td><td>Kupon yok</td></tr></table>
+<p>Yeniden denenecek ve denenmeyecek hataları ayırmak iş kararıdır. Sayıları (3 deneme, 5 saniye) burada önerdik, senin projende ekip belirler.</p>
+<h2>API'yi tablolara eşle</h2>
+<table><tr><th>API alanı</th><th>Tablo ve sütun</th><th>Not</th></tr>
+<tr><td><code>order_id</code></td><td><code>lk_orders.order_id</code></td><td>İstekle gelir, varlığı kontrol edilir</td></tr>
+<tr><td><code>customer_id</code></td><td><code>lk_orders.customer_id</code></td><td>İstekle gelmez, siparişten bulunur</td></tr>
+<tr><td><code>tutar</code></td><td>hesaplanır, <code>ba_kupon.tutar</code></td><td>Karar tablosundan</td></tr>
+<tr><td><code>son_kullanim</code></td><td>kaynak yok</td><td>Açık soru: tabloda alan yok, süre için karar gerekli (Canlıya geçiş dersindeki mini BRD bunu 30 gün olarak kapatır)</td></tr></table>
+<p>Son satır sözleşmeyi okumanın kazancıdır: API'de olan alanın tabloda karşılığı yok. Bunu geliştirme başlamadan yakalamak ucuzdur. Gerçek API'lerle Python'dan çalışmak istersen Kesit Python'daki BT İş Analisti yolunda HTTP dersi var.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ba-api">Alıştırmalara geç (10)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ba-veri/">← Veriyi konuşmak: ER ve veri sözlüğü, alan eşleme (field mapping), yeni tablo önerisi, göç kontrolleri</a><a href="../ba-uat/">Kullanıcı kabul testi (UAT): senaryolar, test verisi, mutabakat, hata kaydı, onay →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

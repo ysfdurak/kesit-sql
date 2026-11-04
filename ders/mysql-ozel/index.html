@@ -1,0 +1,72 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MySQL'e özgü yazımlar ve tuzaklar | Kesit SQL</title><meta name="description" content="LIMIT a,b, IFNULL, IF, DATE_FORMAT, GROUP_CONCAT, ON DUPLICATE KEY, WITH ROLLUP."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/mysql-ozel/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="MySQL'e özgü yazımlar ve tuzaklar"><meta property="og:description" content="LIMIT a,b, IFNULL, IF, DATE_FORMAT, GROUP_CONCAT, ON DUPLICATE KEY, WITH ROLLUP."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/mysql-ozel/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"MySQL'e özgü yazımlar ve tuzaklar","description":"LIMIT a,b, IFNULL, IF, DATE_FORMAT, GROUP_CONCAT, ON DUPLICATE KEY, WITH ROLLUP.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/mysql-ozel/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · SQL Türlerine Özgü</span><h1>MySQL'e özgü yazımlar ve tuzaklar</h1><p class="st-l">LIMIT a,b, IFNULL, IF, DATE_FORMAT, GROUP_CONCAT, ON DUPLICATE KEY, WITH ROLLUP.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-mysql-ozel">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>MySQL'in kendine has yazımları</h2>
+<pre class="code" data-base="mysql">SELECT `name`, IFNULL(stock, 0) AS stok,
+       IF(price &gt; 1000, 'Pahalı', 'Normal') AS sinif
+FROM products
+ORDER BY price DESC
+LIMIT 5, 5;   -- 5 satır atla, 5 satır getir</pre>
+<ul><li><code>`ters tırnak`</code> ile tanımlayıcılar.</li><li><code>LIMIT atla, getir</code> kısa yazımı (dikkat: sıra tersine benzer).</li><li><code>IF(koşul, a, b)</code> ve <code>IFNULL</code>.</li></ul>
+<h2>Tarih ve metin</h2>
+<pre class="code" data-base="mysql">SELECT DATE_FORMAT(order_date, '%Y-%m') AS ay,
+       COUNT(*) AS siparis,
+       GROUP_CONCAT(DISTINCT channel ORDER BY channel SEPARATOR ' / ') AS kanallar
+FROM orders
+WHERE YEAR(order_date) = 2024
+GROUP BY DATE_FORMAT(order_date, '%Y-%m')
+ORDER BY ay;</pre>
+<h2>Tuzaklar</h2>
+<ul>
+<li><b><code>||</code> mantıksal VEYA'dır</b>: Metin birleştirmek için <code>CONCAT</code> kullan. (Bu uygulamada MySQL modunda <code>||</code> yazarsan uyarılırsın.)</li>
+<li><b>Varsayılan karşılaştırma büyük/küçük harf ve aksan duyarsızdır</b> (<code>utf8mb4_0900_ai_ci</code>): <code>'Şahin' = 'sahin'</code> doğru olabilir.</li>
+<li><b>Eski sürümlerde GROUP BY gevşekliği</b>: <code>ONLY_FULL_GROUP_BY</code> kapalıysa gruplanmamış sütunlar rastgele değer döner.</li>
+<li><b>FULL OUTER JOIN yoktur</b>; LEFT + RIGHT + UNION ile yazılır.</li>
+<li><b>Tam sayı bölmesi</b> yoktur: <code>7 / 2 = 3.5000</code>; tam sayı için <code>7 DIV 2</code>.</li>
+</ul>
+<h2>Derinleş: MySQL'de veri temizliği ve upsert</h2>
+<p>MySQL'in kendine özgü fonksiyonları, özellikle ham veriyi temizlerken ve yükleme yaparken işe yarar. Üç tanesi çok sık kullanılır: <code>STR_TO_DATE</code>, <code>TIMESTAMPDIFF</code> ve <code>INSERT ... ON DUPLICATE KEY UPDATE</code>.</p>
+<h3>STR_TO_DATE: metinden tarihe</h3>
+<p><code>raw_signups</code> tablosunda tarihler iki biçimde geliyor. <code>STR_TO_DATE(metin, biçim)</code> metni gerçek DATE tipine çevirir; biçim uymazsa NULL döndürür (katı SQL modunda uyarı/hata). <code>DATE_FORMAT</code> ise tersini yapar.</p>
+<pre class="code" data-base="mysql">SELECT id, signup_date,
+       CASE WHEN signup_date LIKE '__.__.____'
+            THEN STR_TO_DATE(signup_date, '%d.%m.%Y')
+            ELSE STR_TO_DATE(signup_date, '%Y-%m-%d') END AS kayit_tarihi
+FROM raw_signups
+ORDER BY id
+LIMIT 6;</pre>
+<h3>TIMESTAMPDIFF: süre hesabı</h3>
+<p><code>TIMESTAMPDIFF(birim, başlangıç, bitiş)</code> iki zaman arasındaki farkı istenen birimde <b>tam sayı</b> (aşağı yuvarlanmış) olarak verir. <code>DATEDIFF(a, b)</code> ise yalnızca gün farkıdır ve argüman sırası terstir (bitiş önce).</p>
+<pre class="code" data-base="mysql">SELECT r.city,
+       COUNT(*) AS teslim,
+       ROUND(AVG(TIMESTAMPDIFF(MINUTE, o.placed_at, o.delivered_at)), 1) AS ort_dk
+FROM lk_orders o
+JOIN lk_restaurants r ON r.restaurant_id = o.restaurant_id
+WHERE o.status = 'teslim'
+GROUP BY r.city
+ORDER BY ort_dk DESC;</pre>
+<h3>Upsert: ON DUPLICATE KEY UPDATE</h3>
+<p>Birincil veya benzersiz anahtar çakışırsa satırı güncelleyen bu yazım, MySQL'de idempotent yüklemenin en kısa yoludur:</p>
+<pre class="code" data-base="mysql">CREATE TABLE gunluk_sayac (gun DATE PRIMARY KEY, siparis INT NOT NULL);
+
+INSERT INTO gunluk_sayac (gun, siparis)
+SELECT DATE(placed_at), COUNT(*) FROM lk_orders
+WHERE placed_at >= '2024-12-30' AND placed_at &lt; '2024-12-31'
+GROUP BY DATE(placed_at)
+ON DUPLICATE KEY UPDATE siparis = VALUES(siparis);
+
+SELECT * FROM gunluk_sayac;</pre>
+<p>Aynı ifadeyi ikinci kez çalıştırmak satır eklemez, değeri günceller. MySQL 8.0.20+ <code>VALUES()</code> yerine takma adlı yazımı önerir: <code>INSERT ... AS yeni ON DUPLICATE KEY UPDATE siparis = yeni.siparis</code>.</p>
+<p><b>Sık hata:</b> Dönüşümden sonra NULL sayısını kontrol etmemek. Biçime uymayan bir metin (ör. <code>31/12/2024</code>) STR_TO_DATE ile NULL'a döner ve kayıt sessizce “tarihsiz” kalır. Temizlik sorgusunun hemen ardından <code>SUM(CASE WHEN yeni_tarih IS NULL THEN 1 ELSE 0 END)</code> ile kaç kaydın dönüşemediğini say. Benzer şekilde TIMESTAMPDIFF aşağı yuvarladığı için 59 saniyelik bir fark 0 dakika görünür; hassas ortalamalarda <code>SECOND</code> biriminde hesaplayıp 60'a böl.</p>
+<table><tr><th>Yazım</th><th>Davranış</th><th>Dikkat</th></tr>
+<tr><td><code>ON DUPLICATE KEY UPDATE</code></td><td>Çakışmada günceller</td><td>Birden çok benzersiz anahtar varsa hangisinin çakıştığı belirsizleşir</td></tr>
+<tr><td><code>REPLACE INTO</code></td><td>Çakışan satırı <b>siler</b>, yenisini ekler</td><td>Silme, yabancı anahtar CASCADE'lerini ve trigger'ları tetikler</td></tr>
+<tr><td><code>INSERT IGNORE</code></td><td>Çakışan satırı atlar</td><td>Başka hataları da sessizce yutar</td></tr></table></article>
+<div class="st-c"><a class="st-p" href="../../#ders-mysql-ozel">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../pg-ozel/">← PostgreSQL'e özgü güçlü özellikler</a><a href="../tam-metin/">Tam metin arama: LIKE yerine dizinli kelime araması →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

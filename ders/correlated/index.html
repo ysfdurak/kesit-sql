@@ -1,0 +1,45 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>İlişkili alt sorgular (correlated subquery) ve EXISTS | Kesit SQL</title><meta name="description" content="Dış sorgunun her satırı için çalışan alt sorgular."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/correlated/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="İlişkili alt sorgular (correlated subquery) ve EXISTS"><meta property="og:description" content="Dış sorgunun her satırı için çalışan alt sorgular."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/correlated/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"İlişkili alt sorgular (correlated subquery) ve EXISTS","description":"Dış sorgunun her satırı için çalışan alt sorgular.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/correlated/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Küme ve Alt Sorgular</span><h1>İlişkili alt sorgular (correlated subquery) ve EXISTS</h1><p class="st-l">Dış sorgunun her satırı için çalışan alt sorgular.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-correlated">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Dış sorguya bakan alt sorgu</h2>
+<p>İlişkili (correlated) alt sorgu, dış sorgudaki bir sütunu kullanır; mantıksal olarak her satır için yeniden çalışır.</p>
+<pre class="code">-- Kendi kategorisinin ortalamasından pahalı ürünler
+SELECT p.name, p.category, p.price
+FROM products p
+WHERE p.price > (
+  SELECT AVG(p2.price)
+  FROM products p2
+  WHERE p2.category = p.category
+);</pre>
+<h2>EXISTS ve NOT EXISTS</h2>
+<p>EXISTS, alt sorgu <b>en az bir satır</b> döndürürse doğrudur. Satırların içeriği önemsizdir; bu yüzden <code>SELECT 1</code> yazmak gelenektir.</p>
+<pre class="code">-- Mobil kanaldan en az bir sipariş vermiş müşteriler
+SELECT c.first_name, c.last_name
+FROM customers c
+WHERE EXISTS (
+  SELECT 1 FROM orders o
+  WHERE o.customer_id = c.customer_id AND o.channel = 'mobile'
+);</pre>
+<p><code>NOT EXISTS</code>, anti-join'in en güvenli yazımıdır; NULL tuzağına düşmez.</p>
+<h2>SELECT içinde ilişkili alt sorgu</h2>
+<pre class="code">SELECT c.first_name,
+       (SELECT MAX(o.order_date) FROM orders o WHERE o.customer_id = c.customer_id) AS son_siparis
+FROM customers c
+LIMIT 10;</pre>
+<div class="tip"><b>Performans</b>Modern optimizasyon motorları çoğu ilişkili alt sorguyu JOIN'e dönüştürür. Yine de büyük tablolarda SELECT içindeki ilişkili alt sorgular yavaş olabilir; JOIN + GROUP BY veya pencere fonksiyonu alternatiflerini düşün.</div>
+<h2>Derinleş: ilişkili alt sorguyu pencereye çevirmek</h2><p>“Kendi restoranının ortalamasından pahalı ürünler” iki biçimde yazılabilir; ikincisi tabloyu bir kez tarar:</p><pre class="code">-- ilişkili alt sorgu
+SELECT name FROM lk_menu_items m
+WHERE price > (SELECT AVG(price) FROM lk_menu_items x WHERE x.restaurant_id = m.restaurant_id);
+
+-- pencere fonksiyonu
+SELECT name FROM (
+  SELECT name, price, AVG(price) OVER (PARTITION BY restaurant_id) AS ort FROM lk_menu_items
+) t WHERE price > ort;</pre></article>
+<div class="st-c"><a class="st-p" href="../../#ders-correlated">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../subquery/">← Alt sorgular (subquery)</a><a href="../lateral/">Satır başına alt sorgu: LATERAL ve APPLY →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,64 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Databricks Data Analyst ve SnowPro Core: platforma özgü SQL konuları | Kesit SQL</title><meta name="description" content="Unity Catalog, Delta, COPY INTO, MERGE, yüksek dereceli fonksiyonlar; Snowflake mimarisi, önbellek, Time Travel, VARIANT."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/cert-dbx-snow/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Databricks Data Analyst ve SnowPro Core: platforma özgü SQL konuları"><meta property="og:description" content="Unity Catalog, Delta, COPY INTO, MERGE, yüksek dereceli fonksiyonlar; Snowflake mimarisi, önbellek, Time Travel, VARIANT."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/cert-dbx-snow/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Databricks Data Analyst ve SnowPro Core: platforma özgü SQL konuları","description":"Unity Catalog, Delta, COPY INTO, MERGE, yüksek dereceli fonksiyonlar; Snowflake mimarisi, önbellek, Time Travel, VARIANT.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/cert-dbx-snow/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Sertifika Hazırlık</span><h1>Databricks Data Analyst ve SnowPro Core: platforma özgü SQL konuları</h1><p class="st-l">Unity Catalog, Delta, COPY INTO, MERGE, yüksek dereceli fonksiyonlar; Snowflake mimarisi, önbellek, Time Travel, VARIANT.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-cert-dbx-snow">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Databricks Certified Data Analyst Associate</h2>
+<p>Sınav, Databricks SQL ile veri sorgulama, yönetme ve görselleştirmeye odaklanır. SQL tarafında öne çıkanlar:</p>
+<ul>
+<li><b>Unity Catalog</b>: üç düzeyli ad <code>katalog.şema.tablo</code>; <code>GRANT SELECT ON TABLE ... TO ...</code>; managed ve external tablolar.</li>
+<li><b>Delta Lake</b>: ACID tablolar, <code>DESCRIBE HISTORY</code>, <code>VERSION AS OF</code> / <code>TIMESTAMP AS OF</code>, <code>OPTIMIZE</code>, <code>ZORDER BY</code>, <code>VACUUM</code>.</li>
+<li><b>Veri alma</b>: <code>COPY INTO</code>, <code>CREATE TABLE ... AS SELECT</code>, <code>read_files()</code>, yükleme arayüzü.</li>
+<li><b>MERGE INTO</b> ile upsert; <code>INSERT OVERWRITE</code>.</li>
+<li><b>Yüksek dereceli fonksiyonlar</b> (dizi/harita): <code>transform</code>, <code>filter</code>, <code>exists</code>, <code>aggregate</code>; <code>explode</code>.</li>
+<li>Pencere fonksiyonları, <code>PIVOT</code>, <code>QUALIFY</code>, CTE, SQL UDF.</li>
+<li>Sorgu geçmişi ve profil, SQL warehouse türleri (serverless/pro/classic), panolar, uyarılar (alerts), parametreli sorgular.</li>
+</ul>
+<pre class="code" data-norun>-- Databricks SQL
+COPY INTO anadolu.satis.orders
+FROM '/Volumes/anadolu/ham/siparisler/'
+FILEFORMAT = CSV
+FORMAT_OPTIONS ('header' = 'true');
+
+MERGE INTO anadolu.satis.products AS t
+USING anadolu.ham.fiyat_guncelleme AS s ON t.product_id = s.product_id
+WHEN MATCHED THEN UPDATE SET t.price = s.new_price
+WHEN NOT MATCHED THEN INSERT *;
+
+SELECT order_id, transform(etiketler, x -&gt; upper(x)) AS buyuk_etiketler,
+       filter(etiketler, x -&gt; x LIKE 'k%') AS k_ile_baslayan
+FROM anadolu.satis.siparis_etiket;
+
+SELECT * FROM anadolu.satis.orders TIMESTAMP AS OF '2024-12-01';</pre>
+<h2>SnowPro Core</h2>
+<p>Snowflake'in temel sertifikası mimari ve platform bilgisini SQL ile birlikte ölçer:</p>
+<table>
+<tr><th>Konu</th><th>Bilinmesi gerekenler</th></tr>
+<tr><td>Mimari</td><td>Üç katman: depolama (mikro-bölümler), işlem (sanal ambarlar), bulut hizmetleri (meta veri, optimizasyon, güvenlik)</td></tr>
+<tr><td>Sanal ambar</td><td>Boyutlar (XS…6XL), çok kümeli ambar (eşzamanlılık), <code>AUTO_SUSPEND</code>, <code>AUTO_RESUME</code>; ölçek büyütme (up) sorgu hızı, ölçek genişletme (out) eşzamanlılık için</td></tr>
+<tr><td>Önbellekler</td><td>Sonuç önbelleği (24 saat, tablo değişmediyse), ambarın yerel disk önbelleği, meta veri önbelleği (ör. COUNT(*))</td></tr>
+<tr><td>Mikro-bölümler</td><td>Otomatik bölümleme, budama, clustering key ve clustering derinliği</td></tr>
+<tr><td>Veri yükleme</td><td>Stage'ler (user <code>@~</code>, table <code>@%t</code>, named <code>@s</code>), <code>PUT</code>, <code>COPY INTO</code>, Snowpipe, dosya biçimleri</td></tr>
+<tr><td>Yarı yapısal</td><td><code>VARIANT</code>, <code>v:alan::string</code> notasyonu, <code>LATERAL FLATTEN</code></td></tr>
+<tr><td>Veri koruma</td><td>Time Travel (<code>AT</code>/<code>BEFORE</code>, <code>UNDROP</code>), Fail-safe (7 gün, yalnızca Snowflake destek), sıfır kopya klon</td></tr>
+<tr><td>Güvenlik</td><td>RBAC, sistem rolleri (ACCOUNTADMIN, SECURITYADMIN, SYSADMIN, USERADMIN, PUBLIC), maskeleme ve satır erişim politikaları</td></tr>
+<tr><td>Paylaşım</td><td>Secure Data Sharing, reader account, Marketplace</td></tr>
+</table>
+<pre class="code" data-norun>-- Snowflake
+CREATE WAREHOUSE wh_analiz WAREHOUSE_SIZE = 'XSMALL' AUTO_SUSPEND = 60 AUTO_RESUME = TRUE;
+
+SELECT v:musteri.ad::string AS ad, f.value:urun::string AS urun
+FROM ham_siparis,
+     LATERAL FLATTEN(input =&gt; v:satirlar) f;
+
+SELECT * FROM orders AT(OFFSET =&gt; -60 * 30);     -- 30 dakika önceki hali
+CREATE TABLE orders_dev CLONE orders;              -- sıfır kopya klon
+UNDROP TABLE orders;</pre>
+<div class="warn"><b>Güncellik</b>Her iki sınavın kapsamı ve soru sayısı sık güncellenir. Resmi sınav rehberini indir ve maddeleri buradaki derslerle eşle.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-cert-dbx-snow">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../cert-gda/">← Google Data Analytics sertifikasındaki SQL: BigQuery ile analiz adımları</a><a href="../cert-tsql/">T-SQL sorgulama sertifika konuları: SQL Server ile sorgu yazmak →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

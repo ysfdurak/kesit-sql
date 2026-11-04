@@ -1,0 +1,39 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Yapay zekâyla SQL yazmak: doğru soruyu sormak | Kesit SQL</title><meta name="description" content="Doğal dilden SQL, iyi bir istem (prompt) yazmak ve gizlilik."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ai-giris/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Yapay zekâyla SQL yazmak: doğru soruyu sormak"><meta property="og:description" content="Doğal dilden SQL, iyi bir istem (prompt) yazmak ve gizlilik."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ai-giris/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Yapay zekâyla SQL yazmak: doğru soruyu sormak","description":"Doğal dilden SQL, iyi bir istem (prompt) yazmak ve gizlilik.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ai-giris/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Yapay Zekâ ile SQL</span><h1>Yapay zekâyla SQL yazmak: doğru soruyu sormak</h1><p class="st-l">Doğal dilden SQL, iyi bir istem (prompt) yazmak ve gizlilik.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ai-giris">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Yapay zekâ SQL yazabilir mi?</h2>
+<p>Büyük dil modelleri (ChatGPT, Claude, Gemini, Copilot…) iyi tarif edilmiş bir soruyu çoğu zaman doğru SQL'e çevirir. Artık veritabanı araçlarının çoğunda bu özellik hazır geliyor: SSMS ve VS Code'da Copilot, BigQuery'de Gemini, Databricks Assistant, Snowflake Copilot. Ama yapay zekâ <b>senin veritabanını tanımaz</b>: tablo adlarını, iş kurallarını ve “ciro”dan ne kastettiğini sen anlatmazsan tahmin eder.</p>
+<h2>İyi bir istemin beş parçası</h2>
+<table>
+<tr><th>Parça</th><th>Örnek</th></tr>
+<tr><td><b>SQL türü</b></td><td>“SQL Server 2022 için T-SQL yaz.”</td></tr>
+<tr><td><b>Şema</b></td><td>İlgili tabloların CREATE TABLE ifadeleri veya sütun listesi (Veri setleri sayfasından kopyalayabilirsin).</td></tr>
+<tr><td><b>İş kuralları</b></td><td>“Net ciro = adet × birim fiyat × (1 − indirim). Yalnızca teslim edilen siparişler sayılır.”</td></tr>
+<tr><td><b>Soru</b></td><td>“2024'te kanal bazında aylık net ciroyu bul.”</td></tr>
+<tr><td><b>Çıktı biçimi</b></td><td>“Sütunlar: ay (YYYY-AA), channel, ciro. Aya göre sırala. Açıklama yazma, yalnızca SQL.”</td></tr>
+</table>
+<pre class="code" data-norun>Rol: SQL Server 2022 uzmanısın.
+Şema:
+  orders(order_id INT PK, customer_id INT, order_date DATE, status NVARCHAR(20), channel NVARCHAR(20))
+  order_items(item_id INT PK, order_id INT, product_id INT, quantity INT, unit_price DECIMAL(12,2), discount DECIMAL(4,2))
+Kurallar: Net ciro = quantity * unit_price * (1 - discount). Yalnızca status = 'delivered'.
+Soru: 2024'te kanal bazında aylık net ciro.
+Çıktı: ay (yyyy-MM), channel, ciro (2 basamak). Aya ve kanala göre sırala. Yalnızca T-SQL kodu ver.</pre>
+<div class="tip"><b>Neden işe yarar?</b>Modelin hata yaptığı yerlerin çoğu bilinmeyen bilgilerdir: sütun adı (<code>order_date</code> mi <code>created_at</code> mi?), SQL türü farkı (LIMIT mi TOP mu?) ve iş kuralı (iptaller dahil mi?). İstemde bunları verdiğinde tahmin edecek bir şey kalmaz.</div>
+<h2>Gizlilik ve güvenlik</h2>
+<ul>
+<li>Genel bir sohbet aracına <b>müşteri verisi yapıştırma</b>; çoğu zaman yalnızca şema yeterlidir.</li>
+<li>Şirketin onayladığı kurumsal araçları kullan (veri saklama ve eğitim politikalarını kontrol et).</li>
+<li>Üretilen sorguyu önce <b>salt okunur</b> bir kullanıcıyla ve test ortamında çalıştır; UPDATE/DELETE içeren sorguları asla gözden geçirmeden çalıştırma.</li>
+</ul>
+<h2>Yapay zekâ ile öğrenmek</h2>
+<p>En verimli kullanım, yapay zekâyı <b>öğretmen</b> gibi kullanmaktır: “Bu sorgu neden yavaş?”, “Bu hata mesajı ne demek?”, “Bu sorguyu adım adım açıkla”. Sorguyu ondan almak yerine önce kendin yaz, sonra karşılaştır. Mülakatlarda ve gerçek işte sorgunun doğruluğundan hâlâ sen sorumlusun.</p>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ai-giris">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../de-partition/">← Büyük veri: partition, clustering, dosya formatları</a><a href="../ai-dogrulama/">Yapay zekânın yazdığı SQL'i doğrulamak: hata avı →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

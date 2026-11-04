@@ -1,0 +1,33 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Toplama fonksiyonlarında tuzaklar: COUNT türleri, NULL ve tam sayı bölmesi | Kesit SQL</title><meta name="description" content="COUNT(*) / COUNT(sütun) / COUNT(DISTINCT), AVG ve NULL, oran hesaplarken bölme."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/toplama-tuzak/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Toplama fonksiyonlarında tuzaklar: COUNT türleri, NULL ve tam sayı bölmesi"><meta property="og:description" content="COUNT(*) / COUNT(sütun) / COUNT(DISTINCT), AVG ve NULL, oran hesaplarken bölme."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/toplama-tuzak/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Toplama fonksiyonlarında tuzaklar: COUNT türleri, NULL ve tam sayı bölmesi","description":"COUNT(*) / COUNT(sütun) / COUNT(DISTINCT), AVG ve NULL, oran hesaplarken bölme.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/toplama-tuzak/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Özetleme</span><h1>Toplama fonksiyonlarında tuzaklar: COUNT türleri, NULL ve tam sayı bölmesi</h1><p class="st-l">COUNT(*) / COUNT(sütun) / COUNT(DISTINCT), AVG ve NULL, oran hesaplarken bölme.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-toplama-tuzak">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Üç farklı COUNT</h2>
+<pre class="code">SELECT COUNT(*)              AS satir,        -- tüm satırlar
+       COUNT(email)          AS email_dolu,   -- NULL olmayan e-postalar
+       COUNT(DISTINCT city)  AS farkli_sehir  -- NULL hariç tekrarsız şehir
+FROM customers;</pre>
+<h2>AVG ve NULL</h2>
+<p><code>AVG</code>, NULL değerleri <b>yok sayar</b>; paydaya da katmaz. NULL'ları 0 saymak istiyorsan açıkça yaz: <code>AVG(COALESCE(x, 0))</code>. Sonuçlar farklı olabilir ve hangisinin doğru olduğu iş sorusuna bağlıdır.</p>
+<h2>Tam sayı bölmesi</h2>
+<p>SQL Server, PostgreSQL ve SQLite'ta iki tam sayının bölümü tam sayıdır: <code>7 / 2 = 3</code>. Oran hesaplarken bir tarafı ondalığa çevir:</p>
+<pre class="code">SELECT ROUND(100.0 * SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) / COUNT(*), 1) AS iptal_orani
+FROM orders;</pre>
+<p>MySQL, Oracle ve BigQuery'de <code>/</code> her zaman ondalık sonuç verir; ama taşınabilir yazmak için <code>100.0 *</code> alışkanlığı iyidir.</p>
+<h2>Boş grupta SUM</h2>
+<p>Hiç satır yoksa <code>SUM</code> 0 değil <b>NULL</b> döner; <code>COUNT</code> ise 0 döner. Raporlarda <code>COALESCE(SUM(x), 0)</code> yazılır.</p>
+<pre class="code">SELECT COUNT(*) AS adet, SUM(quantity) AS toplam, COALESCE(SUM(quantity), 0) AS toplam_0
+FROM order_items
+WHERE order_id = -1;</pre>
+<h2>Ortalamaların ortalaması</h2>
+<p>Kategori ortalamalarının ortalaması, tüm ürünlerin ortalamasına eşit değildir (kategorilerdeki ürün sayıları farklıysa). Doğru ağırlıklı ortalama için ham veriden hesapla.</p>
+<h2>Derinleş: dört tuzak, dört kontrol</h2><table><tr><th>Tuzak</th><th>Kontrol</th></tr><tr><td>JOIN sonrası SUM şişer</td><td>Toplamı birleştirmeden önce ve sonra karşılaştır</td></tr><tr><td>AVG boşları atlar</td><td><code>COUNT(*)</code> ile <code>COUNT(x)</code> farkına bak</td></tr><tr><td>Oranların ortalaması</td><td>Toplam pay / toplam payda ile karşılaştır</td></tr><tr><td>COUNT(DISTINCT) ile toplamak</td><td>Taneciği (grain) yaz: bir satır neyi temsil ediyor, neyi sayıyorsun?</td></tr></table>
+<pre class="code">SELECT (SELECT SUM(tip) FROM lk_orders) AS dogru_bahsis,
+       (SELECT SUM(o.tip) FROM lk_orders o JOIN lk_order_lines ol ON ol.order_id = o.order_id) AS sisirilmis;</pre></article>
+<div class="st-c"><a class="st-p" href="../../#ders-toplama-tuzak">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../tarih-filtre/">← Tarihlerle filtreleme ve gruplama: aralıklar, aylar, haftanın günleri</a><a href="../case/">CASE WHEN: SQL'de eğer-ise →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

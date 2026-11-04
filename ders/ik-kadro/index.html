@@ -1,0 +1,37 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kadro (headcount): bir tarihte, her ay ve kırılımlarıyla | Kesit SQL</title><meta name="description" content="Belirli bir tarihteki kadro, aylık kadro serisi için takvimle birleştirme, giriş–çıkış köprüsü ve kıdem dağılımı."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ik-kadro/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Kadro (headcount): bir tarihte, her ay ve kırılımlarıyla"><meta property="og:description" content="Belirli bir tarihteki kadro, aylık kadro serisi için takvimle birleştirme, giriş–çıkış köprüsü ve kıdem dağılımı."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ik-kadro/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Kadro (headcount): bir tarihte, her ay ve kırılımlarıyla","description":"Belirli bir tarihteki kadro, aylık kadro serisi için takvimle birleştirme, giriş–çıkış köprüsü ve kıdem dağılımı.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ik-kadro/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · İK Analitiği</span><h1>Kadro (headcount): bir tarihte, her ay ve kırılımlarıyla</h1><p class="st-l">Belirli bir tarihteki kadro, aylık kadro serisi için takvimle birleştirme, giriş–çıkış köprüsü ve kıdem dağılımı.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ik-kadro">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Aylık kadro serisi</h2>
+<p>Her ay sonu için aktif kişi sayısı: önce ay sonlarından bir takvim üret, sonra her tarih için “o tarihte aktif” koşuluyla say. Bu bir <b>eşit olmayan birleştirmedir</b>: takvimin her satırı, o tarihte aktif olan tüm çalışanlarla eşleşir.</p>
+<pre class="code" data-na="tsql pg">WITH RECURSIVE ay(son) AS (
+  SELECT '2024-01-31'
+  UNION ALL
+  SELECT date(son, '+1 day', '+1 month', '-1 day') FROM ay WHERE son &lt; '2024-12-31'
+)
+SELECT ay.son, COUNT(e.emp_id) AS kadro
+FROM ay
+LEFT JOIN ik_employees e
+  ON e.hire_date &lt;= ay.son AND (e.term_date IS NULL OR e.term_date &gt; ay.son)
+GROUP BY ay.son
+ORDER BY ay.son;</pre>
+<p><code>date(son, '+1 day', '+1 month', '-1 day')</code> bir sonraki ayın son gününü verir (31 Ocak → 29 Şubat → 31 Mart).</p>
+<h2>Kadro köprüsü</h2>
+<p>Yönetim “yıl başında 1.400 kişiydik, yıl sonunda neden 1.360?” diye sorar. Cevap köprüdür: <b>başlangıç + giriş − çıkış = bitiş</b>.</p>
+<pre class="code">SELECT
+  SUM(CASE WHEN hire_date &lt;= '2023-12-31' AND (term_date IS NULL OR term_date &gt; '2023-12-31') THEN 1 ELSE 0 END) AS baslangic,
+  SUM(CASE WHEN hire_date BETWEEN '2024-01-01' AND '2024-12-31' THEN 1 ELSE 0 END) AS giris,
+  SUM(CASE WHEN term_date BETWEEN '2024-01-01' AND '2024-12-31' THEN 1 ELSE 0 END) AS cikis,
+  SUM(CASE WHEN hire_date &lt;= '2024-12-31' AND (term_date IS NULL OR term_date &gt; '2024-12-31') THEN 1 ELSE 0 END) AS bitis
+FROM ik_employees;</pre>
+<div class="tip"><b>Kontrol</b>Köprü tutmuyorsa (başlangıç + giriş − çıkış ≠ bitiş) tarih sınırlarında bir tutarsızlık vardır: ör. aynı gün girip çıkan kişi ya da sınır tarihinde &lt; ile &lt;= karışıklığı.</div>
+<h2>Kıdem</h2>
+<p>Kıdem, işe girişten bugüne (ya da ayrılışa) geçen süredir. Yıl olarak: <code>(julianday('2024-12-31') - julianday(hire_date)) / 365.25</code>.</p>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ik-kadro">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ik-giris/">← İK analitiğine giriş: Pusula A.Ş. verisini tanımak</a><a href="../ik-devir/">Devir hızı (turnover): kim, ne zaman, neden ayrılıyor? →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

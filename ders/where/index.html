@@ -1,0 +1,41 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WHERE ile filtreleme | Kesit SQL</title><meta name="description" content="Karşılaştırma operatörleri ve metin/sayı/tarih filtreleri."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/where/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="WHERE ile filtreleme"><meta property="og:description" content="Karşılaştırma operatörleri ve metin/sayı/tarih filtreleri."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/where/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"WHERE ile filtreleme","description":"Karşılaştırma operatörleri ve metin/sayı/tarih filtreleri.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/where/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Temeller</span><h1>WHERE ile filtreleme</h1><p class="st-l">Karşılaştırma operatörleri ve metin/sayı/tarih filtreleri.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-where">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Sadece istediğin satırlar</h2>
+<p><b>WHERE</b>, bir koşulu sağlayan satırları süzer. FROM'dan sonra gelir:</p>
+<pre class="code">SELECT name, price
+FROM products
+WHERE price > 1000;</pre>
+<h3>Karşılaştırma operatörleri</h3>
+<table><tr><th>Operatör</th><th>Anlamı</th><th>Örnek</th></tr>
+<tr><td><code>=</code></td><td>eşit</td><td><code>city = 'Ankara'</code></td></tr>
+<tr><td><code>&lt;&gt;</code> veya <code>!=</code></td><td>eşit değil</td><td><code>status &lt;&gt; 'cancelled'</code></td></tr>
+<tr><td><code>&gt;</code>, <code>&lt;</code></td><td>büyük, küçük</td><td><code>stock &lt; 10</code></td></tr>
+<tr><td><code>&gt;=</code>, <code>&lt;=</code></td><td>büyük eşit, küçük eşit</td><td><code>salary &gt;= 50000</code></td></tr>
+</table>
+<h3>Metinler tek tırnakla yazılır</h3>
+<pre class="code">SELECT first_name, last_name, city
+FROM customers
+WHERE city = 'İzmir';</pre>
+<ul>
+<li>Metin değerleri <b>tek tırnak</b> içinde yazılır: <code>'İzmir'</code>. Çift tırnak sütun/tablo adı içindir.</li>
+<li>SQLite'ta <code>=</code> büyük/küçük harf duyarlıdır: <code>'izmir'</code> ile <code>'İzmir'</code> eşleşmez.</li>
+</ul>
+<h3>Tarihler</h3>
+<p>Bu veritabanında tarihler <code>'YYYY-AA-GG'</code> biçiminde metin olarak saklanır. Bu ISO formatı sayesinde metin karşılaştırması tarih sırasıyla aynı sonucu verir:</p>
+<pre class="code">SELECT order_id, order_date
+FROM orders
+WHERE order_date >= '2024-12-01';</pre>
+<h2>Derinleş: koşul yazarken dikkat</h2><p>WHERE her satır için ayrı ayrı doğru/yanlış sorusu sorar. Saat içeren sütunlarda (<code>placed_at</code>, <code>sched_dep</code>) gün filtresi için <b>yarı açık aralık</b> kullan:</p><pre class="code">SELECT COUNT(*) AS kasim_siparis
+FROM lk_orders
+WHERE placed_at >= '2024-11-01'
+  AND placed_at &lt;  '2024-12-01';</pre>
+<ul><li><code>placed_at = '2024-11-05'</code> saatli kayıtlarla hiç eşleşmez.</li><li>Sütuna fonksiyon uygulamak (<code>WHERE strftime('%Y', placed_at) = '2024'</code>) çalışır ama indeks kullanımını engelleyebilir; mümkünse aralık yaz.</li><li>Sayı sütununu metinle karşılaştırma (<code>price &gt; '300'</code>) SQL türüne göre farklı sonuç verebilir.</li></ul></article>
+<div class="st-c"><a class="st-p" href="../../#ders-where">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../hesaplama/">← Hesaplanan sütunlar ve aritmetik</a><a href="../mantik/">AND, OR, NOT ve işlem önceliği →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

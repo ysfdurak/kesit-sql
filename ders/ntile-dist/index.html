@@ -1,0 +1,31 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NTILE, PERCENT_RANK, FIRST_VALUE | Kesit SQL</title><meta name="description" content="Dilimlere ayırmak, yüzdelik sıra ve penceredeki ilk/son değer."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ntile-dist/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="NTILE, PERCENT_RANK, FIRST_VALUE"><meta property="og:description" content="Dilimlere ayırmak, yüzdelik sıra ve penceredeki ilk/son değer."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ntile-dist/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"NTILE, PERCENT_RANK, FIRST_VALUE","description":"Dilimlere ayırmak, yüzdelik sıra ve penceredeki ilk/son değer.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ntile-dist/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Pencere Fonksiyonları</span><h1>NTILE, PERCENT_RANK, FIRST_VALUE</h1><p class="st-l">Dilimlere ayırmak, yüzdelik sıra ve penceredeki ilk/son değer.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ntile-dist">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>NTILE: eşit dilimler</h2>
+<p><code>NTILE(4)</code> sıralı satırları 4 eşit gruba (çeyrek) böler. Müşteri segmentasyonunda çok kullanılır.</p>
+<pre class="code">SELECT name, price,
+       NTILE(4) OVER (ORDER BY price) AS fiyat_ceyregi
+FROM products;</pre>
+<h2>PERCENT_RANK ve CUME_DIST</h2>
+<ul>
+<li><code>PERCENT_RANK()</code>: (sıra − 1) / (satır sayısı − 1). 0 ile 1 arası.</li>
+<li><code>CUME_DIST()</code>: Bu değere eşit veya küçük satırların oranı.</li>
+</ul>
+<pre class="code">SELECT first_name, salary,
+       ROUND(PERCENT_RANK() OVER (ORDER BY salary), 2) AS yuzdelik
+FROM employees
+ORDER BY salary;</pre>
+<h2>FIRST_VALUE, LAST_VALUE, NTH_VALUE</h2>
+<pre class="code">SELECT category, name, price,
+       FIRST_VALUE(name) OVER (PARTITION BY category ORDER BY price DESC) AS en_pahali
+FROM products;</pre>
+<div class="warn"><b>LAST_VALUE tuzağı</b>Varsayılan çerçeve “baştan bu satıra” olduğu için LAST_VALUE genelde satırın kendisini döndürür. Doğrusu: <code>LAST_VALUE(x) OVER (... ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)</code>.</div>
+<h2>Derinleş: dilimler ve eşitlik</h2><p>NTILE eşit büyüklükte gruplar üretir; aynı değere sahip iki satır farklı dilimlere düşebilir. “Üst %25 müşteri” derken bu kabul edilebilir mi, yoksa değer eşiği mi (<code>PERCENT_RANK &gt;= 0.75</code>) istiyorsun? İkisi farklı sayıda müşteri döndürür. Belirleyici sonuç için ORDER BY'a benzersiz bir anahtar ekle: <code>NTILE(4) OVER (ORDER BY siparis, customer_id)</code>.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ntile-dist">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../frames/">← Kümülatif toplam ve hareketli ortalama (running total, moving average)</a><a href="../first-last/">FIRST_VALUE, LAST_VALUE, NTH_VALUE ve varsayılan çerçeve tuzağı →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,35 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FIRST_VALUE, LAST_VALUE, NTH_VALUE ve varsayılan çerçeve tuzağı | Kesit SQL</title><meta name="description" content="Bölümdeki ilk/son/n. değere erişim ve ROWS BETWEEN ... UNBOUNDED FOLLOWING."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/first-last/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="FIRST_VALUE, LAST_VALUE, NTH_VALUE ve varsayılan çerçeve tuzağı"><meta property="og:description" content="Bölümdeki ilk/son/n. değere erişim ve ROWS BETWEEN ... UNBOUNDED FOLLOWING."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/first-last/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"FIRST_VALUE, LAST_VALUE, NTH_VALUE ve varsayılan çerçeve tuzağı","description":"Bölümdeki ilk/son/n. değere erişim ve ROWS BETWEEN ... UNBOUNDED FOLLOWING.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/first-last/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Pencere Fonksiyonları</span><h1>FIRST_VALUE, LAST_VALUE, NTH_VALUE ve varsayılan çerçeve tuzağı</h1><p class="st-l">Bölümdeki ilk/son/n. değere erişim ve ROWS BETWEEN ... UNBOUNDED FOLLOWING.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-first-last">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Bölümün ilk değeri</h2>
+<pre class="code">SELECT category, name, price,
+       FIRST_VALUE(name) OVER (PARTITION BY category ORDER BY price) AS en_ucuz
+FROM products
+WHERE category IN ('Kitap', 'Hediye');</pre>
+<h2>LAST_VALUE neden yanlış görünür?</h2>
+<p>ORDER BY içeren bir pencerenin <b>varsayılan çerçevesi</b> “bölümün başından bu satıra kadar”dır (<code>RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code>). Bu yüzden <code>LAST_VALUE</code> çoğu zaman satırın kendisini döndürür. Bölümün gerçek son değeri için çerçeveyi açıkça genişlet:</p>
+<pre class="code">SELECT category, name, price,
+       LAST_VALUE(name) OVER (PARTITION BY category ORDER BY price) AS yanlis_son,
+       LAST_VALUE(name) OVER (PARTITION BY category ORDER BY price
+                              ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS dogru_son
+FROM products
+WHERE category = 'Kitap';</pre>
+<div class="tip"><b>Pratik çözüm</b>Son değeri, sıralamayı ters çevirip <code>FIRST_VALUE</code> ile almak çerçeve derdinden kurtarır: <code>FIRST_VALUE(name) OVER (PARTITION BY category ORDER BY price DESC)</code>.</div>
+<h2>NTH_VALUE</h2>
+<pre class="code">SELECT DISTINCT category,
+       NTH_VALUE(name, 2) OVER (PARTITION BY category ORDER BY price DESC
+                                ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS ikinci_pahali
+FROM products;</pre>
+<p>NTH_VALUE; SQL Server'da (2022 dahil) yoktur, orada <code>ROW_NUMBER</code> ile n. satır seçilir.</p>
+<h2>Derinleş: son değeri güvenle almak</h2><p>Üç yol aynı sonucu verir: sıralamayı tersine çevirip FIRST_VALUE, çerçeveyi genişletip LAST_VALUE ya da ROW_NUMBER ile filtre. En okunur ve hatasız olanı genellikle ilkidir.</p><pre class="code">SELECT DISTINCT restaurant_id,
+       FIRST_VALUE(name) OVER (PARTITION BY restaurant_id ORDER BY price DESC, name) AS en_pahali
+FROM lk_menu_items
+WHERE restaurant_id &lt;= 3;</pre></article>
+<div class="st-c"><a class="st-p" href="../../#ders-first-last">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ntile-dist/">← NTILE, PERCENT_RANK, FIRST_VALUE</a><a href="../pencere-cerceve/">İleri pencere çerçeveleri: ROWS, RANGE, GROUPS ve EXCLUDE →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,48 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sayılar, veri tipleri ve CAST | Kesit SQL</title><meta name="description" content="ROUND, tam sayı bölmesi tuzağı (SQL türüne göre değişir) ve tip dönüşümü."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/sayi-tip/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Sayılar, veri tipleri ve CAST"><meta property="og:description" content="ROUND, tam sayı bölmesi tuzağı (SQL türüne göre değişir) ve tip dönüşümü."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/sayi-tip/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Sayılar, veri tipleri ve CAST","description":"ROUND, tam sayı bölmesi tuzağı (SQL türüne göre değişir) ve tip dönüşümü.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/sayi-tip/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Fonksiyonlar</span><h1>Sayılar, veri tipleri ve CAST</h1><p class="st-l">ROUND, tam sayı bölmesi tuzağı (SQL türüne göre değişir) ve tip dönüşümü.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-sayi-tip">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Sayısal fonksiyonlar</h2>
+<table><tr><th>Fonksiyon</th><th>Açıklama</th></tr>
+<tr><td><code>ROUND(x, n)</code></td><td>n basamağa yuvarla</td></tr>
+<tr><td><code>ABS(x)</code></td><td>Mutlak değer</td></tr>
+<tr><td><code>CEILING(x)</code> / <code>CEIL(x)</code>, <code>FLOOR(x)</code></td><td>Yukarı / aşağı yuvarla</td></tr>
+<tr><td><code>x % y</code> (Oracle: <code>MOD(x, y)</code>)</td><td>Bölümden kalan</td></tr>
+<tr><td><code>POWER(x, y)</code>, <code>SQRT(x)</code></td><td>Üs, karekök</td></tr>
+</table>
+<h2>Tam sayı bölmesi: aynı sorgu, farklı sonuç</h2>
+<p>İki tam sayıyı böldüğünde sonuç SQL türüne göre değişir. Aşağıdaki sorguyu çalıştır, sonra SQL türü sekmesini değiştirip tekrar çalıştır:</p>
+<pre class="code" data-diff="mysql oracle bq">SELECT 7 / 2 AS tam_bolme,
+       7 / 2.0 AS ondalikli,
+       CAST(7 AS REAL) / 2 AS cast_ile;</pre>
+<table><tr><th>SQL türü</th><th><code>7 / 2</code></th></tr>
+<tr><td>SQL Server, PostgreSQL, SQLite</td><td><b>3</b> (tam sayı bölmesi)</td></tr>
+<tr><td>MySQL, Oracle</td><td><b>3.5</b> (MySQL'de tam sayı bölmesi için <code>DIV</code>)</td></tr>
+</table>
+<p>Oran hesaplarken (dönüşüm oranı, yüzde) bu hata çok yaygındır. Güvenli yol, payı ondalıklı yapmaktır: <code>100.0 * pay / payda</code>. Böylece her SQL türünde aynı sonucu alırsın.</p>
+<h2>Veri tipleri</h2>
+<div class="tbl-wrap"><table><tr><th>Genel tip</th><th>SQL Server</th><th>PostgreSQL</th><th>MySQL</th><th>Oracle</th></tr>
+<tr><td>Tam sayı</td><td><code>INT</code>, <code>BIGINT</code></td><td><code>INTEGER</code>, <code>BIGINT</code></td><td><code>INT</code>, <code>BIGINT</code></td><td><code>NUMBER(10)</code></td></tr>
+<tr><td>Para / kesin ondalık</td><td><code>DECIMAL(12,2)</code></td><td><code>NUMERIC(12,2)</code></td><td><code>DECIMAL(12,2)</code></td><td><code>NUMBER(12,2)</code></td></tr>
+<tr><td>Yaklaşık ondalık</td><td><code>FLOAT</code></td><td><code>DOUBLE PRECISION</code></td><td><code>DOUBLE</code></td><td><code>BINARY_DOUBLE</code></td></tr>
+<tr><td>Metin</td><td><code>NVARCHAR(n)</code></td><td><code>VARCHAR(n)</code>, <code>TEXT</code></td><td><code>VARCHAR(n)</code></td><td><code>VARCHAR2(n)</code></td></tr>
+<tr><td>Tarih / zaman</td><td><code>DATE</code>, <code>DATETIME2</code></td><td><code>DATE</code>, <code>TIMESTAMP</code></td><td><code>DATE</code>, <code>DATETIME</code></td><td><code>DATE</code>, <code>TIMESTAMP</code></td></tr>
+<tr><td>Mantıksal</td><td><code>BIT</code></td><td><code>BOOLEAN</code></td><td><code>BOOLEAN</code> (TINYINT)</td><td><code>NUMBER(1)</code> (23ai: BOOLEAN)</td></tr>
+</table></div>
+<div class="note"><b>SQLite'ın esnek tipleri</b>SQLite'ta yalnızca 5 depolama sınıfı vardır (NULL, INTEGER, REAL, TEXT, BLOB) ve tarihler metin olarak saklanır. Diğer SQL türleri tiplerde çok daha katıdır.</div>
+<h2>CAST ile dönüşüm</h2>
+<pre class="code">SELECT name,
+       CAST(price AS INTEGER) AS tam_fiyat,
+       CAST(stock AS TEXT) || ' adet' AS stok_metni
+FROM products
+LIMIT 3;</pre>
+<div class="note" data-d="tsql"><b>SQL Server'da</b><code>CONVERT(tip, değer, stil)</code> ve hata vermek yerine NULL döndüren <code>TRY_CAST</code> / <code>TRY_CONVERT</code> da vardır. Ayrıntılar T-SQL modülünde.</div>
+<div class="warn"><b>Ondalığı tam sayıya çevirmek</b>SQL Server ve SQLite <code>CAST(2.7 AS INT)</code> sonucunu 2'ye <b>keser</b>; PostgreSQL, MySQL ve Oracle 3'e <b>yuvarlar</b>. Niyetin buysa açıkça <code>FLOOR</code> veya <code>ROUND</code> kullan.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-sayi-tip">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../metin/">← Metin fonksiyonları</a><a href="../veri-tipleri/">Veri tipleri ayrıntılı: ondalık hassasiyet, Unicode metin ve saat dilimleri →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

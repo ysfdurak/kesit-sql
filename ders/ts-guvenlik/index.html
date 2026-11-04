@@ -1,0 +1,56 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SQL Server güvenliği: login, user, rol, şema ve yetkiler | Kesit SQL</title><meta name="description" content="Kimlik doğrulama ve yetkilendirme katmanları, GRANT / DENY / REVOKE."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-guvenlik/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="SQL Server güvenliği: login, user, rol, şema ve yetkiler"><meta property="og:description" content="Kimlik doğrulama ve yetkilendirme katmanları, GRANT / DENY / REVOKE."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-guvenlik/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"SQL Server güvenliği: login, user, rol, şema ve yetkiler","description":"Kimlik doğrulama ve yetkilendirme katmanları, GRANT / DENY / REVOKE.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-guvenlik/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · T-SQL (SQL Server)</span><h1>SQL Server güvenliği: login, user, rol, şema ve yetkiler</h1><p class="st-l">Kimlik doğrulama ve yetkilendirme katmanları, GRANT / DENY / REVOKE.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-guvenlik">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>İki kapı: sunucu ve veritabanı</h2>
+<table>
+<tr><th>Kavram</th><th>Düzey</th><th>Açıklama</th></tr>
+<tr><td><b>Login</b></td><td>Sunucu (instance)</td><td>Sunucuya bağlanma kimliği. Windows (Active Directory) veya SQL Server kimlik doğrulaması.</td></tr>
+<tr><td><b>User</b></td><td>Veritabanı</td><td>Login'in bir veritabanındaki karşılığı. Login olmadan (contained database) da olabilir.</td></tr>
+<tr><td><b>Rol</b></td><td>Sunucu veya veritabanı</td><td>Yetkileri gruplar. Kullanıcıya tek tek değil, role yetki verilir.</td></tr>
+<tr><td><b>Şema</b> (schema)</td><td>Veritabanı</td><td>Nesnelerin klasörü (<code>dbo</code>, <code>sales</code>, <code>hr</code>). Yetki sınırı olarak kullanılır.</td></tr>
+</table>
+<pre class="code" data-norun>-- 1. Sunucu düzeyinde login
+CREATE LOGIN rapor_login WITH PASSWORD = N'Guclu!Parola#2025';
+
+-- 2. Veritabanında kullanıcı
+USE anadolu;
+CREATE USER rapor_user FOR LOGIN rapor_login;
+
+-- 3. Rol oluştur, yetkiyi role ver, kullanıcıyı role ekle
+CREATE ROLE raporcular;
+GRANT SELECT ON SCHEMA::sales TO raporcular;
+ALTER ROLE raporcular ADD MEMBER rapor_user;</pre>
+<h2>Hazır roller</h2>
+<table>
+<tr><th>Rol</th><th>Yetki</th></tr>
+<tr><td><code>sysadmin</code> (sunucu)</td><td>Her şey. Çok az kişide olmalı.</td></tr>
+<tr><td><code>db_owner</code></td><td>Veritabanında her şey</td></tr>
+<tr><td><code>db_datareader</code> / <code>db_datawriter</code></td><td>Tüm tabloları okuma / yazma</td></tr>
+<tr><td><code>db_ddladmin</code></td><td>Nesne oluşturma ve değiştirme</td></tr>
+</table>
+<h2>GRANT, DENY, REVOKE</h2>
+<ul>
+<li><code>GRANT</code>: izin verir.</li>
+<li><code>DENY</code>: açıkça yasaklar; <b>her zaman kazanır</b>. Kullanıcı bir rolden GRANT, başka bir rolden DENY alıyorsa erişemez.</li>
+<li><code>REVOKE</code>: daha önce verilen GRANT veya DENY'ı geri alır (nötr duruma döner).</li>
+</ul>
+<pre class="code" data-norun>GRANT EXECUTE ON dbo.usp_SiparisOzet TO raporcular;  -- tabloya değil, prosedüre izin
+DENY SELECT ON dbo.employees (salary) TO raporcular;  -- tek sütunu gizle
+REVOKE SELECT ON SCHEMA::sales FROM raporcular;</pre>
+<div class="tip"><b>En az yetki ilkesi</b>Uygulamalara tablolara doğrudan erişim yerine yalnızca saklı yordamlara EXECUTE izni vermek hem güvenliği hem de değişiklik yönetimini kolaylaştırır (ownership chaining sayesinde prosedür, tabloya kullanıcının doğrudan yetkisi olmadan erişir).</div>
+<h2>Satır ve veri düzeyinde koruma</h2>
+<ul>
+<li><b>Row-Level Security</b>: Bir kullanıcının yalnızca kendi bölgesinin satırlarını görmesini sağlar (güvenlik predikatı fonksiyonu ile).</li>
+<li><b>Dynamic Data Masking</b>: E-posta, telefon gibi alanları yetkisiz kullanıcıya maskeli gösterir (<code>a***@gmail.com</code>).</li>
+<li><b>TDE</b> (Transparent Data Encryption): Diskteki veri ve yedek dosyalarını şifreler.</li>
+<li><b>Always Encrypted</b>: Veri istemcide şifrelenir; DBA bile açık halini göremez.</li>
+</ul>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-guvenlik">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-trigger/">← SQL Server trigger'ları: inserted ve deleted</a><a href="../ts-temporal/">Değişiklik geçmişi: temporal tablolar, CDC ve change tracking →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,38 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bulut veri ambarları: BigQuery, Snowflake, Databricks SQL ve Fabric | Kesit SQL</title><meta name="description" content="Depolama–işlem ayrımı, zaman yolculuğu, sıfır kopya klon ve platform karşılaştırması."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/dwh-bulut/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Bulut veri ambarları: BigQuery, Snowflake, Databricks SQL ve Fabric"><meta property="og:description" content="Depolama–işlem ayrımı, zaman yolculuğu, sıfır kopya klon ve platform karşılaştırması."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/dwh-bulut/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Bulut veri ambarları: BigQuery, Snowflake, Databricks SQL ve Fabric","description":"Depolama–işlem ayrımı, zaman yolculuğu, sıfır kopya klon ve platform karşılaştırması.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/dwh-bulut/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · BigQuery ve Bulut Veri Ambarları</span><h1>Bulut veri ambarları: BigQuery, Snowflake, Databricks SQL ve Fabric</h1><p class="st-l">Depolama–işlem ayrımı, zaman yolculuğu, sıfır kopya klon ve platform karşılaştırması.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-dwh-bulut">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Ortak fikir: depolama ve işlem ayrı</h2>
+<p>Bulut veri ambarlarında veri ucuz nesne depolamasında sütun tabanlı dosyalarda durur; sorgu çalıştığında işlem gücü ayrıca ayrılır. Bu yüzden depolama ve işlem bağımsız ölçeklenir ve ayrı faturalanır.</p>
+<table>
+<tr><th></th><th>BigQuery</th><th>Snowflake</th><th>Databricks SQL</th><th>Microsoft Fabric</th></tr>
+<tr><td>Dil</td><td>GoogleSQL</td><td>Snowflake SQL</td><td>Databricks SQL (Spark SQL)</td><td>T-SQL (Warehouse)</td></tr>
+<tr><td>İşlem</td><td>Sunucusuz / slot</td><td>Sanal ambar (warehouse) boyutları</td><td>SQL warehouse</td><td>Kapasite birimleri</td></tr>
+<tr><td>Ad yapısı</td><td>proje.veriseti.tablo</td><td>veritabanı.şema.tablo</td><td>katalog.şema.tablo (Unity Catalog)</td><td>çalışma alanı / ambar</td></tr>
+<tr><td>Zaman yolculuğu</td><td><code>FOR SYSTEM_TIME AS OF</code></td><td><code>AT(OFFSET =&gt; -3600)</code></td><td><code>VERSION AS OF</code> (Delta)</td><td>Var</td></tr>
+<tr><td>Yarı yapısal</td><td>ARRAY, STRUCT, JSON</td><td>VARIANT, FLATTEN</td><td>STRUCT, MAP, ARRAY</td><td>JSON fonksiyonları</td></tr>
+<tr><td>QUALIFY</td><td>Var</td><td>Var</td><td>Var</td><td>Yok</td></tr>
+</table>
+<h3>Zaman yolculuğu ve klon</h3>
+<pre class="code" data-norun>-- BigQuery: tablonun 1 saat önceki hali
+SELECT * FROM anadolu.orders
+FOR SYSTEM_TIME AS OF TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 HOUR);
+
+-- Snowflake: yanlışlıkla silinen tabloyu geri getir, sıfır kopya klon
+UNDROP TABLE orders;
+CREATE TABLE orders_test CLONE orders;
+
+-- Databricks (Delta Lake): sürüm geçmişi ve eski sürüm
+DESCRIBE HISTORY orders;
+SELECT * FROM orders VERSION AS OF 12;</pre>
+<h2>Madalyon (medallion) mimarisi</h2>
+<p>Lakehouse dünyasında veri üç katmanda ilerler: <b>bronze</b> (ham), <b>silver</b> (temizlenmiş, birleştirilmiş), <b>gold</b> (iş birimine hazır özetler). Bu, Veri Mühendisliği modülündeki staging → marts yaklaşımının aynısıdır.</p>
+<div class="tip"><b>Hangisini öğrenmeliyim?</b>SQL'in %90'ı hepsinde aynıdır. Hedeflediğin şirketin kullandığı platformun belgelerine bakıp tarih fonksiyonlarını, yarı yapısal veri sözdizimini ve maliyet modelini öğrenmen yeterli.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-dwh-bulut">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../bq-maliyet/">← BigQuery'de bölümleme, kümeleme ve maliyet optimizasyonu</a><a href="../sertifika-rehber/">SQL sertifikaları rehberi: hangi sınav, hangi konular? →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

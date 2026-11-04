@@ -1,0 +1,39 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BigQuery kısayolları: QUALIFY, SELECT * EXCEPT ve SAFE_ fonksiyonlar | Kesit SQL</title><meta name="description" content="Alt sorgu yazmadan pencere filtreleme, sütun dışlama, hataya dayanıklı dönüşümler."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/bq-kisayol/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="BigQuery kısayolları: QUALIFY, SELECT * EXCEPT ve SAFE_ fonksiyonlar"><meta property="og:description" content="Alt sorgu yazmadan pencere filtreleme, sütun dışlama, hataya dayanıklı dönüşümler."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/bq-kisayol/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"BigQuery kısayolları: QUALIFY, SELECT * EXCEPT ve SAFE_ fonksiyonlar","description":"Alt sorgu yazmadan pencere filtreleme, sütun dışlama, hataya dayanıklı dönüşümler.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/bq-kisayol/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · BigQuery ve Bulut Veri Ambarları</span><h1>BigQuery kısayolları: QUALIFY, SELECT * EXCEPT ve SAFE_ fonksiyonlar</h1><p class="st-l">Alt sorgu yazmadan pencere filtreleme, sütun dışlama, hataya dayanıklı dönüşümler.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-bq-kisayol">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>QUALIFY: pencere fonksiyonuna göre filtre</h2>
+<p>“Her müşterinin son siparişi” gibi sorularda normalde ROW_NUMBER'ı bir alt sorguda hesaplayıp dışarıda filtreleriz. BigQuery (ve Snowflake, Databricks) bunu <code>QUALIFY</code> ile tek adımda yapar: QUALIFY, pencere fonksiyonları için WHERE gibidir.</p>
+<pre class="code" data-v="{&quot;tsql&quot;:&quot;SELECT customer_id, order_id, order_date\nFROM (\n    SELECT customer_id, order_id, order_date,\n           ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date DESC, order_id DESC) AS rn\n    FROM orders\n    WHERE customer_id &lt;= 5\n) AS t\nWHERE rn = 1\nORDER BY customer_id;&quot;,&quot;pg&quot;:&quot;SELECT customer_id, order_id, order_date\nFROM (\n    SELECT customer_id, order_id, order_date,\n           ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date DESC, order_id DESC) AS rn\n    FROM orders\n    WHERE customer_id &lt;= 5\n) AS t\nWHERE rn = 1\nORDER BY customer_id;&quot;,&quot;sqlite&quot;:&quot;SELECT customer_id, order_id, order_date\nFROM (\n    SELECT customer_id, order_id, order_date,\n           ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date DESC, order_id DESC) AS rn\n    FROM orders\n    WHERE customer_id &lt;= 5\n) AS t\nWHERE rn = 1\nORDER BY customer_id;&quot;}" data-base="bq">SELECT customer_id, order_id, order_date
+FROM orders
+WHERE customer_id &lt;= 5
+QUALIFY ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date DESC, order_id DESC) = 1
+ORDER BY customer_id;</pre>
+<h2>SELECT * EXCEPT ve REPLACE</h2>
+<p>Geniş tablolarda “birkaç sütun hariç hepsi” demek için:</p>
+<pre class="code" data-base="bq">SELECT * EXCEPT (email, birth_year)
+FROM customers
+WHERE customer_id &lt;= 3;</pre>
+<p><code>SELECT * REPLACE (UPPER(city) AS city)</code> ise bir sütunu dönüştürülmüş haliyle değiştirir.</p>
+<h2>SAFE_ fonksiyonlar: hata yerine NULL</h2>
+<p>Kirli veride tek bir hatalı değer tüm sorguyu durdurur. <code>SAFE_</code> önekli fonksiyonlar hata yerine NULL döndürür:</p>
+<pre class="code" data-base="bq">SELECT signup_date,
+       COALESCE(SAFE.PARSE_DATE('%Y-%m-%d', signup_date),
+                SAFE.PARSE_DATE('%d.%m.%Y', signup_date)) AS tarih
+FROM raw_signups
+LIMIT 6;</pre>
+<table>
+<tr><th>Fonksiyon</th><th>Hata durumunda</th></tr>
+<tr><td><code>SAFE_CAST('abc' AS INT64)</code></td><td>NULL</td></tr>
+<tr><td><code>SAFE_DIVIDE(10, 0)</code></td><td>NULL</td></tr>
+<tr><td><code>SAFE.PARSE_DATE('%d.%m.%Y', '31.02.2024')</code></td><td>NULL</td></tr>
+</table>
+<div class="tip"><b>Diğer SQL türlerindeki karşılıkları</b>SQL Server'da TRY_CAST / TRY_CONVERT, PostgreSQL'de NULLIF ile bölme, Oracle'da <code>CAST(... DEFAULT NULL ON CONVERSION ERROR)</code>.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-bq-kisayol">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../bq-dizi/">← BigQuery'de diziler ve iç içe veri: ARRAY, STRUCT, UNNEST</a><a href="../bq-maliyet/">BigQuery'de bölümleme, kümeleme ve maliyet optimizasyonu →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

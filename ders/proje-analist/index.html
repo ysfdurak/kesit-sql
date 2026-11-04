@@ -1,0 +1,50 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bitirme projesi (Veri Analisti): Ilgaz Bank müşteri ve harcama analizi | Kesit SQL</title><meta name="description" content="Pazarlama ekibi için segment profili, harcama trendi, kategori tercihleri ve özet tablo."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/proje-analist/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Bitirme projesi (Veri Analisti): Ilgaz Bank müşteri ve harcama analizi"><meta property="og:description" content="Pazarlama ekibi için segment profili, harcama trendi, kategori tercihleri ve özet tablo."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/proje-analist/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Bitirme projesi (Veri Analisti): Ilgaz Bank müşteri ve harcama analizi","description":"Pazarlama ekibi için segment profili, harcama trendi, kategori tercihleri ve özet tablo.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/proje-analist/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Bitirme Projeleri</span><h1>Bitirme projesi (Veri Analisti): Ilgaz Bank müşteri ve harcama analizi</h1><p class="st-l">Pazarlama ekibi için segment profili, harcama trendi, kategori tercihleri ve özet tablo.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-analist">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Senaryo</h2>
+<p>Ilgaz Bank'ın pazarlama direktörü yeni yıl kampanyası için senden bir analiz istiyor: <i>“Hangi segment ne kadar harcıyor, ne zaman ve nerede? Maaşını bize yatıranlar daha mı çok harcıyor? Bize segment bazında tek sayfalık bir özet ver.”</i></p>
+<h2>Teslim edilecekler</h2>
+<ol>
+<li>Segment profili (müşteri, yaş, risk)</li>
+<li>Aylık harcama trendi ve büyüme</li>
+<li>Segmentlere göre en çok harcanan kategori</li>
+<li>Maaş müşterisi olanlarla olmayanların karşılaştırması</li>
+<li>Kanal tercihleri</li>
+<li>Segment bazında yönetici özeti</li>
+</ol>
+<div class="tip"><b>Çalışma yöntemi</b>Her adımda önce sonucun bir satırının neyi temsil edeceğini belirle (segment mi, müşteri mi, ay mı?). Ara hesapları CTE ile adlandır. Bitirdiğinde adımların sorgularını bir dosyada topla: bu senin portföy işin olur.</div>
+<p>Tablolar: <code>bank_customers</code>, <code>bank_accounts</code>, <code>bank_txns</code>. Kart harcamaları <code>txn_type = 'kart_harcama'</code>, tutarlar eksi işaretlidir.</p>
+<h2>Derinleş: analizi karara bağlamak</h2>
+<div class="note"><b>Brif: Pazarlama direktörü</b>“Yeni yıl kampanyasının bütçesi sınırlı. Hangi segmente, hangi kategoriyle, hangi kanaldan gideceğimize karar vereceğim. Bana tek sayfalık özet ve kampanyaya alınabilecek müşteri sayısını getir.”</div>
+<h3>Çalışma planı</h3>
+<ol>
+<li><b>Veriyi tanı.</b> <code>bank_txns</code> 42.284 hareket, 2024'ün tamamı. Aşağıdaki sorgu türlere göre adedi, toplamı ve kategorinin boş olduğu satırları verir: işyeri kategorisi yalnızca kart harcamalarında dolu, diğer tüm türlerde NULL. Bu hata değil, tasarım.</li>
+<li><b>İşareti sabitle.</b> Harcamalar eksi işaretli; raporda pozitif göstermek için <code>-amount</code> kullan ve bunu not et.</li>
+<li><b>Satırın neyi temsil ettiğine karar ver.</b> Müşteri başına ortalama istiyorsan önce müşteri düzeyine topla; bir müşterinin birden fazla hesabı vardır (500 müşteri, 849 hesap).</li>
+<li><b>Varsayımlar.</b> “Maaşlı” = yıl içinde en az bir <code>maas</code> hareketi; harcaması olmayan müşteri 0 sayılır.</li>
+</ol>
+<pre class="code">SELECT txn_type, COUNT(*) AS adet, ROUND(SUM(amount), 0) AS toplam,
+       SUM(CASE WHEN merchant_category IS NULL THEN 1 ELSE 0 END) AS kategori_bos
+FROM bank_txns
+GROUP BY txn_type
+ORDER BY adet DESC, txn_type;</pre>
+<h3>Kontrol listesi</h3>
+<ul>
+<li><b>Mutabakat.</b> Aylık harcamaların toplamı, segment toplamlarının toplamı ve ham tablodaki kart harcaması toplamı aynı olmalı: 63.840.506 TL (Ek görev 1).</li>
+<li><b>JOIN sonrası satır sayısı.</b> Hareket → hesap → müşteri birleşimi hareket sayısını değiştirmemeli (her hareketin tek hesabı var). Müşteri sayarken <code>COUNT(DISTINCT customer_id)</code> kullan.</li>
+<li><b>Payda.</b> “Maaş oranı” müşterinin oranıdır, hesabın değil. KOBİ ve Özel Bankacılık'ta oran 0: bu bir hata mı, yoksa bu segmentlerin maaş ödemesi mi yok? Yorumda belirt.</li>
+<li><b>Uç değer.</b> Kişi başı harcamada birkaç çok yüksek müşteri ortalamayı yukarı çeker; en büyük 5 değere bak.</li>
+</ul>
+<h3>Teslim</h3>
+<p>Segment özeti tablosu, aylık trend için çizgi grafik, maaşlı/maaşsız için iki sütunluk karşılaştırma.</p>
+<div class="tip"><b>Yönetici özeti örneği</b>Kart harcaması 2024'te 63,8 milyon TL; aylık seviye 4,9–5,8 milyon TL bandında, belirgin bir mevsimsellik yok. Bireysel segmentte maaş müşterileri yılda kişi başı 134.992 TL harcıyor, maaşsızlardan %26 fazla; her segmentte ilk kategori elektronik. Kampanya için pazarlama izni olan, maaşsız ve yıllık 100.000 TL üstü harcayan 49 Bireysel müşteri öncelikli hedef: maaş taşıma teklifi elektronik kampanyasıyla birleştirilmeli.</div>
+<h3>Kendini değerlendir</h3>
+<table><tr><th>Ölçüt</th><th>Başlangıç</th><th>İyi</th><th>Mükemmel</th></tr><tr><td>Doğruluk</td><td>Adımlar çalışıyor</td><td>İşaret, payda ve müşteri düzeyi doğru</td><td>Üç yoldan mutabakat sıfır fark veriyor</td></tr><tr><td>Analiz</td><td>Her adım ayrı</td><td>Adımlar birbirine bağlanmış</td><td>Bulgular hedef kitle önerisine dönüşmüş</td></tr><tr><td>Teslim</td><td>Sorgu dosyası</td><td>Tablo + grafik</td><td>Tek sayfa: özet, kitle büyüklüğü, varsayımlar</td></tr></table></article>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-analist">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../kamp-eticaret/">← Alıştırma Kampı: E-ticaret (10 soru)</a><a href="../proje-bi/">Bitirme projesi (İş Zekâsı): Anadolu Market yönetim KPI panosu için veri hazırlığı →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

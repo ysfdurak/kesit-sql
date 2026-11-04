@@ -1,0 +1,150 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agile ve Waterfall ortamlarında iş analizi | Kesit SQL</title><meta name="description" content="Gereksinim toplama teknikleri, MoSCoW, use case ile kullanıcı hikâyesi, izlenebilirlik matrisi (RTM), tel çerçeve, FRD ve SRS, Scrum ve sprintte iş…"><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ba-cevik/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Agile ve Waterfall ortamlarında iş analizi"><meta property="og:description" content="Gereksinim toplama teknikleri, MoSCoW, use case ile kullanıcı hikâyesi, izlenebilirlik matrisi (RTM), tel çerçeve, FRD ve SRS, Scrum ve sprintte iş…"><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ba-cevik/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Agile ve Waterfall ortamlarında iş analizi","description":"Gereksinim toplama teknikleri, MoSCoW, use case ile kullanıcı hikâyesi, izlenebilirlik matrisi (RTM), tel çerçeve, FRD ve SRS, Scrum ve sprintte iş…","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ba-cevik/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · BT İş Analizi</span><h1>Agile ve Waterfall ortamlarında iş analizi</h1><p class="st-l">Gereksinim toplama teknikleri, MoSCoW, use case ile kullanıcı hikâyesi, izlenebilirlik matrisi (RTM), tel çerçeve, FRD ve SRS, Scrum ve sprintte iş analisti, boşluk analizi.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ba-cevik">Uygulamada aç, 14 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory"><p>Kupon talebini baştan sona yürüttün, ama bir şeyi açık bıraktık: bu iş hangi düzende yürüyor? Aynı analist bir şirkette Agile (çevik) çalışır, iki haftada bir sprint toplantısına girer; başka bir şirkette Waterfall (şelale) düzeninde onay imzası bekleyen uzun bir doküman yazar. Bu derste iki ortamın araçlarını yine kupon talebi üzerinden görüyorsun. Süreci tek bir ders öğretmez; amaç, iş ilanında ve görüşmede geçen adların ne olduğunu bilmek ve birini uygulayacak kadar görmektir.</p>
+<h2>Gereksinim toplama teknikleri (elicitation)</h2>
+<p>Gereksinim hazır gelmez, onu çıkarırsın. Hangi tekniği seçeceğin sorduğun soruya bağlıdır.</p>
+<table><tr><th>Teknik</th><th>En çok ne zaman?</th><th>Kuponda</th><th>Tuzak</th></tr>
+<tr><td><b>Görüşme</b> (interview)</td><td>Bir kişiden derin bilgi gerektiğinde</td><td>Destek ekibi şefiyle “son şikâyet neydi?”</td><td>Tek kişinin görüşünü kural sanmak</td></tr>
+<tr><td><b>Çalıştay</b> (workshop)</td><td>Birden çok paydaş aynı karara varacaksa</td><td>Pazarlama ve finans kupon süresini birlikte tartışır</td><td>Gündemsiz toplantı; en yüksek ses kazanır</td></tr>
+<tr><td><b>Gözlem</b> (observation)</td><td>İnsanlar yaptığını tam anlatamıyorsa</td><td>Destek çalışanının elle kupon verişini izlemek</td><td>İzlendiğini bilen kişi farklı davranabilir</td></tr>
+<tr><td><b>Doküman inceleme</b> (document review)</td><td>Yazılı kural, sözleşme, eski sistem varsa</td><td>Veri sözlüğünde “400 TL üzeri ücretsiz”</td><td>Doküman eskimiş olabilir; süreç derslerinde veriyle sınadığın gibi doğrula</td></tr></table>
+<p>Tek teknik nadiren yeter: dokümanı oku, görüşmede sor, çelişkiyi çalıştaya taşı, sonucu gözlemle sına. AS-IS sütununu görüşmeden yazdığımızı hatırla; gözlem, “kendi yorumuyla karar verir” cümlesini kanıtlar ya da çürütür.</p>
+<h2>Önceliklendirme: MoSCoW</h2>
+<p><b>MoSCoW</b> dört kovadır: <b>Must</b> (bu olmadan sürüm çıkmaz), <b>Should</b> (önemli ama geçici çözümü var), <b>Could</b> (yer kalırsa), <b>Won't</b> (bu sürümde yok, reddedilmedi).</p>
+<table><tr><th>Kova</th><th>Kuponda</th><th>Neden burada?</th></tr>
+<tr><td>Must</td><td>Kupon üretimi, tutar kuralı, “yalnız teslim”, aylık sınır</td><td>Bunlar olmadan para yanlış gider</td></tr>
+<tr><td>Should</td><td>Uygulama içi bildirim, operasyon raporu</td><td>Bir süre elle ya da sorguyla idare edilir</td></tr>
+<tr><td>Could</td><td>Kupondan sonra iadede otomatik iptal</td><td>Açık soru kapanınca; önce elle iptal edilebilir</td></tr>
+<tr><td>Won't</td><td>Ödeme ekranının yeniden tasarımı</td><td>Ayrı talep; kapsam dışına yazıldı</td></tr></table>
+<div class="warn"><b>Her şey Must ise öncelik yoktur</b>Paydaş için her madde önemlidir. Sor: “Bu olmadan sürümü çıkarsak ne olur?” Cevap “kötü olur ama para ya da hukuk sorunu doğmaz” ise Must değildir. Önceliği MoSCoW'la yazmak kararı ürün sahibinden almaz; ona tartışacak bir liste verir.</div>
+<pre class="code">CREATE TABLE ba_gereksinim (grs VARCHAR(10), baslik VARCHAR(60), oncelik VARCHAR(10), puan INT);
+INSERT INTO ba_gereksinim VALUES ('GRS-01', 'Geç teslimde kupon üret', 'Must', 8);
+INSERT INTO ba_gereksinim VALUES ('GRS-02', 'Tutarı karar tablosundan hesapla', 'Must', 3);
+INSERT INTO ba_gereksinim VALUES ('GRS-03', 'Yalnız teslim durumu kupon alır', 'Must', 2);
+INSERT INTO ba_gereksinim VALUES ('GRS-04', '2.700 saniye geç sayılmaz', 'Must', 1);
+INSERT INTO ba_gereksinim VALUES ('GRS-05', 'Ayda en çok iki kupon', 'Must', 5);
+INSERT INTO ba_gereksinim VALUES ('NFR-01', 'Kupon en geç 5 dakikada görünür', 'Must', 3);
+INSERT INTO ba_gereksinim VALUES ('GRS-06', 'Kuponu uygulama içinde bildir', 'Should', 5);
+INSERT INTO ba_gereksinim VALUES ('GRS-07', 'Operasyon için kupon raporu', 'Should', 3);
+INSERT INTO ba_gereksinim VALUES ('GRS-08', 'Kupondan sonra iadede kuponu iptal et', 'Could', 3);
+INSERT INTO ba_gereksinim VALUES ('GRS-09', 'Ödeme ekranını yeniden tasarla', 'Wont', 13);
+SELECT oncelik, COUNT(*) AS gereksinim, SUM(puan) AS puan
+FROM ba_gereksinim
+GROUP BY oncelik
+ORDER BY oncelik;</pre>
+<p>Puan, ekibin verdiği göreli büyüklüktür (story point). Bu örnekte Must toplamı 22 puan. Ekibin bir sprintte 20 puan yaptığını varsayarsak Must'ların hepsi bile sığmıyor: ya kapsam küçülür ya süre uzar. Bu cümle, “hepsi önemli” tartışmasını sayıya çevirir.</p>
+<h2>Kullanım senaryosu (use case) ve kullanıcı hikâyesi</h2>
+<p>Aynı gereksinimi iki biçimde yaz, farkı görürsün.</p>
+<pre class="code" data-norun>KULLANICI HİKÂYESİ
+Bir müşteri olarak,
+siparişim söz verilen süreyi aştığında otomatik telafi kuponu almak istiyorum,
+böylece destek ekibine yazmadan hakkım olanı alırım.
+(Ayrıntı kabul kriterlerinde.)</pre>
+<pre class="code" data-norun>KULLANIM SENARYOSU UC-01: Geç teslime kupon üret
+Aktör: Kupon işi (zamanlanmış sistem). İlgili: Müşteri.
+Ön koşul: Siparişin teslim kaydı oluşmuş.
+Ana akış:
+  1. İş, teslim süresini saniye olarak hesaplar.
+  2. İş, süreyi 2.700 ile karşılaştırır; aşıyorsa devam eder.
+  3. İş, müşterinin bu ayki kupon sayısını okur; ikiden azsa devam eder.
+  4. İş, tutarı karar tablosundan bulur, kuponu yazar.
+  5. Sistem müşteriye bildirim gönderir.
+Alternatif akışlar:
+  2a. Süre aşmıyor: kupon yok, süreç biter.
+  3a. Sınır dolu: kupon yok, "sınır dolu" kaydı yazılır.
+  4a. Kayıt hatası: hata kuyruğuna düşer, operasyon inceler.
+Son koşul: Siparişin en çok bir kuponu vardır ya da nedeni kayıtlıdır.</pre>
+<table><tr><th></th><th>Kullanıcı hikâyesi</th><th>Kullanım senaryosu</th></tr>
+<tr><td>Amacı</td><td>Konuşmayı başlatmak, değeri söylemek</td><td>Etkileşimi adım adım tarif etmek</td></tr>
+<tr><td>Ayrıntı</td><td>Kısa; ayrıntı kabul kriterinde ve konuşmada</td><td>Ana ve alternatif akış içinde yazılı</td></tr>
+<tr><td>Sık görüldüğü yer</td><td>Agile ekipler</td><td>Doküman ağırlıklı projeler, sözleşmeye bağlı işler</td></tr>
+<tr><td>Eksiği</td><td>Birbirine bağlı akışları bir arada göstermez</td><td>Yazması ve güncel tutması pahalı</td></tr></table>
+<p>İkisi rakip değildir. Alternatif akışı çok olan bir işte önce use case yazıp hikâyeleri ondan çıkarmak yaygın bir yoldur: 2a, 3a ve 4a burada ayrı kabul kriterleri olur.</p>
+<h2>İzlenebilirlik matrisi (RTM, requirements traceability matrix)</h2>
+<p>RTM, her gereksinimi kaynağına, hikâyesine, testine ve hatasına bağlayan tablodur. İki soruyu cevaplar: <b>ileri yön</b>, bu gereksinim test edildi mi? <b>Geri yön</b>, bu test ya da kod hangi gereksinim için var? Geri yönde sahibi çıkmayan iş, kimsenin istemediği iştir.</p>
+<table><tr><th>Gereksinim</th><th>Kaynak</th><th>Hikâye</th><th>Test</th><th>Sonuç</th><th>Hata</th></tr>
+<tr><td>GRS-03 Yalnız teslim</td><td>Finans görüşmesi</td><td>KUP-12</td><td>olumsuz-iptal, olumsuz-iade</td><td>1 geçti, 1 kaldı</td><td>HATA-31</td></tr>
+<tr><td>GRS-04 Sınır 2.700</td><td>Karar tablosu K2</td><td>KUP-12</td><td>sinir-2700, sinir-2701</td><td>1 geçti, 1 kaldı</td><td>HATA-32</td></tr>
+<tr><td>NFR-01 5 dakika</td><td>Görüşme</td><td>KUP-14</td><td style="font-weight:700">yok</td><td>?</td><td></td></tr></table>
+<p>RTM genellikle tablo ya da Jira bağlantılarıdır. Veriye dökülürse boşlukları SQL bulur: test edilmemiş gereksinim, eşi olmayan satırla aynı kalıptır.</p>
+<pre class="code">CREATE TABLE ba_gereksinim (grs VARCHAR(10), baslik VARCHAR(60), oncelik VARCHAR(10), puan INT);
+INSERT INTO ba_gereksinim VALUES ('GRS-01', 'Geç teslimde kupon üret', 'Must', 8);
+INSERT INTO ba_gereksinim VALUES ('GRS-02', 'Tutarı karar tablosundan hesapla', 'Must', 3);
+INSERT INTO ba_gereksinim VALUES ('GRS-03', 'Yalnız teslim durumu kupon alır', 'Must', 2);
+INSERT INTO ba_gereksinim VALUES ('GRS-04', '2.700 saniye geç sayılmaz', 'Must', 1);
+INSERT INTO ba_gereksinim VALUES ('GRS-05', 'Ayda en çok iki kupon', 'Must', 5);
+INSERT INTO ba_gereksinim VALUES ('NFR-01', 'Kupon en geç 5 dakikada görünür', 'Must', 3);
+INSERT INTO ba_gereksinim VALUES ('GRS-06', 'Kuponu uygulama içinde bildir', 'Should', 5);
+INSERT INTO ba_gereksinim VALUES ('GRS-07', 'Operasyon için kupon raporu', 'Should', 3);
+INSERT INTO ba_gereksinim VALUES ('GRS-08', 'Kupondan sonra iadede kuponu iptal et', 'Could', 3);
+INSERT INTO ba_gereksinim VALUES ('GRS-09', 'Ödeme ekranını yeniden tasarla', 'Wont', 13);
+CREATE TABLE ba_testler (test VARCHAR(20), grs VARCHAR(10), sonuc VARCHAR(10));
+INSERT INTO ba_testler VALUES ('olumlu-30', 'GRS-01', 'gecti');
+INSERT INTO ba_testler VALUES ('olumlu-60', 'GRS-02', 'gecti');
+INSERT INTO ba_testler VALUES ('olumsuz-iptal', 'GRS-03', 'gecti');
+INSERT INTO ba_testler VALUES ('olumsuz-iade', 'GRS-03', 'kaldi');
+INSERT INTO ba_testler VALUES ('sinir-2700', 'GRS-04', 'kaldi');
+INSERT INTO ba_testler VALUES ('sinir-2701', 'GRS-04', 'gecti');
+INSERT INTO ba_testler VALUES ('aylik-sinir', 'GRS-05', 'kaldi');
+INSERT INTO ba_testler VALUES ('bildirim-metni', 'GRS-06', 'gecti');
+SELECT g.grs, g.baslik, COUNT(t.test) AS test_sayisi
+FROM ba_gereksinim g
+LEFT JOIN ba_testler t ON t.grs = g.grs
+GROUP BY g.grs, g.baslik
+ORDER BY g.grs;</pre>
+<h2>Tel çerçeve (wireframe)</h2>
+<p>Tel çerçeve, ekranın düzenini ve akışını renksiz, kaba biçimde gösterir. Amacı tasarım seçmek değil, “bu ekranda ne var, tıklayınca nereye gidiyor?” sorusunu erken konuşmaktır.</p>
+<pre class="code" data-norun>+------------------------------+
+| Siparişlerim > #5045         |
+|------------------------------|
+| [!] Teslimat geç kaldı       |
+|     30 TL kupon tanımlandı   |
+|     Son kullanım: 07.01.2025 |
+|     [ Kuponu kullan ]        |
+|------------------------------|
+| Sipariş ayrıntıları ...      |
++------------------------------+</pre>
+<p>Bu kaba çizim hemen soru üretir: kupon geçerlilik tarihi nereden gelecek, kullanılmış kuponda düğme ne olacak? Sonraki adımlar: <b>mockup</b> görsel tasarımı gösterir, <b>prototip</b> tıklanabilir. İş analisti çoğu zaman yalnız tel çerçeveyi çizer ya da tasarımcıyla konuşur; sonuç ekranın kararı tasarım ekibindedir.</p>
+<h2>Doküman adları: BRD, FRD, SRS</h2>
+<table><tr><th>Doküman</th><th>Sorusu</th><th>Kim okur?</th><th>Kuponda</th></tr>
+<tr><td><b>BRD</b> (business requirements document)</td><td>İş neden ve ne istiyor?</td><td>İş birimi, yönetim</td><td>Sorun, başarı ölçüsü, kapsam, iş kuralı</td></tr>
+<tr><td><b>FRD</b> (functional requirements document)</td><td>Sistem ne yapacak?</td><td>Analist, geliştirici, test</td><td>Kupon işinin davranışı, ekranlar, hata durumları</td></tr>
+<tr><td><b>SRS</b> (software requirements specification)</td><td>Yazılım hangi koşullarla nasıl davranacak?</td><td>Geliştirici, mimar, test</td><td>İşlevsel ve işlevsel olmayan gereksinim, arayüz, kısıtlar</td></tr></table>
+<p>Bu adlar kuruma göre değişir: bazı şirkette tek bir doküman üçünü taşır, bazısında FRD ile SRS aynı şeydir. Görüşmede “sizde bu belge ne içeriyor?” diye sormak bilgisizlik değil, doğru sorudur.</p>
+<h2>Waterfall ve Agile: aynı iş, farklı ritim</h2>
+<table><tr><th></th><th>Waterfall</th><th>Agile</th></tr>
+<tr><td>Gereksinim</td><td>Başta, büyük ölçüde tamamlanır ve onaylanır</td><td>Parça parça, işin yanında netleşir</td></tr>
+<tr><td>Ana çıktı</td><td>BRD, FRD ya da SRS, imza</td><td>Backlog (iş listesi), hikâye, kabul kriteri</td></tr>
+<tr><td>Değişiklik</td><td>Değişiklik talebi ve onay</td><td>Bir sonraki sprintin önceliği olur; kapsam büyükse yine görünür tartışılır</td></tr>
+<tr><td>Uygun olduğu yer</td><td>Kapsamı sabit, sözleşmeli ya da denetime tabi işler</td><td>Belirsizliği yüksek, sık geri bildirim alınabilen işler</td></tr></table>
+<p>Çoğu kurum ikisinin karışımıyla çalışır. Waterfall'da analist belgeyi erken bitirir ve onayı alır; Agile'da yazıyı küçük tutar, sürekli güncel tutar. RTM ve mini BRD ikisinde de işe yarar, yalnız kalınlığı değişir.</p>
+<h3>Sprintte iş analisti</h3>
+<p>Scrum rehberi “iş analisti” diye bir rol tanımlamaz. Analist çoğu ekipte ürün sahibine ya da geliştirme ekibine destek verir. Aşağıdaki tablo yaygın kullanımı anlatır, kural değildir.</p>
+<table><tr><th>Etkinlik</th><th>Amaç</th><th>İş analisti ne yapar?</th></tr>
+<tr><td>Backlog refinement (backlog inceleme)</td><td>Yaklaşan işleri netleştirmek. Tören değil, sürekli süren etkinlik</td><td>Hikâyeyi ve kabul kriterini hazırlar, soruları kapatır</td></tr>
+<tr><td>Sprint planlama (sprint planning)</td><td>Bu sprintte ne yapılacağı</td><td>Kapsamı açıklar, kuralları cevaplar</td></tr>
+<tr><td>Günlük toplantı (daily scrum)</td><td>Ekibin günlük uyumu</td><td>Gerektiğinde katılır, engel olan soruyu alır</td></tr>
+<tr><td>Sprint gözden geçirme (sprint review)</td><td>Yapılanı paydaşla konuşmak</td><td>Paydaşı getirir, geri bildirimi backlog'a yazar</td></tr>
+<tr><td>Retrospektif (retrospective)</td><td>Çalışma biçimini iyileştirmek</td><td>Gereksinim kaynaklı sorunları söyler</td></tr></table>
+<h2>Boşluk analizi (gap analysis)</h2>
+<p>Boşluk analizi üç soru sorar: neredeyiz, nereye gidiyoruz, farkı kapatmak için ne gerekir? AS-IS ile TO-BE yan yana yazıldığında süreç boşluğu görünür; veri olan yerde boşluk sayıya çevrilir.</p>
+<pre class="code">WITH t AS (
+  SELECT order_id, customer_id, restaurant_id, courier_id, status, placed_at,
+         ROUND((julianday(delivered_at) - julianday(placed_at)) * 86400) AS sure_sn
+  FROM lk_orders
+  WHERE placed_at >= '2024-10-01' AND placed_at &lt; '2025-01-01'
+)
+SELECT COUNT(*) AS teslim,
+       SUM(CASE WHEN sure_sn &lt;= 2700 THEN 1 ELSE 0 END) AS zamaninda,
+       ROUND(100.0 * SUM(CASE WHEN sure_sn &lt;= 2700 THEN 1 ELSE 0 END) / COUNT(*), 1) AS oran
+FROM t
+WHERE status = 'teslim';</pre>
+<p>Dönemde teslimlerin %77,3'ü 45 dakikanın altında. Diyelim ki yönetim “%80 zamanında” hedefi koydu; bu rakam senaryonun varsayımıdır, sektör değeri değildir. Boşluk 181 teslimat: bu kadarı daha zamanında olsaydı hedef tutardı. Kupon bu boşluğu kapatmaz, çünkü geç teslimi azaltmaz, sonucunu yumuşatır. Boşluk analizinin faydası budur: istenen çözümün gerçekten farkı kapatıp kapatmadığını sordurur.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ba-cevik">Alıştırmalara geç (14)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ba-uat/">← Kullanıcı kabul testi (UAT): senaryolar, test verisi, mutabakat, hata kaydı, onay</a><a href="../ba-canli/">Canlıya geçiş (go-live) ve sonrası: geçiş planı, duman testi, KPI, geri alma, kapanış →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

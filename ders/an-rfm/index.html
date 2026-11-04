@@ -1,0 +1,81 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RFM müşteri segmentasyonu | Kesit SQL</title><meta name="description" content="Recency, Frequency, Monetary skorlarıyla müşteri segmentleri."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/an-rfm/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="RFM müşteri segmentasyonu"><meta property="og:description" content="Recency, Frequency, Monetary skorlarıyla müşteri segmentleri."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/an-rfm/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"RFM müşteri segmentasyonu","description":"Recency, Frequency, Monetary skorlarıyla müşteri segmentleri.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/an-rfm/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Veri Analisti</span><h1>RFM müşteri segmentasyonu</h1><p class="st-l">Recency, Frequency, Monetary skorlarıyla müşteri segmentleri.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-an-rfm">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Üç soru</h2>
+<ul><li><b>R</b>ecency: En son ne zaman aldı? (yakın = iyi)</li><li><b>F</b>requency: Kaç kez aldı?</li><li><b>M</b>onetary: Ne kadar harcadı?</li></ul>
+<p>Her boyut NTILE ile 1–5 arası skora çevrilir, sonra skor kombinasyonlarından segment üretilir.</p>
+<pre class="code">WITH m AS (
+  SELECT o.customer_id,
+         julianday('2025-01-01') - julianday(MAX(o.order_date)) AS recency_gun,
+         COUNT(DISTINCT o.order_id) AS frequency,
+         SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) AS monetary
+  FROM orders o JOIN order_items oi ON oi.order_id = o.order_id
+  WHERE o.status = 'delivered'
+  GROUP BY o.customer_id
+),
+s AS (
+  SELECT customer_id, recency_gun, frequency, ROUND(monetary) AS monetary,
+         NTILE(5) OVER (ORDER BY recency_gun DESC) AS r,
+         NTILE(5) OVER (ORDER BY frequency) AS f,
+         NTILE(5) OVER (ORDER BY monetary) AS m
+  FROM m
+)
+SELECT *,
+       CASE WHEN r >= 4 AND f >= 4 THEN 'Şampiyon'
+            WHEN r >= 3 AND f >= 3 THEN 'Sadık'
+            WHEN r >= 4 AND f <= 2 THEN 'Yeni / Umut vadeden'
+            WHEN r <= 2 AND f >= 3 THEN 'Risk altında'
+            ELSE 'Uykuda' END AS segment
+FROM s
+ORDER BY r DESC, f DESC
+LIMIT 15;</pre>
+<p>Recency'de sıralama <b>DESC</b>: en uzun süredir gelmeyen 1, en yakın zamanda gelen 5 alır.</p>
+<h2>Derinleş: Puanlama eşikleri: NTILE mi, iş kuralı mı?</h2>
+<p>RFM'de her boyutu 1–5 puana çevirmenin iki yolu vardır. Seçim, segmentlerin ne kadar <b>kararlı</b> ve <b>anlaşılır</b> olacağını belirler.</p>
+<table>
+<tr><th></th><th>Göreli (NTILE)</th><th>Mutlak (sabit eşik)</th></tr>
+<tr><td>Örnek</td><td>En yeni %20 → R = 5</td><td>Son 30 gün → R = 5, 31–90 → 4 …</td></tr>
+<tr><td>Artısı</td><td>Her puanda eşit müşteri; dağılımdan bağımsız</td><td>Puanın iş anlamı var; aylar arasında karşılaştırılabilir</td></tr>
+<tr><td>Eksisi</td><td>Eşitlikleri keyfî böler; müşteri hiçbir şey yapmadan puan değiştirebilir</td><td>Puanlar dengesiz dağılabilir; eşikleri iş birimiyle konuşmak gerekir</td></tr>
+</table>
+<h3>NTILE'ın eşitlik sorunu</h3>
+<p>Frequency küçük tam sayılardan oluşur. Anadolu Market'te 27 müşterinin tam 2 teslim edilmiş siparişi var. <code>NTILE(5) OVER (ORDER BY frequency, customer_id)</code> bu 27 kişinin bir kısmına F = 1, bir kısmına F = 2 verir. Aynı davranışa farklı puan verilir ve aradaki tek fark müşteri numarasıdır. Frequency için çoğu zaman sabit eşik (1, 2–3, 4–5, 6–9, 10+) daha dürüsttür.</p>
+<h3>Diğer kararlar</h3>
+<ul>
+<li><b>Referans tarihi:</b> Recency “bugüne göre” değil, analiz tarihine göre sabitlenir (burada 2025-01-01). Aksi halde sorgu her gün başka sonuç verir.</li>
+<li><b>Monetary'de iadeler:</b> Yalnızca teslim edilenleri saymak iadeleri dışarıda bırakır. İadeli siparişi saymak ise harcamayı şişirir. Tanımı yaz.</li>
+<li><b>JOIN çoğalması:</b> Frequency'yi <code>order_items</code> JOIN'inden sonra <code>COUNT(*)</code> ile alırsan kalem sayarsın. <code>COUNT(DISTINCT order_id)</code> kullan.</li>
+</ul>
+<p>Segmentin değerini görmenin en iyi yolu, müşteri sayısını ve <b>ciro payını</b> yan yana koymaktır. Aşağıda R için 90 gün, F için 5 sipariş eşiğiyle kurulmuş basit bir kural tabanlı segmentasyon var:</p>
+<pre class="code">WITH m AS (
+  SELECT o.customer_id,
+         julianday('2025-01-01') - julianday(MAX(o.order_date)) AS gun,
+         COUNT(DISTINCT o.order_id) AS n,
+         SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) AS para
+  FROM orders o JOIN order_items oi ON oi.order_id = o.order_id
+  WHERE o.status = 'delivered'
+  GROUP BY o.customer_id
+),
+s AS (
+  SELECT CASE WHEN gun &lt;= 90 AND n >= 5 THEN 'Şampiyon'
+              WHEN gun &lt;= 90 THEN 'Aktif'
+              WHEN n >= 5 THEN 'Risk altında'
+              ELSE 'Uykuda' END AS segment, para
+  FROM m
+)
+SELECT segment, COUNT(*) AS musteri, ROUND(SUM(para)) AS ciro,
+       ROUND(100.0 * SUM(para) / (SELECT SUM(para) FROM s), 1) AS ciro_payi
+FROM s
+GROUP BY segment
+ORDER BY ciro DESC;</pre>
+<p>135 müşterinin 41'i “Şampiyon” ve cironun %57,3'ünü getiriyor. 14 “Risk altında” müşteri ise az sayıda olmasına rağmen cironun yaklaşık %15'ini taşıyor. Geri kazanma kampanyasının ilk hedefi onlardır.</p>
+<div class="tip"><b>Kontrol listesi</b>Referans tarihi sabit mi? Frequency tekil sipariş mi? Eşikler yazılı mı? Her segmentin müşteri sayısı ve ciro payı birlikte raporlanıyor mu?</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-an-rfm">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../an-sepet/">← Sepet analizi: birlikte satın alınan ürünler</a><a href="../ik-giris/">İK analitiğine giriş: Pusula A.Ş. verisini tanımak →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

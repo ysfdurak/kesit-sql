@@ -1,0 +1,49 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tarih serisi ve takvim tablosu: eksik günleri doldurmak | Kesit SQL</title><meta name="description" content="Özyinelemeli CTE, GENERATE_SERIES ve LEFT JOIN ile boşluksuz zaman serisi."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/takvim/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Tarih serisi ve takvim tablosu: eksik günleri doldurmak"><meta property="og:description" content="Özyinelemeli CTE, GENERATE_SERIES ve LEFT JOIN ile boşluksuz zaman serisi."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/takvim/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Tarih serisi ve takvim tablosu: eksik günleri doldurmak","description":"Özyinelemeli CTE, GENERATE_SERIES ve LEFT JOIN ile boşluksuz zaman serisi.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/takvim/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · İleri Sorgu Yapıları</span><h1>Tarih serisi ve takvim tablosu: eksik günleri doldurmak</h1><p class="st-l">Özyinelemeli CTE, GENERATE_SERIES ve LEFT JOIN ile boşluksuz zaman serisi.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-takvim">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Sipariş olmayan gün raporda kaybolur</h2>
+<p>Günlük sipariş sayısını <code>GROUP BY order_date</code> ile alırsan, hiç sipariş olmayan günler sonuçta <b>hiç görünmez</b>. Grafikte bu günler atlanır ve trend olduğundan iyi görünür. Çözüm: önce eksiksiz bir <b>gün listesi</b> üret, sonra veriyi ona <b>LEFT JOIN</b> ile bağla.</p>
+<h3>1. Özyinelemeli CTE ile gün listesi (her SQL türünde)</h3>
+<pre class="code">WITH RECURSIVE gunler(gun) AS (
+    SELECT DATE('2024-12-01')
+    UNION ALL
+    SELECT DATE(gun, '+1 day') FROM gunler WHERE gun < '2024-12-31'
+)
+SELECT g.gun,
+       COUNT(o.order_id) AS siparis
+FROM gunler g
+LEFT JOIN orders o ON o.order_date = g.gun
+GROUP BY g.gun
+ORDER BY g.gun;</pre>
+<div class="warn"><b>SQL Server'da özyineleme sınırı</b>SQL Server varsayılan olarak en fazla 100 tur özyinelemeye izin verir. Bir yıllık seri (365 gün) için sorgunun sonuna <code>OPTION (MAXRECURSION 0)</code> eklemelisin.</div>
+<h3>2. Hazır seri fonksiyonları</h3>
+<p>SQL Server 2022 ve PostgreSQL seri üreten fonksiyonlara sahiptir; Oracle'da klasik yöntem <code>CONNECT BY LEVEL</code>'dır:</p>
+<pre class="code" data-v="{&quot;pg&quot;:&quot;SELECT CAST(gun AS date) AS gun\nFROM generate_series(DATE '2024-12-01', DATE '2024-12-07', INTERVAL '1 day') AS gun;&quot;}" data-base="tsql">SELECT DATEADD(day, value, '2024-12-01') AS gun
+FROM GENERATE_SERIES(0, 6);</pre>
+<pre class="code" data-norun>-- Oracle
+SELECT DATE '2024-12-01' + LEVEL - 1 AS gun
+FROM dual
+CONNECT BY LEVEL &lt;= 7;</pre>
+<h2>Takvim (tarih boyutu) tablosu</h2>
+<p>Raporlama yapılan her veritabanında genellikle kalıcı bir <b>takvim tablosu</b> bulunur: her gün için bir satır ve hazır hesaplanmış sütunlar. Böylece “hafta sonu mu?”, “hangi çeyrek?”, “resmî tatil mi?” soruları her sorguda yeniden hesaplanmaz.</p>
+<pre class="code">WITH RECURSIVE gunler(gun) AS (
+    SELECT DATE('2024-12-01')
+    UNION ALL
+    SELECT DATE(gun, '+1 day') FROM gunler WHERE gun < '2024-12-31'
+)
+SELECT gun,
+       CAST(strftime('%Y', gun) AS INTEGER) AS yil,
+       CAST(strftime('%m', gun) AS INTEGER) AS ay,
+       CAST(strftime('%w', gun) AS INTEGER) AS haftanin_gunu,
+       CASE WHEN CAST(strftime('%w', gun) AS INTEGER) IN (0, 6) THEN 1 ELSE 0 END AS hafta_sonu
+FROM gunler;</pre>
+<div class="tip"><b>Takvim tablosuna eklenebilecekler</b>Resmî tatiller, mali yıl/çeyrek, ISO hafta numarası, ayın son iş günü, kampanya dönemleri. BI araçlarında (Power BI, Tableau) bu tablo “Date” boyutu olarak modele bağlanır.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-takvim">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../hiyerarsi/">← Hiyerarşik veriler: CONNECT BY, özyinelemeli CTE, hierarchyid ve yol yöntemi</a><a href="../son-deger/">Boşluk doldurma: son bilinen değerle ilerlemek →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,35 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aynı tabloyu iki kez kullanmak: kalkış ve varış şehri, aktarmalı yolculuklar | Kesit SQL</title><meta name="description" content="Havalimanı tablosunu iki rolde birleştirmek, dönüşü olmayan rotayı bulmak ve aktarma bağlantılarını eşleştirmek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/hv-self/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Aynı tabloyu iki kez kullanmak: kalkış ve varış şehri, aktarmalı yolculuklar"><meta property="og:description" content="Havalimanı tablosunu iki rolde birleştirmek, dönüşü olmayan rotayı bulmak ve aktarma bağlantılarını eşleştirmek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/hv-self/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Aynı tabloyu iki kez kullanmak: kalkış ve varış şehri, aktarmalı yolculuklar","description":"Havalimanı tablosunu iki rolde birleştirmek, dönüşü olmayan rotayı bulmak ve aktarma bağlantılarını eşleştirmek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/hv-self/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Kanat Havayolları</span><h1>Aynı tabloyu iki kez kullanmak: kalkış ve varış şehri, aktarmalı yolculuklar</h1><p class="st-l">Havalimanı tablosunu iki rolde birleştirmek, dönüşü olmayan rotayı bulmak ve aktarma bağlantılarını eşleştirmek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-hv-self">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Bir tablo, iki rol</h2>
+<p>Bir rotanın hem kalkışı hem varışı <code>hv_airports</code> tablosuna bağlanır. Aynı tabloyu iki farklı takma adla birleştirirsin: biri kalkış, biri varış rolünde.</p>
+<pre class="code">SELECT r.route_id, k.city AS kalkis, v.city AS varis, r.distance_km
+FROM hv_routes r
+JOIN hv_airports k ON k.airport_code = r.origin
+JOIN hv_airports v ON v.airport_code = r.dest
+ORDER BY r.distance_km DESC
+LIMIT 5;</pre>
+<h2>Aktarma: iki uçuşu eşleştirmek</h2>
+<p>Bir yolcu Van'dan İstanbul'a inip aynı gün yurt dışına devam edebilir mi? İlk uçuşun varış havalimanı ikincinin kalkışı olmalı ve arada makul bir bekleme süresi olmalıdır. Bu, <code>hv_flights</code>'ın kendisiyle birleştirilmesidir:</p>
+<pre class="code">SELECT f1.flight_no AS ilk, f2.flight_no AS ikinci, r2.dest AS son_varis,
+       ROUND((julianday(f2.sched_dep) - julianday(f1.sched_arr)) * 1440) AS bekleme_dk
+FROM hv_flights f1
+JOIN hv_routes r1 ON r1.route_id = f1.route_id
+JOIN hv_routes r2 ON r2.origin = r1.dest
+JOIN hv_flights f2 ON f2.route_id = r2.route_id
+WHERE r1.origin = 'VAN' AND r1.dest = 'IST'
+  AND f1.sched_dep >= '2024-12-20' AND f1.sched_dep < '2024-12-21'
+  AND f2.sched_dep >= f1.sched_arr
+  AND f2.sched_dep < '2024-12-21'
+ORDER BY bekleme_dk
+LIMIT 5;</pre>
+<div class="warn"><b>Eşleşme patlaması</b>Kendine birleştirmede koşulları dar tutmazsan (aynı gün, belirli havalimanı) sonuç uçuş sayısının karesi kadar büyüyebilir. Önce filtrele, sonra birleştir.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-hv-self">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../hv-join/">← Uçuş, rota, havalimanı ve uçak: JOIN zinciri</a><a href="../hv-alt/">Alt sorgu ve EXISTS: hiç uçmayan üyeler, ortalamanın üstündeki rotalar →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

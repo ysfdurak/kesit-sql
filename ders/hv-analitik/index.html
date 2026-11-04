@@ -1,0 +1,58 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Havayolu metrikleri: doluluk, zamanında varış, yolcu-km ve sadakat | Kesit SQL</title><meta name="description" content="Sektörün temel ölçülerini SQL ile tanımlamak: load factor, OTP, RPK, no-show oranı, kohort ve Pareto."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/hv-analitik/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Havayolu metrikleri: doluluk, zamanında varış, yolcu-km ve sadakat"><meta property="og:description" content="Sektörün temel ölçülerini SQL ile tanımlamak: load factor, OTP, RPK, no-show oranı, kohort ve Pareto."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/hv-analitik/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Havayolu metrikleri: doluluk, zamanında varış, yolcu-km ve sadakat","description":"Sektörün temel ölçülerini SQL ile tanımlamak: load factor, OTP, RPK, no-show oranı, kohort ve Pareto.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/hv-analitik/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Kanat Havayolları</span><h1>Havayolu metrikleri: doluluk, zamanında varış, yolcu-km ve sadakat</h1><p class="st-l">Sektörün temel ölçülerini SQL ile tanımlamak: load factor, OTP, RPK, no-show oranı, kohort ve Pareto.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-hv-analitik">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Sektör sözlüğü</h2>
+<table>
+<tr><th>Metrik</th><th>Tanım</th><th>SQL fikri</th></tr>
+<tr><td>Doluluk (load factor)</td><td>Binen yolcu ÷ koltuk</td><td><code>SUM(pax) / SUM(seats)</code></td></tr>
+<tr><td>Zamanında varış (OTP)</td><td>Planlanandan en fazla 15 dk geç inen uçuşların payı</td><td>Koşullu sayım ÷ inen uçuş</td></tr>
+<tr><td>Yolcu-km (RPK)</td><td>Taşınan yolcu × uçulan mesafe</td><td><code>SUM(pax * distance_km)</code></td></tr>
+<tr><td>Koltuk-km (ASK)</td><td>Sunulan koltuk × mesafe</td><td><code>SUM(seats * distance_km)</code></td></tr>
+<tr><td>No-show oranı</td><td>Rezervasyonu olup uçuşa gelmeyenler</td><td><code>no_show ÷ (flown + no_show)</code></td></tr>
+</table>
+<p>Doluluğun kilometre ağırlıklı hali RPK ÷ ASK'tır; uzun rotalardaki boş koltuk, kısa rotadakinden daha pahalıdır.</p>
+<pre class="code">SELECT strftime('%Y-%m', f.sched_dep) AS ay,
+       ROUND(100.0 * SUM(f.pax * r.distance_km) / SUM(a.seats * r.distance_km), 1) AS km_doluluk
+FROM hv_flights f
+JOIN hv_routes r ON r.route_id = f.route_id
+JOIN hv_aircraft a ON a.tail_no = f.tail_no
+WHERE f.status <> 'cancelled'
+GROUP BY strftime('%Y-%m', f.sched_dep)
+ORDER BY ay;</pre>
+<div class="note"><b>Paydayı dikkatle seç</b>No-show oranında iptal edilen rezervasyonlar paydaya girmez; çünkü iptal eden yolcu zaten koltuğu bıraktı. Her oran için “kimler bu olayı yaşayabilirdi?” sorusunu sor.</div>
+<h2>Derinleş: Rötar nedenleri: kim kontrol ediyor, nasıl yayılıyor?</h2>
+<p>Rötar dakikalarını nedenlere göre toplamak ilk adımdır. Yönetim için asıl soru ise <b>hangi dakikaların bizim kontrolümüzde olduğudur</b>. Sektörde nedenler kabaca üç gruba ayrılır:</p>
+<table>
+<tr><th>Grup</th><th>Kanat kodları</th><th>Sahibi</th></tr>
+<tr><td><b>İç (kontrol edilebilir)</b></td><td><code>teknik</code>, <code>yer_hizmetleri</code></td><td>Bakım, yer operasyonu</td></tr>
+<tr><td><b>Dış</b></td><td><code>hava</code>, <code>hava_trafik</code></td><td>Meteoroloji, hava trafik kontrolü</td></tr>
+<tr><td><b>Zincir (reactionary)</b></td><td><code>gec_gelen_ucak</code></td><td>Önceki uçuşun gecikmesi; planlama ve dönüş süresi</td></tr>
+</table>
+<p>Zincir gecikmesi kendi başına bir neden değildir, önceki uçuşun gecikmesinin <b>yayılmasıdır</b>. Kanat'ta toplam rötar dakikasının %24,9'u bu gruptan geliyor. Bu yüzden günün ilk uçuşlarını korumak (sabah ilk dalganın zamanında çıkması) ve uçuşlar arasına yeterli dönüş süresi (turnaround) koymak, en etkili iyileştirme alanlarıdır.</p>
+<div class="note"><b>Veri notu</b>Kanat'ta <code>gec_gelen_ucak</code> yalnız aynı uçağın önceki seferi en az 15 dakika geç indiyse yazılır (342 satır). Uçak kalkış saatinde gerçekten hazır olmayan satır ise 12'dir; filo seyrek uçtuğu için yayılım çoğunlukla dolaylıdır.</div>
+<h3>Yayılımı veride görmek</h3>
+<p>Gecikmeler gün içinde birikir: Kanat'ta uçağın günün ilk uçuşunda zamanında kalkış %65,1, sonraki uçuşlarda %59,2. Bunu görmek için uçuşları uçak ve gün içinde sıralayıp <b>günün ilk uçuşunu</b> ayırmak yeterli. Kalkış ve varış OTP'sini aylık olarak yan yana koymak da faydalıdır:</p>
+<pre class="code">SELECT strftime('%Y-%m', sched_dep) AS ay,
+       ROUND(100.0 * SUM(CASE WHEN ROUND((julianday(actual_dep) - julianday(sched_dep)) * 1440) &lt;= 15 THEN 1 ELSE 0 END)
+             / COUNT(actual_dep), 1) AS kalkis_otp,
+       ROUND(100.0 * SUM(CASE WHEN ROUND((julianday(actual_arr) - julianday(sched_arr)) * 1440) &lt;= 15 THEN 1 ELSE 0 END)
+             / COUNT(actual_arr), 1) AS varis_otp
+FROM hv_flights
+GROUP BY strftime('%Y-%m', sched_dep)
+ORDER BY ay;</pre>
+<p>Varış OTP'si (tüm dönem %57,3) kalkış OTP'sinden (%62,1) düşüktür, çünkü havada ve inişte de gecikme eklenir. Yolcunun yaşadığı ve bağlantı uçuşlarını etkileyen asıl ölçü varıştır. Kalkış ise operasyon ekibinin doğrudan kontrol ettiği ölçüdür. İkisi birlikte raporlanır.</p>
+<h3>Sık hatalar</h3>
+<ul>
+<li><b>Doluluk paydası:</b> İptal edilen uçuşların koltukları paydaya girmez. Doluluk “uçulan” koltuklar üzerinden hesaplanır.</li>
+<li><b>Nedenleri uçuş sayısıyla toplamak:</b> İki nedenli uçuşlar iki kez sayılır. Neden payını <b>dakika</b> üzerinden ver, uçuş sayısını <code>COUNT(DISTINCT flight_id)</code> ile al.</li>
+<li><b>Zaman dilimi:</b> Varış havalimanı farklı bir saat dilimindeyse yerel saatleri doğrudan çıkarmak yanlış süre verir. Bu veride zamanlar tek bir saat dilimindedir; gerçek sistemlerde UTC saklanır.</li>
+</ul>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-hv-analitik">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../hv-pencere/">← Pencere fonksiyonları: uçağın günü, rötar zinciri ve sıralamalar</a><a href="../hv-veri/">Veri değiştirme ve bütünlük: iptal, yeni rota, kısıtlar ve işlemler →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

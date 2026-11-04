@@ -1,0 +1,54 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Performans analitiği: dağılım, kalibrasyon ve 9-kutu | Kesit SQL</title><meta name="description" content="Puan dağılımı, değerlendiren yöneticiye göre sapma (kalibrasyon), performans × potansiyel matrisi ve “kaçırılmaması gereken” ayrılmalar."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ik-performans/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Performans analitiği: dağılım, kalibrasyon ve 9-kutu"><meta property="og:description" content="Puan dağılımı, değerlendiren yöneticiye göre sapma (kalibrasyon), performans × potansiyel matrisi ve “kaçırılmaması gereken” ayrılmalar."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ik-performans/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Performans analitiği: dağılım, kalibrasyon ve 9-kutu","description":"Puan dağılımı, değerlendiren yöneticiye göre sapma (kalibrasyon), performans × potansiyel matrisi ve “kaçırılmaması gereken” ayrılmalar.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ik-performans/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · İK Analitiği</span><h1>Performans analitiği: dağılım, kalibrasyon ve 9-kutu</h1><p class="st-l">Puan dağılımı, değerlendiren yöneticiye göre sapma (kalibrasyon), performans × potansiyel matrisi ve “kaçırılmaması gereken” ayrılmalar.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ik-performans">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Dağılım ve kalibrasyon</h2>
+<p>Performans puanlarının şirket genelinde makul bir dağılımı olmalı. Bir yöneticinin ortalaması şirket ortalamasından belirgin biçimde yüksek ya da düşükse, ya ekibi gerçekten farklıdır ya da <b>puanlama alışkanlığı</b> farklıdır. Kalibrasyon toplantılarından önce bu sapmayı veriyle göstermek analistin işidir.</p>
+<pre class="code">SELECT reviewer_id, COUNT(*) AS kisi, ROUND(AVG(rating), 2) AS ort,
+       ROUND(AVG(rating) - (SELECT AVG(rating) FROM ik_reviews WHERE review_year = 2024), 2) AS sapma
+FROM ik_reviews
+WHERE review_year = 2024
+GROUP BY reviewer_id
+HAVING COUNT(*) &gt;= 10
+ORDER BY sapma DESC;</pre>
+<h2>9-kutu (performans × potansiyel)</h2>
+<p>Performansı düşük–orta–yüksek (1–2, 3, 4–5) ve potansiyeli düşük–orta–yüksek diye ikiye çapraz tablo yap. Sağ üst köşe (yüksek performans, yüksek potansiyel) yedekleme ve terfi planlarının adaylarıdır.</p>
+<h2>Kaçırılmaması gereken ayrılma</h2>
+<p>Gönüllü ayrılan ve son değerlendirmesinde 4–5 almış kişiler <b>istenmeyen kayıp</b> (regretted attrition) sayılır. Toplam devirden çok daha önemli bir göstergedir.</p>
+<h2>Derinleş: 9-kutu, kalibrasyon ve cömert değerlendirici etkisi</h2>
+<p>9-kutu (nine-box), performansı (bu yıl ne yaptı?) ve potansiyeli (bir üst rolde ne yapabilir?) 3 × 3'lük bir ızgarada birleştirir. Kutuların adları şirketten şirkete değişir ama mantık aynıdır:</p>
+<table>
+<tr><th>Potansiyel ↓ / Performans →</th><th>Düşük (1–2)</th><th>Orta (3)</th><th>Yüksek (4–5)</th></tr>
+<tr><td><b>Yüksek</b></td><td>Bilmece: yanlış rolde olabilir</td><td>Gelişen yetenek</td><td>Yıldız: yedekleme ve terfi adayı</td></tr>
+<tr><td><b>Orta</b></td><td>Gelişim planı</td><td>Çekirdek çalışan</td><td>Güçlü katkı</td></tr>
+<tr><td><b>Düşük</b></td><td>Risk: performans planı</td><td>İstikrarlı</td><td>Uzman: derinleşmeli</td></tr>
+</table>
+<h3>Puanı kim verdi?</h3>
+<p>9-kutunun güvenilirliği, puanların farklı yöneticiler arasında <b>karşılaştırılabilir</b> olmasına bağlıdır. Bazı değerlendiriciler herkese 4–5 verir (cömertlik / leniency), bazıları 3'ün üstüne çıkmaz (sertlik). Bu durumda bir çalışanın kutusunu onun performansı değil, <b>yöneticisinin alışkanlığı</b> belirler. Kalibrasyon toplantısının amacı bu sapmayı düzeltmektir. Analistin işi de toplantıdan önce sapmayı görünür kılmaktır:</p>
+<pre class="code">SELECT m.full_name, COUNT(*) AS kisi,
+       SUM(CASE WHEN r.rating &lt;= 2 THEN 1 ELSE 0 END) AS p1_2,
+       SUM(CASE WHEN r.rating = 3 THEN 1 ELSE 0 END) AS p3,
+       SUM(CASE WHEN r.rating = 4 THEN 1 ELSE 0 END) AS p4,
+       SUM(CASE WHEN r.rating = 5 THEN 1 ELSE 0 END) AS p5
+FROM ik_reviews r
+JOIN ik_employees m ON m.emp_id = r.reviewer_id
+WHERE r.review_year = 2024
+GROUP BY r.reviewer_id, m.full_name
+HAVING COUNT(*) >= 35
+ORDER BY AVG(r.rating) DESC, m.full_name
+LIMIT 5;</pre>
+<p>İrem Acar'ın değerlendirdiği 38 kişinin hiçbiri 3 ve altı almamış; 28'i 5, 10'u 4 almış. Şirket genelinde 4–5 alanların payı ise %36,5. Bu ekip gerçekten olağanüstü olabilir. Ama aynı tablo her yıl tekrarlanıyorsa (2019'dan beri ortalaması 4,7'nin üstünde) bu bir puanlama alışkanlığıdır. O ekipten gelen “yıldızlar” kalibrasyonda ayrıca konuşulmalıdır.</p>
+<h3>Sık yapılan hatalar</h3>
+<ul>
+<li><b>Küçük ekipte sapma:</b> 4 kişilik bir ekibin ortalaması rastlantıyla kolayca 4'e çıkar. Sapma analizine en az 10 kişi gibi bir eşik koy.</li>
+<li><b>Potansiyeli boş olanlar:</b> 2024'te 142 değerlendirmede potansiyel alanı NULL. 9-kutu yüzdesinin paydasına bunları katmak kutuları küçültür. Ya hariç tut ya da “belirsiz” diye ayrı bir satır göster.</li>
+<li><b>Ortalamaya dönüş:</b> 2023'te 5 alanların 2024 ortalaması 4,38; 1 alanlarınki 1,94. Uç puanlar ertesi yıl ortaya kayar. “Geçen yıl 5 alan düştü, demek ki motivasyonu bozuldu” yorumu çoğu zaman yalnızca istatistiktir.</li>
+</ul>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ik-performans">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ik-ucret/">← Ücret analitiği: güncel maaş, bant konumu ve ücret eşitliği</a><a href="../ik-alim/">İşe alım analitiği: huni, kaynak etkinliği ve doldurma süresi →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -7,10 +7,10 @@
 ![Alıştırma ekranı](ekran/alistirma.png)
 
 ## Neler var?
-- **258 ders, 1.620 alıştırma, 540 pratik görevi.** İlk sorgudan pencere fonksiyonlarına, sorgu planına, veri ambarına ve mülakat kalıplarına kadar.
+- **271 ders, 1.747 alıştırma, 562 pratik görevi.** İlk sorgudan pencere fonksiyonlarına, sorgu optimizasyonuna, veri ambarına ve mülakat kalıplarına kadar.
 - **Altı SQL türü:** SQL Server, PostgreSQL, MySQL, Oracle, BigQuery ve SQLite. Her sorgu seçtiğin türün yazımıyla gösterilir, alıştırmalar o türün kurallarına göre denetlenir.
 - **Altı hayali veri seti:** e-ticaret, banka, havayolu, yemek teslimatı, insan kaynakları ve 116.517 yolculukluk bisiklet paylaşımı.
-- **19 öğrenme yolu:** 9 rol yolu (veri analisti, BT iş analisti, veri mühendisi, veri bilimci, iş zekâsı, DBA, backend, SQL Server, SQL temelleri), 7 konu yolu ve 3 sertifika hazırlık yolu.
+- **20 öğrenme yolu:** 9 rol yolu (veri analisti, BT iş analisti, veri mühendisi, veri bilimci, iş zekâsı, DBA, backend, SQL Server, SQL temelleri), 8 konu yolu (Sorgu Optimizasyonu dahil) ve 3 sertifika hazırlık yolu.
 - **SQL Arena:** gizli testli meydan okumalar, SQL dedektif vakaları, sonuç tahmini, sorgu bulmacaları ve haftalık turnuva.
 - Seviye testi, sınavlar, aralıklı tekrar, sorgu editörü ve tamamlama belgesi.
 
@@ -27,6 +27,7 @@
 ## Nasıl doğrulandı?
 - Alıştırma ve Arena çözümleri otomatik denetimle **taklit katmanında** altı SQL türünde çalıştırılıyor.
 - **PostgreSQL için gerçek motorda** (PGlite, WASM) ayrıca çalıştırılıyor; veri değiştiren görevler ve bisiklet tabloları dahil.
+- Sorgu Optimizasyonu derslerindeki PostgreSQL plan çıktıları PGlite ile üretildi, alıştırmaların plan denetimi SQLite planına bakar. Yavaş cevap, sonuç doğru olsa da reddedilir.
 - SQL Server, MySQL, Oracle ve BigQuery için gerçek sunucuda test yapılmadı. Bu türlerle ilgili anlatımlar belgelere ve taklit katmanına dayanıyor.
 - Denetim betikleri ve komutları `kaynak` dalındaki `araclar/denetim/` ile `NASIL.md` içinde.
 

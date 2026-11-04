@@ -1,0 +1,42 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Şema değişikliklerini yönetmek: migration ve kesintisiz dağıtım | Kesit SQL</title><meta name="description" content="Sürümlü SQL betikleri, genişlet–daralt (expand–contract) yöntemi."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/be-migration/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Şema değişikliklerini yönetmek: migration ve kesintisiz dağıtım"><meta property="og:description" content="Sürümlü SQL betikleri, genişlet–daralt (expand–contract) yöntemi."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/be-migration/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Şema değişikliklerini yönetmek: migration ve kesintisiz dağıtım","description":"Sürümlü SQL betikleri, genişlet–daralt (expand–contract) yöntemi.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/be-migration/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Uygulama Geliştirme</span><h1>Şema değişikliklerini yönetmek: migration ve kesintisiz dağıtım</h1><p class="st-l">Sürümlü SQL betikleri, genişlet–daralt (expand–contract) yöntemi.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-be-migration">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Migration nedir?</h2>
+<p>Veritabanı şeması da kod gibi sürümlenmelidir. Her değişiklik numaralı bir betikte tutulur (<code>V12__add_phone.sql</code>) ve araç hangi betiklerin uygulandığını veritabanındaki bir tabloda takip eder. Böylece geliştirme, test ve canlı ortam aynı sırayla aynı şemaya ulaşır.</p>
+<table>
+<tr><th>Ekosistem</th><th>Araç</th></tr>
+<tr><td>Java / genel</td><td>Flyway, Liquibase</td></tr>
+<tr><td>.NET</td><td>EF Core Migrations, DbUp; SQL Server için SSDT / DACPAC</td></tr>
+<tr><td>Python</td><td>Alembic, Django migrations</td></tr>
+<tr><td>Node.js</td><td>Prisma Migrate, Knex</td></tr>
+</table>
+<h2>Kesintisiz değişiklik: genişlet–daralt</h2>
+<p>Çalışan bir uygulamada sütun adını değiştirmek (<code>first_name + last_name → full_name</code>) tek adımda yapılırsa, eski kod yeni şemayla çöker. Bunun yerine değişiklik geriye uyumlu adımlara bölünür:</p>
+<ol>
+<li><b>Genişlet:</b> Yeni sütunu ekle (boş bırakılabilir), eski sütunlara dokunma.</li>
+<li><b>Doldur:</b> Mevcut veriyi yeni sütuna kopyala (büyük tablolarda parça parça).</li>
+<li><b>Geçiş:</b> Uygulama hem eskiye hem yeniye yazsın, sonra yalnızca yeniden okusun.</li>
+<li><b>Daralt:</b> Hiçbir kod eski sütunu kullanmadığında eski sütunu kaldır.</li>
+</ol>
+<pre class="code">-- 1. Genişlet
+ALTER TABLE customers ADD COLUMN full_name TEXT;
+-- 2. Doldur
+UPDATE customers SET full_name = first_name || ' ' || last_name WHERE full_name IS NULL;
+SELECT customer_id, first_name, last_name, full_name FROM customers LIMIT 3;</pre>
+<div class="warn"><b>Büyük tablolarda kilit</b>Milyonlarca satırlı bir tabloda tek seferlik UPDATE veya bazı ALTER işlemleri tabloyu uzun süre kilitler. Doldurma işlemi 5.000–10.000 satırlık partilerle, kısa işlemlerde yapılır.</div>
+<h2>İyi bir migration betiği</h2>
+<ul>
+<li><b>Tekrar çalıştırılabilir</b> olsun: <code>IF NOT EXISTS</code>, <code>CREATE OR ALTER</code>.</li>
+<li>Tek bir mantıksal değişiklik içersin.</li>
+<li>Canlıya gitmeden önce canlı boyutuna yakın veride denenmiş olsun.</li>
+<li>Geri dönüş planı olsun (down script veya ileri düzeltme).</li>
+</ul>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-be-migration">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../be-kilit/">← Eşzamanlılık uygulaması: çift rezervasyon, FOR UPDATE, SKIP LOCKED</a><a href="../acid/">ACID, izolasyon seviyeleri ve eşzamanlılık →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

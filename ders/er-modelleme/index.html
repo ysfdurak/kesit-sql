@@ -1,0 +1,38 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Veri modelleme ve ER diyagramı: varlıktan tabloya | Kesit SQL</title><meta name="description" content="Kavramsal, mantıksal ve fiziksel model; kardinalite ve crow's foot (kaz ayağı) gösterimi."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/er-modelleme/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Veri modelleme ve ER diyagramı: varlıktan tabloya"><meta property="og:description" content="Kavramsal, mantıksal ve fiziksel model; kardinalite ve crow's foot (kaz ayağı) gösterimi."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/er-modelleme/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Veri modelleme ve ER diyagramı: varlıktan tabloya","description":"Kavramsal, mantıksal ve fiziksel model; kardinalite ve crow's foot (kaz ayağı) gösterimi.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/er-modelleme/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Tabloları Birleştirme</span><h1>Veri modelleme ve ER diyagramı: varlıktan tabloya</h1><p class="st-l">Kavramsal, mantıksal ve fiziksel model; kardinalite ve crow's foot (kaz ayağı) gösterimi.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-er-modelleme">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Tablolardan önce model</h2>
+<p>Bir veritabanı tasarlanırken önce iş dünyasındaki <b>varlıklar</b> (müşteri, sipariş, ürün) ve aralarındaki <b>ilişkiler</b> çizilir. Bu çizime <b>ER diyagramı</b> (Entity–Relationship) denir. Oracle 1Z0-071 gibi sertifika sınavlarında ER diyagramını okuyup doğru SELECT'i yazmak beklenir.</p>
+<table>
+<tr><th>Düzey</th><th>Ne içerir?</th><th>Kimin için?</th></tr>
+<tr><td><b>Kavramsal</b></td><td>Varlıklar ve ilişkiler (sütun yok)</td><td>İş birimi</td></tr>
+<tr><td><b>Mantıksal</b></td><td>Öznitelikler, anahtarlar, kardinalite, normalizasyon</td><td>Analist, mimar</td></tr>
+<tr><td><b>Fiziksel</b></td><td>VTYS tipleri, indeksler, bölümleme</td><td>Veritabanı ekibi</td></tr>
+</table>
+<h2>Crow's foot (kaz ayağı) (crow's foot) gösterimi</h2>
+<svg viewBox="0 0 640 150" role="img" aria-label="Müşteri, sipariş, sipariş satırı ve ürün arasındaki ilişkiler" style="max-width:100%;height:auto;font-family:var(--f-mono);font-size:12px">
+<g fill="var(--surface)" stroke="var(--ink)" stroke-width="1.2"><rect x="10" y="50" width="110" height="40" rx="6"/><rect x="180" y="50" width="110" height="40" rx="6"/><rect x="350" y="50" width="120" height="40" rx="6"/><rect x="520" y="50" width="110" height="40" rx="6"/></g>
+<g fill="var(--ink)" text-anchor="middle"><text x="65" y="75">customers</text><text x="235" y="75">orders</text><text x="410" y="75">order_items</text><text x="575" y="75">products</text></g>
+<g stroke="var(--muted)" stroke-width="1.5" fill="none"><path d="M120 70 H180"/><path d="M128 63 V77 M133 63 V77"/><path d="M170 70 L180 62 M170 70 L180 78 M166 63 V77"/><path d="M290 70 H350"/><path d="M298 63 V77 M303 63 V77"/><path d="M340 70 L350 62 M340 70 L350 78 M336 63 V77"/><path d="M470 70 H520"/><path d="M512 63 V77 M507 63 V77"/><path d="M480 70 L470 62 M480 70 L470 78 M484 63 V77"/></g>
+<g fill="var(--muted)" font-size="11" text-anchor="middle"><text x="150" y="45">1 — N</text><text x="320" y="45">1 — N</text><text x="495" y="45">N — 1</text></g>
+<text x="320" y="125" fill="var(--muted)" font-size="11" text-anchor="middle">Crow's foot (kaz ayağı) “çok”, dik çizgi “bir” demektir. orders ile products arasındaki çoka-çok ilişkiyi order_items çözer.</text>
+</svg>
+<h2>İlişki türleri ve tablolar</h2>
+<ul>
+<li><b>Bire-çok</b> (1:N): “Bir müşterinin çok siparişi var” → çok tarafına yabancı anahtar: <code>orders.customer_id</code>.</li>
+<li><b>Çoka-çok</b> (N:M): “Bir sipariş çok ürün, bir ürün çok sipariş” → ara (köprü) tablo: <code>order_items(order_id, product_id, ...)</code>.</li>
+<li><b>Bire-bir</b> (1:1): Genellikle aynı tabloya konur; güvenlik veya seyreklik nedeniyle ayrılabilir.</li>
+<li><b>Kendine ilişki</b>: <code>employees.manager_id → employees.emp_id</code>.</li>
+</ul>
+<h2>Anahtar seçimi</h2>
+<p><b>Doğal anahtar</b> iş dünyasından gelir (TC kimlik, vergi no); <b>vekil anahtar</b> (surrogate) anlamsız bir sayıdır (<code>customer_id</code>). Doğal anahtarlar değişebildiği ve kişisel veri içerebildiği için çoğu tasarımda vekil anahtar + doğal anahtar üzerinde tekil kısıt tercih edilir.</p>
+<div class="tip"><b>Veri setleri sayfası</b>Bu uygulamanın Veri setleri sayfasındaki şema, Anadolu Market'in ER diyagramıdır. Bir tabloya tıklayıp anahtarlarını incele.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-er-modelleme">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../proje-hava/">← Bitirme projesi (Kanat Havayolları): operasyon ve gelir raporu</a><a href="../right-full-join/">RIGHT JOIN, FULL OUTER JOIN →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

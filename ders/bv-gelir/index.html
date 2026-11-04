@@ -1,0 +1,46 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ücret ve kullanıcı segmentleri: aboneler mi, tek seferlikler mi? | Kesit SQL</title><meta name="description" content="Ücret modelinin gelire etkisi, abonelikte ücretsiz 30 dakikanın sonucu, kullanım sıklığına göre segmentler ve elektrikli bisikletin farkı."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/bv-gelir/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Ücret ve kullanıcı segmentleri: aboneler mi, tek seferlikler mi?"><meta property="og:description" content="Ücret modelinin gelire etkisi, abonelikte ücretsiz 30 dakikanın sonucu, kullanım sıklığına göre segmentler ve elektrikli bisikletin farkı."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/bv-gelir/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Ücret ve kullanıcı segmentleri: aboneler mi, tek seferlikler mi?","description":"Ücret modelinin gelire etkisi, abonelikte ücretsiz 30 dakikanın sonucu, kullanım sıklığına göre segmentler ve elektrikli bisikletin farkı.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/bv-gelir/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Büyük Veriyle Çalışmak</span><h1>Ücret ve kullanıcı segmentleri: aboneler mi, tek seferlikler mi?</h1><p class="st-l">Ücret modelinin gelire etkisi, abonelikte ücretsiz 30 dakikanın sonucu, kullanım sıklığına göre segmentler ve elektrikli bisikletin farkı.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-bv-gelir">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Ücret modeli</h2>
+<p>Aboneler ilk 30 dakikayı ücretsiz kullanır, sonrası dakikası 2 TL. Tek seferlik kullanıcılar açılış için 10 TL ve dakikası 1,5 TL öder. Bu yüzden abonelerin çoğu yolculuğu 0 TL'dir ve gelir tek seferlik kullanıcılardan gelir; ama aboneler sistemi düzenli kullanır.</p>
+<h2>Sıklık segmentleri</h2>
+<p>Kullanıcıları yolculuk sayısına göre NTILE ile dörde böl: en sık kullanan %25 çoğu zaman yolculukların yarısından fazlasını yapar. Bu, Pareto benzeri bir yoğunlaşmadır.</p>
+<h2>Derinleş: Ücret modeli davranışı değiştiriyor mu?</h2>
+<p>Fiyatlandırma yalnızca geliri değil davranışı da şekillendirmek için tasarlanır. Pedal İzmir'in modelinde iki teşvik var:</p>
+<ul>
+<li><b>Abonelik</b> ilk 30 dakikayı ücretsiz yapar. Amaç kısa, sık ve düzenli kullanımı (işe gidiş, son kilometre) teşvik etmektir.</li>
+<li><b>Tek seferlik</b> kullanımda açılış ücreti (10 TL) kısa yolculuğu görece pahalı kılar ve kullanıcıyı aboneliğe yönlendirir.</li>
+</ul>
+<p>Bu tasarımın iki öngörüsü veriyle sınanabilir: (1) aboneler 30. dakikanın hemen altında yığılmalı, (2) abonelerin yolculukları tek seferliklerden kısa olmalı.</p>
+<pre class="code">WITH t AS (
+  SELECT user_id, ROUND((julianday(ended_at) - julianday(started_at)) * 1440) AS dk
+  FROM bk_trips
+  WHERE ended_at IS NOT NULL
+    AND ROUND((julianday(ended_at) - julianday(started_at)) * 1440) BETWEEN 20 AND 40
+)
+SELECT CASE WHEN t.dk &lt; 25 THEN '20-24' WHEN t.dk &lt; 30 THEN '25-29'
+            WHEN t.dk &lt; 35 THEN '30-34' ELSE '35-40' END AS dakika,
+       SUM(CASE WHEN u.user_type = 'abone' THEN 1 ELSE 0 END) AS abone,
+       SUM(CASE WHEN u.user_type = 'tek seferlik' THEN 1 ELSE 0 END) AS tek_seferlik
+FROM t JOIN bk_users u ON u.user_id = t.user_id
+GROUP BY CASE WHEN t.dk &lt; 25 THEN '20-24' WHEN t.dk &lt; 30 THEN '25-29'
+              WHEN t.dk &lt; 35 THEN '30-34' ELSE '35-40' END
+ORDER BY dakika;</pre>
+<p>Sonuç beklentiyi doğrulamıyor. Abonelerde 25–29 dakika aralığında 3.412, 30–34 aralığında 3.483 yolculuk var: sınırın altında yığılma yok. Ortalama süre de iki grupta neredeyse aynı (abone 29,2, tek seferlik 29,4 dakika). Bu veride ücret modeli süre davranışını değiştirmiyor. Bu da bir bulgudur: ya kullanıcılar ücret kuralını bilmiyor ya da 30 dakikayı aşan ücret onları caydıracak kadar yüksek değil. Uygulamada kalan süreyi gösteren bir sayaç, fiyat değişikliğinden önce denenebilecek ucuz bir müdahaledir.</p>
+<h3>“Ya şöyle olsaydı?” analizi</h3>
+<p>Fiyat kararlarında en sık istenen sorgu senaryo hesabıdır: mevcut yolculukları <b>başka bir tarifeyle</b> yeniden fiyatlamak. Örneğin bütün tek seferlik kullanıcılar abone olsaydı, onların yolculuklarından gelen gelir ne kadar düşerdi? Bu hesabı yaparken davranışın değişmeyeceğini varsaydığını unutma. Abone olan kullanıcı daha sık bisiklete biner.</p>
+<table>
+<tr><th>Hata</th><th>Sonuç</th><th>Doğrusu</th></tr>
+<tr><td>Kapanmamış yolculukları ücretsiz saymak</td><td>Ücretsiz oranı şişer</td><td><code>fare</code> NULL'dır; <code>COUNT(fare)</code> paydası</td></tr>
+<tr><td>116 bin satırı önce birleştirip sonra özetlemek</td><td>Yavaş sorgu</td><td>Önce kullanıcı başına özetle, sonra 6 bin kullanıcıyla birleştir</td></tr>
+<tr><td>Gelir payını yolculuk payıyla karıştırmak</td><td>“Aboneler kârsız” yanılgısı</td><td>İkisini yan yana göster; abonelik ücreti bu tabloda yok</td></tr>
+</table>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-bv-gelir">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../bv-istasyon/">← İstasyon dengesi ve güzergâhlar: sistemi işletmek</a><a href="../be-orm/">Uygulamadan SQL'e: parametreli sorgu, ORM ve N+1 →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,49 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bakım: indeks parçalanması, istatistikler, DBCC ve Agent işleri | Kesit SQL</title><meta name="description" content="Veritabanını sağlıklı tutan düzenli işler ve zamanlanması."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/dba-bakim/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Bakım: indeks parçalanması, istatistikler, DBCC ve Agent işleri"><meta property="og:description" content="Veritabanını sağlıklı tutan düzenli işler ve zamanlanması."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/dba-bakim/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Bakım: indeks parçalanması, istatistikler, DBCC ve Agent işleri","description":"Veritabanını sağlıklı tutan düzenli işler ve zamanlanması.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/dba-bakim/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Veritabanı Yönetimi (DBA)</span><h1>Bakım: indeks parçalanması, istatistikler, DBCC ve Agent işleri</h1><p class="st-l">Veritabanını sağlıklı tutan düzenli işler ve zamanlanması.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-dba-bakim">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Düzenli bakım işleri</h2>
+<table>
+<tr><th>İş</th><th>Neden?</th><th>Sıklık (tipik)</th></tr>
+<tr><td>İndeks bakımı</td><td>Ekleme ve silmelerle sayfalar parçalanır, okuma artar</td><td>Haftalık</td></tr>
+<tr><td>İstatistik güncelleme</td><td>Optimizer satır sayısını doğru tahmin etsin</td><td>Günlük / haftalık</td></tr>
+<tr><td>Bütünlük kontrolü (<code>DBCC CHECKDB</code>)</td><td>Disk kaynaklı bozulmaları erken yakala</td><td>Haftalık</td></tr>
+<tr><td>Yedekler</td><td>Önceki ders</td><td>Stratejiye göre</td></tr>
+<tr><td>Geçmiş temizliği</td><td>msdb'deki eski yedek/iş geçmişi</td><td>Aylık</td></tr>
+</table>
+<h2>İndeks parçalanması</h2>
+<pre class="code" data-norun>SELECT OBJECT_NAME(ps.object_id) AS tablo,
+       i.name AS indeks,
+       ps.avg_fragmentation_in_percent AS parcalanma,
+       ps.page_count
+FROM sys.dm_db_index_physical_stats(DB_ID(), NULL, NULL, NULL, 'LIMITED') ps
+JOIN sys.indexes i ON i.object_id = ps.object_id AND i.index_id = ps.index_id
+WHERE ps.page_count &gt; 1000
+ORDER BY parcalanma DESC;</pre>
+<table>
+<tr><th>Parçalanma</th><th>Önerilen işlem (genel kural)</th></tr>
+<tr><td>%5–30</td><td><code>ALTER INDEX ... REORGANIZE</code> (çevrimiçi, hafif)</td></tr>
+<tr><td>%30 üzeri</td><td><code>ALTER INDEX ... REBUILD</code> (Enterprise'da <code>ONLINE = ON</code>)</td></tr>
+<tr><td>1000 sayfadan küçük</td><td>Uğraşmaya değmez</td></tr>
+</table>
+<div class="note"><b>Modern görüş</b>SSD disklerde parçalanmanın etkisi azaldı; birçok uzman artık sık REBUILD yerine düzenli istatistik güncellemesini daha önemli buluyor. Kararı ölçerek ver.</div>
+<pre class="code" data-norun>ALTER INDEX ix_orders_date ON dbo.orders REORGANIZE;
+ALTER INDEX ALL ON dbo.order_items REBUILD WITH (ONLINE = ON);
+UPDATE STATISTICS dbo.orders WITH FULLSCAN;
+DBCC CHECKDB (anadolu) WITH NO_INFOMSGS;</pre>
+<h2>Zamanlama: SQL Server Agent</h2>
+<p>Bakım işleri SQL Server Agent <b>işleri</b> (job) olarak zamanlanır: adımlar, zamanlama ve hata durumunda operatöre e-posta. Topluluğun yaygın kullandığı hazır çözüm Ola Hallengren'in bakım betikleridir. Azure SQL Database'de Agent yoktur; Elastic Jobs veya Azure Automation kullanılır.</p>
+<table>
+<tr><th>SQL türü</th><th>Karşılık</th></tr>
+<tr><td>PostgreSQL</td><td><code>VACUUM</code> (ölü satırları temizler, MVCC gereği), <code>ANALYZE</code> (istatistik), autovacuum; zamanlama için pg_cron</td></tr>
+<tr><td>MySQL</td><td><code>OPTIMIZE TABLE</code>, <code>ANALYZE TABLE</code>; zamanlama için Event Scheduler</td></tr>
+<tr><td>Oracle</td><td>Otomatik istatistik toplama (DBMS_STATS), DBMS_SCHEDULER</td></tr>
+</table>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-dba-bakim">Alıştırmalara geç (4)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../dba-yedek/">← Yedekleme ve geri yükleme: recovery model, RPO ve RTO</a><a href="../dba-izleme/">İzleme: DMV'ler, bekleme istatistikleri, engelleme ve deadlock →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

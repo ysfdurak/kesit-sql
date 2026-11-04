@@ -1,0 +1,36 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bitirme projesi (Büyük Veri): Pedal İzmir kamyonet bütçesi nereden kısılır? | Kesit SQL</title><meta name="description" content="Yolculuk ve kamyonet taşımalarıyla istasyon dengesizliği, zamanlama ve aynı ilçe taşımaları; sağlamalı adımlar ve karar önerisi."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/bv-proje/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Bitirme projesi (Büyük Veri): Pedal İzmir kamyonet bütçesi nereden kısılır?"><meta property="og:description" content="Yolculuk ve kamyonet taşımalarıyla istasyon dengesizliği, zamanlama ve aynı ilçe taşımaları; sağlamalı adımlar ve karar önerisi."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/bv-proje/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Bitirme projesi (Büyük Veri): Pedal İzmir kamyonet bütçesi nereden kısılır?","description":"Yolculuk ve kamyonet taşımalarıyla istasyon dengesizliği, zamanlama ve aynı ilçe taşımaları; sağlamalı adımlar ve karar önerisi.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/bv-proje/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Bitirme Projeleri</span><h1>Bitirme projesi (Büyük Veri): Pedal İzmir kamyonet bütçesi nereden kısılır?</h1><p class="st-l">Yolculuk ve kamyonet taşımalarıyla istasyon dengesizliği, zamanlama ve aynı ilçe taşımaları; sağlamalı adımlar ve karar önerisi.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-bv-proje">Uygulamada aç, 11 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory"><h2>Senaryo</h2>
+<p>Pedal İzmir yönetimi kamyonet maliyetini kısmak istiyor. Operasyon müdürü soruyor: <b>"Taşımaların nereden kısılması en az zarar verir? Hangi istasyonlar kamyonete gerçekten bağımlı, hangi taşımalar başka yolla azaltılabilir?"</b> Üç aylık veriyle bir öneri hazırlayacaksın.</p>
+<h2>Veri</h2>
+<table><tr><th>Tablo</th><th>Satır</th><th>İçerik</th></tr>
+<tr><td><code>bk_trips</code></td><td>116.517</td><td>Yolculuklar: <code>start_station</code>, <code>end_station</code>, <code>started_at</code></td></tr>
+<tr><td><code>bk_rebalancing</code></td><td>28.180</td><td>Kamyonet taşımaları: <code>from_station</code>, <code>to_station</code>, <code>moved_at</code></td></tr>
+<tr><td><code>bk_stations</code></td><td>62</td><td>İstasyon, ilçe, kapasite</td></tr></table>
+<h2>Adımlar</h2>
+<table><tr><th>Adım</th><th>Çıktı</th><th>Sağlama</th></tr>
+<tr><td>1</td><td>Kapsam ve veri kontrolü</td><td>Kapanmamış yolculuk sayısı biliniyor</td></tr>
+<tr><td>2</td><td>Net akış tablosu</td><td>Büyük tabloda birleştirmeden önce topla</td></tr>
+<tr><td>3</td><td>Net akış mutabakatı</td><td>Net akış toplamı, kapanmamış yolculuğun eksilisine eşit</td></tr>
+<tr><td>4</td><td>Kamyonet ne kadar dengeliyor?</td><td>Karşılama oranı</td></tr>
+<tr><td>5</td><td>Kapasiteye göre baskı</td><td>Mutlak sayı yerine karşılaştırılabilir ölçü</td></tr>
+<tr><td>6</td><td>Zamanlama</td><td>En sorunlu istasyonda kayıp ve taşıma saatleri</td></tr>
+<tr><td>7-8</td><td>Aynı ilçe taşımaları ve senaryo</td><td>Varsayım açıkça yazılı</td></tr>
+<tr><td>9-10</td><td>Karar</td><td>Öneri ve riskleri</td></tr></table>
+<p>Kapanmamış yolculuğun bitiş istasyonu yoktur, bu yüzden net akış toplamı sıfır olmaz. Bu farkı açıklayamıyorsan sonraki adımlara geçme.</p>
+<div class="note"><b>Sınır</b>Veri kurgudur ve maliyet bilgisi içermez. Bu yüzden öneri taşıma adedi üzerinden yapılır. Teşvik senaryosundaki azalma oranı varsayımdır, ölçüm değil: gerçek etki pilotla ölçülür.</div>
+<h3>Teslim</h3>
+<p>Tek sayfa: Kamyonete bağımlı istasyonlar, aynı ilçe taşıma payı, önerilen pilot ve neyi ölçeceğin.</p>
+<h3>Kendini değerlendir</h3>
+<table><tr><th>Ölçüt</th><th>Başlangıç</th><th>İyi</th><th>Mükemmel</th></tr>
+<tr><td>Doğruluk</td><td>Net akış hesaplandı</td><td>Mutabakat yapıldı</td><td>Kapanmamış yolculuk farkı açıklandı</td></tr>
+<tr><td>Analiz</td><td>Mutlak sıralama</td><td>Kapasiteye göre baskı</td><td>Zamanlama ve ilçe boyutu da var</td></tr>
+<tr><td>Karar</td><td>Liste</td><td>Öneri</td><td>Varsayım, risk ve ölçüm planı açık</td></tr></table></article>
+<div class="st-c"><a class="st-p" href="../../#ders-bv-proje">Alıştırmalara geç (11)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../opt-proje/">← Bitirme projesi (Sorgu Optimizasyonu): yavaş müşteri raporunu ölç, oku, düzelt, kanıtla</a><a href="../ai-proje/">Bitirme projesi (Yapay Zekâ Destekli SQL): asistanın yazdığı prim sorgusunu doğrula →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

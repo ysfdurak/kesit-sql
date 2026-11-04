@@ -1,0 +1,40 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GROUP BY: gruplara göre özet | Kesit SQL</title><meta name="description" content="Her kategori, şehir veya ay için ayrı özet üretmek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/group-by/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="GROUP BY: gruplara göre özet"><meta property="og:description" content="Her kategori, şehir veya ay için ayrı özet üretmek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/group-by/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"GROUP BY: gruplara göre özet","description":"Her kategori, şehir veya ay için ayrı özet üretmek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/group-by/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Özetleme</span><h1>GROUP BY: gruplara göre özet</h1><p class="st-l">Her kategori, şehir veya ay için ayrı özet üretmek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-group-by">Uygulamada aç, 11 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Her grup için bir satır</h2>
+<p>“Kategori başına kaç ürün var?” sorusu için GROUP BY kullanılır. Aynı değere sahip satırlar bir grup olur ve toplama fonksiyonu her grup için ayrı hesaplanır.</p>
+<pre class="code">SELECT category, COUNT(*) AS urun_sayisi
+FROM products
+GROUP BY category;</pre>
+<h2>Altın kural</h2>
+<p>SELECT listesindeki her sütun ya <b>GROUP BY'da yer almalı</b> ya da bir <b>toplama fonksiyonunun içinde</b> olmalıdır.</p>
+<pre class="code" data-err>-- Hatalı: name gruplanmamış
+SELECT category, name, COUNT(*) FROM products GROUP BY category;</pre>
+<p>PostgreSQL, SQL Server, MySQL, Oracle ve BigQuery bu sorguyu reddeder; bu uygulamada da o türleri seçince aynı hatayı alırsın. Yalnız SQLite çalıştırır ve rastgele bir <code>name</code> döndürür. Doğru alışkanlık: kuralı her zaman uygula.</p>
+<h2>Birden fazla sütunla gruplama</h2>
+<pre class="code">SELECT status, channel, COUNT(*) AS adet
+FROM orders
+GROUP BY status, channel
+ORDER BY status, adet DESC;</pre>
+<h2>Hesaplanmış ifadelere göre gruplama</h2>
+<pre class="code">SELECT substr(order_date, 1, 4) AS yil, COUNT(*) AS siparis
+FROM orders
+GROUP BY yil
+ORDER BY yil;</pre>
+<div class="note"><b>Takma adla gruplama</b>SQLite, MySQL ve PostgreSQL GROUP BY içinde SELECT takma adını kabul eder; SQL Server ve 23ai öncesi Oracle etmez, ifadeyi tekrar yazman gerekir.</div>
+<h2>Derinleş: gruplamayı adım adım düşün</h2><p>GROUP BY yazmadan önce şu soruyu sor: <b>sonuçta bir satır neyi temsil edecek?</b> “Her şehir” mi, “her şehir ve ay” mı? Sonra SELECT'e yalnızca bu taneciği tanımlayan sütunlar ve toplama fonksiyonları girer.</p><pre class="code">SELECT r.city,
+       strftime('%Y-%m', o.placed_at) AS ay,
+       COUNT(*) AS siparis
+FROM lk_orders o
+JOIN lk_restaurants r ON r.restaurant_id = o.restaurant_id
+GROUP BY r.city, strftime('%Y-%m', o.placed_at)
+ORDER BY r.city, ay;</pre>
+<p>Gruplama NULL değerleri tek bir grup olarak toplar; bu grup sonuçta boş bir satır olarak görünür.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-group-by">Alıştırmalara geç (11)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../aggregate/">← Toplama fonksiyonları: COUNT, SUM, AVG, MIN, MAX</a><a href="../having/">HAVING: grupları filtrelemek →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

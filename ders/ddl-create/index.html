@@ -1,0 +1,47 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CREATE TABLE, veri tipleri ve kısıtlar | Kesit SQL</title><meta name="description" content="Tablo tanımlamak; PRIMARY KEY, NOT NULL, UNIQUE, CHECK, DEFAULT, FOREIGN KEY."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ddl-create/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="CREATE TABLE, veri tipleri ve kısıtlar"><meta property="og:description" content="Tablo tanımlamak; PRIMARY KEY, NOT NULL, UNIQUE, CHECK, DEFAULT, FOREIGN KEY."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ddl-create/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"CREATE TABLE, veri tipleri ve kısıtlar","description":"Tablo tanımlamak; PRIMARY KEY, NOT NULL, UNIQUE, CHECK, DEFAULT, FOREIGN KEY.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/ddl-create/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Veritabanı Tasarımı</span><h1>CREATE TABLE, veri tipleri ve kısıtlar</h1><p class="st-l">Tablo tanımlamak; PRIMARY KEY, NOT NULL, UNIQUE, CHECK, DEFAULT, FOREIGN KEY.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ddl-create">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Tablo oluşturmak</h2>
+<p>Kod kutusundaki SQL türü sekmesini değiştirerek her SQL türünün veri tiplerini gör (ör. metin için SQL Server'da <code>NVARCHAR</code>, Oracle'da <code>VARCHAR2</code>).</p>
+<pre class="code" data-v="{&quot;bq&quot;:&quot;-- BigQuery'de UNIQUE ve CHECK kısıtı yoktur; anahtarlar bilgi amaçlıdır (NOT ENFORCED)\nCREATE TABLE suppliers (\n  supplier_id INT64 NOT NULL,\n  name        STRING NOT NULL,\n  tax_no      STRING,\n  city        STRING DEFAULT 'İstanbul',\n  rating      INT64,\n  PRIMARY KEY (supplier_id) NOT ENFORCED\n);\nINSERT INTO suppliers (supplier_id, name, tax_no, rating) VALUES (1, 'Ege Tekstil', '1234567890', 4);\nSELECT * FROM suppliers;&quot;}">CREATE TABLE suppliers (
+  supplier_id INTEGER PRIMARY KEY,
+  name        TEXT NOT NULL,
+  tax_no      TEXT UNIQUE,
+  city        TEXT DEFAULT 'İstanbul',
+  rating      INTEGER CHECK (rating BETWEEN 1 AND 5)
+);
+INSERT INTO suppliers (supplier_id, name, tax_no, rating) VALUES (1, 'Ege Tekstil', '1234567890', 4);
+SELECT * FROM suppliers;</pre>
+<h2>Kısıtlar (constraints)</h2>
+<table><tr><th>Kısıt</th><th>Görevi</th></tr>
+<tr><td><code>PRIMARY KEY</code></td><td>Satırı benzersiz tanımlar; NULL olamaz.</td></tr>
+<tr><td><code>NOT NULL</code></td><td>Boş bırakılamaz.</td></tr>
+<tr><td><code>UNIQUE</code></td><td>Tekrar edemez.</td></tr>
+<tr><td><code>CHECK (koşul)</code></td><td>Değer koşulu sağlamalı.</td></tr>
+<tr><td><code>DEFAULT değer</code></td><td>Değer verilmezse kullanılır.</td></tr>
+<tr><td><code>REFERENCES t(sutun)</code></td><td>Yabancı anahtar: değer diğer tabloda olmalı.</td></tr>
+</table>
+<p>Kısıtların işe yaradığını gör: aşağıdaki sorgu CHECK kuralını ihlal ettiği için hata verir. Hata mesajı seçili SQL türünün kendi mesajına benzer şekilde gösterilir.</p>
+<pre class="code" data-err>CREATE TABLE ratings (id INTEGER PRIMARY KEY, stars INTEGER CHECK (stars BETWEEN 1 AND 5));
+INSERT INTO ratings (id, stars) VALUES (1, 7);</pre>
+<h2>Yabancı anahtar ve eylemler</h2>
+<pre class="code" data-norun>CREATE TABLE supplier_products (
+  supplier_id INTEGER REFERENCES suppliers(supplier_id) ON DELETE CASCADE,
+  product_id  INTEGER REFERENCES products(product_id),
+  PRIMARY KEY (supplier_id, product_id)   -- bileşik birincil anahtar
+);</pre>
+<p><code>ON DELETE CASCADE</code>: Tedarikçi silinince ilgili satırlar da silinir. Alternatifler: <code>SET NULL</code>, <code>NO ACTION</code>.</p>
+<div class="note"><b>Otomatik artan anahtar</b>SQL Server: <code>INT IDENTITY(1,1) PRIMARY KEY</code> · PostgreSQL: <code>INTEGER GENERATED ALWAYS AS IDENTITY</code> (eski: <code>SERIAL</code>) · MySQL: <code>INT AUTO_INCREMENT PRIMARY KEY</code> · Oracle: <code>NUMBER GENERATED AS IDENTITY</code> · SQLite: <code>INTEGER PRIMARY KEY</code>. Para için <code>DECIMAL(12,2)</code> kullanılır, FLOAT değil.</div>
+<p>Sorgu sonucundan tablo üretmek de mümkündür. SQL Server'da bu iş <code>SELECT ... INTO</code> ile yapılır:</p>
+<pre class="code">CREATE TABLE vip_customers AS
+SELECT * FROM customers WHERE segment = 'Premium';
+SELECT COUNT(*) FROM vip_customers;</pre>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ddl-create">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../left-join/">← LEFT JOIN ve eşi olmayanları bulmak</a><a href="../regex/">Desen eşleme: LIKE'tan düzenli ifadelere (REGEX) →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

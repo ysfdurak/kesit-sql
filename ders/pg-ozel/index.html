@@ -1,0 +1,39 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PostgreSQL'e özgü güçlü özellikler | Kesit SQL</title><meta name="description" content="::, ILIKE, FILTER, DISTINCT ON, RETURNING, generate_series, diziler ve JSONB."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/pg-ozel/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="PostgreSQL'e özgü güçlü özellikler"><meta property="og:description" content="::, ILIKE, FILTER, DISTINCT ON, RETURNING, generate_series, diziler ve JSONB."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/pg-ozel/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"PostgreSQL'e özgü güçlü özellikler","description":"::, ILIKE, FILTER, DISTINCT ON, RETURNING, generate_series, diziler ve JSONB.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/pg-ozel/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · SQL Türlerine Özgü</span><h1>PostgreSQL'e özgü güçlü özellikler</h1><p class="st-l">::, ILIKE, FILTER, DISTINCT ON, RETURNING, generate_series, diziler ve JSONB.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-pg-ozel">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>PostgreSQL'in sevilen kısayolları</h2>
+<pre class="code" data-base="pg">SELECT name,
+       price::int AS tam_fiyat,
+       DATE_TRUNC('month', DATE '2024-05-17')::date AS ay_basi
+FROM products
+WHERE name ILIKE '%set%';</pre>
+<ul><li><code>x::tip</code>: CAST kısaltması.</li><li><code>ILIKE</code>: Büyük/küçük harf duyarsız LIKE.</li><li><code>DATE_TRUNC</code>: Tarihi ay/yıl/hafta başına yuvarlar.</li></ul>
+<h2>FILTER ile koşullu toplama</h2>
+<pre class="code" data-base="pg">SELECT channel,
+       COUNT(*) AS toplam,
+       COUNT(*) FILTER (WHERE status = 'cancelled') AS iptal,
+       ROUND(100.0 * COUNT(*) FILTER (WHERE status = 'cancelled') / COUNT(*), 1) AS iptal_yuzde
+FROM orders
+GROUP BY channel;</pre>
+<h2>DISTINCT ON: grup başına ilk satır</h2>
+<pre class="code" data-norun>-- Her müşterinin son siparişi (PostgreSQL'e özgü)
+SELECT DISTINCT ON (customer_id) customer_id, order_id, order_date
+FROM orders
+ORDER BY customer_id, order_date DESC;</pre>
+<p>Diğer SQL türlerinde bunun karşılığı <code>ROW_NUMBER() ... = 1</code> kalıbıdır.</p>
+<h2>generate_series ve diziler</h2>
+<pre class="code" data-norun>SELECT d::date AS gun
+FROM generate_series(DATE '2024-12-01', DATE '2024-12-31', INTERVAL '1 day') AS d;
+
+SELECT ARRAY_AGG(name ORDER BY price DESC) AS urunler FROM products WHERE category = 'Spor';
+SELECT * FROM products WHERE category = ANY(ARRAY['Kitap', 'Spor']);</pre>
+<div class="note"><b>Neden bu kadar popüler?</b>Açık kaynak, standarda en sadık SQL türü; JSONB, tam metin arama, coğrafi veri (PostGIS), vektör arama (pgvector) gibi eklentilerle neredeyse her işi görür. Bu taklitte DISTINCT ON, generate_series ve diziler çalıştırılamaz; kutuları başvuru olarak kullan.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-pg-ozel">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../azure-sql/">← Bulutta SQL Server: Azure SQL seçenekleri ve DP-300 konuları</a><a href="../mysql-ozel/">MySQL'e özgü yazımlar ve tuzaklar →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

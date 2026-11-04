@@ -1,0 +1,32 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>İlk sorgu: SELECT ve FROM | Kesit SQL</title><meta name="description" content="Belirli sütunları seçmek, sütun sırası ve hesaplanmış sütunlar."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/select/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="İlk sorgu: SELECT ve FROM"><meta property="og:description" content="Belirli sütunları seçmek, sütun sırası ve hesaplanmış sütunlar."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/select/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"İlk sorgu: SELECT ve FROM","description":"Belirli sütunları seçmek, sütun sırası ve hesaplanmış sütunlar.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/select/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Temeller</span><h1>İlk sorgu: SELECT ve FROM</h1><p class="st-l">Belirli sütunları seçmek, sütun sırası ve hesaplanmış sütunlar.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-select">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>SELECT ... FROM ...</h2>
+<p>Her sorgu iki temel parçayla başlar: <b>SELECT</b> hangi sütunları istediğini, <b>FROM</b> hangi tablodan istediğini söyler.</p>
+<pre class="code">SELECT first_name, last_name, city
+FROM customers;</pre>
+<ul>
+<li><code>*</code> “tüm sütunlar” demektir. Keşif için pratiktir ama gerçek işte ihtiyacın olan sütunları yazmak daha hızlı ve okunaklıdır.</li>
+<li>Sütunlar yazdığın sırayla gelir.</li>
+<li>SQL anahtar kelimeleri büyük/küçük harf duyarsızdır: <code>select</code> ile <code>SELECT</code> aynıdır. Okunabilirlik için anahtar kelimeleri büyük yazmak yaygın bir alışkanlıktır.</li>
+<li>Sorgu sonundaki <code>;</code> ifadeyi bitirir. Birden fazla sorguyu ayırmak için gereklidir.</li>
+</ul>
+<h2>Hesaplanmış sütunlar</h2>
+<p>SELECT içinde sadece sütun değil, ifade de yazabilirsin. Ürünün kâr marjını hesaplayalım:</p>
+<pre class="code">SELECT name, price, cost, price - cost
+FROM products;</pre>
+<p>Aritmetik operatörler: <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>%</code> (mod). Metinleri birleştirmek için SQLite ve PostgreSQL'de <code>||</code> kullanılır:</p>
+<pre class="code">SELECT first_name || ' ' || last_name
+FROM employees;</pre>
+<div class="note"><b>Yorum satırları</b><code>-- tek satır yorum</code> ve <code>/* çok satırlı yorum */</code> sorguya not düşmeni sağlar, çalıştırılmaz.</div>
+<h2>Derinleş: başka bir veri setinde ilk sorgular</h2><p>Aynı kalıp her tabloda çalışır. Lezzet Kurye'nin menüsünden ürün adı, fiyat ve fiyatın %10 zamlı hâli:</p><pre class="code">SELECT name, price, price * 1.10 AS zamli
+FROM lk_menu_items;</pre>
+<table><tr><th>Sık hata</th><th>Neden olur?</th></tr><tr><td><code>SELECT name price FROM ...</code></td><td>Virgül unutulunca <code>price</code>, <code>name</code> sütununun takma adı olur; tek sütun gelir ve hata vermez</td></tr><tr><td><code>SELECT * FROM</code> büyük tabloda</td><td>Gereksiz sütunlar ağ ve bellek yükü yaratır; bulut ambarlarında ücretlendirilir</td></tr><tr><td><code>"İstanbul"</code> ile metin yazmak</td><td>Çift tırnak ad (sütun) içindir; metin tek tırnakla yazılır</td></tr></table></article>
+<div class="st-c"><a class="st-p" href="../../#ders-select">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../veritabani/">← Veritabanı, tablo, satır ve sütun</a><a href="../veri-seti/">Veri setini tanıyalım →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

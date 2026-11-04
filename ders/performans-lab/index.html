@@ -1,0 +1,63 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Performans laboratuvarı: 42.000 satırlık tabloda indeksin etkisini ölç | Kesit SQL</title><meta name="description" content="Aynı sorguyu indeks öncesi ve sonrası çalıştır, süreyi ve sorgu planını karşılaştır."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/performans-lab/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Performans laboratuvarı: 42.000 satırlık tabloda indeksin etkisini ölç"><meta property="og:description" content="Aynı sorguyu indeks öncesi ve sonrası çalıştır, süreyi ve sorgu planını karşılaştır."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/performans-lab/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Performans laboratuvarı: 42.000 satırlık tabloda indeksin etkisini ölç","description":"Aynı sorguyu indeks öncesi ve sonrası çalıştır, süreyi ve sorgu planını karşılaştır.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/performans-lab/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Performans</span><h1>Performans laboratuvarı: 42.000 satırlık tabloda indeksin etkisini ölç</h1><p class="st-l">Aynı sorguyu indeks öncesi ve sonrası çalıştır, süreyi ve sorgu planını karşılaştır.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-performans-lab">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Deney düzeneği</h2>
+<p><code>bank_txns</code> tablosunda yaklaşık 42.000 hesap hareketi var. Tabloda yalnızca birincil anahtar ve <code>account_id</code> üzerinde indeks bulunuyor; <code>txn_time</code>, <code>txn_type</code> ve <code>merchant_category</code> indekssiz. Her kod kutusunun altında sorgunun tarayıcıda kaç milisaniye sürdüğü yazar. Kutuları sırayla çalıştır ve süreleri karşılaştır.</p>
+<div class="note"><b>Ölçek</b>Tarayıcıdaki motor gerçek bir sunucudan yavaştır ve tablo “büyük” sayılmaz; farkın büyüklüğü tablo boyutuna, belleğe ve donanıma bağlıdır, buradaki süreyi başka sisteme taşıma. Burada amaç farkın <b>yönünü</b> ve planın nasıl değiştiğini görmek.</div>
+<h3>1) İndekssiz: tarih aralığı</h3>
+<pre class="code">SELECT COUNT(*) AS islem, ROUND(SUM(-amount), 0) AS harcama
+FROM bank_txns
+WHERE txn_time >= '2024-12-24' AND txn_time < '2024-12-25'
+  AND txn_type = 'kart_harcama';</pre>
+<pre class="code" data-na="tsql pg mysql oracle bq">EXPLAIN QUERY PLAN
+SELECT COUNT(*) FROM bank_txns
+WHERE txn_time >= '2024-12-24' AND txn_time < '2024-12-25';</pre>
+<p>Planda <code>SCAN bank_txns</code> görürsün: tüm tablo okunuyor.</p>
+<h3>2) İndeks ekle, aynı sorguyu tekrar çalıştır</h3>
+<pre class="code" data-na="bq">CREATE INDEX ix_txn_time ON bank_txns (txn_time);
+
+SELECT COUNT(*) AS islem, ROUND(SUM(-amount), 0) AS harcama
+FROM bank_txns
+WHERE txn_time >= '2024-12-24' AND txn_time < '2024-12-25'
+  AND txn_type = 'kart_harcama';</pre>
+<pre class="code" data-na="tsql pg mysql oracle bq">CREATE INDEX ix_txn_time ON bank_txns (txn_time);
+EXPLAIN QUERY PLAN
+SELECT COUNT(*) FROM bank_txns
+WHERE txn_time >= '2024-12-24' AND txn_time < '2024-12-25';</pre>
+<p>Plan artık <code>SEARCH bank_txns USING INDEX ix_txn_time</code> diyor: yalnızca ilgili aralık okunuyor.</p>
+<h3>3) Fonksiyon indeksi bozar</h3>
+<pre class="code" data-na="tsql pg mysql oracle bq">CREATE INDEX ix_txn_time ON bank_txns (txn_time);
+EXPLAIN QUERY PLAN
+SELECT COUNT(*) FROM bank_txns
+WHERE date(txn_time) = '2024-12-24';</pre>
+<p>İndeks var ama sütun <code>date()</code> fonksiyonunun içinde olduğu için yine tüm tablo taranır.</p>
+<h3>4) Bileşik ve kapsayan indeks (covering index)</h3>
+<pre class="code" data-na="tsql pg mysql oracle bq">CREATE INDEX ix_tip_zaman ON bank_txns (txn_type, txn_time, amount);
+EXPLAIN QUERY PLAN
+SELECT SUM(amount) FROM bank_txns
+WHERE txn_type = 'maas' AND txn_time >= '2024-06-01' AND txn_time < '2024-07-01';</pre>
+<p><code>USING COVERING INDEX</code>: sorgunun ihtiyaç duyduğu tüm sütunlar indekste olduğu için tabloya hiç gidilmez. Eşitlik koşulu olan sütun (<code>txn_type</code>) önce, aralık koşulu olan (<code>txn_time</code>) sonra gelir.</p>
+<h2>Gerçek SQL türlerinde plan okumak</h2>
+<pre class="code" data-norun>-- SQL Server
+SET STATISTICS IO, TIME ON;
+-- Yürütme planı: Ctrl+M (gerçek plan), Index Seek / Index Scan / Key Lookup
+
+-- PostgreSQL
+EXPLAIN (ANALYZE, BUFFERS) SELECT ...;   -- Seq Scan, Index Scan, Index Only Scan, Bitmap Heap Scan
+
+-- MySQL
+EXPLAIN ANALYZE SELECT ...;             -- type: ALL (tam tarama), range, ref, const
+
+-- Oracle
+EXPLAIN PLAN FOR SELECT ...; SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);  -- TABLE ACCESS FULL, INDEX RANGE SCAN
+
+-- BigQuery: yürütme ayrıntıları sekmesi ve taranan bayt; indeks yerine bölümleme/kümeleme</pre>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-performans-lab">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../sargable/">← Hızlı sorgu yazmak: SARGable koşullar ve sık yapılan performans hataları</a><a href="../bv-giris/">Büyük tabloyla tanışma: profil çıkarmak ve örneklemek →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

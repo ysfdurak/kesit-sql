@@ -1,0 +1,56 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Listeleri bölmek ve birleştirmek: STRING_SPLIT, STRING_AGG, FOR XML PATH | Kesit SQL</title><meta name="description" content="Virgüllü listeyi satırlara, satırları virgüllü listeye çevirmek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-liste/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Listeleri bölmek ve birleştirmek: STRING_SPLIT, STRING_AGG, FOR XML PATH"><meta property="og:description" content="Virgüllü listeyi satırlara, satırları virgüllü listeye çevirmek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-liste/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Listeleri bölmek ve birleştirmek: STRING_SPLIT, STRING_AGG, FOR XML PATH","description":"Virgüllü listeyi satırlara, satırları virgüllü listeye çevirmek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-liste/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · T-SQL (SQL Server)</span><h1>Listeleri bölmek ve birleştirmek: STRING_SPLIT, STRING_AGG, FOR XML PATH</h1><p class="st-l">Virgüllü listeyi satırlara, satırları virgüllü listeye çevirmek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-liste">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Satırdan listeye: STRING_AGG</h2>
+<p>SQL Server 2017'den beri birden çok satırı tek metinde birleştirmenin yolu <code>STRING_AGG</code>'dır. Sıra önemliyse <code>WITHIN GROUP (ORDER BY ...)</code> eklenir.</p>
+<pre class="code" data-v="{&quot;pg&quot;:&quot;SELECT d.name AS departman,\n       STRING_AGG(e.first_name, ', ' ORDER BY e.first_name) AS calisanlar\nFROM departments d\nJOIN employees e ON e.dept_id = d.dept_id\nGROUP BY d.name;&quot;,&quot;mysql&quot;:&quot;SELECT d.name AS departman,\n       GROUP_CONCAT(e.first_name ORDER BY e.first_name SEPARATOR ', ') AS calisanlar\nFROM departments d\nJOIN employees e ON e.dept_id = d.dept_id\nGROUP BY d.name;&quot;,&quot;oracle&quot;:&quot;SELECT d.name AS departman,\n       LISTAGG(e.first_name, ', ') WITHIN GROUP (ORDER BY e.first_name) AS calisanlar\nFROM departments d\nJOIN employees e ON e.dept_id = d.dept_id\nGROUP BY d.name;&quot;}" data-base="tsql">SELECT d.name AS departman,
+       STRING_AGG(e.first_name, ', ') WITHIN GROUP (ORDER BY e.first_name) AS calisanlar
+FROM departments d
+JOIN employees e ON e.dept_id = d.dept_id
+GROUP BY d.name;</pre>
+<h3>Eski yöntem: FOR XML PATH</h3>
+<p>2017 öncesi sürümlerde ve eski kodlarda bu kalıbı çok görürsün. Mantığı adım adım:</p>
+<ol>
+<li>İç sorgu, her çalışan adının başına <code>', '</code> ekler.</li>
+<li><code>FOR XML PATH('')</code> satırları etiketsiz tek bir metin olarak yan yana yazar.</li>
+<li><code>STUFF(metin, 1, 2, '')</code> baştaki fazla <code>', '</code>'yi siler.</li>
+</ol>
+<pre class="code" data-base="tsql">SELECT d.name AS departman,
+       STUFF((SELECT ', ' + e.first_name
+              FROM employees e
+              WHERE e.dept_id = d.dept_id
+              ORDER BY e.first_name
+              FOR XML PATH('')), 1, 2, '') AS calisanlar
+FROM departments d;</pre>
+<div class="warn"><b>Özel karakterler</b>FOR XML PATH, <code>&amp;</code> ve <code>&lt;</code> gibi karakterleri XML kodlarına çevirir (<code>&amp;amp;</code>). Bunu önlemek için <code>FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)')</code> yazılır.</div>
+<h2>Listeden satıra: STRING_SPLIT</h2>
+<p>Uygulamadan “Ankara,İzmir,Bursa” gibi virgüllü bir parametre geldiğinde, <code>STRING_SPLIT</code> (2016+) onu <code>value</code> sütunlu bir tabloya çevirir. SQL Server 2022'de üçüncü argüman <code>1</code> verilirse sırayı gösteren <code>ordinal</code> sütunu da gelir.</p>
+<pre class="code" data-base="tsql">DECLARE @etiketler NVARCHAR(200) = N'kampanya,yeni,indirimli';
+
+SELECT value AS etiket
+FROM STRING_SPLIT(@etiketler, ',');</pre>
+<h3>Parametre listesiyle filtrelemek</h3>
+<pre class="code" data-base="tsql">DECLARE @kategoriler NVARCHAR(200) = N'Kitap,Spor';
+
+SELECT name, category, price
+FROM products
+WHERE category IN (SELECT value FROM STRING_SPLIT(@kategoriler, ','));</pre>
+<h3>Sütundaki listeyi açmak: CROSS APPLY</h3>
+<pre class="code" data-base="tsql">WITH t AS (
+    SELECT 1 AS siparis, N'kupon,hediye paketi' AS notlar
+    UNION ALL
+    SELECT 2, N'hızlı kargo'
+)
+SELECT t.siparis, s.value AS not_
+FROM t
+CROSS APPLY STRING_SPLIT(t.notlar, ',') AS s;</pre>
+<div class="tip"><b>Diğer SQL türleri</b>PostgreSQL: <code>string_to_table(metin, ',')</code> veya <code>unnest(string_to_array(...))</code>. MySQL: <code>JSON_TABLE</code> ya da özyinelemeli CTE. Oracle: <code>REGEXP_SUBSTR</code> + <code>CONNECT BY LEVEL</code>. Kalıcı çözüm ise listeyi tek sütunda tutmamak (normalizasyon) ve ayrı bir tabloya yazmaktır.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-liste">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-apply/">← CROSS APPLY ve OUTER APPLY</a><a href="../ts-sistem/">Sistem görünümleri, IDENTITY ve yardımcı prosedürler →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

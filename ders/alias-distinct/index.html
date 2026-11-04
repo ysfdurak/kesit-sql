@@ -1,0 +1,33 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Takma adlar (AS) ve DISTINCT | Kesit SQL</title><meta name="description" content="Sütunlara okunur adlar vermek ve tekrarları kaldırmak."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/alias-distinct/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Takma adlar (AS) ve DISTINCT"><meta property="og:description" content="Sütunlara okunur adlar vermek ve tekrarları kaldırmak."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/alias-distinct/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Takma adlar (AS) ve DISTINCT","description":"Sütunlara okunur adlar vermek ve tekrarları kaldırmak.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/alias-distinct/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Temeller</span><h1>Takma adlar (AS) ve DISTINCT</h1><p class="st-l">Sütunlara okunur adlar vermek ve tekrarları kaldırmak.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-alias-distinct">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>AS ile takma ad</h2>
+<p>Hesaplanmış sütunların adı genelde çirkin olur (<code>price - cost</code> gibi). <b>AS</b> ile sütuna anlamlı bir ad verirsin:</p>
+<pre class="code">SELECT name AS urun,
+       price - cost AS birim_kar
+FROM products;</pre>
+<ul>
+<li><code>AS</code> kelimesi çoğu veritabanında isteğe bağlıdır: <code>price - cost birim_kar</code> da çalışır, ama AS yazmak niyeti netleştirir.</li>
+<li>Boşluk veya özel karakter içeren adlar için çift tırnak kullan: <code>AS "Birim Kâr"</code>.</li>
+<li>Tablolara da takma ad verilebilir: <code>FROM products AS p</code>. Bu JOIN derslerinde çok işine yarayacak.</li>
+</ul>
+<h2>DISTINCT ile tekrarsız değerler</h2>
+<p>Hangi kategorilerde ürün sattığımızı merak ediyoruz. <code>SELECT category FROM products</code> her ürün için bir satır döndürür. Tekrarları atmak için:</p>
+<pre class="code">SELECT DISTINCT category
+FROM products;</pre>
+<p>DISTINCT birden fazla sütunla kullanılırsa <b>kombinasyonların</b> tekrarsızını verir:</p>
+<pre class="code">SELECT DISTINCT status, channel
+FROM orders;</pre>
+<div class="warn"><b>Dikkat</b>DISTINCT sadece ilk sütuna değil, SELECT listesinin tamamına uygulanır. Ayrıca büyük tablolarda maliyetlidir; tekrar oluşmasının sebebini anlamadan DISTINCT ile “yamamak” kötü bir alışkanlıktır.</div>
+<h2>Derinleş: DISTINCT nasıl düşünülmeli?</h2><p>DISTINCT, seçtiğin <b>tüm sütunların birlikte</b> tekrarsız kombinasyonlarını verir; tek bir sütuna uygulanmaz. Aşağıdaki sorgu “her şehir” değil, “her şehir–mutfak çifti” için bir satır döndürür:</p><pre class="code">SELECT DISTINCT city, cuisine
+FROM lk_restaurants
+ORDER BY city, cuisine;</pre>
+<p><code>COUNT(DISTINCT city)</code> ise farklı şehir sayısını verir. DISTINCT çoğu zaman bir JOIN'in satırları beklenmedik biçimde çoğalttığını gizler: sonuçta tekrar görüyorsan önce nedenini anla, DISTINCT'i yara bandı olarak kullanma.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-alias-distinct">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../veri-seti/">← Veri setini tanıyalım</a><a href="../hesaplama/">Hesaplanan sütunlar ve aritmetik →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

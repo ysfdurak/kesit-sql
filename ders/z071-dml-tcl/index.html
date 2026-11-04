@@ -1,0 +1,51 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>1Z0-071: DML ve işlem kontrolü (INSERT/UPDATE/DELETE, COMMIT, SAVEPOINT, TRUNCATE) | Kesit SQL</title><meta name="description" content="Alt sorgulu DML, okuma tutarlılığı, örtük commit, SAVEPOINT ve FOR UPDATE."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/z071-dml-tcl/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="1Z0-071: DML ve işlem kontrolü (INSERT/UPDATE/DELETE, COMMIT, SAVEPOINT, TRUNCATE)"><meta property="og:description" content="Alt sorgulu DML, okuma tutarlılığı, örtük commit, SAVEPOINT ve FOR UPDATE."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/z071-dml-tcl/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"1Z0-071: DML ve işlem kontrolü (INSERT/UPDATE/DELETE, COMMIT, SAVEPOINT, TRUNCATE)","description":"Alt sorgulu DML, okuma tutarlılığı, örtük commit, SAVEPOINT ve FOR UPDATE.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/z071-dml-tcl/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Sertifika Hazırlık</span><h1>1Z0-071: DML ve işlem kontrolü (INSERT/UPDATE/DELETE, COMMIT, SAVEPOINT, TRUNCATE)</h1><p class="st-l">Alt sorgulu DML, okuma tutarlılığı, örtük commit, SAVEPOINT ve FOR UPDATE.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-z071-dml-tcl">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Alt sorgulu DML</h2>
+<pre class="code" data-norun>-- Alt sorgudan çoklu satır ekleme (VALUES yazılmaz)
+INSERT INTO urun_arsiv (product_id, name, price)
+SELECT product_id, name, price FROM products WHERE stock = 0;
+
+-- İlişkili alt sorguyla güncelleme
+UPDATE employees e
+SET salary = (SELECT ROUND(AVG(x.salary)) FROM employees x WHERE x.dept_id = e.dept_id)
+WHERE e.salary IS NULL;
+
+-- Alt sorguyla silme
+DELETE FROM order_items
+WHERE order_id IN (SELECT order_id FROM orders WHERE status = 'cancelled');
+
+-- Alt sorgu hedef olarak (inline view)
+UPDATE (SELECT price FROM products WHERE category = 'Kitap') SET price = price * 1.1;</pre>
+<h2>DELETE, TRUNCATE ve DROP</h2>
+<table>
+<tr><th></th><th>DELETE</th><th>TRUNCATE</th><th>DROP</th></tr>
+<tr><td>Tür</td><td>DML</td><td>DDL</td><td>DDL</td></tr>
+<tr><td>WHERE</td><td>Var</td><td>Yok (tümü)</td><td>—</td></tr>
+<tr><td>Geri alınabilir mi?</td><td>Evet (ROLLBACK)</td><td>Hayır (örtük COMMIT)</td><td>Hayır (geri dönüşüm kutusundan FLASHBACK)</td></tr>
+<tr><td>Trigger</td><td>Çalışır</td><td>Çalışmaz</td><td>—</td></tr>
+<tr><td>Yapı</td><td>Kalır</td><td>Kalır, alan serbest kalır</td><td>Tablo silinir</td></tr>
+</table>
+<h2>İşlem kontrolü (TCL)</h2>
+<pre class="code" data-norun>UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+SAVEPOINT once_borc;
+UPDATE accounts SET balance = balance + 100 WHERE id = 2;
+ROLLBACK TO SAVEPOINT once_borc;   -- yalnızca ikinci UPDATE geri alınır
+COMMIT;                            -- birinci UPDATE kalıcı olur</pre>
+<ul>
+<li>Bir işlem ilk DML ile başlar; <b>COMMIT</b> veya <b>ROLLBACK</b> ile biter.</li>
+<li><b>DDL ve DCL</b> (CREATE, ALTER, DROP, TRUNCATE, GRANT) çalışmadan önce ve sonra <b>örtük COMMIT</b> yapar.</li>
+<li>Oturum normal kapanırsa (çoğu araçta) COMMIT; bağlantı koparsa ROLLBACK.</li>
+<li><b>Okuma tutarlılığı</b>: Başka oturumlar, sen COMMIT edene kadar değişikliklerini görmez; sen ise kendi değişikliklerini görürsün. Okuyucular yazıcıları, yazıcılar okuyucuları beklemez.</li>
+<li><code>SELECT ... FOR UPDATE</code> seçilen satırları kilitler; diğer oturumlar bu satırları değiştirmek için COMMIT/ROLLBACK'i bekler.</li>
+<li>ROLLBACK TO SAVEPOINT sonrasında, o noktadan sonraki savepoint'ler silinir.</li>
+</ul>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-z071-dml-tcl">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../z071-donusum/">← 1Z0-071: Dönüşüm fonksiyonları ve biçim modelleri (TO_CHAR, TO_DATE, TO_NUMBER)</a><a href="../z071-ddl/">1Z0-071: Oracle veri tipleri, tablo oluşturma ve değiştirme →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,51 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>dbt ile SQL dönüşüm katmanı: modeller ve testler | Kesit SQL</title><meta name="description" content="Modern veri ekiplerinin SQL iş akışı: staging, marts, ref() ve veri testleri."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/de-dbt/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="dbt ile SQL dönüşüm katmanı: modeller ve testler"><meta property="og:description" content="Modern veri ekiplerinin SQL iş akışı: staging, marts, ref() ve veri testleri."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/de-dbt/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"dbt ile SQL dönüşüm katmanı: modeller ve testler","description":"Modern veri ekiplerinin SQL iş akışı: staging, marts, ref() ve veri testleri.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/de-dbt/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Veri Mühendisliği</span><h1>dbt ile SQL dönüşüm katmanı: modeller ve testler</h1><p class="st-l">Modern veri ekiplerinin SQL iş akışı: staging, marts, ref() ve veri testleri.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-de-dbt">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>dbt nedir?</h2>
+<p><b>dbt</b> (data build tool), veri ambarındaki dönüşümleri yalnızca SELECT sorgularıyla yazmanı sağlayan açık kaynaklı bir araçtır. Her <b>model</b> bir <code>.sql</code> dosyasıdır; dbt bu sorguları doğru sırayla çalıştırıp tablo veya görünüme çevirir, test eder ve belgeler. Snowflake, BigQuery, Databricks, PostgreSQL, SQL Server gibi ortamlarda kullanılır.</p>
+<h3>Katmanlar</h3>
+<table>
+<tr><th>Katman</th><th>Görev</th><th>Örnek</th></tr>
+<tr><td><b>staging</b></td><td>Kaynağı temizle: ad değiştir, tip dönüştür, boşlukları kırp. Kaynak başına bir model.</td><td><code>stg_orders</code></td></tr>
+<tr><td><b>intermediate</b></td><td>Ara birleştirmeler, iş kuralları</td><td><code>int_order_totals</code></td></tr>
+<tr><td><b>marts</b></td><td>İş birimine hazır olgu ve boyutlar</td><td><code>fct_orders</code>, <code>dim_customers</code></td></tr>
+</table>
+<h3>Bir dbt modeli</h3>
+<pre class="code" data-norun>-- models/staging/stg_signups.sql
+SELECT DISTINCT
+    id                     AS signup_id,
+    TRIM(full_name)        AS full_name,
+    LOWER(TRIM(email))     AS email,
+    UPPER(TRIM(city))      AS city
+FROM {{ source('crm', 'raw_signups') }}
+
+-- models/marts/fct_orders.sql
+SELECT o.order_id, o.customer_id, o.order_date, t.net_tutar
+FROM {{ ref('stg_orders') }} o
+JOIN {{ ref('int_order_totals') }} t USING (order_id)</pre>
+<p><code>{{ ref('...') }}</code> başka bir modele başvurur. dbt bu başvurulardan bir bağımlılık grafiği (DAG) çıkarır ve modelleri doğru sırayla oluşturur. Ortama göre (geliştirme / canlı) doğru şema adını da kendisi yazar.</p>
+<h3>Materyalizasyon</h3>
+<ul>
+<li><b>view</b>: Her sorguda yeniden hesaplanır, yer kaplamaz.</li>
+<li><b>table</b>: Her çalıştırmada baştan oluşturulur.</li>
+<li><b>incremental</b>: Yalnızca yeni/değişen satırlar eklenir (Artımlı yükleme dersindeki mantık).</li>
+<li><b>ephemeral</b>: Ayrı nesne olmaz, kullanan modele CTE olarak gömülür.</li>
+</ul>
+<h2>Veri testleri aslında SQL sorgusudur</h2>
+<p>dbt'nin hazır testleri arka planda “hatalı satırları döndüren” sorgular üretir. Sonuç boşsa test geçer:</p>
+<table>
+<tr><th>Test</th><th>Ürettiği sorgunun mantığı</th></tr>
+<tr><td><code>unique</code></td><td><code>GROUP BY sutun HAVING COUNT(*) &gt; 1</code></td></tr>
+<tr><td><code>not_null</code></td><td><code>WHERE sutun IS NULL</code></td></tr>
+<tr><td><code>accepted_values</code></td><td><code>WHERE sutun NOT IN (...)</code></td></tr>
+<tr><td><code>relationships</code></td><td>Çocuk tabloda olup ebeveynde olmayan anahtarlar (LEFT JOIN ... IS NULL)</td></tr>
+</table>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-de-dbt">Alıştırmalara geç (4)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../de-scd/">← Yavaş değişen boyutlar (SCD Tip 1 ve 2)</a><a href="../de-partition/">Büyük veri: partition, clustering, dosya formatları →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

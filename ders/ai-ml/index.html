@@ -1,0 +1,47 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SQL ile makine öğrenmesi ve üretken YZ: BigQuery ML ve benzerleri | Kesit SQL</title><meta name="description" content="CREATE MODEL, ML.PREDICT, SQL içinden büyük dil modeli çağırmak."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ai-ml/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="SQL ile makine öğrenmesi ve üretken YZ: BigQuery ML ve benzerleri"><meta property="og:description" content="CREATE MODEL, ML.PREDICT, SQL içinden büyük dil modeli çağırmak."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ai-ml/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"SQL ile makine öğrenmesi ve üretken YZ: BigQuery ML ve benzerleri","description":"CREATE MODEL, ML.PREDICT, SQL içinden büyük dil modeli çağırmak.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/ai-ml/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Yapay Zekâ ile SQL</span><h1>SQL ile makine öğrenmesi ve üretken YZ: BigQuery ML ve benzerleri</h1><p class="st-l">CREATE MODEL, ML.PREDICT, SQL içinden büyük dil modeli çağırmak.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ai-ml">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Modeli verinin yanına götürmek</h2>
+<p>Bazı platformlar makine öğrenmesi modellerini <b>yalnızca SQL ile</b> eğitip kullanmana izin verir. Veriyi dışarı aktarmadan, analistin bildiği dille tahmin yapılabilir.</p>
+<h3>BigQuery ML: müşteri kaybı tahmini</h3>
+<pre class="code" data-norun>-- 1) Eğit
+CREATE OR REPLACE MODEL anadolu.churn_model
+OPTIONS (model_type = 'logistic_reg', input_label_cols = ['kayip']) AS
+SELECT segment, siparis_sayisi, ort_sepet, gun_once, kayip
+FROM anadolu.musteri_ozellikleri;
+
+-- 2) Değerlendir
+SELECT * FROM ML.EVALUATE(MODEL anadolu.churn_model);
+
+-- 3) Tahmin et
+SELECT customer_id, predicted_kayip, predicted_kayip_probs
+FROM ML.PREDICT(MODEL anadolu.churn_model,
+                (SELECT * FROM anadolu.musteri_ozellikleri));</pre>
+<p>Desteklenen model türleri arasında doğrusal/lojistik regresyon, k-ortalamalar kümeleme, zaman serisi tahmini (ARIMA_PLUS) ve ağaç tabanlı modeller vardır.</p>
+<h3>SQL içinden büyük dil modeli</h3>
+<pre class="code" data-norun>-- BigQuery: müşteri yorumlarını tek satırlık Türkçe özetle
+SELECT yorum_id,
+       ml_generate_text_llm_result AS ozet
+FROM ML.GENERATE_TEXT(
+  MODEL anadolu.gemini_model,
+  (SELECT yorum_id, CONCAT('Bu yorumu tek cümlede özetle: ', yorum) AS prompt FROM anadolu.yorumlar),
+  STRUCT(TRUE AS flatten_json_output));</pre>
+<table>
+<tr><th>Platform</th><th>SQL'den YZ</th></tr>
+<tr><td>BigQuery</td><td>BigQuery ML (<code>CREATE MODEL</code>, <code>ML.PREDICT</code>, <code>ML.GENERATE_TEXT</code>)</td></tr>
+<tr><td>Snowflake</td><td>Cortex fonksiyonları (ör. <code>SNOWFLAKE.CORTEX.COMPLETE</code>, <code>SENTIMENT</code>)</td></tr>
+<tr><td>Databricks SQL</td><td><code>ai_query()</code> ve hazır <code>ai_*</code> fonksiyonları</td></tr>
+<tr><td>SQL Server 2025</td><td>Dış modellerle <code>AI_GENERATE_EMBEDDINGS</code>; Machine Learning Services ile R/Python</td></tr>
+<tr><td>PostgreSQL</td><td>pgvector, pgai gibi eklentiler</td></tr>
+</table>
+<h2>SQL'in asıl işi: özellik tablosu</h2>
+<p>Model hangi platformda eğitilirse eğitilsin, verinin hazırlanması (her müşteri için bir satır, sızıntısız özellikler) SQL ile yapılır. Aşağıdaki alıştırma, yukarıdaki modelin besleneceği tabloyu üretiyor.</p>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ai-ml">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ai-vektor/">← Veritabanında yapay zekâ: embedding ve vektör benzerlik araması</a><a href="../ai-guvenli/">Doğal dilden SQL asistanı kurmak: semantik katman ve güvenlik →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

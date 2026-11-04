@@ -1,0 +1,29 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Değişen veriyi yakalamak (CDC, change data capture) | Kesit SQL</title><meta name="description" content="Sorgulayarak mı günlükten mi okumalı; silmeler, sıra, tekrar eden olaylar ve zamanlama."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/de-cdc/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Değişen veriyi yakalamak (CDC, change data capture)"><meta property="og:description" content="Sorgulayarak mı günlükten mi okumalı; silmeler, sıra, tekrar eden olaylar ve zamanlama."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/de-cdc/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Değişen veriyi yakalamak (CDC, change data capture)","description":"Sorgulayarak mı günlükten mi okumalı; silmeler, sıra, tekrar eden olaylar ve zamanlama.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/de-cdc/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Veri Mühendisliği</span><h1>Değişen veriyi yakalamak (CDC, change data capture)</h1><p class="st-l">Sorgulayarak mı günlükten mi okumalı; silmeler, sıra, tekrar eden olaylar ve zamanlama.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-de-cdc">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory"><p>Kaynak sistemdeki her değişikliği ambara taşımak istiyorsun, ama her gece tüm tabloyu kopyalamak pahalı. <b>CDC</b> (change data capture) yalnız değişen satırları yakalar.</p>
+<h2>İki yol</h2>
+<table><tr><th>Yol</th><th>Nasıl</th><th>Kaçırdığı ya da bedeli</th></tr>
+<tr><td><b>Sorgulayarak (polling)</b></td><td><code>WHERE updated_at &gt; :watermark</code> ile değişenleri çeker</td><td>Fiziksel silmeleri görmez; aynı satırın iki değişimi arasındaki ara hâli kaçırır; <code>updated_at</code> güncellenmiyorsa hiçbir şey görmez</td></tr>
+<tr><td><b>Günlükten (log-based)</b></td><td>Veritabanının işlem günlüğünü okur: PostgreSQL mantıksal çoğaltma (<code>wal_level = logical</code>), MySQL binlog, SQL Server CDC (<code>sys.sp_cdc_enable_table</code>). Debezium gibi araçlar bunları olay akışına çevirir</td><td>Silmeler dahil her değişikliği sırayla görür; ama kurulum ve yetki ister, günlük saklama süresi dolarsa olay kaybolur</td></tr></table>
+<h2>Olayları hedefe uygulamak</h2>
+<p>Bir değişiklik olayı en az şunları taşır: anahtar, işlem türü (ekleme, güncelleme, silme), yeni değerler, sıra bilgisi. Üç kural:</p>
+<ul><li><b>Sıra:</b> Aynı anahtarın olayları sırayla uygulanır, yoksa eski değer yeniyi ezer.</li>
+<li><b>Tekrar:</b> Çoğu boru hattı “en az bir kez” teslim eder. Uygulama idempotent olmalı: aynı olay iki kez gelse de sonuç değişmemeli (<code>MERGE</code>, sıra numarası kontrolü).</li>
+<li><b>Sıkıştırma:</b> Toplu uygularken anahtar başına yalnız son olay yeter.</li></ul>
+<pre class="code">WITH s AS (
+  SELECT product_id, new_price, updated_at,
+         ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY updated_at DESC) AS sira
+  FROM price_updates
+)
+SELECT product_id, new_price, updated_at
+FROM s
+WHERE sira = 1;</pre>
+<div class="note"><b>Zamanlama</b>Bu işleri Airflow gibi bir orkestrasyon aracı sıraya koyar: bağımlılık, yeniden deneme ve izleme onun işidir. SQL tarafında senin sorumluluğun, bir adım iki kez çalışsa da sonucu bozmayan sorgu yazmaktır. Toplu yüklemede watermark: <b>Artımlı yükleme</b> dersi.</div></article>
+<div class="st-c"><a class="st-p" href="../../#ders-de-cdc">Alıştırmalara geç (4)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../de-incremental/">← Artımlı yükleme (incremental load)</a><a href="../de-scd/">Yavaş değişen boyutlar (SCD Tip 1 ve 2) →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

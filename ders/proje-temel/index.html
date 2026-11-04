@@ -1,0 +1,53 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bitirme projesi (Temeller): Anadolu Market için ilk raporun | Kesit SQL</title><meta name="description" content="Tek tabloda seçme, filtreleme, sıralama, hesaplama, gruplama, CASE ve tarih fonksiyonlarıyla altı soruluk bir yönetici raporu."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/proje-temel/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Bitirme projesi (Temeller): Anadolu Market için ilk raporun"><meta property="og:description" content="Tek tabloda seçme, filtreleme, sıralama, hesaplama, gruplama, CASE ve tarih fonksiyonlarıyla altı soruluk bir yönetici raporu."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/proje-temel/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Bitirme projesi (Temeller): Anadolu Market için ilk raporun","description":"Tek tabloda seçme, filtreleme, sıralama, hesaplama, gruplama, CASE ve tarih fonksiyonlarıyla altı soruluk bir yönetici raporu.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/proje-temel/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Bitirme Projeleri</span><h1>Bitirme projesi (Temeller): Anadolu Market için ilk raporun</h1><p class="st-l">Tek tabloda seçme, filtreleme, sıralama, hesaplama, gruplama, CASE ve tarih fonksiyonlarıyla altı soruluk bir yönetici raporu.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-temel">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Senaryo</h2>
+<p>Anadolu Market'in satış müdürü, yıl sonu toplantısı öncesinde senden kısa bir rapor istiyor. Henüz tabloları birleştirmeyi bilmen gerekmiyor: her soru tek bir tabloyla çözülür. Bu projede şimdiye kadar öğrendiklerini bir arada kullanacaksın.</p>
+<table>
+<tr><th>Soru</th><th>Kullanacağın konular</th></tr>
+<tr><td>1. Kanal performansı</td><td>WHERE ile tarih aralığı, GROUP BY, ORDER BY</td></tr>
+<tr><td>2. Elektronik kâr marjı</td><td>Hesaplanan sütun, ROUND, sıralama</td></tr>
+<tr><td>3. Kalabalık şehirler</td><td>GROUP BY, HAVING</td></tr>
+<tr><td>4. Yaş grupları</td><td>CASE, GROUP BY</td></tr>
+<tr><td>5. E-posta sağlayıcıları</td><td>LIKE, koşullu sayım</td></tr>
+<tr><td>6. Stok uyarısı</td><td>Çoklu koşul, NULL, sıralama ve ilk N satır</td></tr>
+</table>
+<h2>Kullanacağın tablolar</h2>
+<ul>
+<li><code>orders</code>: order_id, customer_id, order_date, status (delivered, shipped, cancelled, returned), channel (web, mobile, store)</li>
+<li><code>products</code>: product_id, name, category, price, cost, stock</li>
+<li><code>customers</code>: customer_id, first_name, last_name, gender, birth_year, city, email, signup_date, segment</li>
+</ul>
+<div class="tip"><b>Çalışma önerisi</b>Her soruda önce <code>SELECT *</code> ile ilgili satırlara bak, sonra sütunları ve koşulları ekle. Sonucu yorumlamayı da unutma: hangi kanal öne çıkıyor, hangi ürün en az kâr bırakıyor?</div>
+<h2>Derinleş: işi baştan sona yapmak</h2>
+<div class="note"><b>Brif: Satış müdürü</b>“Perşembe yıl sonu toplantısı var. Hangi kanala, hangi kategoriye yatırım yapacağımıza karar vereceğiz. Bana tek sayfa yeter: altı sorunun sonucu, her birinin altında bir cümle yorum.”</div>
+<h3>Çalışma planı</h3>
+<ol>
+<li><b>Veriyi tanı.</b> Soruya başlamadan önce tablonun kaç satır olduğunu, tarih aralığını ve boş değerleri gör. Aşağıdaki sorgu <code>orders</code> için bunu tek satırda verir: 910 sipariş, 2022-06-22 ile 2024-12-31 arası.</li>
+<li><b>Varsayımlarını yaz.</b> Örneğin “2024 = 1 Ocak dahil, 1 Ocak 2025 hariç”, “iptal edilen siparişler de sayılıyor”. Müdür aynı sayıyı başka biçimde hesaplarsa farkın nedenini bu notlar açıklar.</li>
+<li><b>Soruyu böl.</b> “Kanal performansı” aslında iki sorudur: kaç sipariş geldi, kaçı iptal oldu? Önce sayıyı, sonra oranı hesapla.</li>
+</ol>
+<pre class="code">SELECT COUNT(*) AS satir, MIN(order_date) AS ilk_tarih, MAX(order_date) AS son_tarih,
+       SUM(CASE WHEN channel IS NULL THEN 1 ELSE 0 END) AS kanal_bos,
+       COUNT(DISTINCT status) AS durum_cesidi
+FROM orders;</pre>
+<h3>Kontrol listesi</h3>
+<ul>
+<li><b>Toplam tutuyor mu?</b> Kanal sayıları toplanınca 2024'ün toplam sipariş sayısını (537) vermeli. Vermiyorsa NULL kanal ya da yanlış tarih aralığı var.</li>
+<li><b>Payda doğru mu?</b> Gmail oranında payda tüm müşteriler (150) mi, e-postası bilinenler (139) mi? %31,3 ile %33,8 arasındaki fark bu seçimden doğar; hangisini kullandığını yaz.</li>
+<li><b>Uç değerler.</b> Stoğu 0 olan ürün hata mı, gerçekten tükenmiş mi? Fiyatı maliyetinden düşük ürün var mı?</li>
+</ul>
+<h3>Teslim</h3>
+<p>Her soru için küçük bir tablo; kanal karşılaştırmasına sütun grafik yeter. En üste üç cümle:</p>
+<div class="tip"><b>Yönetici özeti örneği</b>2024'te 537 sipariş alındı; mobil (235) ve web (224) siparişlerin %85'inden fazlasını getiriyor. Web'de iptal oranı %11,2 ile mağazanın (%3,8) yaklaşık üç katı; ödeme ve teslimat adımları incelenmeli. Elektronikte en düşük marj Powerbank'ta (%31,9); fiyatı ya da tedarikçisi gözden geçirilmeli.</div>
+<h3>Kendini değerlendir</h3>
+<table><tr><th>Ölçüt</th><th>Başlangıç</th><th>İyi</th><th>Mükemmel</th></tr><tr><td>Doğruluk</td><td>Sorgular çalışıyor</td><td>Tarih aralığı ve NULL doğru ele alınmış</td><td>Varsayımlar yazılı, eşitlik bozucu sıralama var</td></tr><tr><td>Doğrulama</td><td>Kontrol yok</td><td>Toplamlar karşılaştırılmış</td><td>Her oranın paydası açıkça belirtilmiş</td></tr><tr><td>Sunum</td><td>Ham sonuç tabloları</td><td>Her tabloya bir cümle yorum</td><td>Karara bağlanan üç cümlelik özet</td></tr></table>
+<p>Aşağıdaki ek görevler, raporu “sayım”dan “karar”a taşıyan iki soru ekliyor.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-temel">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../stil/">← Okunabilir SQL yazmak</a><a href="../hv-tanis/">Kanat Havayolları: veri setini tanı, seç ve filtrele →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

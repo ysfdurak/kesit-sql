@@ -1,0 +1,47 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>İK vakası: Veri ve Analitik ekibinde ne oldu? | Kesit SQL</title><meta name="description" content="Açık uçlu bir İK sorusunu adım adım çözmek: belirtiyi doğrula, ekibi karşılaştır, olası nedenleri (yönetici, ücret, piyasa) veriyle sına ve öneri yaz."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ik-proje/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="İK vakası: Veri ve Analitik ekibinde ne oldu?"><meta property="og:description" content="Açık uçlu bir İK sorusunu adım adım çözmek: belirtiyi doğrula, ekibi karşılaştır, olası nedenleri (yönetici, ücret, piyasa) veriyle sına ve öneri yaz."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ik-proje/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"İK vakası: Veri ve Analitik ekibinde ne oldu?","description":"Açık uçlu bir İK sorusunu adım adım çözmek: belirtiyi doğrula, ekibi karşılaştır, olası nedenleri (yönetici, ücret, piyasa) veriyle sına ve öneri yaz.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/ik-proje/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · İK Analitiği</span><h1>İK vakası: Veri ve Analitik ekibinde ne oldu?</h1><p class="st-l">Açık uçlu bir İK sorusunu adım adım çözmek: belirtiyi doğrula, ekibi karşılaştır, olası nedenleri (yönetici, ücret, piyasa) veriyle sına ve öneri yaz.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ik-proje">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Vaka</h2>
+<div class="note"><b>İK direktörü</b>“2024’te Veri ve Analitik ekibinden çok kişi ayrıldı, teknoloji direktörü ‘piyasa çok hareketli, herkes gidiyor’ diyor. Gerçekten öyle mi? Bir sayfalık bir analiz istiyorum.”</div>
+<p>Bu vakada tek bir doğru sorgu yok; bir analistin izlediği yol var:</p>
+<ol><li><b>Belirtiyi doğrula:</b> Veri ekibinin 2024 devri gerçekten diğer teknoloji ekiplerinden yüksek mi? Kaç kişi?</li>
+<li><b>Zamanla:</b> Ayrılmalar ne zaman başladı? Bir olayla (yönetici değişikliği, zam dönemi) çakışıyor mu?</li>
+<li><b>Nedenler:</b> Ayrılma nedenleri, ücret bant konumu, yönetici puanları. “Piyasa” açıklaması doğruysa diğer teknoloji ekiplerinde de benzer devir ve “rakip firma” nedeni görmeliyiz.</li>
+<li><b>Kimi kaybettik?</b> İstenmeyen kayıp (yüksek performanslı gönüllü ayrılma).</li>
+<li><b>Öneri:</b> Bulguları üç cümlede özetle ve bir aksiyon öner.</li></ol>
+<div class="tip"><b>İpucu</b>Her adımda karşılaştırma grubu kullan: Veri ekibini tek başına değil, Yazılım Geliştirme ve BT Altyapı ile yan yana göster.</div>
+<h2>Derinleş: Bulguyu sınamak: önce–sonra, karşılaştırma grubu ve alternatif açıklamalar</h2>
+<p>Bir vakada en tehlikeli an, ilk güçlü işareti bulduğun andır. “Yeni müdür geldi, ayrılmalar arttı” cümlesi doğru olabilir, ama bunu sınamak için üç soruya cevap gerekir.</p>
+<h3>1. Olay öncesi ve sonrası, aynı uzunlukta pencerelerle</h3>
+<p>Veri ve Analitik'in yeni müdürü Rıza Karabulut 3 Temmuz 2023'te işe başladı. Bu tarihten önceki ve sonraki 12 ayda ayrılan sayısını, aynı dönemdeki diğer teknoloji bölümleriyle yan yana koyalım:</p>
+<pre class="code">SELECT d.name,
+       SUM(CASE WHEN e.term_date >= '2022-07-03' AND e.term_date &lt; '2023-07-03' THEN 1 ELSE 0 END) AS onceki_12_ay,
+       SUM(CASE WHEN e.term_date >= '2023-07-03' AND e.term_date &lt; '2024-07-03' THEN 1 ELSE 0 END) AS sonraki_12_ay
+FROM ik_employees e
+JOIN ik_positions p ON p.position_id = e.position_id
+JOIN ik_departments d ON d.dept_id = p.dept_id
+WHERE d.function_area = 'Teknoloji'
+GROUP BY d.dept_id, d.name
+ORDER BY d.name;</pre>
+<p>Veri ve Analitik'te 5'ten 19'a çıkış var. Aynı piyasada çalışan Yazılım Geliştirme 15'ten 18'e, BT Altyapı 6'dan 4'e gitmiş. “Piyasa hareketli” açıklaması doğru olsaydı karşılaştırma gruplarında da benzer bir sıçrama görürdük. Bu mantık, nedensellik analizindeki <b>fark-içinde-fark</b> yaklaşımının sezgisel halidir.</p>
+<h3>2. Alternatif açıklamaları ele</h3>
+<table>
+<tr><th>Alternatif açıklama</th><th>Hangi sorgu sınar?</th></tr>
+<tr><td>Piyasa / rakip teklifleri</td><td>Karşılaştırma bölümlerinde devir ve “rakip firma” nedeni</td></tr>
+<tr><td>Ücret</td><td>Ayrılanların bant içindeki konumu (compa-ratio = maaş ÷ bant ortası)</td></tr>
+<tr><td>Büyüme kaynaklı devir</td><td>Ayrılanların kıdemi: yeni işe alınanlar mı gidiyor?</td></tr>
+<tr><td>Yönetici</td><td>Anketteki yönetici puanı, “yönetici” ayrılma nedeni</td></tr>
+</table>
+<p>Ücret açıklaması ilginç bir sonuç verir. Üç teknoloji bölümünde de ayrılanların compa-ratio'su kalanlardan düşüktür. Yani düşük ücret <b>genel</b> bir risk faktörüdür, ama Veri ekibine özgü sıçramayı tek başına açıklamaz. İyi bir analiz, bulguyu destekleyen kanıtla birlikte desteklemeyen kanıtı da gösterir.</p>
+<h3>3. Küçük sayılar</h3>
+<p>19 kişi büyük bir rakam gibi görünür, ama 100 kişilik bir ekipte tek tek ayrılmalar yüzdeleri hızla oynatır. Çeyreklik yüzdeler yerine sayıları göster. Yüzde verirken paydayı da yaz (“114 kişiden 19'u”).</p>
+<div class="tip"><b>Bir sayfalık rapor iskeleti</b>Bulgu (tek cümle, sayıyla) → kanıt (2–3 tablo, karşılaştırma grubuyla) → elenen alternatifler → belirsizlik (küçük sayı, eksik veri) → öneri (somut, sahibi belli).</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ik-proje">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ik-baglilik/">← Bağlılık anketi analitiği: eNPS, katılım ve yönetici etkisi</a><a href="../ds-tanimsal/">SQL ile tanımlayıcı istatistik →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

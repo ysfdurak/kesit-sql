@@ -1,0 +1,37 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ACID, izolasyon seviyeleri ve eşzamanlılık | Kesit SQL</title><meta name="description" content="Dirty read, phantom read, kilitler ve MVCC."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/acid/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="ACID, izolasyon seviyeleri ve eşzamanlılık"><meta property="og:description" content="Dirty read, phantom read, kilitler ve MVCC."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/acid/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"ACID, izolasyon seviyeleri ve eşzamanlılık","description":"Dirty read, phantom read, kilitler ve MVCC.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/acid/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Veritabanı İç Yapısı</span><h1>ACID, izolasyon seviyeleri ve eşzamanlılık</h1><p class="st-l">Dirty read, phantom read, kilitler ve MVCC.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-acid">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>ACID</h2>
+<table><tr><th>Harf</th><th>Özellik</th><th>Anlamı</th></tr>
+<tr><td>A</td><td>Atomicity (bölünmezlik)</td><td>Ya hep ya hiç.</td></tr>
+<tr><td>C</td><td>Consistency (tutarlılık)</td><td>İşlem kısıtları ihlal etmeden bir geçerli durumdan diğerine geçirir.</td></tr>
+<tr><td>I</td><td>Isolation (yalıtım)</td><td>Eşzamanlı işlemler birbirini bozmaz.</td></tr>
+<tr><td>D</td><td>Durability (kalıcılık)</td><td>COMMIT edilen veri çökmeden sonra da durur (WAL/redo log).</td></tr>
+</table>
+<h2>Eşzamanlılık sorunları</h2>
+<ul>
+<li><b>Dirty read</b>: Başka işlemin henüz COMMIT etmediği veriyi okumak.</li>
+<li><b>Non-repeatable read</b>: Aynı satırı iki kez okursun, arada başkası değiştirmiştir.</li>
+<li><b>Phantom read</b>: Aynı koşulla iki kez sorgularsın, arada yeni satırlar eklenmiştir.</li>
+<li><b>Lost update</b>: İki işlem aynı satırı okuyup günceller; biri diğerinin değişikliğini ezer.</li>
+</ul>
+<h2>İzolasyon seviyeleri (SQL standardı)</h2>
+<table><tr><th>Seviye</th><th>Dirty</th><th>Non-repeatable</th><th>Phantom</th></tr>
+<tr><td>READ UNCOMMITTED</td><td>Olabilir</td><td>Olabilir</td><td>Olabilir</td></tr>
+<tr><td>READ COMMITTED (PostgreSQL, SQL Server varsayılanı)</td><td>Yok</td><td>Olabilir</td><td>Olabilir</td></tr>
+<tr><td>REPEATABLE READ (MySQL InnoDB varsayılanı)</td><td>Yok</td><td>Yok</td><td>Olabilir*</td></tr>
+<tr><td>SERIALIZABLE</td><td>Yok</td><td>Yok</td><td>Yok</td></tr>
+</table>
+<p>* PostgreSQL ve InnoDB'de pratikte büyük ölçüde engellenir.</p>
+<h2>Kilitler ve MVCC</h2>
+<p>Klasik yaklaşım satır/tablo kilitleridir; okuyucu yazarı, yazar okuyucuyu bekler. Modern veritabanları (PostgreSQL, Oracle, InnoDB) <b>MVCC</b> (Multi-Version Concurrency Control) kullanır: Her işlem verinin bir anlık görüntüsünü görür, okuyucular yazarları engellemez. Bedeli: eski sürümlerin temizlenmesi (PostgreSQL'de VACUUM).</p>
+<p><b>Deadlock</b>: İki işlem birbirinin kilidini bekler. Veritabanı birini kurban seçip geri alır. Önlem: tablolara/satırlara hep aynı sırayla eriş, işlemleri kısa tut.</p>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-acid">Alıştırmalara geç (4)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../be-migration/">← Şema değişikliklerini yönetmek: migration ve kesintisiz dağıtım</a><a href="../json/">SQL ile JSON verisi →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

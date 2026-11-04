@@ -1,0 +1,35 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mülakat: açık uçlu ürün analitiği vakası | Kesit SQL</title><meta name="description" content="“Rezervasyonlar düştü, neden?” gibi açık uçlu bir soruyu metrik tanımına, hipotezlere ve sorgulara bölmek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/mk-vaka/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Mülakat: açık uçlu ürün analitiği vakası"><meta property="og:description" content="“Rezervasyonlar düştü, neden?” gibi açık uçlu bir soruyu metrik tanımına, hipotezlere ve sorgulara bölmek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/mk-vaka/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Mülakat: açık uçlu ürün analitiği vakası","description":"“Rezervasyonlar düştü, neden?” gibi açık uçlu bir soruyu metrik tanımına, hipotezlere ve sorgulara bölmek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/mk-vaka/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Mülakat Hazırlığı</span><h1>Mülakat: açık uçlu ürün analitiği vakası</h1><p class="st-l">“Rezervasyonlar düştü, neden?” gibi açık uçlu bir soruyu metrik tanımına, hipotezlere ve sorgulara bölmek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-mk-vaka">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Vaka</h2>
+<div class="note"><b>Görüşmeci</b>“Kanat Havayolları'nda Kasım ayında üyelerin gerçekleşen uçuş sayısı Ekim'e göre düştü. Ürün yöneticisi nedenini soruyor. Nasıl incelersin?”</div>
+<p>Bu tür sorularda tek bir doğru sorgu yoktur. Görüşmeci senin <b>problemi parçalara ayırma</b> biçimini, hangi metriklere baktığını ve hipotezlerini veriyle nasıl sınadığını değerlendirir.</p>
+<h2>1. Metriği tanımla</h2>
+<p>“Gerçekleşen uçuş” = status = 'flown' olan rezervasyon, uçuş tarihine göre aya yazılır. Önce düşüşün gerçek olduğunu doğrula:</p>
+<pre class="code">SELECT strftime('%Y-%m', f.sched_dep) AS ay, COUNT(*) AS ucus, COUNT(DISTINCT b.passenger_id) AS uye
+FROM hv_bookings b JOIN hv_flights f ON f.flight_id = b.flight_id
+WHERE b.status = 'flown'
+GROUP BY strftime('%Y-%m', f.sched_dep)
+ORDER BY ay;</pre>
+<h2>2. Metriği ayrıştır</h2>
+<p>Uçuş sayısı = <b>aktif üye sayısı × üye başına uçuş</b>. Düşüş hangisinden geliyor? Sonra boyutlara böl: seviye, rota, ücret sınıfı, yurt içi / yurt dışı.</p>
+<h2>3. Hipotezler</h2>
+<table><tr><th>Hipotez</th><th>Nasıl sınanır?</th></tr>
+<tr><td>Arz düştü (daha az sefer)</td><td>Aylık planlanan uçuş sayısı</td></tr>
+<tr><td>İptaller arttı</td><td>Havayolu iptalleri ve yolcu iptalleri ayrı ayrı</td></tr>
+<tr><td>Belirli bir segment uzaklaştı</td><td>Seviyeye göre aktif üye ve üye başına uçuş</td></tr>
+<tr><td>Mevsimsellik</td><td>Eylül–Ekim–Kasım–Aralık eğilimi; mümkünse geçen yıl</td></tr>
+<tr><td>Ölçüm sorunu</td><td>Rezervasyonun uçuş ayına mı, rezervasyon ayına mı yazıldığı</td></tr>
+</table>
+<h2>4. Bulguyu ve önerini anlat</h2>
+<p>“Kasım'daki düşüşün yaklaşık üçte ikisi aktif üye sayısındaki azalmadan geliyor ve büyük kısmı Classic seviyede. Planlanan sefer yalnızca %3 azalmış; iptal oranı %1'den %1,7'ye çıkmış ama bu da düşüşün küçük bir kısmını açıklıyor. Öneri: Classic üyeler için Kasım kampanyasının etkisini ölçecek bir A/B testi.” Sayılar senin sorgularından gelmeli.</p>
+<div class="tip"><b>Görüşmeci neye bakıyor?</b>Önce veriyi doğrulaman, metriği bileşenlerine ayırman, birden çok hipotez kurman ve sonucu bir karar önerisine bağlaman.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-mk-vaka">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../mk-medyan/">← Mülakat kalıbı: medyan, yüzdelik ve mod</a><a href="../vaka-yilsonu/">Vaka: Anadolu Market 2024 yıl sonu raporu →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

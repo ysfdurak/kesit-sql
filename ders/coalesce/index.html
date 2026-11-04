@@ -1,0 +1,31 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>COALESCE, NULLIF ve NULL ile hesap | Kesit SQL</title><meta name="description" content="NULL yerine varsayılan değer koymak ve sıfıra bölmeyi önlemek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/coalesce/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="COALESCE, NULLIF ve NULL ile hesap"><meta property="og:description" content="NULL yerine varsayılan değer koymak ve sıfıra bölmeyi önlemek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/coalesce/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"COALESCE, NULLIF ve NULL ile hesap","description":"NULL yerine varsayılan değer koymak ve sıfıra bölmeyi önlemek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/coalesce/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Fonksiyonlar</span><h1>COALESCE, NULLIF ve NULL ile hesap</h1><p class="st-l">NULL yerine varsayılan değer koymak ve sıfıra bölmeyi önlemek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-coalesce">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>COALESCE: ilk NULL olmayan</h2>
+<p><code>COALESCE(a, b, c)</code> soldan sağa bakar ve NULL olmayan ilk değeri döndürür.</p>
+<pre class="code">SELECT first_name,
+       COALESCE(city, 'Bilinmiyor') AS sehir,
+       COALESCE(email, 'e-posta yok') AS eposta
+FROM customers
+LIMIT 15;</pre>
+<p>SQLite/MySQL'de <code>IFNULL(a, b)</code>, SQL Server'da <code>ISNULL(a, b)</code>, Oracle'da <code>NVL(a, b)</code> iki argümanlı karşılıklarıdır. COALESCE standarttır, her yerde çalışır.</p>
+<h2>NULLIF: eşitse NULL yap</h2>
+<p><code>NULLIF(a, b)</code>, a = b ise NULL, değilse a döndürür. En yaygın kullanımı <b>sıfıra bölmeyi önlemek</b>tir:</p>
+<pre class="code">SELECT name, stock,
+       ROUND(price / NULLIF(stock, 0), 2) AS stok_basina_fiyat
+FROM products
+ORDER BY stock
+LIMIT 5;</pre>
+<p>Stok 0 olduğunda bölme hata vermek (veya sonsuz) yerine NULL üretir.</p>
+<h2>Derinleş: COALESCE, NULLIF ve ortalamalar</h2><p>Aynı veride iki farklı “ortalama kurye puanı” hesaplanabilir; hangisinin doğru olduğu soruya bağlıdır:</p><pre class="code">SELECT ROUND(AVG(rating), 2)              AS puanlilarin_ortalamasi,
+       ROUND(AVG(COALESCE(rating, 0)), 2) AS bos_sifir_sayilirsa
+FROM lk_couriers;</pre>
+<p>İkinci değer daha düşüktür, çünkü puanı olmayan kuryeleri 0 puan almış gibi sayar. Raporda hangisini kullandığını belirt. <code>NULLIF(x, 0)</code> ise tersini yapar: sıfırı “bilinmeyen”e çevirir ve sıfıra bölmeyi önler.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-coalesce">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../case/">← CASE WHEN: SQL'de eğer-ise</a><a href="../null-guvenli/">NULL güvenli karşılaştırma: IS DISTINCT FROM ve eşdeğerleri →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

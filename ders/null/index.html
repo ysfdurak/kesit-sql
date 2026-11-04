@@ -1,0 +1,37 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NULL: bilinmeyen değer | Kesit SQL</title><meta name="description" content="IS NULL, IS NOT NULL ve NULL'ın üç değerli mantığı."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/null/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="NULL: bilinmeyen değer"><meta property="og:description" content="IS NULL, IS NOT NULL ve NULL'ın üç değerli mantığı."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/null/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"NULL: bilinmeyen değer","description":"IS NULL, IS NOT NULL ve NULL'ın üç değerli mantığı.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/null/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Temeller</span><h1>NULL: bilinmeyen değer</h1><p class="st-l">IS NULL, IS NOT NULL ve NULL'ın üç değerli mantığı.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-null">Uygulamada aç, 11 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>NULL sıfır değildir, boş metin değildir</h2>
+<p><b>NULL</b> “değer yok / bilinmiyor” demektir. Bazı müşterilerimizin şehri veya e-postası bilinmiyor; bu hücrelerde NULL var.</p>
+<h2>NULL'ı = ile arayamazsın</h2>
+<p>NULL ile yapılan her karşılaştırma <b>bilinmeyen</b> (UNKNOWN) sonucunu verir, doğru değil. Bu yüzden şu sorgu hiçbir satır döndürmez:</p>
+<pre class="code">SELECT * FROM customers WHERE email = NULL;  -- yanlış!</pre>
+<p>Doğrusu:</p>
+<pre class="code">SELECT first_name, last_name, email
+FROM customers
+WHERE email IS NULL;</pre>
+<p>Tersi için <code>IS NOT NULL</code>.</p>
+<h2>Üç değerli mantık</h2>
+<p>SQL'de bir koşul DOĞRU, YANLIŞ veya BİLİNMEYEN olabilir. WHERE sadece DOĞRU olan satırları alır.</p>
+<table><tr><th>İfade</th><th>Sonuç</th></tr>
+<tr><td><code>NULL = NULL</code></td><td>BİLİNMEYEN</td></tr>
+<tr><td><code>NULL &lt;&gt; 5</code></td><td>BİLİNMEYEN</td></tr>
+<tr><td><code>5 + NULL</code></td><td>NULL</td></tr>
+<tr><td><code>TRUE OR NULL</code></td><td>DOĞRU</td></tr>
+<tr><td><code>FALSE AND NULL</code></td><td>YANLIŞ</td></tr>
+</table>
+<div class="warn"><b>Klasik hata</b><code>WHERE city &lt;&gt; 'İstanbul'</code> şehri NULL olan müşterileri <b>getirmez</b>. Onları da istiyorsan: <code>WHERE city &lt;&gt; 'İstanbul' OR city IS NULL</code>.</div>
+<h2>Derinleş: NULL nerelerde karşına çıkar?</h2><table><tr><th>Durum</th><th>Örnek</th><th>Doğru yazım</th></tr><tr><td>Henüz olmamış olay</td><td>İptal edilen siparişin <code>delivered_at</code> değeri</td><td><code>delivered_at IS NULL</code></td></tr><tr><td>Bilinmeyen bilgi</td><td>Müşterinin ilçesi</td><td><code>COALESCE(district, 'Belirtilmemiş')</code></td></tr><tr><td>Uygulanamaz</td><td>Vadesiz hesabın kredi limiti</td><td>Ortalamada payda dikkat: <code>AVG</code> boşları atlar</td></tr></table>
+<pre class="code">SELECT COUNT(*) AS toplam,
+       COUNT(courier_id) AS kuryeli,
+       COUNT(*) - COUNT(courier_id) AS kuryesiz
+FROM lk_orders;</pre>
+<p>Raporda bir oran hesaplarken paydanın boşları içerip içermediğini her zaman açıkça söyle.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-null">Alıştırmalara geç (11)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../like-escape/">← LIKE ile alt çizgi ve yüzde işaretini aramak: ESCAPE</a><a href="../order-limit/">ORDER BY ve ilk N satır (LIMIT / TOP / FETCH) →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

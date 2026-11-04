@@ -1,0 +1,63 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Veri kalitesi testleri | Kesit SQL</title><meta name="description" content="Benzersizlik, NULL, referans bütünlüğü ve aralık kontrolleri."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/de-kalite/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Veri kalitesi testleri"><meta property="og:description" content="Benzersizlik, NULL, referans bütünlüğü ve aralık kontrolleri."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/de-kalite/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Veri kalitesi testleri","description":"Benzersizlik, NULL, referans bütünlüğü ve aralık kontrolleri.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/de-kalite/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veri Mühendisliği</span><h1>Veri kalitesi testleri</h1><p class="st-l">Benzersizlik, NULL, referans bütünlüğü ve aralık kontrolleri.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-de-kalite">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Testler “sıfır satır” döndürmeli</h2>
+<p>dbt ve benzeri araçlardaki yaygın yaklaşım: Her test, <b>sorunlu satırları</b> döndüren bir sorgudur. Sonuç boşsa test geçer.</p>
+<pre class="code">-- 1) Benzersizlik: order_id tekrar ediyor mu?
+SELECT order_id, COUNT(*) FROM orders GROUP BY order_id HAVING COUNT(*) > 1;</pre>
+<pre class="code">-- 2) Referans bütünlüğü: var olmayan ürüne ait sipariş satırı var mı?
+SELECT oi.* FROM order_items oi
+LEFT JOIN products p ON p.product_id = oi.product_id
+WHERE p.product_id IS NULL;</pre>
+<pre class="code">-- 3) Kabul edilen değerler
+SELECT DISTINCT status FROM orders
+WHERE status NOT IN ('delivered', 'shipped', 'cancelled', 'returned');</pre>
+<pre class="code">-- 4) Aralık / mantık kontrolleri
+SELECT * FROM order_items WHERE quantity <= 0 OR discount < 0 OR discount >= 1;
+SELECT * FROM products WHERE cost > price;</pre>
+<h2>Tek sorguda kalite özeti</h2>
+<pre class="code">SELECT 'customers.email NULL' AS test, COUNT(*) AS hatali FROM customers WHERE email IS NULL
+UNION ALL SELECT 'customers.city NULL', COUNT(*) FROM customers WHERE city IS NULL
+UNION ALL SELECT 'orders sipariş tarihi < kayıt tarihi', COUNT(*)
+  FROM orders o JOIN customers c ON c.customer_id = o.customer_id WHERE o.order_date < c.signup_date;</pre>
+<h2>Derinleş: veri kalitesinin beş boyutu</h2>
+<p>“Veri kötü” demek eyleme dönüşmez. Kaliteyi ölçülebilir boyutlara ayırınca her sorun için bir test, bir sahip ve bir eşik tanımlanabilir:</p>
+<table><tr><th>Boyut</th><th>Soru</th><th>Örnek test</th></tr>
+<tr><td><b>Tamlık</b></td><td>Olması gereken değer var mı?</td><td>Müşterinin ilçesi boş mu?</td></tr>
+<tr><td><b>Tekillik</b></td><td>Her varlık bir kez mi?</td><td>Aynı <code>order_id</code> iki kez geçiyor mu?</td></tr>
+<tr><td><b>Geçerlilik</b></td><td>Değer izin verilen aralıkta / biçimde mi?</td><td>Puan 1–5 dışında mı?</td></tr>
+<tr><td><b>Tutarlılık</b></td><td>İlişkili kayıtlar birbiriyle çelişiyor mu?</td><td>Sipariş, müşterinin kayıt tarihinden önce mi?</td></tr>
+<tr><td><b>Güncellik</b></td><td>Veri beklenen tazelikte mi?</td><td>Son kayıt kaç gün önce geldi?</td></tr></table>
+<p>Bunlara bazen <b>doğruluk</b> (değer gerçeği yansıtıyor mu) da eklenir; ama doğruluk genelde dış bir kaynakla karşılaştırma gerektirir ve tek başına SQL ile ölçülemez.</p>
+<h3>Lezzet Kurye kalite karnesi</h3>
+<pre class="code">SELECT 'tamlık' AS boyut, 'lk_customers.district boş' AS test, COUNT(*) AS hatali
+FROM lk_customers WHERE district IS NULL
+UNION ALL
+SELECT 'tekillik', 'lk_orders.order_id tekrarı', COUNT(*)
+FROM (SELECT order_id FROM lk_orders GROUP BY order_id HAVING COUNT(*) > 1) t
+UNION ALL
+SELECT 'geçerlilik', 'puan 1-5 dışında', COUNT(*)
+FROM lk_ratings WHERE food_score NOT BETWEEN 1 AND 5 OR courier_score NOT BETWEEN 1 AND 5
+UNION ALL
+SELECT 'tutarlılık', 'sipariş, müşteri kaydından önce', COUNT(*)
+FROM lk_orders o JOIN lk_customers c ON c.customer_id = o.customer_id
+WHERE substr(o.placed_at, 1, 10) &lt; c.signup_date
+UNION ALL
+SELECT 'tutarlılık', 'davetli, davet edenden önce kayıtlı', COUNT(*)
+FROM lk_customers c JOIN lk_customers d ON d.customer_id = c.referred_by
+WHERE c.signup_date &lt; d.signup_date
+UNION ALL
+SELECT 'güncellik', 'son siparişten bu yana gün (rapor günü 2025-01-03)',
+       julianday('2025-01-03') - julianday(MAX(date(placed_at)))
+FROM lk_orders;</pre>
+<p>Karnede iki gerçek bulgu var: 1.209 müşterinin 74'ünde ilçe boş (tamlık %93,9) ve davetli 294 müşterinin 136'sı onu davet edenden <b>önce</b> kaydolmuş görünüyor. İkincisi tipik bir tutarlılık sorunudur: ya kayıt tarihi sonradan güncelleniyor ya da davet bilgisi başka bir akıştan geliyor. Kaynağı bilen ekiple konuşmadan “düzeltme”. Sipariş ile kayıt tarihi testi ise 0 döner: temiz çıkan test de bilgidir, her yükte yine çalışmalıdır.</p>
+<div class="tip"><b>Eşik ve önem derecesi</b>Her testin bir eşiği olsun: tekillik ihlali sıfır tolerans (hattı durdur), tamlıkta %95 altı uyarı gibi. dbt'de <code>severity: warn</code> / <code>error</code> ve <code>warn_if</code>, <code>error_if</code> ayarları bunu sağlar.</div>
+<p><b>Sık hata:</b> testleri yalnızca yeni tabloya yazmak. En değerli testler, kaynaklar arasındaki ilişkileri (sipariş–müşteri, değerlendirme–sipariş) kontrol eden tutarlılık testleridir; çünkü tek tabloya bakan testler bu çelişkileri hiç görmez.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-de-kalite">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../de-etl/">← ETL, ELT ve veri katmanları</a><a href="../sql-test/">SQL kodunu test etmek: veri testleri, birim testleri ve CI →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,39 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dönüşümler ve koşullu fonksiyonlar: CAST, CONVERT, TRY_CAST, IIF, CHOOSE | Kesit SQL</title><meta name="description" content="Tip dönüşümü, hatasız dönüşüm, ISNULL ile COALESCE farkı."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-donusum/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Dönüşümler ve koşullu fonksiyonlar: CAST, CONVERT, TRY_CAST, IIF, CHOOSE"><meta property="og:description" content="Tip dönüşümü, hatasız dönüşüm, ISNULL ile COALESCE farkı."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-donusum/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Dönüşümler ve koşullu fonksiyonlar: CAST, CONVERT, TRY_CAST, IIF, CHOOSE","description":"Tip dönüşümü, hatasız dönüşüm, ISNULL ile COALESCE farkı.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-donusum/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · T-SQL (SQL Server)</span><h1>Dönüşümler ve koşullu fonksiyonlar: CAST, CONVERT, TRY_CAST, IIF, CHOOSE</h1><p class="st-l">Tip dönüşümü, hatasız dönüşüm, ISNULL ile COALESCE farkı.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-donusum">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>CAST, CONVERT ve TRY_ ailesi</h2>
+<pre class="code" data-base="tsql">SELECT CAST('123' AS INT) + 1             AS sayi,
+       TRY_CAST('abc' AS INT)               AS gecersiz_sayi,
+       TRY_CONVERT(DATE, '2024-02-30')      AS gecersiz_tarih,
+       CONVERT(DATE, '2024-02-28')          AS tarih,
+       CAST(19.99 AS DECIMAL(10, 1))        AS yuvarlanmis;</pre>
+<p><code>CAST</code> başarısız olursa sorgu hata verir; <code>TRY_CAST</code> / <code>TRY_CONVERT</code> ise NULL döner. Kirli veriyi temizlerken hayat kurtarır.</p>
+<pre class="code" data-base="tsql" data-err>SELECT CAST('abc' AS INT) AS sonuc;</pre>
+<h2>IIF ve CHOOSE</h2>
+<pre class="code" data-base="tsql">SELECT TOP 8 name, stock,
+       IIF(stock = 0, N'Tükendi', IIF(stock &lt; 20, N'Az', N'Var')) AS durum
+FROM products
+ORDER BY stock;</pre>
+<pre class="code" data-base="tsql">SELECT CHOOSE(DATEPART(quarter, order_date), 'Q1', 'Q2', 'Q3', 'Q4') AS ceyrek,
+       COUNT(*) AS siparis
+FROM orders
+WHERE YEAR(order_date) = 2024
+GROUP BY DATEPART(quarter, order_date)
+ORDER BY DATEPART(quarter, order_date);</pre>
+<h2>ISNULL ile COALESCE farkı</h2>
+<table><tr><th></th><th><code>ISNULL(a, b)</code></th><th><code>COALESCE(a, b, c, ...)</code></th></tr>
+<tr><td>Argüman sayısı</td><td>2</td><td>Sınırsız</td></tr>
+<tr><td>Sonuç tipi</td><td>İlk argümanın tipi (uzun değer kırpılabilir)</td><td>En yüksek öncelikli tip</td></tr>
+<tr><td>Standart</td><td>SQL Server'a özgü</td><td>ANSI standardı</td></tr>
+</table>
+<p>Örneğin <code>ISNULL(CAST(NULL AS VARCHAR(3)), 'Bilinmiyor')</code> sonucu <b>'Bil'</b> olur; COALESCE ise 'Bilinmiyor' döner.</p>
+<div class="note"><b>Örtük dönüşüm ve tip önceliği</b>SQL Server farklı tipleri karşılaştırırken düşük öncelikli tipi yüksek olana çevirir (ör. VARCHAR → INT). <code>WHERE musteri_no = 123</code> sorgusunda musteri_no VARCHAR ise <b>her satır</b> sayıya çevrilir: hem indeks kullanılamaz hem de sayıya çevrilemeyen bir değer sorguyu patlatır.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-donusum">Alıştırmalara geç (4)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-tarih/">← T-SQL tarih ve saat fonksiyonları</a><a href="../ts-degisken/">Değişkenler ve akış kontrolü: DECLARE, IF, WHILE →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

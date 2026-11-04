@@ -1,0 +1,66 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Yanlış optimizasyon: hızlı görünen ama işe yaramayan ya da sonucu bozan değişiklikler | Kesit SQL</title><meta name="description" content="Sonucu değiştiren yeniden yazımlar, efsaneler (COUNT(1), EXISTS), NOLOCK, her sütuna indeks, ipucu kullanımı, ölçmeden karar."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/opt-yanlis/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Yanlış optimizasyon: hızlı görünen ama işe yaramayan ya da sonucu bozan değişiklikler"><meta property="og:description" content="Sonucu değiştiren yeniden yazımlar, efsaneler (COUNT(1), EXISTS), NOLOCK, her sütuna indeks, ipucu kullanımı, ölçmeden karar."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/opt-yanlis/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Yanlış optimizasyon: hızlı görünen ama işe yaramayan ya da sonucu bozan değişiklikler","description":"Sonucu değiştiren yeniden yazımlar, efsaneler (COUNT(1), EXISTS), NOLOCK, her sütuna indeks, ipucu kullanımı, ölçmeden karar.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/opt-yanlis/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Sorgu Optimizasyonu</span><h1>Yanlış optimizasyon: hızlı görünen ama işe yaramayan ya da sonucu bozan değişiklikler</h1><p class="st-l">Sonucu değiştiren yeniden yazımlar, efsaneler (COUNT(1), EXISTS), NOLOCK, her sütuna indeks, ipucu kullanımı, ölçmeden karar.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-yanlis">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory"><h2>En tehlikeli optimizasyon sonucu değiştirendir</h2>
+<p>Yavaş rapor can sıkar, yanlış rapor kararı bozar. Aşağıdakilerin hepsi gerçek işlerde sık görülür. Önce sonucu bozanlara, sonra işe yaramayanlara bakalım.</p>
+<h2>Sonucu bozan "hızlandırmalar"</h2>
+<table>
+<tr><th>Değişiklik</th><th>Neden yapılır</th><th>Ne bozulur</th></tr>
+<tr><td><code>UNION</code> yerine <code>UNION ALL</code></td><td>Tekilleştirme adımı kalksın</td><td>İki kolda da çıkan satır iki kez sayılır</td></tr>
+<tr><td><code>OR</code> yerine iki kollu <code>UNION ALL</code></td><td>Her kol kendi indeksini kullansın</td><td>Aynı sebeple çoğalma</td></tr>
+<tr><td><code>LEFT JOIN</code> yerine <code>JOIN</code></td><td>Daha hızlı plan</td><td>Eşleşmeyen satırlar kaybolur</td></tr>
+<tr><td><code>COUNT(DISTINCT x)</code> yerine <code>COUNT(x)</code></td><td>Tekilleştirme pahalı</td><td>Çoğalan satırlar sayılır</td></tr>
+<tr><td><code>BETWEEN</code> ile tarih aralığı</td><td>Kısa yazım</td><td>Son günün saatli kayıtları düşer</td></tr>
+<tr><td><code>NOT IN</code> ile <code>NOT EXISTS</code> arasında geçiş</td><td>"Biri daha hızlı"</td><td>Alt sorguda NULL varsa sonuç değişir</td></tr>
+<tr><td><code>WITH (NOLOCK)</code></td><td>Kilit beklemesin</td><td>Kirli okuma: geri alınacak değişiklikler okunur, satır atlanabilir ya da iki kez okunabilir</td></tr>
+</table>
+<p>Son satır için not: SQL Server'da <code>NOLOCK</code>, <code>READUNCOMMITTED</code> demektir. Kilit beklemesi sorununu hız sorunu sanıp bir finansal raporun sonucunu riske atma. Çoğu zaman satır sürümlemeye dayalı okuma (<code>READ COMMITTED SNAPSHOT</code>) daha doğru yoldur.</p>
+<h2>İşe yaramayanlar: efsaneler</h2>
+<h3>"COUNT(1), COUNT(*)'tan hızlıdır"</h3>
+<p>Aynı tablodaki iki plan aşağıda. Aynı işlem, aynı sayfa sayısı.</p>
+<div class="note"><b>PostgreSQL çıktıları</b>Bu derslerdeki PostgreSQL planları elle yazılmadı. Aynı veriyle PostgreSQL 16.4 üzerinde (PGlite, tarayıcıda çalışan WASM sürümü) üretildi. <code>VACUUM ANALYZE</code> çalıştırıldı, planlama satırları kısalık için çıkarıldı. Sayılar kendi sunucunda farklı olur; okuma biçimi aynıdır.</div>
+<pre class="code" data-norun>EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT COUNT(*) FROM lk_orders;</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">Aggregate  (cost=157.90..157.91 rows=1 width=8) (actual rows=1 loops=1)
+  Buffers: shared hit=8
+  ->  Index Only Scan using lk_orders_restaurant_id_idx on lk_orders  (cost=0.28..139.95 rows=7178 width=0) (actual rows=7178 loops=1)
+        Heap Fetches: 0
+        Buffers: shared hit=8</pre>
+<pre class="code" data-norun>EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT COUNT(1) FROM lk_orders;</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">Aggregate  (cost=157.90..157.91 rows=1 width=8) (actual rows=1 loops=1)
+  Buffers: shared hit=8
+  ->  Index Only Scan using lk_orders_restaurant_id_idx on lk_orders  (cost=0.28..139.95 rows=7178 width=0) (actual rows=7178 loops=1)
+        Heap Fetches: 0
+        Buffers: shared hit=8</pre>
+<h3>"İndeks her zaman hızlandırır"</h3>
+<p>Seçiciliği düşük koşulda indeks yararsız kalabilir. Bu veride yaygın bir değerle yapılan okuma, <code>Bitmap Heap Scan</code> kullansa da tablonun tamamından çok sayfa okudu:</p>
+<pre class="plan-cikti" tabindex="0">Bitmap Heap Scan on bank_txns  (cost=234.88..881.67 rows=20463 width=10) (actual rows=20520 loops=1)
+  Recheck Cond: ((txn_type)::text = 'kart_harcama'::text)
+  Heap Blocks: exact=390
+  Buffers: shared hit=410
+  ->  Bitmap Index Scan on ix_tip  (cost=0.00..229.76 rows=20463 width=0) (actual rows=20520 loops=1)
+        Index Cond: ((txn_type)::text = 'kart_harcama'::text)
+        Buffers: shared hit=20</pre>
+<h3>"Her sütuna indeks ekleyelim"</h3>
+<p>Her indeks her yazmaya biner, çakışan indeksler boşa yer kaplar. SQL Server belgesi "iyileştiriciye seçenek olsun" diye çok sayıda indeks oluşturmaya karşı uyarır: veri değişikliğini yavaşlatır, eşzamanlılık sorunu çıkarabilir.</p>
+<h3>"Sorguya ipucu yazarım, motor doğru planı bulur"</h3>
+<p>İpucu bugünkü veriye göre kilitler. Veri büyüyünce doğru plan değişir, ipucu kalır. SQL Server belgesi ipuçlarını son çare sayar. PostgreSQL'de ise standart bir sorgu ipucu sözdizimi yoktur.</p>
+<h3>"LIMIT ekledim, fatura düştü"</h3>
+<p>BigQuery belgesine göre kümelenmemiş tabloda düşmez. Sıralı sorguda da <code>LIMIT</code> her zaman işi azaltmaz: tüm satırlar sıralanmak zorunda kalabilir.</p>
+<h3>"CTE'ye alınca hızlandı"</h3>
+<p>Yazım değiştirmek işi azaltmaz. Motor CTE'yi gömüyorsa plan aynı kalır, saklıyorsa kötüleşebilir. Ölç.</p>
+<h2>Ölçme hataları</h2>
+<ul>
+<li>İkinci çalıştırmayı "iyileşme" sanmak: önbellek.</li>
+<li>Küçük test verisinde ölçüp üretime genellemek: plan satır sayısına göre değişir.</li>
+<li>Yalnız ortalamaya bakmak: yavaş olan uçtaki değerlerdir (çarpık veri).</li>
+<li>Yazma tarafını ölçmemek: okuma hızlanır, gece yüklemesi uzar.</li>
+<li>Sonucu karşılaştırmamak.</li>
+</ul>
+<div class="tip"><b>Kontrol sorusu</b>"Bu değişiklikten sonra sonuç aynı mı, hangi sayı düştü, karşılığında ne ödedim?" Bu üçünü söyleyemiyorsan optimizasyon bitmedi.</div></article>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-yanlis">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../opt-turler/">← SQL türüne özgü optimizasyon: parametre koklama, EXPLAIN ANALYZE, bayt maliyeti</a><a href="../mk-opt/">Mülakat: yavaş sorgu ve performans soruları →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,33 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UNION, INTERSECT, EXCEPT | Kesit SQL</title><meta name="description" content="Sorgu sonuçlarını alt alta eklemek, kesişim ve fark."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/set-ops/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="UNION, INTERSECT, EXCEPT"><meta property="og:description" content="Sorgu sonuçlarını alt alta eklemek, kesişim ve fark."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/set-ops/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"UNION, INTERSECT, EXCEPT","description":"Sorgu sonuçlarını alt alta eklemek, kesişim ve fark.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/set-ops/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Küme ve Alt Sorgular</span><h1>UNION, INTERSECT, EXCEPT</h1><p class="st-l">Sorgu sonuçlarını alt alta eklemek, kesişim ve fark.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-set-ops">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Küme işlemleri</h2>
+<p>JOIN tabloları <b>yan yana</b> birleştirir; küme işlemleri sorgu sonuçlarını <b>alt alta</b> birleştirir.</p>
+<table><tr><th>İşlem</th><th>Sonuç</th></tr>
+<tr><td><code>UNION</code></td><td>İki sonucun birleşimi, tekrarlar atılır</td></tr>
+<tr><td><code>UNION ALL</code></td><td>Birleşim, tekrarlar korunur (daha hızlı)</td></tr>
+<tr><td><code>INTERSECT</code></td><td>Her ikisinde de olanlar</td></tr>
+<tr><td><code>EXCEPT</code></td><td>Birincide olup ikincide olmayanlar (Oracle'da <code>MINUS</code>)</td></tr>
+</table>
+<p>Kurallar: Her iki sorgu <b>aynı sayıda sütun</b> döndürmeli ve tipler uyumlu olmalı. Sütun adları ilk sorgudan gelir. ORDER BY en sonda bir kez yazılır.</p>
+<pre class="code">-- Şirketle ilişkili tüm kişiler: müşteri ve çalışanlar tek listede
+SELECT first_name, last_name, 'Müşteri' AS tip FROM customers
+UNION ALL
+SELECT first_name, last_name, 'Çalışan' FROM employees
+ORDER BY last_name
+LIMIT 15;</pre>
+<pre class="code">-- Hem 2023'te hem 2024'te sipariş veren müşteriler
+SELECT customer_id FROM orders WHERE order_date LIKE '2023%'
+INTERSECT
+SELECT customer_id FROM orders WHERE order_date LIKE '2024%';</pre>
+<h2>Derinleş: küme işlemleri mi JOIN mi?</h2><p>“Ekim'de gelip Kasım'da gelmeyen müşteriler” üç yolla yazılabilir: <code>EXCEPT</code>, <code>NOT EXISTS</code> ve <code>LEFT JOIN ... IS NULL</code>. EXCEPT en kısasıdır ama yalnızca seçtiğin sütunları döndürür ve tekrarları atar. Müşterinin adı gibi ek sütunlar gerekiyorsa NOT EXISTS daha esnektir.</p><pre class="code">SELECT customer_id FROM lk_orders WHERE placed_at &lt; '2024-11-01'
+EXCEPT
+SELECT customer_id FROM lk_orders WHERE placed_at >= '2024-11-01' AND placed_at &lt; '2024-12-01';</pre></article>
+<div class="st-c"><a class="st-p" href="../../#ders-set-ops">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../non-equi/">← Eşit olmayan JOIN ve aralık eşleştirme</a><a href="../subquery/">Alt sorgular (subquery) →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

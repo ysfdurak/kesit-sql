@@ -1,0 +1,53 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mülakat kalıbı: zaman pencereleri, büyüme ve “son 30 gün” | Kesit SQL</title><meta name="description" content="Aydan aya büyüme, kümülatif toplam, hareketli pencere ve kayan “son N gün” sorularında doğru çerçeve."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/mk-zaman/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Mülakat kalıbı: zaman pencereleri, büyüme ve “son 30 gün”"><meta property="og:description" content="Aydan aya büyüme, kümülatif toplam, hareketli pencere ve kayan “son N gün” sorularında doğru çerçeve."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/mk-zaman/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Mülakat kalıbı: zaman pencereleri, büyüme ve “son 30 gün”","description":"Aydan aya büyüme, kümülatif toplam, hareketli pencere ve kayan “son N gün” sorularında doğru çerçeve.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/mk-zaman/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Mülakat Hazırlığı</span><h1>Mülakat kalıbı: zaman pencereleri, büyüme ve “son 30 gün”</h1><p class="st-l">Aydan aya büyüme, kümülatif toplam, hareketli pencere ve kayan “son N gün” sorularında doğru çerçeve.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-mk-zaman">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Soru</h2>
+<div class="note"><b>Görüşmeci</b>“Her ay için teslim edilen ciroyu, bir önceki aya göre büyümeyi ve yılbaşından bu yana kümülatif ciroyu getir.” Takip: “Her gün için son 7 günün cirosu nedir? Sipariş olmayan günler de görünmeli.”</div>
+<h2>Önce netleştir</h2>
+<p>Kod yazmadan önce sorulacak sorular. Her biri farklı bir sorguya götürür; sormamak en sık puan kaybıdır.</p>
+<ul><li>Ciro tanımı: net mi (indirim düşülmüş), hangi durumlar dahil?</li><li>Kümülatif toplam her yıl sıfırlansın mı?</li><li>“Son 7 gün” bugünü içeriyor mu?</li><li>Sipariş olmayan ay/gün 0 olarak görünmeli mi?</li></ul>
+<h2>Yaklaşım</h2>
+<ol><li>Önce aylık (ya da günlük) toplam tablosunu kur.</li><li>LAG ile bir önceki dönemi getir, farkı yüzdeye çevir.</li><li>SUM OVER (PARTITION BY yıl ORDER BY ay) ile yılbaşından bu yana kümülatif.</li><li>Boş günler için önce takvim üret, sonra LEFT JOIN; çerçeveyi ROWS BETWEEN 6 PRECEDING AND CURRENT ROW yap.</li></ol>
+<h2>Çözüm 1: aylık tablo + LAG + kümülatif</h2>
+<pre class="code">WITH a AS (
+  SELECT strftime('%Y', o.order_date) AS yil, strftime('%Y-%m', o.order_date) AS ay,
+         SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) AS ciro
+  FROM orders o JOIN order_items oi ON oi.order_id = o.order_id
+  WHERE o.status = 'delivered'
+  GROUP BY strftime('%Y', o.order_date), strftime('%Y-%m', o.order_date)
+)
+SELECT ay, ROUND(ciro) AS ciro,
+       ROUND(100.0 * (ciro - LAG(ciro) OVER (ORDER BY ay)) / LAG(ciro) OVER (ORDER BY ay), 1) AS buyume,
+       ROUND(SUM(ciro) OVER (PARTITION BY yil ORDER BY ay ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)) AS ytd
+FROM a
+WHERE ay >= '2024-01'
+ORDER BY ay;</pre>
+<h2>Çözüm 2: takvim + LEFT JOIN + hareketli pencere</h2>
+<pre class="code">WITH RECURSIVE takvim(gun) AS (
+  SELECT '2024-12-01' UNION ALL SELECT date(gun, '+1 day') FROM takvim WHERE gun < '2024-12-31'
+),
+g AS (
+  SELECT o.order_date AS gun, SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) AS ciro
+  FROM orders o JOIN order_items oi ON oi.order_id = o.order_id
+  WHERE o.status = 'delivered' AND o.order_date >= '2024-11-25'
+  GROUP BY o.order_date
+)
+SELECT t.gun, ROUND(COALESCE(g.ciro, 0)) AS ciro,
+       ROUND(SUM(COALESCE(g.ciro, 0)) OVER (ORDER BY t.gun ROWS BETWEEN 6 PRECEDING AND CURRENT ROW)) AS son7
+FROM takvim t LEFT JOIN g ON g.gun = t.gun
+ORDER BY t.gun;</pre>
+<p>İkinci çözümdeki takvim adımı çok önemlidir: boş günler tabloda olmazsa “6 PRECEDING” altı <i>satır</i> öncesine, yani belki on gün öncesine bakar. Ayrıca ilk 6 gün eksik pencereyle hesaplanır; bunu görüşmeciye söylemek ya da takvimi 6 gün geriden başlatmak gerekir.</p>
+<h2>Sınır durumları</h2>
+<table><tr><th>Durum</th><th>Ne olur?</th></tr><tr><td>Önceki dönem yok</td><td>LAG NULL döner; büyüme NULL kalmalı, 0 değil</td></tr><tr><td>Önceki dönem 0</td><td>Sıfıra bölme: NULLIF(LAG(...), 0)</td></tr><tr><td>Boş günler</td><td>Takvim olmadan pencere yanlış genişler</td></tr><tr><td>Varsayılan çerçeve</td><td>ORDER BY olan SUM OVER varsayılanı RANGE'dir; aynı tarihli satırlar birlikte toplanır</td></tr></table>
+<h2>Takip soruları</h2>
+<ul><li>Geçen yılın aynı ayıyla (YoY) nasıl karşılaştırırsın? (LAG(ciro, 12) ya da yıl − 1 ile self join)</li><li>Ay içinde bugüne kadar (MTD) ciro nasıl hesaplanır?</li><li>Bu sorguyu bir BI aracına verecek olsan hangi taneciği seçerdin?</li></ul>
+<div class="tip"><b>Görüşmeci neye bakıyor?</b>Boş dönemleri ve pencere çerçevesini kendiliğinden düşünmen; büyümede NULL ile 0 farkını gözetmen.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-mk-zaman">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../mk-tekrar/">← Mülakat kalıbı: tekrarlar, ilk ve son kayıt, ikinci sipariş</a><a href="../mk-selfjoin/">Mülakat kalıbı: kendine birleştirme klasikleri →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

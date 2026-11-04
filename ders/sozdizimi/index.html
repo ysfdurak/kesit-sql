@@ -1,0 +1,40 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SQL yazım kuralları: anahtar kelime, noktalı virgül, yorum ve tırnak | Kesit SQL</title><meta name="description" content="Bir SQL ifadesinin parçaları, okunabilir yazım ve sık yapılan yazım hataları."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/sozdizimi/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="SQL yazım kuralları: anahtar kelime, noktalı virgül, yorum ve tırnak"><meta property="og:description" content="Bir SQL ifadesinin parçaları, okunabilir yazım ve sık yapılan yazım hataları."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/sozdizimi/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"SQL yazım kuralları: anahtar kelime, noktalı virgül, yorum ve tırnak","description":"Bir SQL ifadesinin parçaları, okunabilir yazım ve sık yapılan yazım hataları.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/sozdizimi/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Temeller</span><h1>SQL yazım kuralları: anahtar kelime, noktalı virgül, yorum ve tırnak</h1><p class="st-l">Bir SQL ifadesinin parçaları, okunabilir yazım ve sık yapılan yazım hataları.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-sozdizimi">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Bir SQL ifadesinin anatomisi</h2>
+<p>SQL, İngilizceye benzeyen bir dildir. Bir sorgu <b>ifadelerden</b> (statement), ifadeler de <b>yan cümlelerden</b> (clause) oluşur: <code>SELECT ...</code>, <code>FROM ...</code>, <code>WHERE ...</code>.</p>
+<pre class="code">-- Bu bir yorum satırıdır; motor bu satırı okumaz
+SELECT name, price          -- hangi sütunlar?
+FROM products               /* hangi tablo? */
+WHERE category = 'Kitap'    -- hangi satırlar?
+ORDER BY price DESC;        -- hangi sırayla? (; ifadenin sonu)</pre>
+<h2>Kurallar</h2>
+<table>
+<tr><th>Kural</th><th>Açıklama</th></tr>
+<tr><td>Büyük/küçük harf</td><td>Anahtar kelimelerde fark etmez: <code>select</code> = <code>SELECT</code>. Okunabilirlik için anahtar kelimeleri BÜYÜK, tablo ve sütunları küçük yazmak yaygındır.</td></tr>
+<tr><td>Boşluk ve satır</td><td>Boşluk ve satır sonu fark etmez; uzun sorguları her yan cümle ayrı satırda olacak şekilde yaz.</td></tr>
+<tr><td>Noktalı virgül</td><td>İfadenin sonunu gösterir. Birden fazla ifade çalıştırırken zorunludur; tek ifadede çoğu araç affeder.</td></tr>
+<tr><td>Metin sabiti</td><td><b>Tek tırnak</b>: <code>'Kitap'</code>. Metnin içinde tek tırnak varsa iki kez yazılır: <code>'Ali''nin'</code>.</td></tr>
+<tr><td>Tanımlayıcı</td><td>Boşluk veya ayrılmış kelime içeren tablo/sütun adları için: SQL Server <code>[ad]</code>, PostgreSQL ve Oracle <code>"ad"</code>, MySQL ve BigQuery <code>`ad`</code>.</td></tr>
+<tr><td>Yorum</td><td>Tek satır <code>-- ...</code>, çok satır <code>/* ... */</code>. MySQL'de <code>#</code> de kullanılır.</td></tr>
+<tr><td>Sayılar</td><td>Ondalık ayırıcı noktadır: <code>12.5</code>. Binlik ayırıcı yazılmaz.</td></tr>
+</table>
+<div class="warn"><b>Çift tırnak tuzağı</b>PostgreSQL ve Oracle'da <code>WHERE city = "İzmir"</code> yazarsan motor “İzmir” adında bir <b>sütun</b> arar ve hata verir. Metinler her zaman tek tırnaklıdır.</div>
+<h2>Mantıksal yazım sırası</h2>
+<p>Yan cümleler şu sırayla yazılır (hepsi zorunlu değildir): <code>SELECT → FROM → JOIN → WHERE → GROUP BY → HAVING → ORDER BY → LIMIT</code>. Sırayı karıştırmak (WHERE'i GROUP BY'dan sonra yazmak gibi) sözdizimi hatası verir.</p>
+<pre class="code">SELECT category, COUNT(*) AS urun
+FROM products
+WHERE price > 500
+GROUP BY category
+HAVING COUNT(*) >= 3
+ORDER BY urun DESC;</pre>
+<div class="tip"><b>Biçimlendir düğmesi</b>Editördeki <b>Biçimlendir</b> düğmesi sorgunu bu kurallara göre otomatik düzenler.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-sozdizimi">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../order-limit/">← ORDER BY ve ilk N satır (LIMIT / TOP / FETCH)</a><a href="../araclar/">SQL nerede yazılır? Araçlar ve komut grupları →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

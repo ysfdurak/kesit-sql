@@ -1,0 +1,65 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sistem görünümleri, IDENTITY ve yardımcı prosedürler | Kesit SQL</title><meta name="description" content="INFORMATION_SCHEMA, sys.tables, sp_help, IDENTITY, SCOPE_IDENTITY ve @@ROWCOUNT."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-sistem/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Sistem görünümleri, IDENTITY ve yardımcı prosedürler"><meta property="og:description" content="INFORMATION_SCHEMA, sys.tables, sp_help, IDENTITY, SCOPE_IDENTITY ve @@ROWCOUNT."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-sistem/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Sistem görünümleri, IDENTITY ve yardımcı prosedürler","description":"INFORMATION_SCHEMA, sys.tables, sp_help, IDENTITY, SCOPE_IDENTITY ve @@ROWCOUNT.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-sistem/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · T-SQL (SQL Server)</span><h1>Sistem görünümleri, IDENTITY ve yardımcı prosedürler</h1><p class="st-l">INFORMATION_SCHEMA, sys.tables, sp_help, IDENTITY, SCOPE_IDENTITY ve @@ROWCOUNT.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-sistem">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Veritabanını sorgulayarak keşfetmek</h2>
+<p>SQL Server meta veriyi (tablolar, sütunlar, indeksler) sorgulanabilir görünümlerde tutar. Standart <code>INFORMATION_SCHEMA</code> görünümleri diğer SQL türlerinde da vardır; <code>sys.*</code> görünümleri SQL Server'a özgüdür ve daha ayrıntılıdır.</p>
+<pre class="code" data-v="{&quot;pg&quot;:&quot;SELECT table_name, column_name, data_type, is_nullable\nFROM information_schema.columns\nWHERE table_name = 'orders'\nORDER BY ordinal_position;&quot;,&quot;mysql&quot;:&quot;SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, IS_NULLABLE\nFROM INFORMATION_SCHEMA.COLUMNS\nWHERE TABLE_NAME = 'orders'\nORDER BY ORDINAL_POSITION;&quot;,&quot;oracle&quot;:&quot;SELECT table_name, column_name, data_type, nullable\nFROM user_tab_columns\nWHERE table_name = 'ORDERS'\nORDER BY column_id;&quot;,&quot;sqlite&quot;:&quot;SELECT name, type, \&quot;notnull\&quot; FROM pragma_table_info('orders');&quot;}" data-base="tsql" data-diff="pg mysql oracle sqlite">SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, IS_NULLABLE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'orders'
+ORDER BY ORDINAL_POSITION;</pre>
+<pre class="code" data-base="tsql">SELECT name, object_id, type_desc FROM sys.tables ORDER BY name;
+EXEC sp_help 'products';</pre>
+<h2>IDENTITY ile otomatik numara</h2>
+<pre class="code" data-base="tsql">CREATE TABLE notes (
+    note_id INT IDENTITY(1, 1) PRIMARY KEY,
+    body    NVARCHAR(200) NOT NULL
+);
+INSERT INTO notes (body) VALUES (N'İlk not');
+INSERT INTO notes (body) VALUES (N'İkinci not');
+SELECT SCOPE_IDENTITY() AS son_eklenen_id;
+SELECT * FROM notes;</pre>
+<table><tr><th>Fonksiyon</th><th>Ne döner?</th></tr>
+<tr><td><code>SCOPE_IDENTITY()</code></td><td>Aynı kapsamda son eklenen IDENTITY (önerilen)</td></tr>
+<tr><td><code>@@IDENTITY</code></td><td>Oturumdaki son IDENTITY (trigger'ların ürettiği dahil; dikkat!)</td></tr>
+<tr><td><code>@@ROWCOUNT</code></td><td>Son ifadenin etkilediği satır sayısı</td></tr>
+<tr><td><code>OBJECT_ID('ad')</code></td><td>Nesne yoksa NULL: <code>IF OBJECT_ID('dbo.t') IS NOT NULL ...</code></td></tr>
+</table>
+<pre class="code" data-base="tsql">UPDATE products SET stock = stock + 10 WHERE category = N'Kitap';
+SELECT @@ROWCOUNT AS guncellenen;</pre>
+<h2>Derinleş: katalog görünümleriyle veritabanını keşfetmek</h2>
+<p>Yeni bir projeye katıldığında ilk iş, veritabanında ne olduğunu belgeye değil <b>kataloga</b> sormaktır; belge eskiyebilir, katalog her zaman günceldir. SQL Server'da iki katman vardır:</p>
+<table><tr><th>Katman</th><th>Örnek</th><th>Ne zaman?</th></tr>
+<tr><td><code>INFORMATION_SCHEMA</code></td><td><code>TABLES</code>, <code>COLUMNS</code></td><td>Standart, diğer SQL türlerine taşınabilir sorgular</td></tr>
+<tr><td><code>sys.*</code> katalog görünümleri</td><td><code>sys.tables</code>, <code>sys.columns</code>, <code>sys.indexes</code></td><td>SQL Server'a özgü ayrıntılar (indeks, IDENTITY, bağımlılık)</td></tr></table>
+<p><code>sys</code> görünümleri <code>object_id</code> ile birbirine bağlanır. Lezzet Kurye tablolarının sütun sayıları:</p>
+<pre class="code" data-base="tsql">SELECT t.name AS tablo, COUNT(*) AS sutun
+FROM sys.tables t
+JOIN sys.columns c ON c.object_id = t.object_id
+WHERE t.name LIKE 'lk%'
+GROUP BY t.name
+ORDER BY t.name;</pre>
+<h3>IDENTITY'nin incelikleri</h3>
+<ul><li><b>Boşluklar normaldir:</b> Geri alınan bir INSERT veya sunucu yeniden başlaması kimlik değerlerini tüketir; IDENTITY ardışık numara garantisi vermez. Fatura numarası gibi boşluksuz seri gerekiyorsa ayrı bir mekanizma kur.</li>
+<li><b>Hangi fonksiyon?</b> <code>SCOPE_IDENTITY()</code> aynı kapsamdaki son değeri verir; <code>@@IDENTITY</code> trigger'ın başka tabloya eklediği değeri döndürebilir; <code>IDENT_CURRENT('tablo')</code> başka oturumların eklemelerini de görür.</li>
+<li><b>Çok satırlı eklemede:</b> Tek bir son değer yetmez; <code>OUTPUT inserted.*</code> eklenen her satırın kimliğini döndürür.</li></ul>
+<pre class="code" data-base="tsql">IF OBJECT_ID('dbo.notlar') IS NOT NULL DROP TABLE dbo.notlar;
+
+CREATE TABLE notlar (
+    not_id INT IDENTITY(1, 1) PRIMARY KEY,
+    metin  NVARCHAR(100) NOT NULL
+);
+
+INSERT INTO notlar (metin)
+OUTPUT inserted.not_id, inserted.metin
+VALUES (N'Kurye geç kaldı'), (N'Paket eksik geldi');</pre>
+<div class="tip"><b>OBJECT_ID ile koruma</b><code>IF OBJECT_ID('dbo.t') IS NOT NULL DROP TABLE dbo.t;</code> kalıbı eski sürümlerde de çalışır. SQL Server 2016+ için kısa yol <code>DROP TABLE IF EXISTS dbo.t;</code>.</div>
+<p><b>Sık hata:</b> <code>INFORMATION_SCHEMA</code> sorgularında şemayı unutmak. Aynı adlı tablo farklı şemalarda (<code>dbo.orders</code>, <code>arsiv.orders</code>) bulunabilir; filtreye <code>TABLE_SCHEMA = 'dbo'</code> ekle. <code>sys.tables</code> ile çalışırken de <code>SCHEMA_NAME(t.schema_id)</code> ile şema adını göster.</p>
+<p><b>Keşif kontrol listesi:</b> Tablolar ve satır sayıları, her tablonun birincil anahtarı, yabancı anahtar ilişkileri, NULL'a izin veren sütunlar, tarih sütunlarının tipi (metin mi tarih mi), IDENTITY sütunları.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-sistem">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-liste/">← Listeleri bölmek ve birleştirmek: STRING_SPLIT, STRING_AGG, FOR XML PATH</a><a href="../ts-sequence/">SEQUENCE, IDENTITY ve anahtar üretimi →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

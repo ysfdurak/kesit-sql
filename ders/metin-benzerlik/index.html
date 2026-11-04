@@ -1,0 +1,37 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Metin temizleme ve benzerlik: TRANSLATE, SOUNDEX, Levenshtein | Kesit SQL</title><meta name="description" content="Türkçe karakterleri sadeleştirmek, yazım farklarını eşleştirmek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/metin-benzerlik/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Metin temizleme ve benzerlik: TRANSLATE, SOUNDEX, Levenshtein"><meta property="og:description" content="Türkçe karakterleri sadeleştirmek, yazım farklarını eşleştirmek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/metin-benzerlik/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Metin temizleme ve benzerlik: TRANSLATE, SOUNDEX, Levenshtein","description":"Türkçe karakterleri sadeleştirmek, yazım farklarını eşleştirmek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/metin-benzerlik/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Fonksiyonlar</span><h1>Metin temizleme ve benzerlik: TRANSLATE, SOUNDEX, Levenshtein</h1><p class="st-l">Türkçe karakterleri sadeleştirmek, yazım farklarını eşleştirmek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-metin-benzerlik">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Aynı şehir, beş farklı yazım</h2>
+<p><code>raw_signups</code> tablosunda İstanbul; “ISTANBUL”, “istanbul”, “İstanbul” diye üç farklı biçimde geçiyor. Gruplamadan önce her değeri tek bir <b>anahtar</b> biçimine çevirmek gerekir: boşlukları kırp, Türkçe karakterleri sadeleştir, büyük harfe çevir.</p>
+<h3>TRANSLATE: karakter karakter değiştir</h3>
+<p><code>TRANSLATE(metin, 'bulunan', 'yerine')</code>, ikinci listedeki her karakteri üçüncü listede aynı sıradaki karakterle değiştirir. Tek tek REPLACE yazmaktan çok daha kısadır. SQL Server (2017+), PostgreSQL ve Oracle'da vardır; MySQL ve SQLite'ta iç içe REPLACE yazılır.</p>
+<pre class="code" data-v="{&quot;pg&quot;:&quot;SELECT DISTINCT city,\n       UPPER(TRANSLATE(TRIM(city), 'İıŞşĞğÜüÖöÇç', 'IiSsGgUuOoCc')) AS anahtar\nFROM raw_signups\nWHERE LENGTH(TRIM(city)) &gt; 0;&quot;,&quot;oracle&quot;:&quot;SELECT DISTINCT city,\n       UPPER(TRANSLATE(TRIM(city), 'İıŞşĞğÜüÖöÇç', 'IiSsGgUuOoCc')) AS anahtar\nFROM raw_signups\nWHERE LENGTH(TRIM(city)) &gt; 0;&quot;,&quot;mysql&quot;:&quot;SELECT DISTINCT city,\n       UPPER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(TRIM(city), 'İ', 'I'), 'ı', 'i'), 'Ş', 'S'), 'ş', 's'), 'Ğ', 'G'), 'ğ', 'g'), 'Ü', 'U'), 'ü', 'u'), 'Ö', 'O'), 'ö', 'o'), 'Ç', 'C'), 'ç', 'c')) AS anahtar\nFROM raw_signups\nWHERE CHAR_LENGTH(TRIM(city)) &gt; 0;&quot;,&quot;sqlite&quot;:&quot;SELECT DISTINCT city,\n       UPPER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(TRIM(city), 'İ', 'I'), 'ı', 'i'), 'Ş', 'S'), 'ş', 's'), 'Ğ', 'G'), 'ğ', 'g'), 'Ü', 'U'), 'ü', 'u'), 'Ö', 'O'), 'ö', 'o'), 'Ç', 'C'), 'ç', 'c')) AS anahtar\nFROM raw_signups\nWHERE LENGTH(TRIM(city)) &gt; 0;&quot;}" data-base="tsql">SELECT DISTINCT city,
+       UPPER(TRANSLATE(TRIM(city), 'İıŞşĞğÜüÖöÇç', 'IiSsGgUuOoCc')) AS anahtar
+FROM raw_signups
+WHERE LEN(TRIM(city)) &gt; 0;</pre>
+<div class="warn"><b>SQL Server'da TRANSLATE kuralı</b>İkinci ve üçüncü argüman aynı uzunlukta olmalı, yoksa hata verir. PostgreSQL ve Oracle'da üçüncü liste kısaysa fazlalık karakterler <b>silinir</b>: <code>TRANSLATE('a-b', '-', '')</code> → <code>ab</code>.</div>
+<div class="note"><b>Neden <code>LEN(TRIM(city)) &gt; 0</code>?</b>Oracle boş metni ('') NULL kabul eder; <code>city &lt;&gt; ''</code> koşulu Oracle'da hiçbir satır döndürmez. Uzunluk kontrolü her SQL türünde aynı çalışır.</div>
+<h2>Sesçil benzerlik: SOUNDEX ve DIFFERENCE</h2>
+<p><code>SOUNDEX</code> bir kelimeyi okunuşuna göre 4 karakterlik bir koda çevirir: “Mehmet” ve “Mehmed” aynı kodu (M530) alır. SQL Server'daki <code>DIFFERENCE(a, b)</code> iki kodun kaç karakterinin tuttuğunu 0–4 arası verir.</p>
+<pre class="code" data-v="{&quot;pg&quot;:&quot;-- fuzzystrmatch eklentisi gerekir: CREATE EXTENSION fuzzystrmatch;\nSELECT soundex('Mehmet') AS a,\n       soundex('Mehmed') AS b,\n       difference('Mehmet', 'Mehmed') AS benzerlik;&quot;}" data-base="tsql">SELECT SOUNDEX('Mehmet') AS a,
+       SOUNDEX('Mehmed') AS b,
+       DIFFERENCE('Mehmet', 'Mehmed') AS benzerlik;</pre>
+<div class="warn"><b>Türkçe için sınırlı</b>SOUNDEX İngilizce okunuşa göre tasarlanmıştır; Türkçe karakterleri yok sayar veya yanlış kodlar. Türkçe isimlerde önce TRANSLATE ile sadeleştirip sonra kullan, sonuçları mutlaka gözle kontrol et.</div>
+<h2>Düzenleme mesafesi: Levenshtein</h2>
+<p>İki metni birbirine dönüştürmek için gereken en az harf ekleme, silme veya değiştirme sayısıdır: “Ankara” ile “Ankra” arasındaki mesafe 1'dir. Yazım hatalı kayıtları bulmak için idealdir.</p>
+<table>
+<tr><th>SQL türü</th><th>Fonksiyon</th></tr>
+<tr><td>PostgreSQL</td><td><code>levenshtein(a, b)</code> (fuzzystrmatch eklentisi)</td></tr>
+<tr><td>Oracle</td><td><code>UTL_MATCH.EDIT_DISTANCE(a, b)</code></td></tr>
+<tr><td>SQL Server, MySQL</td><td>Yerleşik değil; kullanıcı tanımlı fonksiyon veya uygulama tarafında hesaplanır</td></tr>
+</table>
+<pre class="code" data-base="pg">SELECT levenshtein('Ankara', 'Ankra') AS mesafe;</pre>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-metin-benzerlik">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../regex/">← Desen eşleme: LIKE'tan düzenli ifadelere (REGEX)</a><a href="../collation/">Harmanlama (collation): büyük/küçük harf ve Türkçe “İ” sorunu →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

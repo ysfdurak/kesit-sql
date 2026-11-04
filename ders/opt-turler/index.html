@@ -1,0 +1,91 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SQL türüne özgü optimizasyon: parametre koklama, EXPLAIN ANALYZE, bayt maliyeti | Kesit SQL</title><meta name="description" content="SQL Server parameter sniffing ve Query Store, PostgreSQL ANALYZE ve BUFFERS, MySQL EXPLAIN ANALYZE, Oracle DISPLAY_CURSOR, BigQuery dry run ve bayt…"><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/opt-turler/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="SQL türüne özgü optimizasyon: parametre koklama, EXPLAIN ANALYZE, bayt maliyeti"><meta property="og:description" content="SQL Server parameter sniffing ve Query Store, PostgreSQL ANALYZE ve BUFFERS, MySQL EXPLAIN ANALYZE, Oracle DISPLAY_CURSOR, BigQuery dry run ve bayt…"><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/opt-turler/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"SQL türüne özgü optimizasyon: parametre koklama, EXPLAIN ANALYZE, bayt maliyeti","description":"SQL Server parameter sniffing ve Query Store, PostgreSQL ANALYZE ve BUFFERS, MySQL EXPLAIN ANALYZE, Oracle DISPLAY_CURSOR, BigQuery dry run ve bayt…","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/opt-turler/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Sorgu Optimizasyonu</span><h1>SQL türüne özgü optimizasyon: parametre koklama, EXPLAIN ANALYZE, bayt maliyeti</h1><p class="st-l">SQL Server parameter sniffing ve Query Store, PostgreSQL ANALYZE ve BUFFERS, MySQL EXPLAIN ANALYZE, Oracle DISPLAY_CURSOR, BigQuery dry run ve bayt maliyeti.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-turler">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory"><h2>Bu dersin sınırı</h2>
+<p>Bu uygulamanın motoru SQLite. SQL Server, MySQL, Oracle ve BigQuery yazımları taklit edilir ama planları üretilemez. Aşağıdaki bilgiler bu ürünlerin resmî belgelerine dayanır, burada çalıştırılmamıştır. Bu yüzden o ürünler için plan çıktısı örneği yazmıyoruz. PostgreSQL çıktıları gerçek motordan (PGlite) gelir.</p>
+<h2>SQL Server: parametre koklama (parameter sniffing)</h2>
+<p>Belge bunu şöyle tanımlar: motor derleme sırasında parametrenin o anki değerine bakar ve iyileştiriciye verir. Saklı yordamın planı ilk çalıştırmada derlenir ve önbellekte kaldığı sürece yeniden kullanılır. Aynı plan başka değerler için kötü olabilir.</p>
+<p>Senaryo: Ilgaz Bank'ta bir şube diğerlerinden çok büyük. Şube başına müşteri sayısına bak:</p>
+<pre class="code">SELECT branch_id, COUNT(*) AS musteri
+FROM bank_customers
+GROUP BY branch_id
+ORDER BY musteri DESC;</pre>
+<p>Yordam önce küçük şubeyle çağrılırsa plan az satıra göre kurulur. Sonra büyük şube aynı planı kullanır ve yavaşlar. Tersi de olabilir. "Dün hızlıydı, bugün yavaş, kod değişmedi" denince akla gelecek ilk sebeplerden biridir.</p>
+<pre class="code" data-norun>CREATE OR ALTER PROCEDURE dbo.usp_sube_hareket @sube INT
+AS
+SELECT c.customer_id, COUNT(*) AS islem
+FROM dbo.bank_customers c
+JOIN dbo.bank_accounts a ON a.customer_id = c.customer_id
+JOIN dbo.bank_txns t ON t.account_id = a.account_id
+WHERE c.branch_id = @sube
+GROUP BY c.customer_id;</pre>
+<table>
+<tr><th>Çözüm</th><th>Ne yapar</th><th>Bedeli</th></tr>
+<tr><td><code>OPTION (RECOMPILE)</code></td><td>Her çalıştırmada o anki değere göre yeni, geçici plan kurar</td><td>Derleme maliyeti. Belge, yük üzerindeki etkisini değerlendirmeden kullanmamayı önerir</td></tr>
+<tr><td><code>OPTIMIZE FOR (@p = değer)</code></td><td>Plan belirtilen değere göre kurulur</td><td>Veri değişirse değer eskir</td></tr>
+<tr><td><code>OPTIMIZE FOR UNKNOWN</code></td><td>Ortalama seçicilikle plan kurar</td><td>Hiçbir değer için en iyi olmayabilir</td></tr>
+<tr><td>Yerel değişken</td><td>Değer koklanmaz, ortalama yoğunluktan tahmin edilir</td><td>Etkisi <code>OPTIMIZE FOR UNKNOWN</code> ile benzer, niyeti kodda gizli kalır</td></tr>
+<tr><td>Parameter Sensitive Plan (SQL Server 2022)</td><td>Aynı ifade için birden çok önbellekli plan tutar</td><td>Sürüm ve uyumluluk düzeyi ister</td></tr>
+<tr><td>Query Store</td><td>Plan geçmişini saklar, gerileyeni gösterir, plan zorlamaya izin verir</td><td>SQL Server 2022'de yeni veritabanlarında varsayılan olarak açıktır</td></tr>
+</table>
+<p>Belge sorgu ipuçlarını (hint) deneyimli geliştirici ve yöneticiler için son çare olarak önerir. Önce indeks ve yazımı düzelt.</p>
+<h3>Mantıksal okuma</h3>
+<pre class="code" data-norun>SET STATISTICS IO, TIME ON;
+SELECT COUNT(*) FROM dbo.orders WHERE order_date >= '2024-01-01';</pre>
+<p>Mesajlar sekmesinde her tablo için okuma sayıları gelir. Değişikliğin etkisini <code>logical reads</code> ile karşılaştır. Süre sunucu yüküne göre oynar.</p>
+<h2>PostgreSQL</h2>
+<div class="note"><b>PostgreSQL çıktıları</b>Bu derslerdeki PostgreSQL planları elle yazılmadı. Aynı veriyle PostgreSQL 16.4 üzerinde (PGlite, tarayıcıda çalışan WASM sürümü) üretildi. <code>VACUUM ANALYZE</code> çalıştırıldı, planlama satırları kısalık için çıkarıldı. Sayılar kendi sunucunda farklı olur; okuma biçimi aynıdır.</div>
+<ul>
+<li><code>EXPLAIN</code> yalnız planı gösterir. <code>EXPLAIN ANALYZE</code> sorguyu çalıştırır ve gerçek satırları ekler. Değişiklik yapan sorguda <code>BEGIN ... ROLLBACK</code> kullan.</li>
+<li><code>BUFFERS</code> okunan sayfaları gösterir. Sayılar birikimlidir: üst düğüm altındakileri içerir. PostgreSQL 18 belgesine göre <code>ANALYZE</code> bunu kendiliğinden açar. Eski sürümlerde açıkça yaz.</li>
+<li>Toplu yüklemeden sonra <code>ANALYZE</code> çalıştır.</li>
+</ul>
+<p>Tek hesabın hareketleri, <code>bank_txns</code> üzerinde hazır indeksle:</p>
+<pre class="code" data-norun>EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT a.customer_id, t.amount FROM bank_accounts a JOIN bank_txns t ON t.account_id = a.account_id WHERE a.account_id = 100019;</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">Nested Loop  (cost=4.94..153.18 rows=49 width=10) (actual rows=72 loops=1)
+  Buffers: shared hit=71
+  ->  Index Scan using bank_accounts_pkey on bank_accounts a  (cost=0.28..8.29 rows=1 width=8) (actual rows=1 loops=1)
+        Index Cond: (account_id = 100019)
+        Buffers: shared hit=3
+  ->  Bitmap Heap Scan on bank_txns t  (cost=4.67..144.40 rows=49 width=10) (actual rows=72 loops=1)
+        Recheck Cond: (account_id = 100019)
+        Heap Blocks: exact=66
+        Buffers: shared hit=68
+        ->  Bitmap Index Scan on bank_txns_account_id_idx  (cost=0.00..4.66 rows=49 width=0) (actual rows=72 loops=1)
+              Index Cond: (account_id = 100019)
+              Buffers: shared hit=2</pre>
+<h2>MySQL</h2>
+<p><code>EXPLAIN ANALYZE</code> 8.0.18'den beri vardır ve sorguyu gerçekten çalıştırır. Çıktı ağaç biçimindedir ve her düğümde tahmini maliyet, tahmini satır, gerçek süre, gerçek satır ve döngü sayısı yazar. Düz <code>EXPLAIN</code> tablosunda <code>type</code> sütununa bak: <code>ALL</code> tam taramadır. Tahmin ve gerçek çok ayrışıyorsa belge <code>ANALYZE TABLE</code> önerir.</p>
+<h2>Oracle</h2>
+<p><code>EXPLAIN PLAN</code> sorguyu çalıştırmaz, seçilecek planı tahmin eder. Belge bu planın gerçek yürütmedekinden farklı olabileceğini söyler. Gerçekte kullanılan planı <code>DBMS_XPLAN.DISPLAY_CURSOR</code> gösterir. Çalışma zamanı istatistikleri varsa <code>E-Rows</code> ve <code>A-Rows</code> sütunlarını karşılaştır.</p>
+<pre class="code" data-norun>EXPLAIN PLAN FOR SELECT * FROM orders WHERE customer_id = 42;
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+SELECT /*+ GATHER_PLAN_STATISTICS */ * FROM orders WHERE customer_id = 42;
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY_CURSOR(format => 'ALLSTATS LAST'));</pre>
+<h2>BigQuery: süre değil bayt</h2>
+<p>İsteğe bağlı fiyatlandırmada okunan bayt faturayı belirler. Klasik indeks yerine bölümleme ve kümeleme vardır. Belgelerde şunlar yazar:</p>
+<ul>
+<li><b>Kuru çalıştırma (dry run)</b> sorguyu çalıştırmadan işlenecek baytı söyler.</li>
+<li>Kümelenmemiş tabloda <code>LIMIT</code> okunan baytı azaltmaz. Kümelenmiş tabloda azaltabilir.</li>
+<li><code>SELECT *</code> yerine gereken sütunları seç. <code>SELECT * EXCEPT</code> istemediğin sütunları düşürür.</li>
+<li><b>Maximum bytes billed</b> ayarı tahmin sınırı aşarsa sorguyu ücret almadan başarısız yapar.</li>
+<li>Bölüm eleme için bölüm sütununu sabit ifadeyle süz. Alt sorgu sonucuyla karşılaştırmak ve <code>OR</code> ile başka sütuna bağlamak eleme yapmaz. Bölüm filtresini zorunlu kılan ayar da vardır.</li>
+</ul>
+<pre class="code" data-norun>-- Kuru çalıştırma: sorgu çalışmaz, işlenecek bayt yazılır
+bq query --use_legacy_sql=false --dry_run \
+  'SELECT user_id FROM analytics.events WHERE event_date = "2024-12-01"'</pre>
+<h2>Karşılaştırma</h2>
+<table>
+<tr><th>Soru</th><th>SQL Server</th><th>PostgreSQL</th><th>BigQuery</th></tr>
+<tr><td>İş ölçüsü</td><td>Mantıksal okuma</td><td>Buffers</td><td>İşlenen bayt, slot süresi</td></tr>
+<tr><td>Temel araç</td><td>İndeks, istatistik</td><td>İndeks, istatistik</td><td>Bölüm, kümeleme, sütun seçimi</td></tr>
+<tr><td>Plan geçmişi</td><td>Query Store</td><td><code>pg_stat_statements</code> eklentisi (sorgu istatistikleri)</td><td><code>INFORMATION_SCHEMA.JOBS</code></td></tr>
+</table></article>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-turler">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../opt-toplama/">← Toplama ve pencere fonksiyonu maliyeti: önce topla, sırala, özetle</a><a href="../opt-yanlis/">Yanlış optimizasyon: hızlı görünen ama işe yaramayan ya da sonucu bozan değişiklikler →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

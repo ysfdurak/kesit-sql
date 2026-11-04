@@ -1,0 +1,66 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ETL, ELT ve veri katmanları | Kesit SQL</title><meta name="description" content="Ham veriden analiz tablosuna: staging, intermediate, mart."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/de-etl/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="ETL, ELT ve veri katmanları"><meta property="og:description" content="Ham veriden analiz tablosuna: staging, intermediate, mart."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/de-etl/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"ETL, ELT ve veri katmanları","description":"Ham veriden analiz tablosuna: staging, intermediate, mart.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/de-etl/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veri Mühendisliği</span><h1>ETL, ELT ve veri katmanları</h1><p class="st-l">Ham veriden analiz tablosuna: staging, intermediate, mart.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-de-etl">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>ETL ve ELT</h2>
+<ul><li><b>ETL</b> (Extract, Transform, Load): Veri kaynakta çekilir, ayrı bir sunucuda dönüştürülür, sonra ambara yüklenir. Klasik yaklaşım (Informatica, SSIS).</li>
+<li><b>ELT</b>: Ham veri önce ambara yüklenir, dönüşüm ambarın içinde <b>SQL ile</b> yapılır. Bulut ambarlarının ucuz depolama ve güçlü hesaplama gücüyle standart hale geldi (Fivetran/Airbyte + dbt).</li></ul>
+<h2>Katmanlı mimari</h2>
+<table><tr><th>Katman</th><th>İçerik</th><th>Örnek</th></tr>
+<tr><td>Raw / bronze</td><td>Kaynaktan olduğu gibi, değiştirilmeden</td><td><code>raw_signups</code></td></tr>
+<tr><td>Staging / silver</td><td>Temizlenmiş, tipleri düzeltilmiş, tekilleştirilmiş, adlar standart</td><td><code>stg_signups</code></td></tr>
+<tr><td>Mart / gold</td><td>İş mantığı uygulanmış, analize hazır fact/dimension</td><td><code>fct_sales</code>, <code>dim_customer</code></td></tr>
+</table>
+<h2>İyi bir pipeline'ın özellikleri</h2>
+<ul>
+<li><b>Idempotent</b>: Aynı adımı iki kez çalıştırmak aynı sonucu verir (çift kayıt üretmez). <code>DELETE + INSERT</code> veya <code>MERGE</code> kalıpları.</li>
+<li><b>Artımlı</b>: Her seferinde tüm tabloyu değil, sadece yeni/değişen veriyi işler.</li>
+<li><b>Test edilmiş</b>: Benzersizlik, NULL olmama, referans bütünlüğü kontrolleri.</li>
+<li><b>Orkestre edilmiş</b>: Airflow, Dagster, Prefect gibi araçlarla bağımlılık sırasına göre çalışır.</li>
+</ul>
+<h2>Derinleş: ETL mi ELT mi, ve tekrar çalıştırılabilir yükleme</h2>
+<p>ETL ile ELT arasındaki fark yalnızca harflerin sırası değil; <b>dönüşümün nerede ve hangi araçla</b> yapıldığıdır. Bu, ekip yapısını, maliyeti ve hata ayıklamayı doğrudan etkiler.</p>
+<table><tr><th></th><th>ETL</th><th>ELT</th></tr>
+<tr><td>Dönüşüm yeri</td><td>Ayrı bir sunucu / araç</td><td>Hedef ambarın içinde, SQL ile</td></tr>
+<tr><td>Ham veri</td><td>Çoğu zaman saklanmaz</td><td>Bronze katmanda olduğu gibi durur</td></tr>
+<tr><td>Hata sonrası</td><td>Kaynaktan yeniden çekmek gerekir</td><td>Ham veriden yeniden dönüştürülür</td></tr>
+<tr><td>Kim yazar?</td><td>Entegrasyon uzmanı</td><td>SQL bilen analist / analitik mühendis</td></tr>
+<tr><td>Uygun olduğu yer</td><td>Hassas verinin ambara girmeden maskelenmesi, eski sistemler</td><td>Bulut ambarları (BigQuery, Snowflake), dbt projeleri</td></tr></table>
+<h3>Staging katmanında tipik temizlik</h3>
+<p>Ham <code>raw_signups</code> tablosunda tarihler iki biçimde geliyor: <code>2024-02-10</code> ve <code>29.07.2024</code>. Staging adımı adları standartlaştırır, e-postayı normalize eder ve tarihi tek biçime çevirir:</p>
+<pre class="code">SELECT DISTINCT
+       id,
+       LOWER(TRIM(email)) AS email,
+       TRIM(full_name) AS full_name,
+       CASE WHEN signup_date LIKE '__.__.____'
+            THEN substr(signup_date, 7, 4) || '-' || substr(signup_date, 4, 2) || '-' || substr(signup_date, 1, 2)
+            ELSE signup_date END AS signup_date
+FROM raw_signups
+ORDER BY id;</pre>
+<h3>İdempotent yükleme</h3>
+<p>Bir iş gece yarısı yarıda kesildi ve yeniden başlatıldı. Yükleme <code>INSERT</code> ile yapılıyorsa aynı ayın satırları iki kez eklenir ve ciro iki katına çıkar. <b>İdempotent</b> bir adım, kaç kez çalışırsa çalışsın aynı sonucu bırakır. En basit kalıp, yüklenecek dilimi önce silip sonra eklemektir:</p>
+<pre class="code">CREATE TABLE aylik_ciro (ay VARCHAR(7), ciro DECIMAL(12, 2));
+
+-- Aynı adımı iki kez çalıştırıyoruz:
+DELETE FROM aylik_ciro WHERE ay = '2024-12';
+INSERT INTO aylik_ciro (ay, ciro)
+SELECT '2024-12', ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 2)
+FROM orders o JOIN order_items oi ON oi.order_id = o.order_id
+WHERE o.status = 'delivered' AND o.order_date >= '2024-12-01' AND o.order_date &lt; '2025-01-01';
+
+DELETE FROM aylik_ciro WHERE ay = '2024-12';
+INSERT INTO aylik_ciro (ay, ciro)
+SELECT '2024-12', ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 2)
+FROM orders o JOIN order_items oi ON oi.order_id = o.order_id
+WHERE o.status = 'delivered' AND o.order_date >= '2024-12-01' AND o.order_date &lt; '2025-01-01';
+
+SELECT ay, ciro, (SELECT COUNT(*) FROM aylik_ciro) AS satir FROM aylik_ciro;</pre>
+<p>İki çalıştırmadan sonra da tabloda tek satır var. Gerçek sistemlerde DELETE ile INSERT aynı işlem (transaction) içinde yapılır; böylece arada okuyan bir rapor boş tablo görmez. Diğer idempotent kalıplar: <code>MERGE</code> (upsert), <code>CREATE OR REPLACE TABLE</code> ve bölüm üzerine yazma (BigQuery'de <code>WRITE_TRUNCATE</code>).</p>
+<div class="note"><b>Pipeline kontrol listesi</b>Ham veri değiştirilmeden saklanıyor mu? Her adım idempotent mi? Yüklenen satırlara <code>loaded_at</code> / <code>batch_id</code> ekleniyor mu? Kaynak ve hedef satır sayıları karşılaştırılıyor mu? Hata olursa kim, nasıl haberdar oluyor?</div></article>
+<div class="st-c"><a class="st-p" href="../../#ders-de-etl">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ds-zaman/">← Zaman serisi özellikleri</a><a href="../de-kalite/">Veri kalitesi testleri →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

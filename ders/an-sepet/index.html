@@ -1,0 +1,71 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sepet analizi: birlikte satın alınan ürünler | Kesit SQL</title><meta name="description" content="Ürün çiftleri, destek (support), güven (confidence) ve kaldıraç (lift)."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/an-sepet/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Sepet analizi: birlikte satın alınan ürünler"><meta property="og:description" content="Ürün çiftleri, destek (support), güven (confidence) ve kaldıraç (lift)."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/an-sepet/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Sepet analizi: birlikte satın alınan ürünler","description":"Ürün çiftleri, destek (support), güven (confidence) ve kaldıraç (lift).","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/an-sepet/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veri Analisti</span><h1>Sepet analizi: birlikte satın alınan ürünler</h1><p class="st-l">Ürün çiftleri, destek (support), güven (confidence) ve kaldıraç (lift).</p>
+<div class="st-c"><a class="st-p" href="../../#ders-an-sepet">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>“Bunu alanlar şunu da aldı”</h2>
+<p>Sepet analizi (market basket analysis), aynı siparişte birlikte görünen ürünleri bulur. Öneri sistemlerinin, raf düzeninin ve çapraz satış kampanyalarının temelidir. SQL'deki karşılığı, <code>order_items</code> tablosunu <b>kendisiyle</b> sipariş numarası üzerinden birleştirmektir.</p>
+<pre class="code">SELECT p1.name AS urun1,
+       p2.name AS urun2,
+       COUNT(DISTINCT a.order_id) AS birlikte
+FROM order_items a
+JOIN order_items b ON b.order_id = a.order_id
+                  AND a.product_id < b.product_id
+JOIN products p1 ON p1.product_id = a.product_id
+JOIN products p2 ON p2.product_id = b.product_id
+GROUP BY p1.name, p2.name
+ORDER BY birlikte DESC, urun1, urun2
+LIMIT 5;</pre>
+<div class="note"><b>Neden <code>a.product_id &lt; b.product_id</code>?</b>Eşitsizlik hem ürünün kendisiyle eşleşmesini engeller hem de (A, B) ile (B, A) çiftlerinin iki kez sayılmasını önler.</div>
+<h2>Üç ölçü</h2>
+<table>
+<tr><th>Ölçü</th><th>Formül</th><th>Anlamı</th></tr>
+<tr><td><b>Destek</b></td><td>A ve B'yi içeren sipariş ÷ tüm siparişler</td><td>Çift ne kadar yaygın?</td></tr>
+<tr><td><b>Güven</b> A→B</td><td>A ve B'yi içeren ÷ A'yı içeren</td><td>A alanların yüzde kaçı B de alıyor?</td></tr>
+<tr><td><b>Kaldıraç</b></td><td>Güven(A→B) ÷ Destek(B)</td><td>1'den büyükse birliktelik tesadüften güçlü</td></tr>
+</table>
+<h2>Derinleş: Destek, güven ve kaldıraç: hesap ve yorum</h2>
+<p>“Birlikte” sayısı tek başına yanıltıcıdır, çünkü çok satan iki ürün tesadüfen de sık sık aynı sepete düşer. Asıl soru şudur: <b>A'yı alanlar B'yi, herkesin aldığından daha sık mı alıyor?</b> Bunu kaldıraç (lift) ölçer.</p>
+<p><b>lift(A, B) = destek(A ve B) ÷ (destek(A) × destek(B)) = ortak × N ÷ (adet<sub>A</sub> × adet<sub>B</sub>)</b>. Lift = 1 bağımsızlık, 1'den büyük çekim, 1'den küçük itme demektir. Lift simetriktir, güven ise yönlüdür: A→B ile B→A farklıdır.</p>
+<h3>Üç ölçüyü tek sorguda hesaplamak</h3>
+<p>Önce sepeti <b>tekilleştir</b>: aynı siparişte aynı kategoriden üç ürün varsa kategori bir kez sayılmalı. Sonra her öğenin kaç siparişte geçtiğini, çiftlerin ortak sayısını ve toplam sipariş sayısını ayrı CTE'lerde hazırla. Her CTE'nin taneciği ayrı olsun ki JOIN satırları çoğaltmasın.</p>
+<pre class="code">WITH s AS (
+  SELECT DISTINCT oi.order_id, p.category
+  FROM order_items oi
+  JOIN orders o ON o.order_id = oi.order_id
+  JOIN products p ON p.product_id = oi.product_id
+  WHERE o.status = 'delivered'
+),
+n AS (SELECT COUNT(DISTINCT order_id) AS toplam FROM s),
+u AS (SELECT category, COUNT(*) AS adet FROM s GROUP BY category),
+c AS (
+  SELECT a.category AS k1, b.category AS k2, COUNT(*) AS ortak
+  FROM s a JOIN s b ON b.order_id = a.order_id AND a.category &lt; b.category
+  GROUP BY a.category, b.category
+)
+SELECT c.k1, c.k2, c.ortak,
+       ROUND(100.0 * c.ortak / n.toplam, 1) AS destek,
+       ROUND(100.0 * c.ortak / u1.adet, 1) AS guven_1_2,
+       ROUND(1.0 * c.ortak * n.toplam / (u1.adet * u2.adet), 2) AS lift
+FROM c
+JOIN u u1 ON u1.category = c.k1
+JOIN u u2 ON u2.category = c.k2
+CROSS JOIN n
+ORDER BY lift DESC, c.k1, c.k2;</pre>
+<p>Sonuç şaşırtıcı: tüm kategori çiftlerinde lift 1'in altında. En yüksek değer Ev &amp; Yaşam–Kitap çiftinde (0,89). Bunun sebebi sepetlerin küçük olmasıdır: siparişlerin büyük kısmı bir ya da iki kalemden oluşur. Bir kategoriyi seçen sepette başka bir kategoriye az yer kalır. Bu veride kategori düzeyinde “çapraz satış fırsatı” yoktur. Ürün düzeyinde ise bazı çiftler öne çıkar.</p>
+<h3>Küçük sayı tuzağı</h3>
+<p>Ürün düzeyinde lift'i en yüksek çift <b>Suç ve Ceza + Bisiklet Kaskı</b> (lift ≈ 3), ama yalnızca 5 ortak siparişe dayanıyor. Az görülen ürünlerde birkaç tesadüfi sepet lift'i uçurur. Bu yüzden her zaman bir <b>en az destek</b> eşiği uygula (ör. en az 5–10 ortak sipariş) ve lift'i ortak sayısıyla birlikte raporla.</p>
+<table>
+<tr><th>Hata</th><th>Sonuç</th><th>Çözüm</th></tr>
+<tr><td>Sepet tekilleştirilmemiş</td><td>Aynı sipariş birden çok sayılır</td><td><code>SELECT DISTINCT order_id, öğe</code></td></tr>
+<tr><td>Payda: yalnızca çok kalemli siparişler</td><td>Destek şişer, lift değişir</td><td>N = tüm (teslim edilmiş) siparişler</td></tr>
+<tr><td>Eşik yok</td><td>Tesadüfi çiftler zirvede</td><td><code>WHERE ortak &gt;= 5</code></td></tr>
+<tr><td>Güveni simetrik sanmak</td><td>A→B ile B→A karışır</td><td>Yönü sütun adına yaz</td></tr>
+</table>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-an-sepet">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../an-churn/">← Müşteri kaybı (churn), ARPU ve yaşam boyu değer</a><a href="../an-rfm/">RFM müşteri segmentasyonu →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

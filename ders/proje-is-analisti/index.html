@@ -1,0 +1,30 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bitirme projesi (BT İş Analisti): kupon bedelini kim karşılayacak? | Kesit SQL</title><meta name="description" content="Finansın değişiklik talebini baştan sona götür: boyut, kural, test, yükleme, mutabakat, komisyon etkisi ve BRD özeti."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/proje-is-analisti/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Bitirme projesi (BT İş Analisti): kupon bedelini kim karşılayacak?"><meta property="og:description" content="Finansın değişiklik talebini baştan sona götür: boyut, kural, test, yükleme, mutabakat, komisyon etkisi ve BRD özeti."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/proje-is-analisti/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Bitirme projesi (BT İş Analisti): kupon bedelini kim karşılayacak?","description":"Finansın değişiklik talebini baştan sona götür: boyut, kural, test, yükleme, mutabakat, komisyon etkisi ve BRD özeti.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/proje-is-analisti/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Bitirme Projeleri</span><h1>Bitirme projesi (BT İş Analisti): kupon bedelini kim karşılayacak?</h1><p class="st-l">Finansın değişiklik talebini baştan sona götür: boyut, kural, test, yükleme, mutabakat, komisyon etkisi ve BRD özeti.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-is-analisti">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory"><h2>Senaryo</h2>
+<p>Kupon canlıda. Finans müdürü yeni bir değişiklik talebi (change request) yazıyor: <i>“Gecikme restorandan kaynaklanıyorsa kuponun bedelini biz değil restoran karşılasın. Hazırlık süresi uzunsa bedeli restoranın komisyon ödemesinden düşelim.”</i> Kuralı ve kanıtı sen hazırlayacaksın.</p>
+<div class="note"><b>Brif: Finans müdürü</b>“Yönetim kuruluna tek sayfa götüreceğim. Kaç lira restorana yansır, platformda ne kalır, hangi restoran bundan en çok etkilenir? Sayıları tekrar üretebileyim. Sözleşme konusunu hukukla sen koordine et.”</div>
+<h2>Teslim edilecekler</h2>
+<ol><li>Sorumluluk kuralı ve talebin boyutu</li><li>Sınır durumları ve kenar kontroller</li><li>Kural testi</li><li>Kesinti tablosunun yüklenmesi</li><li>Mutabakat</li><li>Restoran etkisi</li><li>Tek sayfalık BRD eki için kanıt sorgusu</li></ol>
+<h3>Çalışma planı</h3>
+<ol>
+<li><b>Tanımı yaz.</b> Çalışma tanımı: hazırlık (sipariş → kuryenin alışı) 25 dakikayı (1.500 saniye) <b>aşıyorsa</b> restoran sorumlu, aşmıyorsa platform. Eşiği görüşmede sınayacaksın; önerdiğin rakamın sonucunu gösterirsen tartışma somutlaşır.</li>
+<li><b>Boyutlandır.</b> Dönem aynı: Ekim-Aralık 2024. Kupon listesi aynı karar tablosundan gelir. Aylık sınırı bu projede uygulamıyoruz; üst sınır hesabı yapıyoruz ve bunu BRD'ye varsayım olarak yazıyoruz.</li>
+<li><b>Kenarları bul.</b> Tam sınırdaki kayıtlar kimde kalıyor? Hazırlık süresi hesaplanamayan kayıt var mı?</li>
+<li><b>Test et, yükle, doğrula.</b> Önce küçük test tablosu, sonra gerçek yükleme, sonra mutabakat.</li>
+<li><b>Etkiyi söyle.</b> Bir restoranın toplam kesintisi, ona ödenecek komisyon gelirine göre ne kadar? Dikkat: sipariş satırlarıyla birleştirince kupon tutarları çoğalır.</li>
+</ol>
+<div class="warn"><b>Satır çoğalması burada para kaybettirir</b>Kesintiyi sipariş satırlarıyla doğrudan birleştirirsen bir sipariş kaç kalemse o kadar kez sayılır. Önce iki tarafı restoran düzeyine topla, sonra birleştir (<b>Çoklu JOIN</b> dersi).</div>
+<h3>Kontrol listesi</h3>
+<ul><li><b>Mutabakat.</b> Restoran ve platform tutarlarının toplamı, kupon bedeline eşit olmalı: 9.600 + 42.300 = 51.900 TL.</li>
+<li><b>Sınır.</b> Tam 1.500 saniyelik 3 kayıt platformda kalır; kural “aşan” diyor.</li>
+<li><b>Hukuk ve sözleşme.</b> Kesinti restoran sözleşmesini etkiler. Sen hukuki yorum yapmazsın, soruyu ve kapsamı doğru kişiye götürürsün.</li>
+<li><b>Dürüstlük.</b> Uzun hazırlık, restoranın kusurunu kanıtlamaz: kurye geç gelmiş olabilir. <code>picked_at</code> kuryenin aldığı andır, yemeğin hazır olduğu an değildir. Bu, projenin en önemli varsayımıdır; BRD'de açıkça yaz ve yemeğin hazır olduğu anı tutan bir alan iste.</li>
+<li><b>Portföy.</b> BRD, karar tablosu ve kanıt sorgularını kendi dosyanda topla. Lezzet Kurye'nin hayali olduğunu belirt.</li></ul></article>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-is-analisti">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ba-canli/">← Canlıya geçiş (go-live) ve sonrası: geçiş planı, duman testi, KPI, geri alma, kapanış</a><a href="../ba-mulakat/">Mülakat: BT iş analisti için SQL ve senaryo soruları →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

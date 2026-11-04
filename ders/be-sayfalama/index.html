@@ -1,0 +1,72 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Uygulamalarda sayfalama: OFFSET ve keyset | Kesit SQL</title><meta name="description" content="Liste ekranları için doğru sayfalama yöntemi ve sonsuz kaydırma."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/be-sayfalama/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Uygulamalarda sayfalama: OFFSET ve keyset"><meta property="og:description" content="Liste ekranları için doğru sayfalama yöntemi ve sonsuz kaydırma."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/be-sayfalama/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Uygulamalarda sayfalama: OFFSET ve keyset","description":"Liste ekranları için doğru sayfalama yöntemi ve sonsuz kaydırma.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/be-sayfalama/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Uygulama Geliştirme</span><h1>Uygulamalarda sayfalama: OFFSET ve keyset</h1><p class="st-l">Liste ekranları için doğru sayfalama yöntemi ve sonsuz kaydırma.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-be-sayfalama">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>OFFSET ile sayfalama</h2>
+<p>En bilinen yöntem: sırala, ilk (sayfa − 1) × boyut satırı atla, sonraki boyut kadar satırı al.</p>
+<pre class="code">-- 3. sayfa, sayfa başına 10 ürün
+SELECT product_id, name, price
+FROM products
+ORDER BY product_id
+LIMIT 10 OFFSET 20;</pre>
+<p>Basittir ve “sayfa 7'ye git” yapılabilir. Ama iki sorunu var:</p>
+<ol>
+<li><b>Derin sayfalar yavaşlar:</b> OFFSET 100000, veritabanının 100.000 satırı okuyup atması demektir.</li>
+<li><b>Kayma:</b> Kullanıcı sayfalar arasında gezerken yeni satır eklenirse aynı kayıt iki sayfada görünür veya biri atlanır.</li>
+</ol>
+<h2>Keyset (seek) sayfalama</h2>
+<p>Önceki sayfanın <b>son satırının</b> sıralama anahtarını hatırla ve “ondan sonrakileri” iste. İndeks doğrudan o noktaya gider; sayfa ne kadar derin olursa olsun hız aynıdır. Sonsuz kaydırma (infinite scroll) ve API'ler için standart yöntemdir.</p>
+<pre class="code">-- Önceki sayfa product_id = 20 ile bitti
+SELECT product_id, name, price
+FROM products
+WHERE product_id > 20
+ORDER BY product_id
+LIMIT 10;</pre>
+<h3>Tekil olmayan sıralama: eşitlik bozucu</h3>
+<p>Fiyata göre sıralarken aynı fiyatlı ürünler olabilir; yalnızca fiyatı hatırlamak satır kaybettirir. Sıralamaya tekil bir sütun (<code>product_id</code>) eklenir ve koşul iki sütunla yazılır:</p>
+<pre class="code">-- Fiyata göre azalan; önceki sayfa (price = 1899, product_id = 25) ile bitti
+SELECT product_id, name, price
+FROM products
+WHERE price < 1899
+   OR (price = 1899 AND product_id < 25)
+ORDER BY price DESC, product_id DESC
+LIMIT 5;</pre>
+<div class="note"><b>Satır değeri karşılaştırması</b>PostgreSQL, MySQL ve SQLite aynı koşulu kısaca <code>WHERE (price, product_id) &lt; (1899, 25)</code> diye yazmana izin verir. SQL Server ve Oracle'da yukarıdaki açık yazım gerekir.</div>
+<table>
+<tr><th></th><th>OFFSET</th><th>Keyset</th></tr>
+<tr><td>Belirli sayfaya atlama</td><td>Var</td><td>Yok (yalnız ileri/geri)</td></tr>
+<tr><td>Derin sayfa hızı</td><td>Yavaşlar</td><td>Sabit</td></tr>
+<tr><td>Yeni kayıtlarda tutarlılık</td><td>Kayabilir</td><td>Tutarlı</td></tr>
+<tr><td>Uygun olduğu yer</td><td>Yönetim panelleri, küçük tablolar</td><td>Akışlar, API'ler, büyük tablolar</td></tr>
+</table>
+<div class="tip"><b>Toplam sayfa sayısı</b>“Toplam 4.321 kayıt” bilgisi için ayrı bir <code>COUNT(*)</code> gerekir ve büyük tablolarda pahalıdır. Birçok uygulama bunu önbelleğe alır ya da yalnızca “daha fazla” düğmesi gösterir.</div>
+
+<h2>Ölçelim: OFFSET ve keyset aynı sayfayı nasıl okur?</h2>
+<p>Aynı veriyle PostgreSQL 16.4 üzerinde üretilen gerçek planlar. Önce OFFSET:</p>
+<pre class="code" data-norun>EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT order_id, placed_at FROM lk_orders ORDER BY order_id LIMIT 10 OFFSET 5000;</pre><p class="plan-etiket">Gerçek çıktı (PostgreSQL 16.4, PGlite)</p><pre class="plan-cikti" tabindex="0">Limit  (cost=197.88..198.27 rows=10 width=12) (actual rows=10 loops=1)
+  Buffers: shared hit=74
+  ->  Index Scan using lk_orders_pkey on lk_orders  (cost=0.28..283.95 rows=7178 width=12) (actual rows=5010 loops=1)
+        Buffers: shared hit=74</pre>
+<p>İç düğümde <code>actual rows=5010</code>: 10 satır için 5.010 satır okundu. Keyset:</p>
+<pre class="code" data-norun>EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT order_id, placed_at FROM lk_orders WHERE order_id > 5000 ORDER BY order_id LIMIT 10;</pre><p class="plan-etiket">Gerçek çıktı (PostgreSQL 16.4, PGlite)</p><pre class="plan-cikti" tabindex="0">Limit  (cost=0.28..0.72 rows=10 width=12) (actual rows=10 loops=1)
+  Buffers: shared hit=3
+  ->  Index Scan using lk_orders_pkey on lk_orders  (cost=0.28..95.40 rows=2178 width=12) (actual rows=10 loops=1)
+        Index Cond: (order_id > 5000)
+        Buffers: shared hit=3</pre>
+<p>Okunan sayfa 74 yerine 3. PostgreSQL belgesi de OFFSET ile atlanan satırların sunucuda yine hesaplandığını, bu yüzden büyük OFFSET'in verimsiz olabileceğini yazar. Fark sayfa derinleştikçe büyür. Kendi tarayıcında SQLite planını da gör:</p>
+<pre class="code" data-na="tsql pg mysql oracle bq">EXPLAIN QUERY PLAN SELECT order_id, placed_at FROM lk_orders ORDER BY placed_at DESC LIMIT 10 OFFSET 5000;
+CREATE INDEX ix_zaman ON lk_orders (placed_at, order_id);
+EXPLAIN QUERY PLAN SELECT order_id, placed_at FROM lk_orders
+WHERE placed_at &lt; '2024-11-15 12:00:00'
+   OR (placed_at = '2024-11-15 12:00:00' AND order_id &lt; 3000)
+ORDER BY placed_at DESC, order_id DESC LIMIT 10;</pre>
+<div class="note"><b>Keyset'in bedelleri</b>Belirli sayfaya atlayamazsın. Sıralama değişirse imleç de değişir. Sıralama sütunlarının ve eşitlik bozucunun indeksi gerekir. Yönetim panelinde küçük tablo için OFFSET çoğu zaman yeterlidir: gereksiz karmaşıklık da yanlış optimizasyondur.</div></article>
+<div class="st-c"><a class="st-p" href="../../#ders-be-sayfalama">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../be-orm/">← Uygulamadan SQL'e: parametreli sorgu, ORM ve N+1</a><a href="../be-desenler/">Uygulama veritabanı desenleri: yumuşak silme, denetim sütunları, iyimser kilit →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

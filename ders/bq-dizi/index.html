@@ -1,0 +1,56 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BigQuery'de diziler ve iç içe veri: ARRAY, STRUCT, UNNEST | Kesit SQL</title><meta name="description" content="SPLIT, ARRAY_AGG, UNNEST, GENERATE_DATE_ARRAY ve GA4 tarzı iç içe tablolar."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/bq-dizi/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="BigQuery'de diziler ve iç içe veri: ARRAY, STRUCT, UNNEST"><meta property="og:description" content="SPLIT, ARRAY_AGG, UNNEST, GENERATE_DATE_ARRAY ve GA4 tarzı iç içe tablolar."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/bq-dizi/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"BigQuery'de diziler ve iç içe veri: ARRAY, STRUCT, UNNEST","description":"SPLIT, ARRAY_AGG, UNNEST, GENERATE_DATE_ARRAY ve GA4 tarzı iç içe tablolar.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/bq-dizi/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · BigQuery ve Bulut Veri Ambarları</span><h1>BigQuery'de diziler ve iç içe veri: ARRAY, STRUCT, UNNEST</h1><p class="st-l">SPLIT, ARRAY_AGG, UNNEST, GENERATE_DATE_ARRAY ve GA4 tarzı iç içe tablolar.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-bq-dizi">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Bir hücrede birden çok değer</h2>
+<p>BigQuery, bir sütunda <b>dizi</b> (ARRAY) ve <b>yapı</b> (STRUCT) saklayabilir. Bu, JOIN gerektirmeden ilişkili veriyi tek satırda tutmayı sağlar; Google Analytics 4 dışa aktarımındaki <code>event_params</code> bunun en bilinen örneğidir.</p>
+<table>
+<tr><th>Fonksiyon</th><th>Ne yapar?</th></tr>
+<tr><td><code>SPLIT(metin, ',')</code></td><td>Metni diziye böler</td></tr>
+<tr><td><code>ARRAY_AGG(x)</code></td><td>Grubun değerlerini diziye toplar</td></tr>
+<tr><td><code>ARRAY_LENGTH(dizi)</code></td><td>Eleman sayısı</td></tr>
+<tr><td><code>dizi[OFFSET(0)]</code></td><td>İlk eleman (0'dan sayar); <code>[ORDINAL(1)]</code> 1'den sayar, <code>SAFE_OFFSET</code> taşarsa NULL döner</td></tr>
+<tr><td><code>UNNEST(dizi)</code></td><td>Diziyi satırlara açar (FROM içinde)</td></tr>
+<tr><td><code>ARRAY_TO_STRING(dizi, ', ')</code></td><td>Diziyi metne çevirir</td></tr>
+<tr><td><code>GENERATE_DATE_ARRAY(a, b)</code></td><td>Tarih dizisi üretir</td></tr>
+</table>
+<h3>Metni bölüp satırlara açmak</h3>
+<pre class="code" data-base="bq">WITH notlar AS (
+  SELECT 1 AS siparis, 'kupon,hediye paketi' AS etiketler UNION ALL
+  SELECT 2, 'hızlı kargo'
+)
+SELECT n.siparis, etiket
+FROM notlar AS n, UNNEST(SPLIT(n.etiketler, ',')) AS etiket;</pre>
+<p><code>FROM tablo, UNNEST(tablo.dizi) AS x</code> yazımı her satırı kendi dizisinin elemanlarıyla birleştirir (korelasyonlu çapraz birleştirme).</p>
+<h3>Satırları diziye toplamak</h3>
+<pre class="code" data-base="bq">SELECT customer_id,
+       ARRAY_LENGTH(ARRAY_AGG(order_id)) AS siparis_sayisi,
+       ARRAY_TO_STRING(ARRAY_AGG(status ORDER BY order_date DESC), ' &gt; ') AS durum_gecmisi
+FROM orders
+WHERE customer_id &lt;= 3
+GROUP BY customer_id;</pre>
+<h3>Takvim üretmek</h3>
+<pre class="code" data-base="bq">SELECT gun, COUNT(e.event_id) AS olay
+FROM UNNEST(GENERATE_DATE_ARRAY('2024-11-24', '2024-11-30')) AS gun
+LEFT JOIN web_events e ON DATE(e.event_time) = gun
+GROUP BY gun
+ORDER BY gun;</pre>
+<h2>STRUCT ve GA4 verisi</h2>
+<pre class="code" data-norun>-- GA4 dışa aktarımında her olay, parametrelerini bir STRUCT dizisinde taşır
+SELECT event_date,
+       event_name,
+       (SELECT value.string_value
+        FROM UNNEST(event_params)
+        WHERE key = 'page_location') AS sayfa
+FROM `proje.analytics_123456.events_*`
+WHERE _TABLE_SUFFIX BETWEEN '20241101' AND '20241130'
+  AND event_name = 'page_view';</pre>
+<div class="note"><b>Bu uygulamada</b>Diziler ve UNNEST çalışır; STRUCT içeren sorgular yalnızca okunabilir örnek olarak gösterilir.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-bq-dizi">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../bq-giris/">← BigQuery'ye giriş: proje, veri seti ve maliyet mantığı</a><a href="../bq-kisayol/">BigQuery kısayolları: QUALIFY, SELECT * EXCEPT ve SAFE_ fonksiyonlar →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

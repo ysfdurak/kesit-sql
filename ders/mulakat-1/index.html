@@ -1,0 +1,58 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mülakat soruları 1: klasikler | Kesit SQL</title><meta name="description" content="N. en yüksek maaş, tekrar eden kayıtlar, yöneticiden fazla kazananlar ve daha fazlası."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/mulakat-1/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Mülakat soruları 1: klasikler"><meta property="og:description" content="N. en yüksek maaş, tekrar eden kayıtlar, yöneticiden fazla kazananlar ve daha fazlası."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/mulakat-1/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Mülakat soruları 1: klasikler","description":"N. en yüksek maaş, tekrar eden kayıtlar, yöneticiden fazla kazananlar ve daha fazlası.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/mulakat-1/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Mülakat Hazırlığı</span><h1>Mülakat soruları 1: klasikler</h1><p class="st-l">N. en yüksek maaş, tekrar eden kayıtlar, yöneticiden fazla kazananlar ve daha fazlası.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-mulakat-1">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Veri pozisyonu mülakatlarının değişmezleri</h2>
+<p>Bu sorular veri analisti, veri bilimci ve veri mühendisi mülakatlarında neredeyse her zaman karşına çıkar. Önce kendin çöz, takılırsan ipucuna bak. Her birinin birden çok doğru çözümü vardır; sonucun doğruysa kabul edilir.</p>
+<ul>
+<li><b>N. en yüksek değer</b>: DENSE_RANK veya alt sorgu + DISTINCT + OFFSET.</li>
+<li><b>Tekrar eden kayıtlar</b>: GROUP BY + HAVING COUNT(*) &gt; 1.</li>
+<li><b>Grup başına ilk N</b>: ROW_NUMBER / RANK + filtre.</li>
+<li><b>Eşi olmayanlar</b>: LEFT JOIN … IS NULL veya NOT EXISTS.</li>
+<li><b>Kendine JOIN</b>: Çalışan–yönetici karşılaştırmaları.</li>
+</ul>
+<div class="tip"><b>Mülakatta düşünceni anlat</b>Önce veriyi ve grain düzeyini sor (ör. “eşit maaşlar nasıl sayılsın?”), sonra kenar durumları (NULL, eşitlik, boş grup) belirt. Görüşmeci doğru cevap kadar yaklaşımını da değerlendirir.</div>
+<h2>Derinleş: klasik soruların tuzakları</h2>
+<p>Mülakatçı “ikinci en yüksek maaş” sorusunda aslında şunu ölçer: Eşitlikleri, NULL'ları ve boş sonucu düşünüyor musun? Aynı sorunun üç yaygın çözümü eşitlik olduğunda üç farklı cevap verir. Lezzet Kurye restoranlarının komisyon oranlarında 5 restoran %22, 6 restoran %20, 6 restoran %18:</p>
+<pre class="code">WITH r AS (
+  SELECT commission_pct,
+         ROW_NUMBER() OVER (ORDER BY commission_pct DESC, restaurant_id) AS rn,
+         RANK()       OVER (ORDER BY commission_pct DESC) AS rk,
+         DENSE_RANK() OVER (ORDER BY commission_pct DESC) AS dr
+  FROM lk_restaurants
+)
+SELECT (SELECT commission_pct FROM r WHERE rn = 3)      AS row_number_3,
+       (SELECT MIN(commission_pct) FROM r WHERE rk = 3) AS rank_3,
+       (SELECT MIN(commission_pct) FROM r WHERE dr = 3) AS dense_rank_3;</pre>
+<p>“3. en yüksek <b>farklı</b> oran” 18'dir ve yalnızca DENSE_RANK bunu verir. ROW_NUMBER yine 22 döndürür (3. satır), RANK ise NULL (sıralar 1, 6, 12 diye atladığı için 3 yok). Soruyu netleştirmek (“farklı değer mi, satır mı?”) puan kazandırır.</p>
+<h3>Sık çıkan kalıplar</h3>
+<table><tr><th>Soru</th><th>Kalıp</th><th>Kenar durum</th></tr>
+<tr><td>N. en yüksek değer</td><td><code>DENSE_RANK</code> veya <code>DISTINCT ... OFFSET N-1</code></td><td>Eşitlik, N'den az farklı değer</td></tr>
+<tr><td>Ardışık günler (gaps &amp; islands)</td><td><code>tarih − ROW_NUMBER()</code> sabit kalan gruplar</td><td>Aynı gün birden çok kayıt: önce DISTINCT</td></tr>
+<tr><td>Yöneticisinden fazla kazanan</td><td>Kendine JOIN</td><td>Yöneticisi olmayan (NULL) kişi</td></tr>
+<tr><td>Grup başına ilk N</td><td><code>ROW_NUMBER</code> / <code>RANK</code> + filtre</td><td>Eşitlikte kaç satır istendiği</td></tr>
+<tr><td>Yıldan yıla büyüme</td><td><code>LAG</code></td><td>Önceki dönem 0 veya yok</td></tr></table>
+<h3>Gaps &amp; islands nasıl çalışır?</h3>
+<p>Bir müşterinin sipariş verdiği günleri sırala ve her güne sıra numarası ver. Ardışık günlerde hem tarih hem sıra birer artar, yani <code>gün − sıra</code> farkı sabit kalır; bu sabit, “ada” kimliğidir. Lezzet Kurye'de 19 müşteri en az 3 gün üst üste sipariş vermiş:</p>
+<pre class="code">WITH g AS (
+  SELECT DISTINCT customer_id, date(placed_at) AS gun FROM lk_orders
+),
+a AS (
+  SELECT customer_id, gun,
+         julianday(gun) - julianday('2024-01-01')
+           - ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY gun) AS ada
+  FROM g
+),
+s AS (
+  SELECT customer_id, ada, COUNT(*) AS seri FROM a GROUP BY customer_id, ada
+)
+SELECT COUNT(DISTINCT customer_id) AS musteri, MAX(seri) AS en_uzun_seri
+FROM s WHERE seri >= 3;</pre>
+<div class="tip"><b>Mülakatta sırayla</b>1) Tanecik ve tanımları sor. 2) Küçük bir örnek üzerinde beklenen sonucu söyle. 3) Önce okunaklı bir CTE çözümü yaz. 4) Kenar durumları (NULL, eşitlik, boş grup) say. 5) Büyük veride performansı (indeks, pencere fonksiyonu maliyeti) konuş.</div></article>
+<div class="st-c"><a class="st-p" href="../../#ders-mulakat-1">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../bs-scd/">← Büyük sorgu 6: SCD 2 fiyat boyutu ve nokta-zaman birleştirme</a><a href="../mulakat-2/">Mülakat soruları 2: analitik vakalar →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -400,7 +400,7 @@ after('performans', [{
 <p>Metin sütununu sayıyla karşılaştırmak (<code>WHERE tax_no = 1234567890</code>) motoru her satırda dönüşüm yapmaya zorlar ve indeks kullanılamaz. SQL Server'da NVARCHAR sabiti VARCHAR sütunla karşılaştırıldığında da benzer durum olur.</p>
 <h2>Diğer sık hatalar</h2>
 <ul>
-<li><b>SELECT *</b>: Gereksiz sütunlar ağ ve bellek yükü getirir, kaplayan (covering) indeksi devre dışı bırakır.</li>
+<li><b>SELECT *</b>: Gereksiz sütunlar ağ ve bellek yükü getirir, kapsayan (covering) indeksi devre dışı bırakır.</li>
 <li><b>Gereksiz DISTINCT</b>: Çoğalma bir JOIN hatasının belirtisidir; DISTINCT ile örtmek yerine nedeni düzelt.</li>
 <li><b>Satır satır işlem</b>: İmleç veya döngüyle tek tek UPDATE yerine tek bir küme tabanlı UPDATE.</li>
 <li><b>Ilişkili alt sorgu SELECT listesinde</b>: Her satır için çalışır; JOIN + GROUP BY veya pencere fonksiyonu genellikle daha iyidir.</li>

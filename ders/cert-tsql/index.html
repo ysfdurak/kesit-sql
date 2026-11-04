@@ -1,0 +1,42 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>T-SQL sorgulama sertifika konuları: SQL Server ile sorgu yazmak | Kesit SQL</title><meta name="description" content="Eski 70-761 / DP-080 kapsamındaki T-SQL konularının kontrol listesi ve tuzaklar."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/cert-tsql/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="T-SQL sorgulama sertifika konuları: SQL Server ile sorgu yazmak"><meta property="og:description" content="Eski 70-761 / DP-080 kapsamındaki T-SQL konularının kontrol listesi ve tuzaklar."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/cert-tsql/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"T-SQL sorgulama sertifika konuları: SQL Server ile sorgu yazmak","description":"Eski 70-761 / DP-080 kapsamındaki T-SQL konularının kontrol listesi ve tuzaklar.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/cert-tsql/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Sertifika Hazırlık</span><h1>T-SQL sorgulama sertifika konuları: SQL Server ile sorgu yazmak</h1><p class="st-l">Eski 70-761 / DP-080 kapsamındaki T-SQL konularının kontrol listesi ve tuzaklar.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-cert-tsql">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Hangi sınav?</h2>
+<p>Microsoft'un T-SQL sorgulama sınavı (70-761) emekliye ayrıldı; konuları bugün <b>DP-080: Querying Data with Microsoft Transact-SQL</b> eğitimi ve DP-300 / DP-203 gibi rol sertifikalarının içinde yaşıyor. Kurumların iş ilanlarında da “ileri T-SQL” bu kapsam olarak beklenir.</p>
+<h2>Kontrol listesi</h2>
+<table>
+<tr><th>Konu</th><th>Kesit SQL dersi</th></tr>
+<tr><td>SELECT, TOP / OFFSET-FETCH, WHERE, ORDER BY</td><td>Temeller, T-SQL: TOP</td></tr>
+<tr><td>Tarih, metin, dönüşüm (CAST, CONVERT, TRY_CONVERT, PARSE, FORMAT)</td><td>T-SQL: tarih, metin, dönüşüm</td></tr>
+<tr><td>JOIN, APPLY, alt sorgular, türetilmiş tablolar, CTE, özyineleme</td><td>Birleştirme, T-SQL APPLY, CTE</td></tr>
+<tr><td>Küme işlemleri (UNION, INTERSECT, EXCEPT)</td><td>Küme işlemleri</td></tr>
+<tr><td>Gruplama, GROUPING SETS / ROLLUP / CUBE, PIVOT / UNPIVOT</td><td>Ara toplamlar, T-SQL PIVOT</td></tr>
+<tr><td>Pencere fonksiyonları (sıralama, offset, toplama, çerçeve)</td><td>Pencere fonksiyonları modülü</td></tr>
+<tr><td>DML, OUTPUT, MERGE, işlemler, hata yönetimi (TRY/CATCH, THROW)</td><td>T-SQL MERGE, hata yönetimi</td></tr>
+<tr><td>Değişkenler, akış kontrolü, geçici tablolar ve tablo değişkenleri</td><td>T-SQL değişkenler, geçici tablolar</td></tr>
+<tr><td>View, fonksiyon (skaler, satır içi tablo), saklı yordam</td><td>T-SQL yordam ve fonksiyon</td></tr>
+<tr><td>JSON ve XML, temporal tablolar</td><td>T-SQL JSON, temporal</td></tr>
+</table>
+<h2>Sık tuzaklar</h2>
+<ul>
+<li><code>TOP</code> ORDER BY olmadan rastgele satır döndürür; eşitlikler için <code>WITH TIES</code>.</li>
+<li><code>OFFSET ... FETCH</code> ORDER BY olmadan yazılamaz.</li>
+<li>Tam sayı bölmesi: <code>5 / 2 = 2</code>.</li>
+<li><code>ISNULL</code> sonucun tipini ilk argümana göre belirler ve metni kesebilir; <code>COALESCE</code> en yüksek öncelikli tipi kullanır.</li>
+<li>CROSS APPLY satır döndürmeyen sol satırı eler, OUTER APPLY korur.</li>
+<li>Tablo değişkenleri işlem geri alındığında geri alınmaz; geçici tablolar alınır.</li>
+<li><code>THROW</code>'dan önceki ifade noktalı virgülle bitmelidir.</li>
+<li><code>OUTPUT inserted.*, deleted.*</code> ile değişen satırları yakala.</li>
+</ul>
+<pre class="code" data-base="tsql">SELECT TOP (3) WITH TIES name, price
+FROM dbo.products
+ORDER BY price DESC;</pre>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-cert-tsql">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../cert-dbx-snow/">← Databricks Data Analyst ve SnowPro Core: platforma özgü SQL konuları</a><a href="../lab-z071/">1Z0-071 laboratuvarı: Oracle yazımıyla uygulama →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

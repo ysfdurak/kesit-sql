@@ -1,0 +1,59 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hata yönetimi: TRY/CATCH, THROW ve işlemler | Kesit SQL</title><meta name="description" content="Hataları yakalamak, anlamlı mesaj üretmek ve işlemi güvenle geri almak."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-hata/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Hata yönetimi: TRY/CATCH, THROW ve işlemler"><meta property="og:description" content="Hataları yakalamak, anlamlı mesaj üretmek ve işlemi güvenle geri almak."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-hata/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Hata yönetimi: TRY/CATCH, THROW ve işlemler","description":"Hataları yakalamak, anlamlı mesaj üretmek ve işlemi güvenle geri almak.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-hata/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · T-SQL (SQL Server)</span><h1>Hata yönetimi: TRY/CATCH, THROW ve işlemler</h1><p class="st-l">Hataları yakalamak, anlamlı mesaj üretmek ve işlemi güvenle geri almak.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-hata">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>TRY / CATCH</h2>
+<pre class="code" data-base="tsql">BEGIN TRY
+    SELECT 1 / 0 AS sonuc;
+END TRY
+BEGIN CATCH
+    SELECT ERROR_NUMBER()   AS hata_no,
+           ERROR_SEVERITY() AS onem,
+           ERROR_MESSAGE()  AS mesaj;
+END CATCH;</pre>
+<p>CATCH bloğunda <code>ERROR_NUMBER()</code>, <code>ERROR_MESSAGE()</code>, <code>ERROR_LINE()</code>, <code>ERROR_PROCEDURE()</code> fonksiyonlarıyla hatanın ayrıntılarına ulaşılır.</p>
+<h2>İşlem + hata = güvenli değişiklik</h2>
+<p>Bir işlemin ortasında hata olursa önceki adımların da geri alınması gerekir. Standart kalıp:</p>
+<pre class="code" data-base="tsql">BEGIN TRY
+    BEGIN TRANSACTION;
+
+    UPDATE products SET stock = stock - 5 WHERE product_id = 1;
+    -- Aşağıdaki satır birincil anahtar ihlali yapar
+    INSERT INTO products (product_id, name, category, price, cost)
+    VALUES (1, N'Kopya ürün', N'Test', 10, 5);
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT &gt; 0 ROLLBACK TRANSACTION;
+    PRINT 'İşlem geri alındı: ' + ERROR_MESSAGE();
+END CATCH;
+
+SELECT product_id, stock FROM products WHERE product_id = 1;</pre>
+<p>Stok değişmedi: UPDATE de geri alındı. Mesajlar sekmesine bak.</p>
+<h2>THROW ile kendi hatanı fırlatmak</h2>
+<pre class="code" data-base="tsql">DECLARE @stok INT = (SELECT stock FROM products WHERE product_id = 39);
+
+BEGIN TRY
+    IF @stok = 0
+        THROW 50001, N'Stokta olmayan ürün satılamaz.', 1;
+    PRINT 'Satış yapıldı.';
+END TRY
+BEGIN CATCH
+    SELECT ERROR_NUMBER() AS hata_no, ERROR_MESSAGE() AS mesaj;
+END CATCH;</pre>
+<table><tr><th></th><th><code>THROW</code></th><th><code>RAISERROR</code></th></tr>
+<tr><td>Sürüm</td><td>2012+ (önerilen)</td><td>Eski</td></tr>
+<tr><td>Hata numarası</td><td>50000+ kullanıcı tanımlı</td><td>Mesaj metni veya sys.messages</td></tr>
+<tr><td>CATCH içinde parametresiz</td><td>Orijinal hatayı yeniden fırlatır</td><td>Desteklemez</td></tr>
+<tr><td>Önem (severity)</td><td>Her zaman 16</td><td>Belirlenebilir (10 ve altı yalnızca mesaj)</td></tr>
+</table>
+<div class="tip"><b>SET XACT_ABORT ON</b>Saklı yordamların başına eklenirse, herhangi bir çalışma zamanı hatasında tüm işlem otomatik geri alınır. Gerçek sistemlerde TRY/CATCH ile birlikte önerilir.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-hata">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-func/">← Kullanıcı tanımlı fonksiyonlar (UDF)</a><a href="../ts-cursor/">İmleçler (CURSOR): satır satır işlem →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

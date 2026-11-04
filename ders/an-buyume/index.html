@@ -1,0 +1,38 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Büyüme analizi: MoM ve YoY | Kesit SQL</title><meta name="description" content="Aydan aya ve yıldan yıla büyüme oranları."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/an-buyume/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Büyüme analizi: MoM ve YoY"><meta property="og:description" content="Aydan aya ve yıldan yıla büyüme oranları."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/an-buyume/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Büyüme analizi: MoM ve YoY","description":"Aydan aya ve yıldan yıla büyüme oranları.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/an-buyume/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veri Analisti</span><h1>Büyüme analizi: MoM ve YoY</h1><p class="st-l">Aydan aya ve yıldan yıla büyüme oranları.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-an-buyume">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Büyüme oranı</h2>
+<p><code>büyüme = (bu dönem − önceki dönem) / önceki dönem</code></p>
+<ul><li><b>MoM</b> (month over month): Bir önceki ayla karşılaştırma. Mevsimsellikten etkilenir.</li>
+<li><b>YoY</b> (year over year): Geçen yılın aynı ayıyla karşılaştırma. Mevsimselliği nötrler.</li></ul>
+<pre class="code">WITH aylik AS (
+  SELECT strftime('%Y-%m', o.order_date) AS ay,
+         SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) AS ciro
+  FROM orders o JOIN order_items oi ON oi.order_id = o.order_id
+  WHERE o.status = 'delivered'
+  GROUP BY ay
+)
+SELECT ay, ROUND(ciro) AS ciro,
+       ROUND(100.0 * (ciro / LAG(ciro, 1) OVER (ORDER BY ay) - 1), 1) AS mom_yuzde,
+       ROUND(100.0 * (ciro / LAG(ciro, 12) OVER (ORDER BY ay) - 1), 1) AS yoy_yuzde
+FROM aylik
+ORDER BY ay;</pre>
+<div class="warn"><b>LAG(x, 12) ancak her ay varsa doğrudur</b>Eksik ay varsa 12 satır geri gitmek 12 ay geri gitmek demek değildir. Güvenli yol: önce ay iskeleti üret veya geçen yılın ayıyla self join yap.</div>
+<pre class="code">WITH aylik AS (
+  SELECT strftime('%Y', order_date) AS yil, strftime('%m', order_date) AS ay, COUNT(*) AS siparis
+  FROM orders GROUP BY yil, ay
+)
+SELECT b.ay, a.siparis AS s2023, b.siparis AS s2024,
+       ROUND(100.0 * (b.siparis - a.siparis) / a.siparis, 1) AS yoy
+FROM aylik b JOIN aylik a ON a.ay = b.ay AND a.yil = '2023'
+WHERE b.yil = '2024'
+ORDER BY b.ay;</pre>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-an-buyume">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../bi-hazirlik/">← BI aracına veri hazırlamak: grain (tanecik), görünüm ve boyutlar</a><a href="../an-pareto/">Pareto ve ABC analizi →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

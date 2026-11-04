@@ -1,0 +1,34 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Eşit olmayan JOIN ve aralık eşleştirme | Kesit SQL</title><meta name="description" content="BETWEEN ve karşılaştırmalarla birleştirmek: fiyat bantları, kampanya dönemleri."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/non-equi/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Eşit olmayan JOIN ve aralık eşleştirme"><meta property="og:description" content="BETWEEN ve karşılaştırmalarla birleştirmek: fiyat bantları, kampanya dönemleri."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/non-equi/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Eşit olmayan JOIN ve aralık eşleştirme","description":"BETWEEN ve karşılaştırmalarla birleştirmek: fiyat bantları, kampanya dönemleri.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/non-equi/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Tabloları Birleştirme</span><h1>Eşit olmayan JOIN ve aralık eşleştirme</h1><p class="st-l">BETWEEN ve karşılaştırmalarla birleştirmek: fiyat bantları, kampanya dönemleri.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-non-equi">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>JOIN koşulu eşitlik olmak zorunda değil</h2>
+<p>ON içinde her türlü koşul yazılabilir. En yaygın kullanım, bir değeri bir <b>aralık tablosuyla</b> eşleştirmektir: fiyat bantları, vergi dilimleri, kampanya dönemleri.</p>
+<pre class="code">WITH bantlar AS (
+  SELECT 0 AS alt, 500 AS ust, 'Ekonomik' AS bant
+  UNION ALL SELECT 500, 2000, 'Orta'
+  UNION ALL SELECT 2000, 100000, 'Premium'
+)
+SELECT b.bant, COUNT(*) AS urun_sayisi, MIN(p.price) AS en_dusuk, MAX(p.price) AS en_yuksek
+FROM products p
+JOIN bantlar b ON p.price >= b.alt AND p.price < b.ust
+GROUP BY b.bant
+ORDER BY en_dusuk;</pre>
+<h2>Tarih aralığına göre eşleştirme</h2>
+<pre class="code">WITH kampanyalar AS (
+  SELECT 'Yaz İndirimi' AS kampanya, '2024-06-15' AS bas, '2024-07-15' AS bit
+  UNION ALL SELECT 'Efsane Kasım', '2024-11-01', '2024-11-30'
+)
+SELECT k.kampanya, COUNT(o.order_id) AS siparis
+FROM kampanyalar k
+LEFT JOIN orders o ON o.order_date BETWEEN k.bas AND k.bit
+GROUP BY k.kampanya;</pre>
+<div class="warn"><b>Aralıklar çakışmasın</b>Bir değer iki banda birden düşerse satır iki kez sayılır. Alt sınırı dahil, üst sınırı hariç (<code>&gt;= alt AND &lt; ust</code>) yazmak bu hatayı önler.</div>
+<h2>Derinleş: aralık tablosuyla çalışmak</h2><p>Bantları sorgunun içinde bir alt sorguyla tanımlayabilir ya da gerçek bir tabloda tutabilirsin. Tablo yaklaşımı, iş birimi bantları değiştirdiğinde sorguyu değiştirmeden güncellemeni sağlar. Kural: <b>alt sınır dahil, üst sınır hariç</b>; böylece bir değer iki banda birden düşmez ve hiçbir değer arada kalmaz.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-non-equi">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../coklu-join/">← Çoklu JOIN ve satır çoğalması tuzağı</a><a href="../set-ops/">UNION, INTERSECT, EXCEPT →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

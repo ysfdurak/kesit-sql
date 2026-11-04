@@ -1,0 +1,39 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ROLLUP, CUBE ve GROUPING SETS: ara toplamlar | Kesit SQL</title><meta name="description" content="Tek sorguda detay, ara toplam ve genel toplam üretmek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/rollup/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="ROLLUP, CUBE ve GROUPING SETS: ara toplamlar"><meta property="og:description" content="Tek sorguda detay, ara toplam ve genel toplam üretmek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/rollup/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"ROLLUP, CUBE ve GROUPING SETS: ara toplamlar","description":"Tek sorguda detay, ara toplam ve genel toplam üretmek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/rollup/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · İleri Sorgu Yapıları</span><h1>ROLLUP, CUBE ve GROUPING SETS: ara toplamlar</h1><p class="st-l">Tek sorguda detay, ara toplam ve genel toplam üretmek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-rollup">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Raporlarda ara toplam</h2>
+<p>“Kategori ve kanal bazında satış, her kategorinin ara toplamı ve genel toplam” gibi raporlar için birden çok GROUP BY'ı UNION ile birleştirmek yerine <b>gruplama kümeleri</b> kullanılır. SQL Server, PostgreSQL, Oracle ve MySQL (WITH ROLLUP) destekler; SQLite desteklemez (SQLite sekmesinde UNION ALL karşılığını görebilirsin).</p>
+<pre class="code" data-v="{&quot;pg&quot;:&quot;SELECT p.category, o.channel, COUNT(*) AS satis_satiri\nFROM order_items oi\nJOIN orders o   ON o.order_id = oi.order_id\nJOIN products p ON p.product_id = oi.product_id\nWHERE p.category IN ('Kitap', 'Spor')\nGROUP BY ROLLUP (p.category, o.channel)\nORDER BY p.category, o.channel;&quot;,&quot;oracle&quot;:&quot;SELECT p.category, o.channel, COUNT(*) AS satis_satiri\nFROM order_items oi\nJOIN orders o   ON o.order_id = oi.order_id\nJOIN products p ON p.product_id = oi.product_id\nWHERE p.category IN ('Kitap', 'Spor')\nGROUP BY ROLLUP (p.category, o.channel)\nORDER BY p.category, o.channel;&quot;,&quot;mysql&quot;:&quot;SELECT p.category, o.channel, COUNT(*) AS satis_satiri\nFROM order_items oi\nJOIN orders o   ON o.order_id = oi.order_id\nJOIN products p ON p.product_id = oi.product_id\nWHERE p.category IN ('Kitap', 'Spor')\nGROUP BY p.category, o.channel WITH ROLLUP;&quot;,&quot;sqlite&quot;:&quot;-- SQLite'ta ROLLUP yok: her toplam düzeyi ayrı sorgu + UNION ALL\nSELECT p.category, o.channel, COUNT(*) AS satis_satiri\nFROM order_items oi JOIN orders o ON o.order_id = oi.order_id JOIN products p ON p.product_id = oi.product_id\nWHERE p.category IN ('Kitap', 'Spor')\nGROUP BY p.category, o.channel\nUNION ALL\nSELECT p.category, NULL, COUNT(*)\nFROM order_items oi JOIN orders o ON o.order_id = oi.order_id JOIN products p ON p.product_id = oi.product_id\nWHERE p.category IN ('Kitap', 'Spor')\nGROUP BY p.category\nUNION ALL\nSELECT NULL, NULL, COUNT(*)\nFROM order_items oi JOIN products p ON p.product_id = oi.product_id\nWHERE p.category IN ('Kitap', 'Spor')\nORDER BY 1, 2;&quot;}" data-base="tsql" data-diff="pg oracle">SELECT p.category, o.channel, COUNT(*) AS satis_satiri
+FROM order_items oi
+JOIN orders o   ON o.order_id = oi.order_id
+JOIN products p ON p.product_id = oi.product_id
+WHERE p.category IN ('Kitap', 'Spor')
+GROUP BY ROLLUP (p.category, o.channel)
+ORDER BY p.category, o.channel;</pre>
+<p>Sonuçta <code>channel</code> değeri NULL olan satırlar o kategorinin <b>ara toplamı</b>, iki sütunun da NULL olduğu satır <b>genel toplam</b>dır.</p>
+<table><tr><th>Yazım</th><th>Üretilen gruplar (a, b için)</th></tr>
+<tr><td><code>ROLLUP (a, b)</code></td><td>(a, b), (a), ()  — hiyerarşik ara toplamlar</td></tr>
+<tr><td><code>CUBE (a, b)</code></td><td>(a, b), (a), (b), ()  — tüm kombinasyonlar</td></tr>
+<tr><td><code>GROUPING SETS ((a), (b))</code></td><td>Yalnızca (a) ve (b)  — istediğin kümeler</td></tr>
+</table>
+<h2>GROUPING() ile toplam satırını etiketlemek</h2>
+<p>Gerçek NULL değerle “toplam” NULL'ını ayırmak için <code>GROUPING(sütun)</code> kullanılır: o satırda sütun toplanmışsa 1 döner.</p>
+<pre class="code" data-v="{&quot;pg&quot;:&quot;SELECT CASE WHEN GROUPING(c.segment) = 1 THEN 'TOPLAM' ELSE c.segment END AS segment,\n       COUNT(*) AS siparis\nFROM orders o\nJOIN customers c ON c.customer_id = o.customer_id\nGROUP BY ROLLUP (c.segment);&quot;,&quot;oracle&quot;:&quot;SELECT CASE WHEN GROUPING(c.segment) = 1 THEN 'TOPLAM' ELSE c.segment END AS segment,\n       COUNT(*) AS siparis\nFROM orders o\nJOIN customers c ON c.customer_id = o.customer_id\nGROUP BY ROLLUP (c.segment);&quot;,&quot;mysql&quot;:&quot;SELECT IF(GROUPING(c.segment) = 1, 'TOPLAM', c.segment) AS segment,\n       COUNT(*) AS siparis\nFROM orders o\nJOIN customers c ON c.customer_id = o.customer_id\nGROUP BY c.segment WITH ROLLUP;&quot;}" data-base="tsql">SELECT CASE WHEN GROUPING(c.segment) = 1 THEN N'TOPLAM' ELSE c.segment END AS segment,
+       COUNT(*) AS siparis
+FROM orders o
+JOIN customers c ON c.customer_id = o.customer_id
+GROUP BY ROLLUP (c.segment);</pre>
+<h2>GROUPING SETS</h2>
+<pre class="code" data-v="{&quot;pg&quot;:&quot;SELECT c.segment, o.channel, COUNT(*) AS siparis\nFROM orders o\nJOIN customers c ON c.customer_id = o.customer_id\nGROUP BY GROUPING SETS ((c.segment), (o.channel));&quot;,&quot;oracle&quot;:&quot;SELECT c.segment, o.channel, COUNT(*) AS siparis\nFROM orders o\nJOIN customers c ON c.customer_id = o.customer_id\nGROUP BY GROUPING SETS ((c.segment), (o.channel));&quot;}" data-base="tsql">SELECT c.segment, o.channel, COUNT(*) AS siparis
+FROM orders o
+JOIN customers c ON c.customer_id = o.customer_id
+GROUP BY GROUPING SETS ((c.segment), (o.channel));</pre>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-rollup">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../unpivot/">← Geniş tablodan uzun tabloya: UNPIVOT</a><a href="../upsert/">UPSERT ve MERGE: varsa güncelle, yoksa ekle →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

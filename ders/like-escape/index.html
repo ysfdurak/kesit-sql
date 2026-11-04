@@ -1,0 +1,39 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LIKE ile alt çizgi ve yüzde işaretini aramak: ESCAPE | Kesit SQL</title><meta name="description" content="_ ve % joker karakterdir; metnin içinde gerçekten geçen _ veya % işaretini aramak için kaçış karakteri kullanılır."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/like-escape/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="LIKE ile alt çizgi ve yüzde işaretini aramak: ESCAPE"><meta property="og:description" content="_ ve % joker karakterdir; metnin içinde gerçekten geçen _ veya % işaretini aramak için kaçış karakteri kullanılır."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/like-escape/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"LIKE ile alt çizgi ve yüzde işaretini aramak: ESCAPE","description":"_ ve % joker karakterdir; metnin içinde gerçekten geçen _ veya % işaretini aramak için kaçış karakteri kullanılır.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/like-escape/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Temeller</span><h1>LIKE ile alt çizgi ve yüzde işaretini aramak: ESCAPE</h1><p class="st-l">_ ve % joker karakterdir; metnin içinde gerçekten geçen _ veya % işaretini aramak için kaçış karakteri kullanılır.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-like-escape">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Joker karakterler hatırlatma</h2>
+<table>
+<tr><th>Desen</th><th>Anlamı</th><th>Eşleşir</th></tr>
+<tr><td><code>'e%'</code></td><td>e ile başlayan her şey</td><td>egitim, elektronik, e_ticaret</td></tr>
+<tr><td><code>'e_%'</code></td><td>e, ardından <b>herhangi bir</b> karakter, sonra her şey</td><td>yine egitim, elektronik, e_ticaret</td></tr>
+<tr><td><code>'%_%'</code></td><td>en az bir karakter</td><td>boş olmayan her değer</td></tr>
+</table>
+<p>Yani <code>_</code> yazınca motor “alt çizgi karakteri” değil “tek bir karakter” anlar. <code>bank_txns.merchant_category</code> sütununda gerçekten alt çizgi içeren tek değer <code>e_ticaret</code>'tir; ama <code>LIKE 'e_%'</code> üç kategoriyi birden getirir.</p>
+<pre class="code">SELECT DISTINCT merchant_category
+FROM bank_txns
+WHERE merchant_category LIKE 'e_%'
+ORDER BY merchant_category;</pre>
+<h2>ESCAPE: “bu karakteri harfiyen al”</h2>
+<p>Desende joker karakterin önüne bir <b>kaçış karakteri</b> koyup bu karakteri <code>ESCAPE</code> ile bildirirsin. Kaçış karakteri olarak metinde geçmeyen bir işaret seç; <code>!</code> yaygın bir seçimdir.</p>
+<pre class="code">SELECT DISTINCT merchant_category
+FROM bank_txns
+WHERE merchant_category LIKE 'e!_%' ESCAPE '!'
+ORDER BY merchant_category;</pre>
+<p>Artık yalnızca <code>e_ticaret</code> gelir. Aynı yöntem yüzde işareti için de geçerlidir: <code>LIKE '%!%%' ESCAPE '!'</code> içinde “%” geçen değerleri bulur (örneğin “%20 indirim”).</p>
+<table>
+<tr><th>SQL türü</th><th>Not</th></tr>
+<tr><td>Tüm SQL türleri</td><td><code>LIKE '...' ESCAPE '!'</code> standarttır ve her yerde çalışır.</td></tr>
+<tr><td>SQL Server</td><td>Ayrıca köşeli parantezle de kaçırılabilir: <code>LIKE 'e[_]%'</code>. Köşeli parantez SQL Server'a özgüdür.</td></tr>
+<tr><td>MySQL, PostgreSQL</td><td>ESCAPE yazmazsan varsayılan kaçış karakteri ters bölüdür: <code>LIKE 'e\_%'</code>. Taşınabilirlik için ESCAPE'i açıkça yazmak daha güvenlidir.</td></tr>
+<tr><td>Oracle, BigQuery</td><td>Varsayılan kaçış karakteri yoktur; ESCAPE yazmak gerekir (BigQuery'de ters bölü desteklenir).</td></tr>
+</table>
+<div class="tip"><b>Kullanıcı girdisi</b>Uygulamada kullanıcının yazdığı arama metnini LIKE desenine koyarken içindeki <code>_</code> ve <code>%</code> karakterlerini kaçırmazsan “a_b” araması “axb”yi de bulur. Parametreli sorgu SQL injection'ı önler ama joker karakterleri kaçırmaz; bunu ayrıca yapman gerekir.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-like-escape">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../in-between-like/">← IN, BETWEEN ve LIKE</a><a href="../null/">NULL: bilinmeyen değer →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

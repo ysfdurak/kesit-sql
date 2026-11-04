@@ -1,0 +1,46 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CASE WHEN: SQL'de eğer-ise | Kesit SQL</title><meta name="description" content="Koşullu sütunlar, segmentleme ve koşullu sayma."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/case/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="CASE WHEN: SQL'de eğer-ise"><meta property="og:description" content="Koşullu sütunlar, segmentleme ve koşullu sayma."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/case/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"CASE WHEN: SQL'de eğer-ise","description":"Koşullu sütunlar, segmentleme ve koşullu sayma.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/case/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Fonksiyonlar</span><h1>CASE WHEN: SQL'de eğer-ise</h1><p class="st-l">Koşullu sütunlar, segmentleme ve koşullu sayma.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-case">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Koşula göre değer üretmek</h2>
+<p>CASE, programlamadaki if/else'in SQL karşılığıdır. İlk doğru koşulun değerini döndürür.</p>
+<pre class="code">SELECT name, price,
+       CASE
+         WHEN price < 300 THEN 'Ekonomik'
+         WHEN price < 1500 THEN 'Orta'
+         ELSE 'Premium'
+       END AS fiyat_sinifi
+FROM products;</pre>
+<ul>
+<li>Koşullar <b>sırayla</b> denenir; ilk doğru olan kazanır. Bu yüzden 1500 koşulunda “300'den büyük” demene gerek yok.</li>
+<li>ELSE yazmazsan, hiçbir koşul tutmadığında sonuç NULL olur.</li>
+</ul>
+<h2>Gruplamada CASE</h2>
+<pre class="code">SELECT CASE WHEN price < 300 THEN 'Ekonomik'
+            WHEN price < 1500 THEN 'Orta'
+            ELSE 'Premium' END AS sinif,
+       COUNT(*) AS urun_sayisi
+FROM products
+GROUP BY sinif;</pre>
+<h2>Koşullu toplama: analistin süper gücü</h2>
+<p>Tek sorguda birden fazla sayımı yan yana koymak için CASE'i toplama fonksiyonunun içine koyarsın:</p>
+<pre class="code">SELECT channel,
+       COUNT(*) AS toplam,
+       SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) AS teslim,
+       SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS iptal
+FROM orders
+GROUP BY channel;</pre>
+<div class="note"><b>FILTER sözdizimi</b>PostgreSQL ve SQLite standarttaki <code>COUNT(*) FILTER (WHERE status = 'cancelled')</code> yazımını da destekler.</div>
+<h2>Derinleş: CASE ile yapılan dört iş</h2><ol><li><b>Sınıflandırma:</b> fiyatı bantlara ayırmak.</li><li><b>Koşullu sayım:</b> <code>SUM(CASE WHEN status = 'iptal' THEN 1 ELSE 0 END)</code>.</li><li><b>Özel sıralama:</b> <code>ORDER BY CASE status WHEN 'teslim' THEN 1 WHEN 'iade' THEN 2 ELSE 3 END</code>.</li><li><b>Güvenli bölme:</b> <code>CASE WHEN payda = 0 THEN NULL ELSE pay / payda END</code>.</li></ol>
+<pre class="code">SELECT status, COUNT(*) AS siparis
+FROM lk_orders
+GROUP BY status
+ORDER BY CASE status WHEN 'teslim' THEN 1 WHEN 'iade' THEN 2 ELSE 3 END;</pre>
+<p>CASE'in her dalı aynı tipte değer döndürmelidir; bir dalda sayı, diğerinde metin döndürmek bazı SQL türlerinde hata verir.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-case">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../toplama-tuzak/">← Toplama fonksiyonlarında tuzaklar: COUNT türleri, NULL ve tam sayı bölmesi</a><a href="../coalesce/">COALESCE, NULLIF ve NULL ile hesap →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

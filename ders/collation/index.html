@@ -1,0 +1,42 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Harmanlama (collation): büyük/küçük harf ve Türkçe “İ” sorunu | Kesit SQL</title><meta name="description" content="Karşılaştırma ve sıralama kuralları; CI/CS, AI/AS ve Türkçe karakterler."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/collation/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Harmanlama (collation): büyük/küçük harf ve Türkçe “İ” sorunu"><meta property="og:description" content="Karşılaştırma ve sıralama kuralları; CI/CS, AI/AS ve Türkçe karakterler."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/collation/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Harmanlama (collation): büyük/küçük harf ve Türkçe “İ” sorunu","description":"Karşılaştırma ve sıralama kuralları; CI/CS, AI/AS ve Türkçe karakterler.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/collation/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Fonksiyonlar</span><h1>Harmanlama (collation): büyük/küçük harf ve Türkçe “İ” sorunu</h1><p class="st-l">Karşılaştırma ve sıralama kuralları; CI/CS, AI/AS ve Türkçe karakterler.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-collation">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>“istanbul” = “İSTANBUL” mu?</h2>
+<p>Bu sorunun cevabını veritabanının <b>harmanlama</b> (collation) ayarı verir. Collation, metinlerin nasıl karşılaştırılacağını ve sıralanacağını belirler: büyük/küçük harf duyarlı mı, aksanlar (â, ç, ş) dikkate alınıyor mu, hangi dilin alfabe sırası kullanılıyor?</p>
+<table>
+<tr><th>Kısaltma</th><th>Anlamı</th><th>Örnek</th></tr>
+<tr><td><b>CI</b> / <b>CS</b></td><td>Case Insensitive / Sensitive: büyük/küçük harf duyarsız / duyarlı</td><td>CI'da 'ali' = 'ALİ'?</td></tr>
+<tr><td><b>AI</b> / <b>AS</b></td><td>Accent Insensitive / Sensitive: aksan duyarsız / duyarlı</td><td>AI'da 'Şahin' = 'Sahin'</td></tr>
+</table>
+<h2>SQL türlerine göre</h2>
+<table>
+<tr><th>SQL türü</th><th>Varsayılan davranış</th><th>Türkçe için</th></tr>
+<tr><td>SQL Server</td><td>Kurulumda seçilir (çoğunlukla CI_AS)</td><td><code>Turkish_CI_AS</code>; sorguda <code>COLLATE Turkish_CI_AS</code></td></tr>
+<tr><td>PostgreSQL</td><td>Büyük/küçük harf <b>duyarlı</b></td><td>ICU collation (<code>tr-x-icu</code>), duyarsız arama için <code>ILIKE</code> veya <code>LOWER()</code></td></tr>
+<tr><td>MySQL</td><td><code>utf8mb4_0900_ai_ci</code>: duyarsız</td><td><code>utf8mb4_turkish_ci</code></td></tr>
+<tr><td>Oracle</td><td>Duyarlı</td><td><code>NLS_SORT = XTURKISH</code>, <code>NLS_COMP = LINGUISTIC</code></td></tr>
+<tr><td>BigQuery</td><td>Duyarlı</td><td><code>COLLATE(metin, 'und:ci')</code></td></tr>
+</table>
+<h2>Türkçe “i” sorunu</h2>
+<p>Türkçede küçük <b>i</b>'nin büyüğü <b>İ</b>, küçük <b>ı</b>'nın büyüğü <b>I</b>'dır. İngilizce kurallarla <code>UPPER('istanbul')</code> “ISTANBUL” olur; Türkçe kuralla “İSTANBUL”. Collation Türkçe değilse “İSTANBUL” ile “ISTANBUL” farklı görülür ve aramalar kayıt kaçırır.</p>
+<pre class="code" data-norun>-- SQL Server: sorguda harmanlama belirtmek
+SELECT *
+FROM customers
+WHERE city = N'istanbul' COLLATE Turkish_CI_AS;
+
+-- Türkçe alfabeye göre sıralama (ç, ğ, ı, ö, ş, ü doğru yerde)
+SELECT name FROM products ORDER BY name COLLATE Turkish_CI_AS;
+
+-- PostgreSQL: Türkçe ICU harmanlama
+SELECT name FROM products ORDER BY name COLLATE &quot;tr-x-icu&quot;;</pre>
+<div class="tip"><b>Taşınabilir çözüm</b>Harmanlamaya güvenemiyorsan karşılaştırmadan önce iki tarafı da aynı biçime getir: kırp, Türkçe karakterleri sadeleştir (TRANSLATE), büyük harfe çevir. Metin benzerliği dersindeki “anahtar” yöntemi budur.</div>
+<div class="warn"><b>Indeks uyarısı</b>Sütunu <code>UPPER(city)</code> gibi bir fonksiyona sokmak indeks kullanımını engeller. Sık yapılan aramalar için doğru collation'lı sütun veya normalleştirilmiş ek sütun daha iyidir.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-collation">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../metin-benzerlik/">← Metin temizleme ve benzerlik: TRANSLATE, SOUNDEX, Levenshtein</a><a href="../sorgu-sirasi/">Bir sorgu hangi sırayla çalışır? →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

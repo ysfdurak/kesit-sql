@@ -2954,7 +2954,27 @@ function mustFail(e, code, d) {
   if (!e.check && e.sol && /\bFROM\b/i.test(bareOf(e.sol)) && !/\bFROM\b/i.test(bare)) return 'Bu görevde sonucu tablodan hesaplaman gerekiyor; sabit değer yazmak sayılmaz.';
   return '';
 }
-root.SQLP_DIALECT = { DIALECTS, DNAME, mustFail, tokenize, forward, reverse, lint, runDialect, register, splitSemis, execOne, friendly,
+/* Plan denetimi: alıştırmanın e.plan alanı varsa sonuç doğru olduktan sonra SQLite planına da bakılır.
+   e.plan = { setup: gizli hazırlık (ör. CREATE INDEX IF NOT EXISTS), q: planı alınacak sabit sorgu (yoksa cevabın son SELECT'i),
+              must: planda geçmesi gereken düzenli ifade, not: geçmemesi gereken düzenli ifade, msg: geri bildirim }.
+   Motor her SQL türünde SQLite olduğu için plan da SQLite planıdır. Dönüş: sorun yoksa null, varsa { msg, plan }. */
+function planOf(db, q) {
+  const r = db.exec('EXPLAIN QUERY PLAN ' + String(q).trim().replace(/;\s*$/, ''));
+  return r.length ? r[0].values.map(v => v[3]).join('\n') : '';
+}
+function planFail(e, db, res) {
+  const p = e && e.plan; if (!p) return null;
+  let q = p.q;
+  if (!q) { const t = (res && res.translated) || []; for (let i = t.length - 1; i >= 0 && !q; i--) if (/^\s*(--[^\n]*\n\s*)*(SELECT|WITH)\b/i.test(t[i])) q = t[i]; }
+  const msg = p.msg || 'Sonuç doğru ama plan beklenen gibi değil.';
+  if (!q) return { msg, plan: '' };
+  let det = '';
+  try { if (p.setup) db.exec(p.setup); det = planOf(db, q); } catch (er) { return { msg, plan: '' }; }
+  if (p.must && !new RegExp(p.must, 'i').test(det)) return { msg, plan: det };
+  if (p.not && new RegExp(p.not, 'i').test(det)) return { msg, plan: det };
+  return null;
+}
+root.SQLP_DIALECT = { DIALECTS, DNAME, mustFail, planFail, planOf, tokenize, forward, reverse, lint, runDialect, register, splitSemis, execOne, friendly,
   convert, isProcedural, forwardCanon,
   setSchemaHints(dateCols, textCols, allCols, dtCols) { (dtCols || []).forEach(c => DT_COLS.add(c)); dateCols.forEach(c => DATE_COLS.add(c)); textCols.forEach(c => TEXT_COLS.add(c)); (allCols || []).forEach(c => ALL_COLS.add(String(c).toLowerCase())); } };
 // T-SQL yolunda da önce denetim uygula

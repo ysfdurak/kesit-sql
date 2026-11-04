@@ -1,0 +1,75 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SQL kodunu test etmek: veri testleri, birim testleri ve CI | Kesit SQL</title><meta name="description" content="Hata varsa satır döndüren test sorguları, tSQLt, pgTAP, dbt testleri, sürekli entegrasyon."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/sql-test/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="SQL kodunu test etmek: veri testleri, birim testleri ve CI"><meta property="og:description" content="Hata varsa satır döndüren test sorguları, tSQLt, pgTAP, dbt testleri, sürekli entegrasyon."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/sql-test/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"SQL kodunu test etmek: veri testleri, birim testleri ve CI","description":"Hata varsa satır döndüren test sorguları, tSQLt, pgTAP, dbt testleri, sürekli entegrasyon.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/sql-test/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Veri Mühendisliği</span><h1>SQL kodunu test etmek: veri testleri, birim testleri ve CI</h1><p class="st-l">Hata varsa satır döndüren test sorguları, tSQLt, pgTAP, dbt testleri, sürekli entegrasyon.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-sql-test">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>İki tür test</h2>
+<ul>
+<li><b>Veri testleri</b>: Veri beklentilere uyuyor mu? (benzersiz, boş değil, geçerli değer, referans bütünlüğü, aralık)</li>
+<li><b>Kod (birim) testleri</b>: Saklı yordam, fonksiyon veya dönüşüm sorgusu verilen girdiye doğru çıktıyı üretiyor mu?</li>
+</ul>
+<h2>Kalıp: hata varsa satır döndür</h2>
+<p>Test sorgusu, kuralı bozan satırları döndürür. Boş sonuç = test geçti. dbt, Great Expectations ve birçok veri kalite aracı bu fikirle çalışır.</p>
+<pre class="code">-- 1) Benzersizlik: aynı order_id iki kez var mı?
+SELECT order_id, COUNT(*) AS adet FROM orders GROUP BY order_id HAVING COUNT(*) > 1;</pre>
+<pre class="code">-- 2) Referans bütünlüğü: müşterisi olmayan sipariş var mı?
+SELECT o.order_id FROM orders o
+LEFT JOIN customers c ON c.customer_id = o.customer_id
+WHERE c.customer_id IS NULL;</pre>
+<pre class="code">-- 3) Kabul edilen değerler
+SELECT DISTINCT status FROM orders
+WHERE status NOT IN ('delivered', 'shipped', 'cancelled', 'returned');</pre>
+<pre class="code">-- 4) Aralık ve iş kuralı: indirim 0–0,5 arasında, adet pozitif
+SELECT item_id FROM order_items WHERE discount < 0 OR discount > 0.5 OR quantity <= 0;</pre>
+<h3>Tek raporda tüm testler</h3>
+<pre class="code">SELECT 'siparis_tekil' AS test, COUNT(*) AS hata FROM (SELECT order_id FROM orders GROUP BY order_id HAVING COUNT(*) > 1) AS t
+UNION ALL
+SELECT 'siparis_musteri_var', COUNT(*) FROM orders o LEFT JOIN customers c ON c.customer_id = o.customer_id WHERE c.customer_id IS NULL
+UNION ALL
+SELECT 'musteri_email_bos', COUNT(*) FROM customers WHERE email IS NULL
+UNION ALL
+SELECT 'fiyat_maliyet_ustu', COUNT(*) FROM products WHERE price < cost;</pre>
+<h2>Birim test çerçeveleri</h2>
+<pre class="code" data-norun>-- SQL Server: tSQLt
+EXEC tSQLt.NewTestClass 'testCiro';
+GO
+CREATE PROCEDURE testCiro.[test net tutar indirimi düşer]
+AS
+BEGIN
+  EXEC tSQLt.FakeTable 'dbo.order_items';
+  INSERT INTO dbo.order_items (order_id, quantity, unit_price, discount) VALUES (1, 2, 100, 0.1);
+  DECLARE @sonuc DECIMAL(12,2) = dbo.fn_siparis_tutari(1);
+  EXEC tSQLt.AssertEquals 180.00, @sonuc;
+END;
+GO
+EXEC tSQLt.Run 'testCiro';
+
+-- PostgreSQL: pgTAP
+SELECT plan(2);
+SELECT has_table('orders');
+SELECT is((SELECT musteri_ciro(1)), 1234.50::numeric, 'Müşteri 1 cirosu');
+SELECT * FROM finish();
+
+-- dbt (schema.yml)
+-- models:
+--   - name: fct_siparis
+--     columns:
+--       - name: order_id
+--         tests: [unique, not_null]
+--       - name: customer_id
+--         tests:
+--           - relationships: {to: ref('dim_musteri'), field: customer_id}</pre>
+<h2>Sürekli entegrasyon (CI)</h2>
+<ol>
+<li>Her değişiklik (pull request) için boş bir test veritabanı oluşturulur, migration'lar uygulanır.</li>
+<li>Örnek veri yüklenir, birim ve veri testleri çalışır.</li>
+<li>SQL biçim ve stil denetimi (ör. <b>SQLFluff</b>) yapılır.</li>
+<li>Testler geçerse değişiklik birleştirilir ve üretime dağıtılır.</li>
+</ol>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-sql-test">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../de-kalite/">← Veri kalitesi testleri</a><a href="../de-dedup/">Tekilleştirme (deduplication) →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

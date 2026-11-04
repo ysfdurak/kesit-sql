@@ -1,0 +1,57 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zaman aralıkları: çakışma, eşzamanlılık ve birleştirme | Kesit SQL</title><meta name="description" content="Başlangıcı ve bitişi olan kayıtlarla çalışmak: iki aralığın çakışma koşulu, aynı anda kaç işin sürdüğü (+1/−1 olay yöntemi) ve çakışan aralıkları…"><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/zaman-araligi/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Zaman aralıkları: çakışma, eşzamanlılık ve birleştirme"><meta property="og:description" content="Başlangıcı ve bitişi olan kayıtlarla çalışmak: iki aralığın çakışma koşulu, aynı anda kaç işin sürdüğü (+1/−1 olay yöntemi) ve çakışan aralıkları…"><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/zaman-araligi/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Zaman aralıkları: çakışma, eşzamanlılık ve birleştirme","description":"Başlangıcı ve bitişi olan kayıtlarla çalışmak: iki aralığın çakışma koşulu, aynı anda kaç işin sürdüğü (+1/−1 olay yöntemi) ve çakışan aralıkları…","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/zaman-araligi/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · İleri Sorgu Yapıları</span><h1>Zaman aralıkları: çakışma, eşzamanlılık ve birleştirme</h1><p class="st-l">Başlangıcı ve bitişi olan kayıtlarla çalışmak: iki aralığın çakışma koşulu, aynı anda kaç işin sürdüğü (+1/−1 olay yöntemi) ve çakışan aralıkları birleştirmek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-zaman-araligi">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Aralık verisi her yerde</h2>
+<p>Bir teslimat kuryenin restorandan aldığı an (<code>picked_at</code>) ile teslim ettiği an (<code>delivered_at</code>) arasında sürer. Otel rezervasyonları, toplantı odaları, abonelik dönemleri, sunucu oturumları hep aynı yapıdadır: <b>[başlangıç, bitiş)</b>.</p>
+<h2>1. İki aralık ne zaman çakışır?</h2>
+<p>A ve B aralıkları ancak şu koşulla çakışır:</p>
+<pre class="code" data-norun>A.baslangic &lt; B.bitis AND B.baslangic &lt; A.bitis</pre>
+<p>Dört farklı durum (biri diğerini kapsar, soldan, sağdan, iç içe) bu tek koşulla yakalanır. Çakışmama koşulu ise tersidir: biri diğeri başlamadan biter. Aynı kuryenin aynı anda iki teslimat taşıdığı durumlar:</p>
+<pre class="code">SELECT a.courier_id, a.order_id, b.order_id AS diger
+FROM lk_orders a
+JOIN lk_orders b
+  ON b.courier_id = a.courier_id
+ AND a.order_id &lt; b.order_id
+ AND a.picked_at &lt; b.delivered_at
+ AND b.picked_at &lt; a.delivered_at
+WHERE a.status = 'teslim' AND b.status = 'teslim'
+LIMIT 10;</pre>
+<p><code>a.order_id &lt; b.order_id</code> her çifti bir kez sayar.</p>
+<h2>2. Aynı anda kaç iş sürüyor? (olay yöntemi)</h2>
+<p>Her aralığı iki olaya böl: başlangıçta <b>+1</b>, bitişte <b>−1</b>. Olayları zamana göre sırala ve kümülatif topla; her andaki toplam, o anda süren iş sayısıdır.</p>
+<pre class="code">WITH olay AS (
+  SELECT picked_at AS an, 1 AS d FROM lk_orders WHERE status = 'teslim'
+  UNION ALL
+  SELECT delivered_at, -1 FROM lk_orders WHERE status = 'teslim'
+),
+k AS (
+  SELECT an, SUM(d) OVER (ORDER BY an, d ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS yolda
+  FROM olay
+)
+SELECT MAX(yolda) AS en_yogun FROM k;</pre>
+<p>Sıralamada aynı anda biten ve başlayan iki olay varsa <code>ORDER BY an, d</code> önce −1'i işler; böylece biten iş, başlayanla “aynı anda” sayılmaz.</p>
+<h2>3. Çakışan aralıkları birleştirmek</h2>
+<p>Bir kuryenin “meşgul” dönemleri: iç içe ya da çakışan teslimatları tek bir dönemde birleştir. Bu, boşluklar ve adalar probleminin aralık hâlidir: bir aralık, önceki aralıkların en geç bitişinden <b>sonra</b> başlıyorsa yeni bir ada başlatır.</p>
+<pre class="code">WITH s AS (
+  SELECT picked_at AS bas, delivered_at AS bit,
+         MAX(delivered_at) OVER (ORDER BY picked_at ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) AS onceki_bitis
+  FROM lk_orders
+  WHERE courier_id = 55 AND status = 'teslim' AND picked_at &gt;= '2024-12-01' AND picked_at &lt; '2025-01-01'
+),
+i AS (
+  SELECT bas, bit, SUM(CASE WHEN onceki_bitis IS NULL OR bas &gt; onceki_bitis THEN 1 ELSE 0 END)
+           OVER (ORDER BY bas ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS ada
+  FROM s
+)
+SELECT ada, MIN(bas) AS baslangic, MAX(bit) AS bitis, COUNT(*) AS teslimat
+FROM i GROUP BY ada ORDER BY ada;</pre>
+<div class="tip"><b>Sınır kararı</b>Bir iş tam 12:00'de bitip diğeri tam 12:00'de başlıyorsa çakışıyor mu? Yarı açık aralık [başlangıç, bitiş) kabulünde hayır. Koşulda &lt; ve &lt;= seçimi bu kararı belirler; raporda belirt.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-zaman-araligi">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ardisik-seri/">← Boşluklar ve adalar: ardışık serileri bulmak (gaps and islands)</a><a href="../pivot/">Pivot: satırları sütuna çevirmek →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

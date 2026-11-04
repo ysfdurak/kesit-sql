@@ -1,0 +1,40 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Güvenlik: SQL injection ve yetkilendirme | Kesit SQL</title><meta name="description" content="Parametreli sorgu, en az yetki ilkesi, GRANT/REVOKE."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/guvenlik/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Güvenlik: SQL injection ve yetkilendirme"><meta property="og:description" content="Parametreli sorgu, en az yetki ilkesi, GRANT/REVOKE."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/guvenlik/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Güvenlik: SQL injection ve yetkilendirme","description":"Parametreli sorgu, en az yetki ilkesi, GRANT/REVOKE.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/guvenlik/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Modern SQL</span><h1>Güvenlik: SQL injection ve yetkilendirme</h1><p class="st-l">Parametreli sorgu, en az yetki ilkesi, GRANT/REVOKE.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-guvenlik">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>SQL injection</h2>
+<p>Kullanıcı girdisini doğrudan sorgu metnine eklemek, en eski ve hâlâ en yaygın güvenlik açıklarından biridir.</p>
+<pre class="code" data-norun>-- Uygulama kodu (YANLIŞ):
+sorgu = "SELECT * FROM users WHERE email = '" + girdi + "'"
+
+-- Saldırgan girdi olarak şunu yazar:  ' OR '1'='1
+-- Oluşan sorgu:
+SELECT * FROM users WHERE email = '' OR '1'='1'   -- tüm kullanıcılar!</pre>
+<h3>Çözüm: parametreli sorgu</h3>
+<pre class="code" data-norun># Python örneği (DOĞRU)
+cursor.execute("SELECT * FROM users WHERE email = %s", (girdi,))</pre>
+<p>Parametre değeri hiçbir zaman SQL kodu olarak yorumlanmaz. ORM'ler (SQLAlchemy, Django ORM, Hibernate) bunu varsayılan yapar; ham SQL yazarken de mutlaka parametre kullan. Tablo/sütun adı gibi parametrelenemeyen kısımlar için beyaz liste kullan.</p>
+<h2>Yetkilendirme (DCL)</h2>
+<pre class="code" data-norun>CREATE ROLE analyst;
+GRANT SELECT ON sales.orders TO analyst;
+GRANT SELECT, INSERT ON staging.events TO etl_user;
+REVOKE INSERT ON staging.events FROM etl_user;</pre>
+<ul>
+<li><b>En az yetki ilkesi</b>: Herkes işini yapacak kadar yetki alsın. Analistler üretim tablolarına yazamamalı.</li>
+<li><b>Satır düzeyi güvenlik</b> (RLS): Bölge müdürü sadece kendi bölgesinin satırlarını görsün.</li>
+<li><b>Hassas veri</b>: Kişisel verileri (KVKK/GDPR) maskele veya view ile gizle; e-posta, TCKN, telefon gibi sütunlara erişimi kısıtla.</li>
+</ul>
+<h2>Bir maskeleme örneği</h2>
+<pre class="code">SELECT first_name,
+       substr(email, 1, 2) || '***' || substr(email, instr(email, '@')) AS maskeli_email
+FROM customers
+WHERE email IS NOT NULL
+LIMIT 5;</pre>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-guvenlik">Alıştırmalara geç (4)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../lehceler/">← SQL lehçeleri: PostgreSQL, MySQL, SQL Server, Oracle, BigQuery</a><a href="../kvkk/">KVKK ve kişisel veri: maskeleme, takma adlandırma, saklama ve silme →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,62 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pareto ve ABC analizi | Kesit SQL</title><meta name="description" content="Cironun %80'ini hangi ürünler getiriyor?"><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/an-pareto/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Pareto ve ABC analizi"><meta property="og:description" content="Cironun %80'ini hangi ürünler getiriyor?"><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/an-pareto/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Pareto ve ABC analizi","description":"Cironun %80'ini hangi ürünler getiriyor?","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/an-pareto/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veri Analisti</span><h1>Pareto ve ABC analizi</h1><p class="st-l">Cironun %80'ini hangi ürünler getiriyor?</p>
+<div class="st-c"><a class="st-p" href="../../#ders-an-pareto">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>80/20 kuralı</h2>
+<p>Pareto ilkesi: Sonuçların büyük kısmı az sayıda nedenden gelir. Ürünleri ciroya göre sıralayıp <b>kümülatif payı</b> hesaplarsan:</p>
+<ul><li><b>A sınıfı</b>: Kümülatif payın ilk %80'i (çok değerli, az ürün)</li><li><b>B sınıfı</b>: %80–95</li><li><b>C sınıfı</b>: Kalan %5 (uzun kuyruk)</li></ul>
+<pre class="code">WITH urun AS (
+  SELECT p.name, SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) AS ciro
+  FROM order_items oi
+  JOIN orders o ON o.order_id = oi.order_id
+  JOIN products p ON p.product_id = oi.product_id
+  WHERE o.status = 'delivered'
+  GROUP BY p.product_id, p.name
+),
+k AS (
+  SELECT name, ciro,
+         SUM(ciro) OVER (ORDER BY ciro DESC ROWS UNBOUNDED PRECEDING) / SUM(ciro) OVER () AS kum_pay
+  FROM urun
+)
+SELECT name, ROUND(ciro) AS ciro, ROUND(100 * kum_pay, 1) AS kum_yuzde,
+       CASE WHEN kum_pay <= 0.80 THEN 'A' WHEN kum_pay <= 0.95 THEN 'B' ELSE 'C' END AS sinif
+FROM k
+ORDER BY ciro DESC;</pre>
+<h2>Derinleş: Kümülatif payın doğru tanımı</h2>
+<p>Pareto analizinin özü <b>kümülatif pay</b>dır: ürünleri ciroya göre büyükten küçüğe sırala, her satırda “buraya kadarki toplam ÷ genel toplam” değerini hesapla. Bu basit tanımın içinde üç karar gizlidir.</p>
+<h3>1. Sınırı geçen ürün hangi sınıfta?</h3>
+<p><code>kum_pay &lt;= 0.80</code> kuralı, %80 çizgisini <b>geçiren</b> ürünü B sınıfına atar. Oysa o ürün olmadan %80'e ulaşılamaz. Daha savunulabilir tanım, ürünün <b>kendisinden önceki</b> kümülatif paya bakmaktır: önceki pay %80'in altındaysa ürün A'dır.</p>
+<pre class="code">WITH u AS (
+  SELECT p.product_id, p.name, SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) AS ciro
+  FROM order_items oi
+  JOIN orders o ON o.order_id = oi.order_id
+  JOIN products p ON p.product_id = oi.product_id
+  WHERE o.status = 'delivered'
+  GROUP BY p.product_id, p.name
+),
+k AS (
+  SELECT product_id, name, ciro,
+         SUM(ciro) OVER (ORDER BY ciro DESC, product_id
+                         ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) / SUM(ciro) OVER () AS kum
+  FROM u
+)
+SELECT name, ROUND(ciro) AS ciro,
+       ROUND(100 * (kum - ciro / (SELECT SUM(ciro) FROM u)), 1) AS onceki_yuzde,
+       ROUND(100 * kum, 1) AS kum_yuzde
+FROM k
+WHERE kum BETWEEN 0.74 AND 0.86
+ORDER BY ciro DESC, product_id;</pre>
+<p>Bu sorguda <b>Powerbank 20000mAh</b> satırına bak: öncesi %78,8, kendisiyle %81,1. Çizgiyi geçiren ürün odur. Eski kurala göre B'dir, “önceki pay” kuralına göre A'dır.</p>
+<h3>2. Eşitlik ve pencere çerçevesi</h3>
+<p><code>ORDER BY ciro DESC</code> yazıp çerçeveyi belirtmezsen varsayılan <code>RANGE</code> çerçevesi devreye girer. Aynı ciroya sahip iki ürün aynı kümülatif değeri alır. Sıralamaya ikinci anahtar (<code>product_id</code>) ekleyip <code>ROWS</code> kullanmak sonucu belirli kılar.</p>
+<h3>3. Hiç satmayan ürünler</h3>
+<p>INNER JOIN, hiç satılmamış ürünleri listeden sessizce düşürür. Anadolu Market'in 40 ürününden 2'si (Koşu Bandı ve Gurme Lokum Kutusu) hiç teslim edilmemiş. “Ürünlerin yüzde kaçı cironun %80'ini yapıyor?” sorusunda payda 38 değil 40 olmalıdır. Bu ürünler C sınıfının en dibine LEFT JOIN ile eklenir.</p>
+<div class="note"><b>80/20 bir yasa değil</b>Bu veride cironun %80'ine ulaşmak için ürünlerin üçte ikisi gerekiyor. Yani portföy yoğunlaşmış değil, dengeli. Pareto analizinin değeri, oranın 80/20 çıkması değil, yoğunlaşmanın ne kadar olduğunu ölçmesidir.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-an-pareto">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../an-buyume/">← Büyüme analizi: MoM ve YoY</a><a href="../an-kohort/">Kohort ve elde tutma (retention) analizi →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

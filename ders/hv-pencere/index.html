@@ -1,0 +1,31 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pencere fonksiyonları: uçağın günü, rötar zinciri ve sıralamalar | Kesit SQL</title><meta name="description" content="ROW_NUMBER, LAG, DENSE_RANK, hareketli ortalama, FIRST_VALUE ve toplam içindeki pay."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/hv-pencere/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Pencere fonksiyonları: uçağın günü, rötar zinciri ve sıralamalar"><meta property="og:description" content="ROW_NUMBER, LAG, DENSE_RANK, hareketli ortalama, FIRST_VALUE ve toplam içindeki pay."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/hv-pencere/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Pencere fonksiyonları: uçağın günü, rötar zinciri ve sıralamalar","description":"ROW_NUMBER, LAG, DENSE_RANK, hareketli ortalama, FIRST_VALUE ve toplam içindeki pay.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/hv-pencere/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Kanat Havayolları</span><h1>Pencere fonksiyonları: uçağın günü, rötar zinciri ve sıralamalar</h1><p class="st-l">ROW_NUMBER, LAG, DENSE_RANK, hareketli ortalama, FIRST_VALUE ve toplam içindeki pay.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-hv-pencere">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Rötar neden yayılır?</h2>
+<p>Bir uçak gün içinde birkaç sefer yapar. Önceki sefer geç inerse sonraki sefer de geç kalkabilir: buna <b>rötar zinciri</b> (gec_gelen_ucak) denir. Kanat'ta bir sefer en az 15 dakika geç indiğinde aynı uçağın sonraki seferi %48,0 olasılıkla en az 15 dakika geç kalkıyor; zamanında indiğinde bu oran %32,6. Farkı görmek için aynı uçağın uçuşlarını zaman sırasına koyup bir önceki satıra bakmak gerekir; tam olarak pencere fonksiyonlarının işi.</p>
+<div class="note"><b>Veri notu</b>Kanat'ta her uçağın konumu izlenebilir: iner, en az 35 dakika (dış hatta 60) yerde kalır, indiği yerden kalkar. Boş geçişler <code>hv_repositioning</code> tablosundadır. Filo seyrek çalıştığı için önceki iniş ile planlanan kalkış arası medyan 472 dakikadır: 342 <code>gec_gelen_ucak</code> satırının yalnız 12'sinde uçak planlanan saatte hazır değildi. Bu neden “önceki sefer geç indi” demektir, tek başına neden-sonuç kanıtı değildir.</div>
+<pre class="code">SELECT f.tail_no, f.sched_dep, f.flight_no,
+       ROUND((julianday(f.actual_dep) - julianday(f.sched_dep)) * 1440) AS gecikme,
+       LAG(ROUND((julianday(f.actual_dep) - julianday(f.sched_dep)) * 1440)) OVER (PARTITION BY f.tail_no ORDER BY f.sched_dep, f.flight_id) AS onceki_gecikme
+FROM hv_flights f
+WHERE f.tail_no = 'TC-KNA'
+  AND f.sched_dep >= '2024-12-01' AND f.sched_dep < '2024-12-03'
+ORDER BY f.sched_dep;</pre>
+<h2>Sıralama ve pay</h2>
+<pre class="code">SELECT p.tier, ROUND(SUM(b.price)) AS harcama,
+       ROUND(100.0 * SUM(b.price) / SUM(SUM(b.price)) OVER (), 1) AS pay
+FROM hv_bookings b
+JOIN hv_passengers p ON p.passenger_id = b.passenger_id
+WHERE b.status = 'flown'
+GROUP BY p.tier;</pre>
+<p><code>SUM(SUM(b.price)) OVER ()</code> ilk bakışta tuhaf görünür: içteki SUM gruplamadan, dıştaki pencereden gelir. Önce her seviyenin toplamı hesaplanır, sonra bu toplamların genel toplamı her satıra yazılır.</p>
+<div class="tip"><b>PARTITION BY = “her biri için”</b>“Her uçak için sırala”, “her yolcu için ilk rezervasyon” gibi ifadeler PARTITION BY'a karşılık gelir; “zamana göre” ifadesi ise ORDER BY'a.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-hv-pencere">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../hv-alt/">← Alt sorgu ve EXISTS: hiç uçmayan üyeler, ortalamanın üstündeki rotalar</a><a href="../hv-analitik/">Havayolu metrikleri: doluluk, zamanında varış, yolcu-km ve sadakat →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

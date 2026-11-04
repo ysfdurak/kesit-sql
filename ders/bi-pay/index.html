@@ -1,0 +1,34 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pay ve oran analizleri: toplama göre yüzde | Kesit SQL</title><meta name="description" content="SUM() OVER () ile genel toplam, grup içi pay ve endeks."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/bi-pay/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Pay ve oran analizleri: toplama göre yüzde"><meta property="og:description" content="SUM() OVER () ile genel toplam, grup içi pay ve endeks."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/bi-pay/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Pay ve oran analizleri: toplama göre yüzde","description":"SUM() OVER () ile genel toplam, grup içi pay ve endeks.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/bi-pay/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · İş Zekâsı ve Raporlama</span><h1>Pay ve oran analizleri: toplama göre yüzde</h1><p class="st-l">SUM() OVER () ile genel toplam, grup içi pay ve endeks.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-bi-pay">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>“Toplamın yüzde kaçı?”</h2>
+<p>Raporlarda en çok sorulan sorulardan biri payların dağılımıdır: hangi kategori cironun yüzde kaçını getiriyor? Bunun için her satırda <b>genel toplamı</b> da görmemiz gerekir. Pencere fonksiyonu <code>SUM(...) OVER ()</code> tam bunu yapar: satırları gruplamadan tüm sonucun toplamını her satıra yazar.</p>
+<pre class="code">SELECT p.category,
+       ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 0) AS ciro,
+       ROUND(100.0 * SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) / SUM(SUM(oi.quantity * oi.unit_price * (1 - oi.discount))) OVER (), 1) AS pay
+FROM order_items oi
+JOIN products p ON p.product_id = oi.product_id
+GROUP BY p.category
+ORDER BY ciro DESC;</pre>
+<div class="note"><b>SUM(SUM(...)) OVER () ne demek?</b>İçteki SUM, GROUP BY ile her kategorinin cirosunu hesaplar. Dıştaki SUM ... OVER () bu kategori cirolarını toplar. Pencere fonksiyonları GROUP BY'dan <b>sonra</b> çalıştığı için bu iç içe yazım geçerlidir.</div>
+<h2>Grup içi pay</h2>
+<p><code>OVER (PARTITION BY ...)</code> ile toplam, her grubun kendi içinde alınır. Örneğin her şehirde segmentlerin payı:</p>
+<pre class="code">SELECT city,
+       segment,
+       COUNT(*) AS musteri,
+       ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (PARTITION BY city), 1) AS sehir_ici_pay
+FROM customers
+WHERE city IN ('İstanbul', 'Ankara')
+GROUP BY city, segment
+ORDER BY city, segment;</pre>
+<h2>Endeks: baz dönem = 100</h2>
+<p>Farklı büyüklükteki serileri karşılaştırmak için ilk dönem 100 kabul edilir, diğer dönemler ona oranlanır. <code>FIRST_VALUE</code> ilk dönemin değerini her satıra taşır.</p>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-bi-pay">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../python-sql/">← Python ile SQL: pandas, parametreli sorgu ve SQLAlchemy</a><a href="../ytd/">Dönem karşılaştırmaları: YTD, MTD ve geçen yılın aynı dönemi →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

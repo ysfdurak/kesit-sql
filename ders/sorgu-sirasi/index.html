@@ -1,0 +1,45 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bir sorgu hangi sırayla çalışır? | Kesit SQL</title><meta name="description" content="Yazım sırası ile mantıksal çalışma sırası neden farklı?"><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/sorgu-sirasi/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Bir sorgu hangi sırayla çalışır?"><meta property="og:description" content="Yazım sırası ile mantıksal çalışma sırası neden farklı?"><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/sorgu-sirasi/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Bir sorgu hangi sırayla çalışır?","description":"Yazım sırası ile mantıksal çalışma sırası neden farklı?","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/sorgu-sirasi/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Özetleme</span><h1>Bir sorgu hangi sırayla çalışır?</h1><p class="st-l">Yazım sırası ile mantıksal çalışma sırası neden farklı?</p>
+<div class="st-c"><a class="st-p" href="../../#ders-sorgu-sirasi">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Yazdığın sıra ≠ çalışan sıra</h2>
+<p>Sorguyu SELECT ile başlayarak yazarız ama veritabanı onu mantıksal olarak şu sırayla işler:</p>
+<ol>
+<li><b>FROM</b> (ve JOIN'ler): Hangi tablolar?</li>
+<li><b>WHERE</b>: Satırları süz.</li>
+<li><b>GROUP BY</b>: Grupla.</li>
+<li><b>HAVING</b>: Grupları süz.</li>
+<li><b>SELECT</b>: Sütunları ve ifadeleri hesapla (pencere fonksiyonları burada).</li>
+<li><b>DISTINCT</b>: Tekrarları at.</li>
+<li><b>ORDER BY</b>: Sırala.</li>
+<li><b>LIMIT / OFFSET</b>: Kes.</li>
+</ol>
+<h2>Bu neden önemli?</h2>
+<ul>
+<li>WHERE, SELECT'ten önce çalıştığı için standart SQL'de <b>WHERE içinde SELECT takma adını kullanamazsın</b>.</li>
+<li>ORDER BY, SELECT'ten sonra çalıştığı için takma adı kullanabilirsin.</li>
+<li>WHERE, GROUP BY'dan önce çalıştığı için içinde COUNT/SUM kullanamazsın; bu yüzden HAVING vardır.</li>
+</ul>
+<pre class="code">SELECT category, AVG(price) AS ort
+FROM products
+WHERE price > 100          -- 2. adım
+GROUP BY category          -- 3. adım
+HAVING AVG(price) > 500    -- 4. adım
+ORDER BY ort DESC          -- 7. adım: takma ad burada geçerli
+LIMIT 3;                   -- 8. adım</pre>
+<h2>Derinleş: mantıksal sıra bir örnekte</h2><p>Aşağıdaki sorgunun veritabanında nasıl işlendiğini satır satır izle:</p><pre class="code">SELECT r.cuisine, COUNT(*) AS siparis          -- 5: sütunlar
+FROM lk_orders o                                -- 1: tablolar
+JOIN lk_restaurants r ON r.restaurant_id = o.restaurant_id
+WHERE o.status = 'teslim'                       -- 2: satır süzme
+GROUP BY r.cuisine                              -- 3: gruplama
+HAVING COUNT(*) > 300                           -- 4: grup süzme
+ORDER BY siparis DESC                           -- 6: sıralama
+LIMIT 3;                                        -- 7: kesme</pre>
+<p>Bu sırayı bilmek, “takma adı neden WHERE'de kullanamıyorum?” ve “pencere fonksiyonu neden WHERE'de olmaz?” sorularının cevabıdır.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-sorgu-sirasi">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../collation/">← Harmanlama (collation): büyük/küçük harf ve Türkçe “İ” sorunu</a><a href="../stil/">Okunabilir SQL yazmak →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

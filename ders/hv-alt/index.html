@@ -1,0 +1,55 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Alt sorgu ve EXISTS: hiç uçmayan üyeler, ortalamanın üstündeki rotalar | Kesit SQL</title><meta name="description" content="Tek değer döndüren alt sorgu, IN, NOT EXISTS, HAVING içinde alt sorgu ve ilişkili alt sorgu."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/hv-alt/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Alt sorgu ve EXISTS: hiç uçmayan üyeler, ortalamanın üstündeki rotalar"><meta property="og:description" content="Tek değer döndüren alt sorgu, IN, NOT EXISTS, HAVING içinde alt sorgu ve ilişkili alt sorgu."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/hv-alt/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Alt sorgu ve EXISTS: hiç uçmayan üyeler, ortalamanın üstündeki rotalar","description":"Tek değer döndüren alt sorgu, IN, NOT EXISTS, HAVING içinde alt sorgu ve ilişkili alt sorgu.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/hv-alt/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Kanat Havayolları</span><h1>Alt sorgu ve EXISTS: hiç uçmayan üyeler, ortalamanın üstündeki rotalar</h1><p class="st-l">Tek değer döndüren alt sorgu, IN, NOT EXISTS, HAVING içinde alt sorgu ve ilişkili alt sorgu.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-hv-alt">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Sorunun içinde başka bir soru</h2>
+<p>“Ortalamanın üstünde ödeme yapan rezervasyonlar” derken önce ortalamayı bilmek gerekir. Alt sorgu bu ara sonucu üretir:</p>
+<pre class="code">SELECT COUNT(*) AS adet
+FROM hv_bookings
+WHERE price > (SELECT AVG(price) FROM hv_bookings);</pre>
+<h2>Var mı, yok mu? EXISTS</h2>
+<pre class="code">SELECT COUNT(*) AS hic_rezervasyonu_yok
+FROM hv_passengers p
+WHERE NOT EXISTS (SELECT 1 FROM hv_bookings b WHERE b.passenger_id = p.passenger_id);</pre>
+<h2>Grupları genel ortalamayla karşılaştırmak</h2>
+<pre class="code">SELECT f.route_id, ROUND(AVG(ROUND((julianday(f.actual_dep) - julianday(f.sched_dep)) * 1440)), 1) AS ort_gecikme
+FROM hv_flights f
+WHERE f.actual_dep IS NOT NULL
+GROUP BY f.route_id
+HAVING AVG(ROUND((julianday(f.actual_dep) - julianday(f.sched_dep)) * 1440)) > (SELECT AVG(ROUND((julianday(f.actual_dep) - julianday(f.sched_dep)) * 1440)) FROM hv_flights f WHERE f.actual_dep IS NOT NULL)
+ORDER BY ort_gecikme DESC
+LIMIT 5;</pre>
+<div class="note"><b>Ne zaman JOIN, ne zaman EXISTS?</b>Diğer tablodan sütun getirmen gerekiyorsa JOIN; yalnızca “karşılığı var mı” sorusu soruluyorsa EXISTS. EXISTS satır çoğaltmaz, ilk eşleşmede durur.</div>
+<h2>Derinleş: NOT IN ve NULL tuzağı, skaler alt sorgunun yeri</h2>
+<p><code>NOT IN</code> ile <code>NOT EXISTS</code> çoğu zaman aynı sonucu verir. Arada tek ama tehlikeli bir fark vardır: <b>alt sorgu bir NULL döndürürse <code>NOT IN</code> hiçbir satır döndürmez.</b></p>
+<p>Sebep üç değerli mantıktır. <code>x NOT IN (a, b, NULL)</code> ifadesi <code>x &lt;&gt; a AND x &lt;&gt; b AND x &lt;&gt; NULL</code> demektir. <code>x &lt;&gt; NULL</code> her zaman UNKNOWN olduğu için bütün ifade hiçbir zaman TRUE olamaz. Aşağıda 26 Aralık 2024'te hiç inişi olmayan uçakları iki yoldan arıyoruz. Alt sorgudaki <code>CASE</code>, inmemiş (iptal) uçuşlar için NULL üretir, tıpkı boş bir sütun gibi:</p>
+<pre class="code">SELECT 'NOT EXISTS' AS yontem, COUNT(*) AS ucak
+FROM hv_aircraft a
+WHERE NOT EXISTS (SELECT 1 FROM hv_flights f
+                  WHERE f.tail_no = a.tail_no AND f.status = 'landed'
+                    AND f.sched_dep >= '2024-12-26' AND f.sched_dep &lt; '2024-12-27')
+UNION ALL
+SELECT 'NOT IN', COUNT(*)
+FROM hv_aircraft a
+WHERE a.tail_no NOT IN (SELECT CASE WHEN f.status = 'landed' THEN f.tail_no END
+                        FROM hv_flights f
+                        WHERE f.sched_dep >= '2024-12-26' AND f.sched_dep &lt; '2024-12-27');</pre>
+<p><code>NOT EXISTS</code> 5 uçak bulur. <code>NOT IN</code> ise 0 döndürür, çünkü o gün 3 iptal var ve alt sorgu üç NULL üretir. Sorgu hata vermez, yalnızca sessizce yanlış sonuç verir. Gerçek tablolarda boş bırakılabilen her sütun (<code>email</code>, <code>seat</code>, <code>manager_id</code> …) bu riski taşır.</p>
+<table>
+<tr><th>Durum</th><th>Tercih</th></tr>
+<tr><td>“Karşılığı olmayanlar”</td><td><code>NOT EXISTS</code> (NULL'a dayanıklı)</td></tr>
+<tr><td>NOT IN kullanmak zorundaysan</td><td>Alt sorguya <code>WHERE sütun IS NOT NULL</code> ekle</td></tr>
+<tr><td>“Karşılığı olanlar”</td><td><code>IN</code> ya da <code>EXISTS</code>; NULL burada sorun çıkarmaz</td></tr>
+<tr><td>Satır başına genel bir değerle kıyas</td><td>Skaler alt sorgu (<code>SELECT AVG(...)</code>) ya da CTE</td></tr>
+</table>
+<h3>Skaler alt sorgu nereye yazılır?</h3>
+<p>Tek değer döndüren bir alt sorgu SELECT, WHERE ve HAVING içinde kullanılabilir. “Rotanın ortalama ücreti, genel ortalamanın kaç katı?” sorusunda alt sorgu hem SELECT'te (oran) hem HAVING'de (filtre) görünür. Okunabilirlik ya da performans sorun olursa genel ortalamayı bir CTE'de bir kez hesaplayıp <code>CROSS JOIN</code> ile bağlamak aynı işi yapar. Çoğu veritabanı ilişkisiz skaler alt sorguyu zaten bir kez hesaplar.</p>
+<div class="note"><b>İlişkili mi, ilişkisiz mi?</b>Alt sorgu dış sorgunun bir sütununa başvuruyorsa (<code>b2.passenger_id = b.passenger_id</code>) ilişkilidir ve kavramsal olarak her dış satır için yeniden çalışır. Büyük tablolarda bunu bir JOIN ya da pencere fonksiyonuyla yeniden yazmak çoğu zaman daha hızlıdır.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-hv-alt">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../hv-self/">← Aynı tabloyu iki kez kullanmak: kalkış ve varış şehri, aktarmalı yolculuklar</a><a href="../hv-pencere/">Pencere fonksiyonları: uçağın günü, rötar zinciri ve sıralamalar →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,61 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Oracle 1Z0-071 konuları: veri sözlüğü, INSERT ALL, flashback, ayrıcalıklar | Kesit SQL</title><meta name="description" content="Sınavın diğer derslerde ayrıntılanmayan konuları ve tuzak noktaları."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/oracle-1z0/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Oracle 1Z0-071 konuları: veri sözlüğü, INSERT ALL, flashback, ayrıcalıklar"><meta property="og:description" content="Sınavın diğer derslerde ayrıntılanmayan konuları ve tuzak noktaları."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/oracle-1z0/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Oracle 1Z0-071 konuları: veri sözlüğü, INSERT ALL, flashback, ayrıcalıklar","description":"Sınavın diğer derslerde ayrıntılanmayan konuları ve tuzak noktaları.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/oracle-1z0/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Sertifika Hazırlık</span><h1>Oracle 1Z0-071 konuları: veri sözlüğü, INSERT ALL, flashback, ayrıcalıklar</h1><p class="st-l">Sınavın diğer derslerde ayrıntılanmayan konuları ve tuzak noktaları.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-oracle-1z0">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Veri sözlüğü görünümleri</h2>
+<p>Oracle'da nesneler hakkındaki bilgi <b>veri sözlüğü</b> görünümlerindedir. Önek, kapsamı söyler:</p>
+<table>
+<tr><th>Önek</th><th>Kapsam</th><th>Örnek</th></tr>
+<tr><td><code>USER_</code></td><td>Senin sahip olduğun nesneler</td><td><code>USER_TABLES</code>, <code>USER_TAB_COLUMNS</code>, <code>USER_CONSTRAINTS</code></td></tr>
+<tr><td><code>ALL_</code></td><td>Erişim yetkin olan nesneler</td><td><code>ALL_TABLES</code></td></tr>
+<tr><td><code>DBA_</code></td><td>Veritabanındaki tüm nesneler (yönetici)</td><td><code>DBA_USERS</code></td></tr>
+<tr><td><code>V$</code></td><td>Dinamik performans görünümleri</td><td><code>V$SESSION</code></td></tr>
+</table>
+<pre class="code" data-base="oracle">SELECT table_name
+FROM user_tables
+ORDER BY table_name;</pre>
+<h2>Çok tablolu INSERT ve MERGE</h2>
+<pre class="code" data-norun>-- Koşula göre farklı tablolara ekle
+INSERT ALL
+    WHEN price &gt;= 5000 THEN INTO urun_pahali (product_id, name) VALUES (product_id, name)
+    WHEN price &lt; 5000  THEN INTO urun_uygun  (product_id, name) VALUES (product_id, name)
+SELECT product_id, name, price FROM products;
+
+-- INSERT FIRST: ilk tutan koşulda durur
+INSERT FIRST
+    WHEN price &gt;= 10000 THEN INTO segment_a VALUES (product_id)
+    WHEN price &gt;= 1000  THEN INTO segment_b VALUES (product_id)
+    ELSE INTO segment_c VALUES (product_id)
+SELECT product_id, price FROM products;</pre>
+<h2>Şema nesnelerini yönetmek</h2>
+<ul>
+<li><b>Görünmez sütun</b>: <code>ALTER TABLE t MODIFY (kolon INVISIBLE);</code> — <code>SELECT *</code>'da görünmez, adıyla seçilince gelir.</li>
+<li><b>Görünmez indeks</b>: <code>ALTER INDEX ix INVISIBLE;</code> — optimizer kullanmaz ama bakımı sürer; silmeden önce etkisini denemek için.</li>
+<li><b>SET UNUSED</b>: <code>ALTER TABLE t SET UNUSED (kolon);</code> — sütunu anında kullanılmaz yapar, fiziksel silme sonra <code>DROP UNUSED COLUMNS</code>.</li>
+<li><b>Flashback</b>: <code>SELECT ... AS OF TIMESTAMP (SYSTIMESTAMP - INTERVAL '10' MINUTE)</code>, <code>FLASHBACK TABLE t TO BEFORE DROP;</code> (geri dönüşüm kutusundan).</li>
+<li><b>Harici tablo</b>: Dosyayı tabloymuş gibi sorgulamak (<code>ORGANIZATION EXTERNAL</code>).</li>
+</ul>
+<h2>Ayrıcalıklar</h2>
+<ul>
+<li><b>Sistem ayrıcalığı</b>: Bir işlem türüne izin (<code>CREATE TABLE</code>, <code>CREATE SESSION</code>).</li>
+<li><b>Nesne ayrıcalığı</b>: Belirli bir nesne üzerinde izin (<code>SELECT ON hr.employees</code>).</li>
+<li><code>WITH ADMIN OPTION</code> (sistem) ve <code>WITH GRANT OPTION</code> (nesne) ayrıcalığı başkalarına verme hakkı tanır.</li>
+<li><b>Rol</b>, ayrıcalıkları gruplar: <code>CREATE ROLE raporcu; GRANT SELECT ON orders TO raporcu; GRANT raporcu TO ali;</code></li>
+</ul>
+<h2>Sınavda sık tuzaklar</h2>
+<ul>
+<li>Oracle'da boş metin <code>''</code> NULL'dır.</li>
+<li><code>NVL</code>, <code>NVL2</code>, <code>NULLIF</code>, <code>COALESCE</code> farkları; <code>DECODE</code> ile CASE eşdeğerliği.</li>
+<li>Tarih aritmetiği: <code>tarih + 1</code> bir gün ekler; <code>MONTHS_BETWEEN</code>, <code>ADD_MONTHS</code>, <code>NEXT_DAY</code>, <code>LAST_DAY</code>.</li>
+<li>DDL komutları örtük COMMIT yapar; öncesindeki DML geri alınamaz.</li>
+<li>Tek satır döndürmesi beklenen alt sorgu birden çok satır dönerse hata (ORA-01427).</li>
+<li><code>ORDER BY</code>'da takma ad ve sütun sırası kullanılabilir; Oracle 23ai öncesinde GROUP BY'da takma ad kullanılamaz; 23ai yenilik belgesi buna izin verildiğini yazıyor (Kasım 2026'da okundu). Sınav hangi sürüme göreyse onu esas al.</li>
+</ul>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-oracle-1z0">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../sertifika-rehber/">← SQL sertifikaları rehberi: hangi sınav, hangi konular?</a><a href="../z071-fonksiyon/">1Z0-071: Oracle tek satır fonksiyonları (karakter, sayı, tarih, genel) →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

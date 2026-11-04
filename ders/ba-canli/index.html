@@ -1,0 +1,100 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Canlıya geçiş (go-live) ve sonrası: geçiş planı, duman testi, KPI, geri alma, kapanış | Kesit SQL</title><meta name="description" content="Geçiş kontrol listesi, SQL ile duman testi, önce-sonra KPI, geri alma ölçütleri, Jira ve Confluence akışı, değişiklik yönetimi, mini BRD."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ba-canli/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Canlıya geçiş (go-live) ve sonrası: geçiş planı, duman testi, KPI, geri alma, kapanış"><meta property="og:description" content="Geçiş kontrol listesi, SQL ile duman testi, önce-sonra KPI, geri alma ölçütleri, Jira ve Confluence akışı, değişiklik yönetimi, mini BRD."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ba-canli/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Canlıya geçiş (go-live) ve sonrası: geçiş planı, duman testi, KPI, geri alma, kapanış","description":"Geçiş kontrol listesi, SQL ile duman testi, önce-sonra KPI, geri alma ölçütleri, Jira ve Confluence akışı, değişiklik yönetimi, mini BRD.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ba-canli/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · BT İş Analizi</span><h1>Canlıya geçiş (go-live) ve sonrası: geçiş planı, duman testi, KPI, geri alma, kapanış</h1><p class="st-l">Geçiş kontrol listesi, SQL ile duman testi, önce-sonra KPI, geri alma ölçütleri, Jira ve Confluence akışı, değişiklik yönetimi, mini BRD.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ba-canli">Uygulamada aç, 11 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory"><p>UAT onaylandı. Canlıya geçiş bir düğme değil, sırası önceden yazılmış bir plandır. İş analisti kodu yayına almaz, ama işin canlıda doğru çalıştığını gösteren kanıtı hazırlar.</p>
+<h2>Geçiş planı (cutover checklist)</h2>
+<table><tr><th>Ne zaman?</th><th>Madde</th><th>Sahibi</th></tr>
+<tr><td>Önce</td><td>UAT onayı ve açık hata listesi kayıtlı</td><td>BA, iş birimi</td></tr>
+<tr><td>Önce</td><td>Destek ekibine metin ve yönlendirme iletildi</td><td>BA</td></tr>
+<tr><td>Önce</td><td>Tutar ve sınır ayarları kontrol edildi, bütçe onayı var</td><td>Finans, BA</td></tr>
+<tr><td>Önce</td><td>Geri alma adımları yazıldı ve denendi</td><td>Geliştirici</td></tr>
+<tr><td>Sırasında</td><td>Yayına alma, özellik anahtarı açma (önce küçük pilot)</td><td>Geliştirici</td></tr>
+<tr><td>Hemen sonra</td><td>Duman testleri çalıştı, sonuç sıfır hata</td><td>BA, test uzmanı</td></tr>
+<tr><td>İlk hafta</td><td>Günlük KPI ve bütçe takibi</td><td>BA</td></tr></table>
+<h2>Duman testi (smoke test) SQL ile</h2>
+<p>Duman testi, “ayakta mı, en kritik şey doğru mu?” diye bakan kısa kontroldür. Bütün testlerin yerine geçmez. Yine “hata varsa sayı döner” kalıbı. Aşağıdaki kutunun ilk bölümü canlıya çıkan işi taklit eder ve bilerek hata içerir: filtresi iade siparişlerini de alıyor.</p>
+<pre class="code">CREATE TABLE ba_kupon AS
+SELECT o.order_id, o.customer_id, o.status,
+       CASE WHEN ROUND((julianday(delivered_at) - julianday(placed_at)) * 86400) > 3600 THEN 60 ELSE 30 END AS tutar
+FROM lk_orders o
+WHERE o.status IN ('teslim', 'iade')
+  AND o.placed_at >= '2024-12-01' AND o.placed_at &lt; '2025-01-01'
+  AND ROUND((julianday(delivered_at) - julianday(placed_at)) * 86400) > 2700;
+SELECT 'teslim_disi_kupon' AS test, COUNT(*) AS hata FROM ba_kupon WHERE status &lt;> 'teslim'
+UNION ALL
+SELECT 'tutar_gecersiz', COUNT(*) FROM ba_kupon WHERE tutar NOT IN (30, 60)
+UNION ALL
+SELECT 'tekrar_eden', COUNT(*) FROM (SELECT order_id FROM ba_kupon GROUP BY order_id HAVING COUNT(*) > 1) AS x;</pre>
+<p><code>teslim_disi_kupon</code> sıfırdan büyük çıkıyor: geçiş durur. Testin neye baktığını da sına: işin kendi filtresiyle aynı koşulu arayan bir test, o filtre bozulmadıkça ne bulabilir? Bu yüzden duman testini önce bilerek bozulmuş bir çıktıda dene; doğru çıktıda hep 0 veren test hiçbir şey kanıtlamaz.</p>
+<h2>Önce ve sonra</h2>
+<p>Başarı ölçüsü talep aşamasında yazılmıştı: pilot grupta geç teslim şikâyeti, geçişten sonraki 8 haftada, başlangıç değerine göre %20 azalmalı; geç teslimlerde kurye puanı 3,86'ın altına düşmemeli. Şikâyet sayısı bu uygulamanın verisinde yok, müşteri hizmetlerinden gelir. Kupon da verimizde gerçekten olmadığı için burada yalnız yöntemi gösteriyoruz: canlıya geçişi 1 Aralık 2024 varsayıyoruz.</p>
+<pre class="code">WITH t AS (
+  SELECT order_id, customer_id, restaurant_id, courier_id, status, placed_at,
+         ROUND((julianday(delivered_at) - julianday(placed_at)) * 86400) AS sure_sn
+  FROM lk_orders
+  WHERE placed_at >= '2024-10-01' AND placed_at &lt; '2025-01-01'
+)
+SELECT strftime('%Y-%m', placed_at) AS ay,
+       COUNT(*) AS teslim,
+       SUM(CASE WHEN sure_sn > 2700 THEN 1 ELSE 0 END) AS gec,
+       SUM(CASE WHEN sure_sn > 3600 THEN 60 WHEN sure_sn > 2700 THEN 30 ELSE 0 END) AS kupon_tutar
+FROM t
+WHERE status = 'teslim'
+GROUP BY strftime('%Y-%m', placed_at)
+ORDER BY ay;</pre>
+<div class="warn"><b>Önce-sonra kanıt değildir</b>Kasım'da 469, Aralık'ta 592 geç teslim var. Oran %21,6'dan %23,3'e çıkmış. Bu fark kuponla ilgili olamaz, çünkü veride kupon yok; sipariş hacmi ve mevsim değişmiş. Gerçek işte de “kupon geldi, puan yükseldi” demek için pilot grup ile karşılaştırma ister. Elinde yalnız önce-sonra varsa bunu açıkça yaz.</div>
+<h2>Geri alma ölçütleri (rollback criteria)</h2>
+<p>Geri alma kararı, sorun çıktığında değil, önceden yazılır. Baskı altında “biraz daha bekleyelim” denmesini önler. Eşikleri geçmiş veriye dayandır: Aralık'ta bir günde en çok 49 geç teslim olmuş.</p>
+<table><tr><th>Ölçüt</th><th>Eşik</th><th>Karar</th></tr>
+<tr><td>Teslim dışı siparişe kupon</td><td>1 kayıt bile</td><td>Özelliği kapat, inceleme başlat</td></tr>
+<tr><td>Bir günde üretilen kupon</td><td>100'ü aşarsa (geçmiş zirvenin yaklaşık iki katı)</td><td>Özelliği kapat, iş birimine bildir</td></tr>
+<tr><td>Aylık kupon tutarı</td><td>Onaylı bütçeyi aşarsa</td><td>Finans kararına kadar durdur</td></tr>
+<tr><td>Bildirim gönderilemeyen kupon</td><td>%5'i aşarsa</td><td>Kupon kalır, bildirim düzeltilir</td></tr></table>
+<p>Geri almak yalnız kodu geri çekmek değildir: verilmiş kuponlar ne olacak? Bunu da yaz. Çoğu durumda müşteriye verilen kupon geri alınmaz. Eşikler bu senaryo için önerimizdir; senin projende iş birimi ve finans belirler.</p>
+<h2>Jira ve Confluence: işin izi</h2>
+<p>Birçok ekip iş takibi için Jira, doküman için Confluence kullanır. Araç başka olabilir, mantık aynıdır.</p>
+<table><tr><th>Nerede?</th><th>Ne durur?</th></tr>
+<tr><td>Epik (epic)</td><td>Geç teslim telafi kuponu: bütün iş</td></tr>
+<tr><td>Hikâye (story)</td><td>Geç teslimde kupon üret; kuponu bildir; kupon raporu. Kabul kriterleri içinde</td></tr>
+<tr><td>Hata (bug)</td><td>UAT ve canlı hataları, hikâyeye bağlı</td></tr>
+<tr><td>Doküman sayfası</td><td>BRD, karar tablosu, süreç şeması, toplantı kararları; hikâyelere bağlantılı</td></tr>
+<tr><td>Durum akışı</td><td>Yapılacak → Geliştiriliyor → Testte → UAT → Bitti</td></tr></table>
+<p>“Bitti”nin tanımı (definition of done) yazılı olsun: kod gözden geçirildi, testler geçti, doküman güncellendi. Tutarı değiştiren bir karar yalnız bir toplantıda ya da mesajda kalırsa altı ay sonra kimse nedenini bilemez.</p>
+<h2>Değişiklik yönetimi (change management)</h2>
+<p>Yazılım çalışsa da insanlar eski yolu sürdürebilir. Destek çalışanı elle kupon vermeye devam ederse müşteri iki kupon alır. Kime ne değişiyor, kim ne zaman bilgilendirilecek, sorular kime gidecek: bunları tek sayfada topla. Destek ekibine örnek cevaplar hazırla.</p>
+<h2>Mini BRD</h2>
+<p>Her şey bir araya geldi. Şablon olarak kullanabileceğin kısa BRD:</p>
+<table><tr><th>Bölüm</th><th>İçerik</th></tr>
+<tr><td>1. Özet ve sorun</td><td>Dönemde teslim edilen 6.637 siparişin 1.508 tanesi 45 dakikayı aşıyor. Geç teslimlerde kurye puanı 3,86, diğerlerinde 4,41. Bugün telafi elle ve kişiye göre yapılıyor.</td></tr>
+<tr><td>2. Amaç ve başarı ölçüsü</td><td>Geç teslim alan müşterinin 5 dakika içinde kupon alması. Ana ölçü: pilot grupta geç teslim şikâyeti, geçişten sonraki 8 haftada %20 azalır; başlangıç değeri geçiş öncesi 8 hafta, kaynağı müşteri hizmetleri kayıtları (bu uygulamanın verisinde yok). Yan ölçü: geç teslimlerde kurye puanı 3,86'ın altına düşmez. Yeniden sipariş artışı garanti edilmiyor; pilotla ölçülecek.</td></tr>
+<tr><td>3. Kapsam</td><td>İçi: süre hesabı, kupon, bildirim, rapor. Dışı: kurye ve restoran iyileştirmeleri, restorana kesinti.</td></tr>
+<tr><td>4. Paydaşlar ve RACI</td><td>Müşteri hizmetleri (talep sahibi), operasyon, finans, geliştirme, test.</td></tr>
+<tr><td>5. İş kuralları</td><td>Yalnız “teslim”. Süre saniye ile, sipariş zamanından teslime. 2.700 saniyeyi aşan 30 TL, 3.600 saniyeyi aşan 60 TL. Sipariş başına bir, ayda en çok iki kupon. Kupon teslim kaydından itibaren 30 gün geçerlidir (karar K-03: ürün sahibi kararı, pazarlama 30 gün, finans 7 gün önerdi; gerekçe ve maliyet etkisi karar kaydında). Karar tablosu ekte.</td></tr>
+<tr><td>6. Gereksinimler</td><td>GRS-01...: işlevsel. NFR-01: kupon en geç 5 dakikada. Kullanıcı hikâyeleri ve kabul kriterleri.</td></tr>
+<tr><td>7. Süreç ve veri</td><td>TO-BE şeması, sıra diyagramı, alan eşleme, API sözleşmesi bağlantısı.</td></tr>
+<tr><td>8. Varsayım ve riskler</td><td>Müşteriye söz verilen süre verisi yok, 45 dakika varsayımdır. Tutar bedeli üst sınırda 51.900 TL. Kuponun getirisi kanıtlı değil.</td></tr>
+<tr><td>9. Test ve kabul</td><td>Senaryo listesi, mutabakat sorguları, çıkış ölçütü.</td></tr>
+<tr><td>10. Geçiş ve kapanış</td><td>Geçiş planı, geri alma ölçütleri, ilk ay raporu, kapanış tarihi.</td></tr>
+<tr><td>11. Açık sorular</td><td>Her satır: soru, karar sahibi, tarih. <b>Başlangıç şikâyet sayısı</b>: müşteri hizmetleri, UAT başlamadan önce. <b>Kupon sonrası iade</b>: kullanılmamış kupon iptal edilsin önerisi; kullanılmış kuponun bedeli kimde kalır? Finans, UAT başlamadan önce. <b>Söz verilen süre</b>: 45 dakika varsayımı doğru mu? Operasyon, geçişten önce. Kapanan soru bu satırdan çıkar, karar kaydına geçer; kupon geçerlilik süresi böyle kapandı.</td></tr></table>
+<p>BRD'deki sayılar elle yazılmaz, tekrar üretilebilir sorgudan gelir. Aşağıdaki sorgu 1. ve 8. bölümlerin sayılarını verir. Bir yıl sonra biri “bu sayı nereden çıktı?” diye sorduğunda cevabın budur.</p>
+<pre class="code">WITH t AS (
+  SELECT order_id, customer_id, restaurant_id, courier_id, status, placed_at,
+         ROUND((julianday(delivered_at) - julianday(placed_at)) * 86400) AS sure_sn
+  FROM lk_orders
+  WHERE placed_at >= '2024-10-01' AND placed_at &lt; '2025-01-01'
+)
+SELECT 'teslim' AS olcu, COUNT(*) AS deger FROM t WHERE status = 'teslim'
+UNION ALL
+SELECT 'gec', COUNT(*) FROM t WHERE status = 'teslim' AND sure_sn > 2700
+UNION ALL
+SELECT 'ust_sinir_tutar', SUM(CASE WHEN sure_sn > 3600 THEN 60 ELSE 30 END) FROM t WHERE status = 'teslim' AND sure_sn > 2700
+UNION ALL
+SELECT 'etkilenen_musteri', COUNT(DISTINCT customer_id) FROM t WHERE status = 'teslim' AND sure_sn > 2700;</pre>
+<p>İşin kapanışı: ilk ay raporu sunulur, açık konular sahiplerine devredilir, doküman son hâliyle bırakılır, “ne öğrendik?” toplantısı yapılır. Sonraki talep büyük ihtimalle bu kuponun başka bir yönüyle gelir. Bitirme projesinde tam olarak bunu yapacaksın.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ba-canli">Alıştırmalara geç (11)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ba-cevik/">← Agile ve Waterfall ortamlarında iş analizi</a><a href="../proje-is-analisti/">Bitirme projesi (BT İş Analisti): kupon bedelini kim karşılayacak? →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

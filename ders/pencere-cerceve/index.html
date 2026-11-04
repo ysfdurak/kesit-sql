@@ -1,0 +1,71 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>İleri pencere çerçeveleri: ROWS, RANGE, GROUPS ve EXCLUDE | Kesit SQL</title><meta name="description" content="Eşitliklerin pencereyi nasıl etkilediği, değer aralığına göre pencere, SQL türlerine göre destek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/pencere-cerceve/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="İleri pencere çerçeveleri: ROWS, RANGE, GROUPS ve EXCLUDE"><meta property="og:description" content="Eşitliklerin pencereyi nasıl etkilediği, değer aralığına göre pencere, SQL türlerine göre destek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/pencere-cerceve/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"İleri pencere çerçeveleri: ROWS, RANGE, GROUPS ve EXCLUDE","description":"Eşitliklerin pencereyi nasıl etkilediği, değer aralığına göre pencere, SQL türlerine göre destek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/pencere-cerceve/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Pencere Fonksiyonları</span><h1>İleri pencere çerçeveleri: ROWS, RANGE, GROUPS ve EXCLUDE</h1><p class="st-l">Eşitliklerin pencereyi nasıl etkilediği, değer aralığına göre pencere, SQL türlerine göre destek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-pencere-cerceve">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Üç çerçeve birimi</h2>
+<table>
+<tr><th>Birim</th><th>Pencereyi neye göre sayar?</th></tr>
+<tr><td><code>ROWS</code></td><td>Fiziksel satır sayısı</td></tr>
+<tr><td><code>RANGE</code></td><td>ORDER BY değerinin aralığı (eşit değerler hep birlikte)</td></tr>
+<tr><td><code>GROUPS</code></td><td>Eşit değer gruplarının sayısı</td></tr>
+</table>
+<h3>ROWS ile RANGE farkı: eşitlikler</h3>
+<p>Aynı fiyattaki ürünlerde yürüyen toplam:</p>
+<pre class="code">SELECT name, price,
+       SUM(price) OVER (ORDER BY price ROWS  BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS rows_toplam,
+       SUM(price) OVER (ORDER BY price RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS range_toplam
+FROM products
+WHERE category IN ('Kitap', 'Hediye')
+ORDER BY price, name;</pre>
+<p>RANGE, aynı fiyattaki tüm satırları “şu ana kadar” sayar; bu yüzden eşit değerli satırlar aynı toplamı gösterir. ORDER BY yazıp çerçeve yazmazsan <b>varsayılan RANGE</b>'dir; yürüyen toplamda beklenmedik sonuç görürsen nedeni budur.</p>
+<h3>Değer aralığına göre pencere</h3>
+<p>“Son 7 günlük sipariş sayısı” gibi takvime dayalı pencerelerde satır sayısı değil <b>tarih aralığı</b> gerekir (bazı günlerde hiç sipariş yoksa ROWS yanlış olur):</p>
+<pre class="code" data-norun>-- PostgreSQL, Oracle, MySQL 8
+SELECT order_date, gunluk,
+       SUM(gunluk) OVER (ORDER BY order_date
+                         RANGE BETWEEN INTERVAL '6' DAY PRECEDING AND CURRENT ROW) AS son7
+FROM gunluk_siparis;
+
+-- BigQuery: RANGE yalnızca sayısal; tarihi gün numarasına çevir
+SUM(gunluk) OVER (ORDER BY UNIX_DATE(order_date) RANGE BETWEEN 6 PRECEDING AND CURRENT ROW)
+
+-- SQL Server: RANGE yalnızca UNBOUNDED / CURRENT ROW destekler;
+-- takvim tablosuyla eksik günleri doldurup ROWS BETWEEN 6 PRECEDING kullanılır.</pre>
+<p>SQLite'ta da sayısal RANGE vardır; tarihi gün numarasına (julianday) çevirerek deneyelim:</p>
+<pre class="code" data-na="tsql pg oracle bq mysql">WITH g AS (
+  SELECT order_date, COUNT(*) AS gunluk
+  FROM orders
+  WHERE order_date >= '2024-12-01'
+  GROUP BY order_date
+)
+SELECT order_date, gunluk,
+       SUM(gunluk) OVER (ORDER BY julianday(order_date) RANGE BETWEEN 6 PRECEDING AND CURRENT ROW) AS son7
+FROM g
+ORDER BY order_date;</pre>
+<h3>GROUPS ve EXCLUDE</h3>
+<pre class="code" data-na="tsql mysql bq">SELECT name, price,
+       SUM(price) OVER (ORDER BY price GROUPS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS komsu_gruplar,
+       AVG(price) OVER (PARTITION BY category ORDER BY price
+                        ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+                        EXCLUDE CURRENT ROW) AS digerlerinin_ort
+FROM products
+WHERE category = 'Kitap'
+ORDER BY price;</pre>
+<p><code>EXCLUDE CURRENT ROW</code> satırın kendisini pencereden çıkarır: “bu ürün kategorideki diğer ürünlerin ortalamasından ne kadar farklı?” sorusu için idealdir. Diğer seçenekler: <code>EXCLUDE GROUP</code>, <code>EXCLUDE TIES</code>, <code>EXCLUDE NO OTHERS</code>.</p>
+<table>
+<tr><th>SQL türü</th><th>ROWS</th><th>RANGE (değer aralığı)</th><th>GROUPS</th><th>EXCLUDE</th></tr>
+<tr><td>PostgreSQL 11+</td><td>✓</td><td>✓ (interval dahil)</td><td>✓</td><td>✓</td></tr>
+<tr><td>Oracle</td><td>✓</td><td>✓</td><td>21c+</td><td>21c+</td></tr>
+<tr><td>MySQL 8</td><td>✓</td><td>✓</td><td>—</td><td>—</td></tr>
+<tr><td>SQL Server</td><td>✓</td><td>yalnızca UNBOUNDED/CURRENT ROW</td><td>—</td><td>—</td></tr>
+<tr><td>BigQuery</td><td>✓</td><td>yalnızca sayısal</td><td>—</td><td>—</td></tr>
+<tr><td>SQLite 3.28+</td><td>✓</td><td>✓ (sayısal)</td><td>✓</td><td>✓</td></tr>
+</table>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-pencere-cerceve">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../first-last/">← FIRST_VALUE, LAST_VALUE, NTH_VALUE ve varsayılan çerçeve tuzağı</a><a href="../ardisik-seri/">Boşluklar ve adalar: ardışık serileri bulmak (gaps and islands) →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

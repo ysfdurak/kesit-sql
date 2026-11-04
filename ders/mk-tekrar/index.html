@@ -1,0 +1,52 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mülakat kalıbı: tekrarlar, ilk ve son kayıt, ikinci sipariş | Kesit SQL</title><meta name="description" content="Tekrar bulma, tekrar silme, her grubun ilk/son kaydı ve “ikinci siparişe kaç gün sonra döndü?”"><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/mk-tekrar/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Mülakat kalıbı: tekrarlar, ilk ve son kayıt, ikinci sipariş"><meta property="og:description" content="Tekrar bulma, tekrar silme, her grubun ilk/son kaydı ve “ikinci siparişe kaç gün sonra döndü?”"><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/mk-tekrar/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Mülakat kalıbı: tekrarlar, ilk ve son kayıt, ikinci sipariş","description":"Tekrar bulma, tekrar silme, her grubun ilk/son kaydı ve “ikinci siparişe kaç gün sonra döndü?”","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/mk-tekrar/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Mülakat Hazırlığı</span><h1>Mülakat kalıbı: tekrarlar, ilk ve son kayıt, ikinci sipariş</h1><p class="st-l">Tekrar bulma, tekrar silme, her grubun ilk/son kaydı ve “ikinci siparişe kaç gün sonra döndü?”</p>
+<div class="st-c"><a class="st-p" href="../../#ders-mk-tekrar">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Soru</h2>
+<div class="note"><b>Görüşmeci</b>“Tabloda tekrarlanan e-posta adreslerini bul ve her birinden yalnızca en eski kaydı tutacak şekilde temizle.” Takip: “Müşteriler ilk siparişten ikinci siparişe ortalama kaç günde dönüyor?”</div>
+<h2>Önce netleştir</h2>
+<p>Kod yazmadan önce sorulacak sorular. Her biri farklı bir sorguya götürür; sormamak en sık puan kaybıdır.</p>
+<ul><li>“Aynı e-posta” büyük/küçük harf ve boşluk farkını yok sayıyor mu?</li><li>“En eski” kayıt tarihine mi, kimliğe mi göre?</li><li>Silme mi istiyorsunuz, yoksa tekilleştirilmiş bir görünüm mü?</li><li>Tek siparişi olan müşteriler ortalamaya nasıl girer? (girmez)</li></ul>
+<h2>Yaklaşım</h2>
+<ol><li>Anahtarı normalize et: LOWER(TRIM(email)).</li><li>GROUP BY + HAVING COUNT(*) > 1 ile tekrarları bul.</li><li>ROW_NUMBER() OVER (PARTITION BY anahtar ORDER BY kimlik) ile her grupta 1 numaralıyı tut.</li><li>İkinci sipariş için aynı ROW_NUMBER kalıbı: rn = 1 ve rn = 2'yi yan yana getir.</li></ol>
+<h2>Çözüm 1: tekrarları bulmak ve sıralamak</h2>
+<pre class="code">WITH s AS (
+  SELECT id, LOWER(TRIM(email)) AS anahtar,
+         ROW_NUMBER() OVER (PARTITION BY LOWER(TRIM(email)) ORDER BY id) AS rn,
+         COUNT(*) OVER (PARTITION BY LOWER(TRIM(email))) AS adet
+  FROM raw_signups
+  WHERE email IS NOT NULL
+)
+SELECT anahtar, adet, id AS tutulacak_id
+FROM s
+WHERE rn = 1 AND adet > 1
+ORDER BY adet DESC, anahtar;</pre>
+<h2>Çözüm 2: ikinci sipariş: koşullu toplama</h2>
+<pre class="code">WITH s AS (
+  SELECT customer_id, order_date,
+         ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date, order_id) AS rn
+  FROM orders
+),
+p AS (
+  SELECT customer_id,
+         MAX(CASE WHEN rn = 1 THEN order_date END) AS ilk,
+         MAX(CASE WHEN rn = 2 THEN order_date END) AS ikinci
+  FROM s
+  GROUP BY customer_id
+)
+SELECT COUNT(ikinci) AS donen, ROUND(AVG(julianday(ikinci) - julianday(ilk)), 1) AS ort_gun
+FROM p;</pre>
+<p>Aynı ROW_NUMBER kalıbı iki farklı soruyu çözer: tekrar temizlemede “1 numara kalır”, sıralı olaylarda “1 ve 2 numarayı yan yana koy”. MAX(CASE WHEN rn = 2 ...) uzun formattan geniş formata çevirmenin taşınabilir yoludur; LEAD ile de yazılabilir.</p>
+<h2>Sınır durumları</h2>
+<table><tr><th>Durum</th><th>Ne olur?</th></tr><tr><td>NULL e-posta</td><td>PARTITION BY NULL değerleri tek grup sayar; WHERE email IS NOT NULL ile ayır</td></tr><tr><td>Aynı gün iki sipariş</td><td>ORDER BY order_date tek başına belirsiz; order_id ekle</td></tr><tr><td>Tek siparişli müşteri</td><td>ikinci NULL olur; AVG NULL'u atlar, COUNT(ikinci) dönenleri sayar</td></tr><tr><td>Tam tekrar satırlar</td><td>Kimlik de aynıysa rowid ya da tüm sütunlarla GROUP BY gerekir</td></tr></table>
+<h2>Takip soruları</h2>
+<ul><li>DELETE ile nasıl silersin? (WHERE id NOT IN (SELECT MIN(id) ... GROUP BY anahtar))</li><li>Silmeden önce ne yaparsın? (aynı WHERE ile SELECT, yedek, işlem)</li><li>Medyan dönüş süresi ortalamadan neden daha anlamlı olabilir?</li></ul>
+<div class="tip"><b>Görüşmeci neye bakıyor?</b>Anahtarı normalize etmeyi düşünmen, silmeden önce görüntülemeyi önermen ve eşitlikte belirleyici bir sıralama eklemen.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-mk-tekrar">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../mk-oran/">← Mülakat kalıbı: oranlar, paydalar ve dönüşüm</a><a href="../mk-zaman/">Mülakat kalıbı: zaman pencereleri, büyüme ve “son 30 gün” →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

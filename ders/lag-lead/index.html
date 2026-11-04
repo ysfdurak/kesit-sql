@@ -1,0 +1,37 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LAG ve LEAD: önceki ve sonraki satır | Kesit SQL</title><meta name="description" content="Dönemler arası değişim, siparişler arası süre."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/lag-lead/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="LAG ve LEAD: önceki ve sonraki satır"><meta property="og:description" content="Dönemler arası değişim, siparişler arası süre."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/lag-lead/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"LAG ve LEAD: önceki ve sonraki satır","description":"Dönemler arası değişim, siparişler arası süre.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/lag-lead/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Pencere Fonksiyonları</span><h1>LAG ve LEAD: önceki ve sonraki satır</h1><p class="st-l">Dönemler arası değişim, siparişler arası süre.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-lag-lead">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Bir önceki satıra bakmak</h2>
+<p><code>LAG(sutun, n, varsayilan)</code> sıralı penceredeki n önceki satırın değerini, <code>LEAD</code> n sonrakini getirir (n varsayılanı 1).</p>
+<pre class="code">WITH aylik AS (
+  SELECT strftime('%Y-%m', order_date) AS ay, COUNT(*) AS siparis
+  FROM orders
+  WHERE order_date >= '2024-01-01'
+  GROUP BY ay
+)
+SELECT ay, siparis,
+       LAG(siparis) OVER (ORDER BY ay) AS onceki_ay,
+       siparis - LAG(siparis) OVER (ORDER BY ay) AS degisim,
+       ROUND(100.0 * (siparis - LAG(siparis) OVER (ORDER BY ay)) / LAG(siparis) OVER (ORDER BY ay), 1) AS yuzde
+FROM aylik;</pre>
+<h2>Müşteri bazında: siparişler arası gün</h2>
+<pre class="code">SELECT customer_id, order_date,
+       LAG(order_date) OVER (PARTITION BY customer_id ORDER BY order_date) AS onceki,
+       julianday(order_date) - julianday(LAG(order_date) OVER (PARTITION BY customer_id ORDER BY order_date)) AS gun_farki
+FROM orders
+WHERE customer_id = 7;</pre>
+<div class="tip"><b>WINDOW kısaltması</b>Aynı pencereyi tekrar tekrar yazmak yerine sorgunun sonunda isim verebilirsin: <code>... OVER w ... WINDOW w AS (ORDER BY ay)</code>.</div>
+<h2>Derinleş: LAG ile değişim ve süre</h2><p>LAG'ın en sık iki kullanımı: bir önceki döneme göre <b>değişim</b> ve iki olay arasındaki <b>süre</b>. İkincisinde PARTITION BY'ı unutma; yoksa bir kuryenin ilk teslimatı başka bir kuryenin son teslimatıyla karşılaştırılır.</p><pre class="code">SELECT courier_id, delivered_at,
+       LAG(delivered_at) OVER (PARTITION BY courier_id ORDER BY delivered_at) AS onceki
+FROM lk_orders
+WHERE status = 'teslim' AND courier_id = 1
+ORDER BY delivered_at
+LIMIT 5;</pre><p>Bölümün ilk satırında LAG NULL döner; üçüncü değişkenle varsayılan verilebilir: <code>LAG(x, 1, 0)</code>.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-lag-lead">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ranking/">← Sıralama: ROW_NUMBER, RANK, DENSE_RANK</a><a href="../frames/">Kümülatif toplam ve hareketli ortalama (running total, moving average) →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

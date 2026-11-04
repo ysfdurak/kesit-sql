@@ -1,0 +1,49 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Uygulamadan SQL'e: parametreli sorgu, ORM ve N+1 | Kesit SQL</title><meta name="description" content="Kod içinden veritabanına güvenli ve verimli erişim."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/be-orm/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Uygulamadan SQL'e: parametreli sorgu, ORM ve N+1"><meta property="og:description" content="Kod içinden veritabanına güvenli ve verimli erişim."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/be-orm/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Uygulamadan SQL'e: parametreli sorgu, ORM ve N+1","description":"Kod içinden veritabanına güvenli ve verimli erişim.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/be-orm/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Uygulama Geliştirme</span><h1>Uygulamadan SQL'e: parametreli sorgu, ORM ve N+1</h1><p class="st-l">Kod içinden veritabanına güvenli ve verimli erişim.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-be-orm">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Parametreli sorgu: tek doğru yol</h2>
+<p>Kullanıcı girdisini sorgu metnine <b>birleştirmek</b>, SQL injection açığının kaynağıdır. Bunun yerine sorgu bir kez yazılır, değerler <b>parametre</b> olarak ayrı gönderilir. Veritabanı parametreyi her zaman veri olarak görür, kod olarak çalıştırmaz.</p>
+<pre class="code" data-norun># Yanlış (Python) — girdi sorguya birleştiriliyor
+cur.execute(&quot;SELECT * FROM customers WHERE email = '&quot; + email + &quot;'&quot;)
+
+# Doğru — parametre
+cur.execute(&quot;SELECT * FROM customers WHERE email = %s&quot;, (email,))
+
+// C# / ADO.NET
+var cmd = new SqlCommand(&quot;SELECT * FROM customers WHERE email = @email&quot;, conn);
+cmd.Parameters.AddWithValue(&quot;@email&quot;, email);</pre>
+<p>Parametreli sorguların bir faydası da <b>plan önbelleği</b>dir: aynı sorgu metni farklı değerlerle tekrar kullanılır.</p>
+<h2>ORM nedir?</h2>
+<p>Entity Framework, Hibernate, Django ORM, SQLAlchemy, Prisma gibi araçlar tabloları sınıflara eşler ve SQL'i senin yerine üretir. Hızlı geliştirme sağlar ama ürettiği SQL'i <b>görmeden</b> kullanmak performans sorunlarına yol açar. ORM kullanan iyi bir geliştirici, ürettiği SQL'i günlükte okuyabilir.</p>
+<h2>N+1 sorunu</h2>
+<p>Bir sayfada 50 müşteri ve her birinin sipariş sayısı gösterilecek. Saf bir ORM kodu önce müşterileri çeker (1 sorgu), sonra döngüde her müşteri için sipariş sayısını sorar (50 sorgu): toplam <b>51 sorgu</b>. Her sorgu ağ gidiş-dönüşü demektir.</p>
+<pre class="code" data-norun>-- N+1: uygulama döngüsünde
+SELECT customer_id, first_name FROM customers WHERE segment = 'Premium';
+SELECT COUNT(*) FROM orders WHERE customer_id = 3;
+SELECT COUNT(*) FROM orders WHERE customer_id = 7;
+-- ... müşteri sayısı kadar</pre>
+<pre class="code">-- Çözüm: tek sorgu
+SELECT c.customer_id,
+       c.first_name,
+       COUNT(o.order_id) AS siparis_sayisi
+FROM customers c
+LEFT JOIN orders o ON o.customer_id = c.customer_id
+WHERE c.segment = 'Premium'
+GROUP BY c.customer_id, c.first_name;</pre>
+<p>ORM'lerde bunun karşılığı “eager loading”dir: <code>Include()</code> (EF), <code>select_related</code> / <code>prefetch_related</code> (Django), <code>joinedload</code> (SQLAlchemy).</p>
+<h2>Diğer iyi alışkanlıklar</h2>
+<ul>
+<li><b>SELECT *</b> yerine gereken sütunları iste; tablo genişledikçe uygulama sessizce yavaşlar.</li>
+<li><b>Bağlantı havuzu</b> (connection pool) kullan; her istekte yeni bağlantı açmak pahalıdır.</li>
+<li><b>İşlemleri kısa tut</b>; işlem açıkken dış servise HTTP isteği yapma.</li>
+<li><b>Sayfalama</b> yap; bir listeye 100.000 satır çekme (sonraki ders).</li>
+</ul>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-be-orm">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../bv-gelir/">← Ücret ve kullanıcı segmentleri: aboneler mi, tek seferlikler mi?</a><a href="../be-sayfalama/">Uygulamalarda sayfalama: OFFSET ve keyset →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

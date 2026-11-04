@@ -1,0 +1,31 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Modern veri ekosistemi ve SQL'in geleceği | Kesit SQL</title><meta name="description" content="NoSQL, NewSQL, bulut ambarları, lakehouse, dbt ve yapay zekâ."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/modern-ekosistem/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Modern veri ekosistemi ve SQL'in geleceği"><meta property="og:description" content="NoSQL, NewSQL, bulut ambarları, lakehouse, dbt ve yapay zekâ."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/modern-ekosistem/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Modern veri ekosistemi ve SQL'in geleceği","description":"NoSQL, NewSQL, bulut ambarları, lakehouse, dbt ve yapay zekâ.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/modern-ekosistem/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Modern SQL</span><h1>Modern veri ekosistemi ve SQL'in geleceği</h1><p class="st-l">NoSQL, NewSQL, bulut ambarları, lakehouse, dbt ve yapay zekâ.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-modern-ekosistem">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>NoSQL dalgası ve geri dönüş</h2>
+<p>2000'lerin sonunda web ölçeği ihtiyacı, şemasız ve yatay ölçeklenen sistemleri doğurdu:</p>
+<table><tr><th>Tür</th><th>Örnek</th><th>Güçlü yanı</th></tr>
+<tr><td>Doküman</td><td>MongoDB, Couchbase</td><td>Esnek şema, JSON benzeri kayıt</td></tr>
+<tr><td>Anahtar-değer</td><td>Redis, DynamoDB</td><td>Çok düşük gecikme</td></tr>
+<tr><td>Geniş sütun</td><td>Cassandra, HBase</td><td>Devasa yazma hacmi</td></tr>
+<tr><td>Graf</td><td>Neo4j</td><td>İlişki yoğun sorgular</td></tr>
+</table>
+<p>Ama analiz yapma ihtiyacı herkesi SQL'e geri getirdi: Hive, Spark SQL, Presto/Trino, Cassandra'nın CQL'i, MongoDB'nin SQL arayüzleri. <b>NewSQL</b> sistemleri (Google Spanner, CockroachDB, TiDB) ise dağıtık ölçeği ACID ve SQL ile birleştirdi.</p>
+<h2>Bugünün yığını (modern data stack)</h2>
+<ul>
+<li><b>Bulut veri ambarları</b>: Snowflake, BigQuery, Redshift, Databricks SQL. Depolama ve hesaplama ayrı ölçeklenir.</li>
+<li><b>Lakehouse</b>: Veri gölündeki dosyalar (Parquet) üzerinde açık tablo formatları (Delta Lake, Apache Iceberg, Hudi) ile ACID ve SQL.</li>
+<li><b>Gömülü analitik</b>: DuckDB, dizüstü bilgisayarda milyonlarca satırı saniyeler içinde sorgular.</li>
+<li><b>dbt</b>: SQL SELECT'lerinden oluşan modelleri sürüm kontrolü, test ve dokümantasyonla yönetir. Analytics engineer rolünün temel aracı.</li>
+<li><b>Akış (streaming) SQL</b>: Kafka ksqlDB, Flink SQL; sürekli gelen veri üzerinde sorgu.</li>
+</ul>
+<h2>Yapay zekâ çağında SQL</h2>
+<p>Doğal dilden SQL üreten araçlar yaygınlaşıyor. Bu, SQL bilmeyi gereksiz kılmıyor; tersine, üretilen sorgunun doğru olup olmadığını (yanlış JOIN, NULL tuzağı, satır çoğalması) anlayabilen insanların değerini artırıyor. Vektör aramaları (pgvector) ve SQL/PGQ graf sorguları da SQL'in kapsamını genişletiyor.</p>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-modern-ekosistem">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../vaka-kayip/">← Vaka: Kayıp müşterilerin izinde</a><a href="../ts-giris/">SQL Server ve T-SQL'e giriş →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

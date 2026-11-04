@@ -1,0 +1,66 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Python ile SQL: pandas, parametreli sorgu ve SQLAlchemy | Kesit SQL</title><meta name="description" content="Sorgu sonucunu DataFrame'e almak, güvenli parametre, büyük veride parça parça okuma, tabloya yazma."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/python-sql/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Python ile SQL: pandas, parametreli sorgu ve SQLAlchemy"><meta property="og:description" content="Sorgu sonucunu DataFrame'e almak, güvenli parametre, büyük veride parça parça okuma, tabloya yazma."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/python-sql/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Python ile SQL: pandas, parametreli sorgu ve SQLAlchemy","description":"Sorgu sonucunu DataFrame'e almak, güvenli parametre, büyük veride parça parça okuma, tabloya yazma.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/python-sql/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veri Analisti</span><h1>Python ile SQL: pandas, parametreli sorgu ve SQLAlchemy</h1><p class="st-l">Sorgu sonucunu DataFrame'e almak, güvenli parametre, büyük veride parça parça okuma, tabloya yazma.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-python-sql">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Neden Python?</h2>
+<p>Analist ve veri bilimciler çoğu zaman veriyi SQL ile süzer ve özetler, sonra Python ile görselleştirir, modeller veya otomatikleştirir. İyi pratik: <b>ağır işi veritabanında yap</b> (filtre, birleştirme, toplama), Python'a yalnızca gereken özet satırları getir.</p>
+<h2>pandas ile okumak</h2>
+<pre class="code" data-norun>import pandas as pd
+from sqlalchemy import create_engine, text
+
+# Bağlantı adresleri
+# PostgreSQL : postgresql+psycopg://kullanici:sifre@sunucu:5432/anadolu
+# SQL Server : mssql+pyodbc://kullanici:sifre@sunucu/anadolu?driver=ODBC+Driver+18+for+SQL+Server
+# MySQL      : mysql+pymysql://kullanici:sifre@sunucu/anadolu
+# SQLite     : sqlite:///anadolu.db
+engine = create_engine(&quot;postgresql+psycopg://analist:***@db.sirket.local/anadolu&quot;)
+
+sorgu = text(&quot;&quot;&quot;
+    SELECT date_trunc('month', o.order_date) AS ay,
+           o.channel,
+           SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) AS ciro
+    FROM orders o JOIN order_items oi ON oi.order_id = o.order_id
+    WHERE o.status = 'delivered' AND o.order_date &gt;= :baslangic
+    GROUP BY 1, 2
+&quot;&quot;&quot;)
+df = pd.read_sql(sorgu, engine, params={&quot;baslangic&quot;: &quot;2024-01-01&quot;})
+pivot = df.pivot(index=&quot;ay&quot;, columns=&quot;channel&quot;, values=&quot;ciro&quot;)
+pivot.plot(kind=&quot;line&quot;)</pre>
+<h2>Parametre: asla metin birleştirme</h2>
+<pre class="code" data-norun># YANLIŞ: SQL enjeksiyonuna açık ve tip sorunları çıkarır
+sehir = input()
+pd.read_sql(f&quot;SELECT * FROM customers WHERE city = '{sehir}'&quot;, engine)
+
+# DOĞRU: parametreli
+pd.read_sql(text(&quot;SELECT * FROM customers WHERE city = :sehir&quot;), engine, params={&quot;sehir&quot;: sehir})
+
+# Sürücüye göre yer tutucular: psycopg %s, pyodbc ?, sqlite3 ? veya :ad</pre>
+<h2>Büyük veri</h2>
+<ul>
+<li><code>pd.read_sql(..., chunksize=50_000)</code> sonucu parça parça okur; bellek taşmaz.</li>
+<li>Gereksiz sütun çekme: <code>SELECT *</code> yerine sütun listesi.</li>
+<li>BigQuery için <code>google-cloud-bigquery</code> ve <code>client.query(sql).to_dataframe()</code>; Snowflake ve Databricks'in de kendi bağlayıcıları var.</li>
+</ul>
+<h2>Tabloya yazmak</h2>
+<pre class="code" data-norun>df_sonuc.to_sql(&quot;kampanya_skorlari&quot;, engine, schema=&quot;analiz&quot;, if_exists=&quot;replace&quot;, index=False, chunksize=10_000)
+
+# İşlem içinde birden çok ifade
+with engine.begin() as conn:
+    conn.execute(text(&quot;DELETE FROM analiz.gunluk WHERE gun = :g&quot;), {&quot;g&quot;: gun})
+    df_gun.to_sql(&quot;gunluk&quot;, conn, schema=&quot;analiz&quot;, if_exists=&quot;append&quot;, index=False)</pre>
+<h2>SQL'de mi pandas'ta mı?</h2>
+<table>
+<tr><th>İş</th><th>Nerede?</th></tr>
+<tr><td>Milyonlarca satırı süzmek, birleştirmek, toplamak</td><td>SQL</td></tr>
+<tr><td>Pencere fonksiyonları, kohort, huni</td><td>SQL (pandas'ta da yapılır ama veri önce taşınmalı)</td></tr>
+<tr><td>Görselleştirme, istatistik testleri, makine öğrenmesi</td><td>Python</td></tr>
+<tr><td>Zamanlanmış rapor</td><td>SQL sorgusu + Python betiği + zamanlayıcı (Airflow, cron)</td></tr>
+</table>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-python-sql">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../an-dashboard/">← Dashboard için sorgu tasarımı</a><a href="../bi-pay/">Pay ve oran analizleri: toplama göre yüzde →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

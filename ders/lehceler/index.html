@@ -1,0 +1,32 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SQL lehçeleri: PostgreSQL, MySQL, SQL Server, Oracle, BigQuery | Kesit SQL</title><meta name="description" content="Aynı işin farklı veritabanlarındaki yazımı."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/lehceler/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="SQL lehçeleri: PostgreSQL, MySQL, SQL Server, Oracle, BigQuery"><meta property="og:description" content="Aynı işin farklı veritabanlarındaki yazımı."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/lehceler/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"SQL lehçeleri: PostgreSQL, MySQL, SQL Server, Oracle, BigQuery","description":"Aynı işin farklı veritabanlarındaki yazımı.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/lehceler/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Modern SQL</span><h1>SQL lehçeleri: PostgreSQL, MySQL, SQL Server, Oracle, BigQuery</h1><p class="st-l">Aynı işin farklı veritabanlarındaki yazımı.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-lehceler">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Ortak çekirdek, farklı aksanlar</h2>
+<p>SELECT/FROM/WHERE/JOIN/GROUP BY her yerde aynıdır. Farklar en çok şu alanlarda çıkar:</p>
+<div class="tbl-wrap"><table><tr><th>İşlem</th><th>PostgreSQL</th><th>MySQL</th><th>SQL Server</th><th>Oracle</th><th>BigQuery</th></tr>
+<tr><td>İlk N satır</td><td><code>LIMIT n</code></td><td><code>LIMIT n</code></td><td><code>TOP n</code></td><td><code>FETCH FIRST n ROWS ONLY</code></td><td><code>LIMIT n</code></td></tr>
+<tr><td>Metin birleştir</td><td><code>||</code></td><td><code>CONCAT()</code></td><td><code>+</code> / <code>CONCAT()</code></td><td><code>||</code></td><td><code>CONCAT()</code> / <code>||</code></td></tr>
+<tr><td>NULL yerine</td><td><code>COALESCE</code></td><td><code>IFNULL</code></td><td><code>ISNULL</code></td><td><code>NVL</code></td><td><code>IFNULL</code></td></tr>
+<tr><td>Ay başı</td><td><code>DATE_TRUNC('month', d)</code></td><td><code>DATE_FORMAT(d,'%Y-%m-01')</code></td><td><code>DATETRUNC(month, d)</code></td><td><code>TRUNC(d, 'MM')</code></td><td><code>DATE_TRUNC(d, MONTH)</code></td></tr>
+<tr><td>Tarih ekle</td><td><code>d + INTERVAL '7 day'</code></td><td><code>DATE_ADD(d, INTERVAL 7 DAY)</code></td><td><code>DATEADD(day, 7, d)</code></td><td><code>d + 7</code></td><td><code>DATE_ADD(d, INTERVAL 7 DAY)</code></td></tr>
+<tr><td>Otomatik ID</td><td><code>IDENTITY</code>/<code>SERIAL</code></td><td><code>AUTO_INCREMENT</code></td><td><code>IDENTITY(1,1)</code></td><td><code>IDENTITY</code>/sequence</td><td>yok (GENERATE_UUID)</td></tr>
+<tr><td>Büyük/küçük harf duyarsız arama</td><td><code>ILIKE</code></td><td>varsayılan duyarsız</td><td>collation'a bağlı</td><td><code>UPPER()</code> ile</td><td><code>LOWER()</code> ile</td></tr>
+<tr><td>Prosedürel dil</td><td>PL/pgSQL</td><td>SQL/PSM</td><td>T-SQL</td><td>PL/SQL</td><td>Scripting</td></tr>
+</table></div>
+<h2>Ambar dünyasına özgü özellikler</h2>
+<ul>
+<li><b>QUALIFY</b> (Snowflake, BigQuery, Teradata, DuckDB): Pencere fonksiyonu sonucuna göre CTE yazmadan filtreler. <code>QUALIFY ROW_NUMBER() OVER (...) = 1</code></li>
+<li><b>ARRAY / STRUCT ve UNNEST</b> (BigQuery): İç içe veri tipleri.</li>
+<li><b>Partition ve clustering</b>: Tabloyu tarihe göre bölüp sadece ilgili bölümleri taramak.</li>
+</ul>
+<div class="tip"><b>Bu uygulamada</b>Her kod kutusunun üstündeki SQL türü sekmeleri ve alıştırmalardaki “Diğer SQL türlerinde gör” düğmesi, bir sorgunun altı SQL türündeki yazılışını ve çıktısını yan yana görmeni sağlar. Bir SQL türünde geçersiz olan sözdizimini (ör. SQL Server'da LIMIT) yazarsan o SQL türünün vereceği hatayı alırsın. Motor SQLite olduğu için her fark yakalanamaz: yazım hataları ve sık anlam hataları (WHERE'de takma ad, gruplanmamış sütun, koşul toplamı, LIKE harf duyarlılığı) denetlenir; karmaşık sorgularda gerçek motorun vereceği hata burada çıkmayabilir. Yakalanmayan örnekler: SQL Server'da <code>SELECT "abc"</code> burada metin döner, gerçek motorda QUOTED_IDENTIFIER açıkken sütun adı sayılır. MySQL'de <code>SELECT DISTINCT category ... ORDER BY price</code> burada satır döndürür, sql_mode ayarına göre gerçek motorda hata verebilir. BigQuery'de <code>'5' + 1</code> burada 6 verir, gerçek motorda farklı davranabilir. <code>0.1 + 0.2 = 0.3</code> burada her türde “eşit değil” çıkar, çünkü motor ondalığı kayan nokta tutar; gerçek motorda sabitin türüne bağlıdır. Önemli bir sorguyu gerçek motorunda da dene.</div>
+<div class="tip"><b>Taşınabilir SQL yazmak</b>Standart fonksiyonları (COALESCE, CASE, CAST, pencere fonksiyonları, CTE) tercih et. Lehçeye özgü fonksiyonları tek bir view veya makroda topla.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-lehceler">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../dwh/">← OLTP ve OLAP, yıldız şema, fact ve dimension</a><a href="../guvenlik/">Güvenlik: SQL injection ve yetkilendirme →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

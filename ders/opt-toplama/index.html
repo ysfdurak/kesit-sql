@@ -1,0 +1,96 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Toplama ve pencere fonksiyonu maliyeti: önce topla, sırala, özetle | Kesit SQL</title><meta name="description" content="GROUP BY ve pencere fonksiyonunda sıralama maliyeti, indeksle sıralamayı kaldırmak, önce toplama, COUNT DISTINCT, özet tablo."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/opt-toplama/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Toplama ve pencere fonksiyonu maliyeti: önce topla, sırala, özetle"><meta property="og:description" content="GROUP BY ve pencere fonksiyonunda sıralama maliyeti, indeksle sıralamayı kaldırmak, önce toplama, COUNT DISTINCT, özet tablo."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/opt-toplama/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Toplama ve pencere fonksiyonu maliyeti: önce topla, sırala, özetle","description":"GROUP BY ve pencere fonksiyonunda sıralama maliyeti, indeksle sıralamayı kaldırmak, önce toplama, COUNT DISTINCT, özet tablo.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/opt-toplama/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Sorgu Optimizasyonu</span><h1>Toplama ve pencere fonksiyonu maliyeti: önce topla, sırala, özetle</h1><p class="st-l">GROUP BY ve pencere fonksiyonunda sıralama maliyeti, indeksle sıralamayı kaldırmak, önce toplama, COUNT DISTINCT, özet tablo.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-toplama">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory"><h2>Senaryo: Pedal İzmir yönetim panosu</h2>
+<p>Pano her yenilendiğinde 116.000 yolculuk üzerinden istasyon toplamları ve kullanıcı sıralamaları hesaplıyor. Toplama ve pencere fonksiyonları satırları sıralamayı ya da gruplamayı gerektirir. Maliyetin büyük kısmı filtreden sonra burada oluşur.</p>
+<h2>GROUP BY: sıralı mı, karma mı?</h2>
+<p>İki yöntem vardır: karma tablo (<code>HashAggregate</code>) ya da sıralı girdiyi yürüyerek gruplama (<code>GroupAggregate</code>). SQLite'ta indeks yoksa <code>USE TEMP B-TREE FOR GROUP BY</code> görürsün. Uygun indeks bu adımı kaldırır:</p>
+<pre class="code" data-na="tsql pg mysql oracle bq">EXPLAIN QUERY PLAN SELECT start_station, COUNT(*) FROM bk_trips GROUP BY start_station;
+CREATE INDEX ix_baslangic ON bk_trips (start_station);
+EXPLAIN QUERY PLAN SELECT start_station, COUNT(*) FROM bk_trips GROUP BY start_station;</pre>
+<h2>Önce topla, sonra birleştir: işe yarar mı?</h2>
+<p>Yaygın öğüt: büyük tabloyu birleştirmeden önce özetle. Ölçelim.</p>
+<div class="note"><b>PostgreSQL çıktıları</b>Bu derslerdeki PostgreSQL planları elle yazılmadı. Aynı veriyle PostgreSQL 16.4 üzerinde (PGlite, tarayıcıda çalışan WASM sürümü) üretildi. <code>VACUUM ANALYZE</code> çalıştırıldı, planlama satırları kısalık için çıkarıldı. Sayılar kendi sunucunda farklı olur; okuma biçimi aynıdır.</div>
+<pre class="code" data-norun>EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT s.name, COUNT(*) FROM bk_trips t JOIN bk_stations s ON s.station_id = t.start_station GROUP BY s.name;</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">HashAggregate  (cost=3075.79..3076.41 rows=62 width=23) (actual rows=62 loops=1)
+  Group Key: s.name
+  Batches: 1  Memory Usage: 24kB
+  Buffers: shared hit=105
+  ->  Hash Join  (cost=2.69..2493.20 rows=116517 width=15) (actual rows=116517 loops=1)
+        Hash Cond: (t.start_station = s.station_id)
+        Buffers: shared hit=105
+        ->  Index Only Scan using bk_trips_start_station_idx on bk_trips t  (cost=0.29..2164.05 rows=116517 width=4) (actual rows=116517 loops=1)
+              Heap Fetches: 0
+              Buffers: shared hit=104
+        ->  Hash  (cost=1.62..1.62 rows=62 width=19) (actual rows=62 loops=1)
+              Buckets: 1024  Batches: 1  Memory Usage: 7kB
+              Buffers: shared hit=1
+              ->  Seq Scan on bk_stations s  (cost=0.00..1.62 rows=62 width=19) (actual rows=62 loops=1)
+                    Buffers: shared hit=1</pre>
+<pre class="code" data-norun>EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+WITH g AS (SELECT start_station, COUNT(*) AS n FROM bk_trips GROUP BY start_station) SELECT s.name, g.n FROM g JOIN bk_stations s ON s.station_id = g.start_station;</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">Merge Join  (cost=0.43..2761.87 rows=62 width=23) (actual rows=62 loops=1)
+  Merge Cond: (bk_trips.start_station = s.station_id)
+  Buffers: shared hit=106
+  ->  GroupAggregate  (cost=0.29..2747.25 rows=62 width=12) (actual rows=62 loops=1)
+        Group Key: bk_trips.start_station
+        Buffers: shared hit=104
+        ->  Index Only Scan using bk_trips_start_station_idx on bk_trips  (cost=0.29..2164.05 rows=116517 width=4) (actual rows=116517 loops=1)
+              Heap Fetches: 0
+              Buffers: shared hit=104
+  ->  Index Scan using bk_stations_pkey on bk_stations s  (cost=0.14..13.07 rows=62 width=19) (actual rows=62 loops=1)
+        Buffers: shared hit=2</pre>
+<p>Dürüst sonuç: bu veride okunan sayfa neredeyse aynı (105 ve 106), planlar farklı. PostgreSQL iki yazımı da makul biçimde çözüyor. "Önce topla" burada hız kazandırmadı, yine de iki önemli yararı var:</p>
+<ul>
+<li><b>Doğruluk:</b> Birden çok tabloyu birleştirip toplarken satır çoğalması (fan-out) tutarları şişirir. Önce toplamak bunu önler.</li>
+<li><b>Motorun yeteneği:</b> Daha basit iyileştiricilerde ve dağıtık ambarlarda fark büyür. BigQuery belgesi GROUP BY ve JOIN içeren sorgularda erken toplamayı önerir.</li>
+</ul>
+<p>Kutuları sırayla çalıştırıp SQLite süresini kendin karşılaştırabilirsin:</p>
+<pre class="code">SELECT s.name, COUNT(*) AS yolculuk
+FROM bk_trips t JOIN bk_stations s ON s.station_id = t.start_station
+GROUP BY s.name;</pre>
+<pre class="code">WITH g AS (SELECT start_station, COUNT(*) AS yolculuk FROM bk_trips GROUP BY start_station)
+SELECT s.name, g.yolculuk FROM g JOIN bk_stations s ON s.station_id = g.start_station;</pre>
+<h2>Pencere fonksiyonları</h2>
+<p>Bir pencere fonksiyonu <code>PARTITION BY</code> ve <code>ORDER BY</code> sırasına göre satırları dizmek zorundadır. Sıra indeksten gelmezse sıralama yapılır.</p>
+<pre class="code" data-norun>EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT txn_id, ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY txn_time DESC) AS sira FROM bank_txns;</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">WindowAgg  (cost=4.90..4858.40 rows=42284 width=24) (actual rows=42284 loops=1)
+  Buffers: shared hit=39404
+  ->  Incremental Sort  (cost=4.90..4118.43 rows=42284 width=16) (actual rows=42284 loops=1)
+        Sort Key: account_id, txn_time DESC
+        Presorted Key: account_id
+        Full-sort Groups: 618  Sort Method: quicksort  Average Memory: 19kB  Peak Memory: 19kB
+        Pre-sorted Groups: 525  Sort Method: quicksort  Average Memory: 19kB  Peak Memory: 19kB
+        Buffers: shared hit=39404
+        ->  Index Scan using bank_txns_account_id_idx on bank_txns  (cost=0.29..2354.53 rows=42284 width=16) (actual rows=42284 loops=1)
+              Buffers: shared hit=39404</pre>
+<p>Aynı sıraya sahip indeksle sıralama adımı kalkar:</p>
+<pre class="code" data-norun>CREATE INDEX ix_hesap_zaman ON bank_txns (account_id, txn_time DESC);
+EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT txn_id, ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY txn_time DESC) AS sira FROM bank_txns;</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">WindowAgg  (cost=0.29..3598.45 rows=42284 width=24) (actual rows=42284 loops=1)
+  Buffers: shared hit=39530
+  ->  Index Scan using ix_hesap_zaman on bank_txns  (cost=0.29..2858.48 rows=42284 width=16) (actual rows=42284 loops=1)
+        Buffers: shared hit=39530</pre>
+<p>Bu iki çıktıda okunan sayfa neredeyse aynı. Çünkü tablodaki bütün satırlar isteniyor ve indeks üzerinden tablo sayfalarına tek tek gidiliyor. Kazanç yalnız sıralama adımının kalkmasıdır. Ölçmeden "indeks koydum, kesin hızlandı" deme.</p>
+<ul>
+<li><b>Aynı pencereyi tekrarlama.</b> Bir sorguda aynı <code>OVER (...)</code> tanımı aynı sıralamayı paylaşabilir. Farklı sıralamalı her pencere ek bir sıralama demek olabilir.</li>
+<li><b>Grup başına ilk N:</b> <code>ROW_NUMBER()</code> tüm satırları numaralar. Tek hesabın son 20 hareketi gerekiyorsa pencere yerine indeksli <code>ORDER BY ... LIMIT</code> daha ucuzdur.</li>
+<li><b>Satır başına alt sorgu yerine pencere:</b> "Her hesabın son işlemi" için ilişkili alt sorgu yerine pencere çoğunlukla daha iyi plan verir.</li>
+</ul>
+<h2>COUNT(DISTINCT) ve özet tablo</h2>
+<p><code>COUNT(DISTINCT x)</code> değerleri sıralar ya da karma tabloda tutar. Tam sayı gerekmiyorsa yaklaşık fonksiyonlar vardır: BigQuery ve SQL Server'da <code>APPROX_COUNT_DISTINCT</code>.</p>
+<p>Aynı ağır toplama günde yüzlerce kez çalışıyorsa sorguyu iyileştirmek yerine sonucu saklamak daha iyi olabilir: özet tablo, ya da PostgreSQL ve Oracle'da materialized view, SQL Server'da indexed view. Bedeli tazeliktir: kim, ne sıklıkla yeniliyor, gecikme kabul edilebilir mi?</p>
+<pre class="code">CREATE TABLE ozet_gun AS
+SELECT date(started_at) AS gun, start_station, COUNT(*) AS yolculuk
+FROM bk_trips
+GROUP BY date(started_at), start_station;
+
+SELECT gun, SUM(yolculuk) AS yolculuk FROM ozet_gun
+WHERE gun >= '2024-07-01' AND gun &lt; '2024-07-08'
+GROUP BY gun ORDER BY gun;</pre></article>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-toplama">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../opt-join/">← JOIN, EXISTS, IN ve alt sorgu maliyeti: erken süzme, gereksiz DISTINCT, SELECT *</a><a href="../opt-turler/">SQL türüne özgü optimizasyon: parametre koklama, EXPLAIN ANALYZE, bayt maliyeti →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

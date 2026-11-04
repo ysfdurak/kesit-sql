@@ -1,0 +1,54 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vaka: Kayıp müşterilerin izinde | Kesit SQL</title><meta name="description" content="Churn olan müşterileri bul, nedenlerini ara, geri kazanım listesi hazırla."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/vaka-kayip/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Vaka: Kayıp müşterilerin izinde"><meta property="og:description" content="Churn olan müşterileri bul, nedenlerini ara, geri kazanım listesi hazırla."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/vaka-kayip/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Vaka: Kayıp müşterilerin izinde","description":"Churn olan müşterileri bul, nedenlerini ara, geri kazanım listesi hazırla.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/vaka-kayip/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Vaka Çalışmaları</span><h1>Vaka: Kayıp müşterilerin izinde</h1><p class="st-l">Churn olan müşterileri bul, nedenlerini ara, geri kazanım listesi hazırla.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-vaka-kayip">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Durum</h2>
+<p>Pazarlama ekibi müşteri kaybının arttığını düşünüyor ve bir geri kazanım kampanyası planlıyor. Senden üç şey istiyorlar: kaybın büyüklüğü, olası nedenler ve kampanya için öncelikli müşteri listesi.</p>
+<div class="note"><b>Tanımlar</b>Referans tarih <b>2024-12-31</b>. Son siparişi bu tarihten <b>180 günden eski</b> olan (en az bir siparişi olan) müşteri <b>kayıp</b>, diğerleri <b>aktif</b>. Net ciro tanımı yıl sonu vakasındakiyle aynı.</div>
+<h3>Adımlar</h3>
+<ol>
+<li>Müşteri başına son sipariş ve sipariş sayısı</li>
+<li>Segment bazında kayıp oranı</li>
+<li>Kayıp müşterilerin sipariş deneyimi: iptal ve iade oranı daha mı yüksek?</li>
+<li>Kayıp müşteriler hangi kanalı kullanıyordu?</li>
+<li>Geri kazanım listesi: en değerli 10 kayıp müşteri</li>
+</ol>
+<div class="tip"><b>Korelasyon ≠ nedensellik</b>Kayıp müşterilerde iade oranı yüksek çıkarsa bu bir ipucudur, kanıt değil. Bulguyu “araştırılmalı” diye raporla.</div>
+<h2>Derinleş: kayıp tanımı ve kampanyanın ölçülmesi</h2>
+<p>“180 gün sipariş vermeyen kayıptır” bir <b>karar</b>, bir gerçek değil. Eşik değiştikçe kaybın büyüklüğü de değişir ve pazarlamanın bütçesi bu sayıya göre ayrılır. Bu yüzden raporda eşiğin duyarlılığı gösterilir:</p>
+<pre class="code">WITH m AS (
+  SELECT customer_id, julianday('2024-12-31') - julianday(MAX(order_date)) AS gun
+  FROM orders
+  GROUP BY customer_id
+)
+SELECT SUM(CASE WHEN gun > 90  THEN 1 ELSE 0 END) AS esik_90,
+       SUM(CASE WHEN gun > 180 THEN 1 ELSE 0 END) AS esik_180,
+       SUM(CASE WHEN gun > 365 THEN 1 ELSE 0 END) AS esik_365,
+       COUNT(*) AS musteri
+FROM m;</pre>
+<p>Sipariş vermiş 136 müşteriden kayıp sayısı eşiğe göre 42, 25 ya da 13. Eşik, ürünün doğal satın alma sıklığına göre seçilmeli: her hafta alınan bir üründe 90 gün uzun, yılda bir alınan bir üründe kısa.</p>
+<h3>Kişisel ritim</h3>
+<p>Sabit eşik yerine her müşterinin kendi alışkanlığına bakılabilir: ortalama sipariş aralığının 3 katından uzun süredir sessiz olan müşteri “ritmini kaybetmiş”tir. En az 3 siparişi olan 111 müşteride bu kural 16, 180 günlük sabit eşik 19 müşteri işaretliyor. Aradaki 3 kişi, ortalama sipariş aralığı zaten 60 günü aşan seyrek müşteriler: sabit eşik onları kayıp sayıyor, oysa kendi ritimlerinin içindeler. Tersi de olabilir: sık alışveriş yapan biri 60 gün susarsa ritim kuralı onu 180 günü beklemeden yakalar (bu veride böyle bir müşteri yok).</p>
+<h3>Kampanyanın etkisini ölçmek</h3>
+<p>Geri kazanım kampanyasından sonra “kayıpların %30'u geri döndü” demek etkiyi kanıtlamaz; bir kısmı kampanya olmadan da dönecekti. Etkiyi ölçmek için kayıp listesinden rastgele bir <b>kontrol grubu</b> (holdout) ayrılır ve kampanya ona gönderilmez. Etki = kampanya grubunun geri dönüş oranı − kontrol grubunun geri dönüş oranı.</p>
+<pre class="code">WITH k AS (
+  SELECT customer_id FROM orders
+  GROUP BY customer_id
+  HAVING julianday('2024-12-31') - julianday(MAX(order_date)) > 180
+)
+SELECT CASE WHEN customer_id % 10 = 0 THEN 'kontrol' ELSE 'kampanya' END AS grup,
+       COUNT(*) AS musteri
+FROM k
+GROUP BY CASE WHEN customer_id % 10 = 0 THEN 'kontrol' ELSE 'kampanya' END;</pre>
+<div class="warn"><b>Örneklem çok küçük</b>25 kayıp müşteriden kontrol grubuna yalnızca 3 kişi düşüyor. Bu büyüklükte bir deneyden anlamlı bir fark çıkmaz. Gerçek bir analizde ya daha uzun bir dönem ve daha geniş müşteri tabanı kullanılır ya da sonuç “yönlendirici” diye raporlanır.</div>
+<table><tr><th>Karar</th><th>Seçenekler</th></tr>
+<tr><td>Kayıp tanımı</td><td>Sabit eşik, kişisel ritim, abonelik iptali</td></tr>
+<tr><td>Önceliklendirme</td><td>Geçmiş değer, kazanılma olasılığı, ikisinin çarpımı</td></tr>
+<tr><td>Ölçüm</td><td>Kontrol grubu, kampanya öncesi/sonrası (zayıf), farkların farkı</td></tr></table></article>
+<div class="st-c"><a class="st-p" href="../../#ders-vaka-kayip">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../vaka-yilsonu/">← Vaka: Anadolu Market 2024 yıl sonu raporu</a><a href="../modern-ekosistem/">Modern veri ekosistemi ve SQL'in geleceği →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

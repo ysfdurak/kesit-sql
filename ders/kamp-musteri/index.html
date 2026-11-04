@@ -1,0 +1,47 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Alıştırma Kampı: Müşteri verisi (10 soru) | Kesit SQL</title><meta name="description" content="Tek tabloda filtreleme, sıralama, gruplama ve metin işlemleri pratiği."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/kamp-musteri/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Alıştırma Kampı: Müşteri verisi (10 soru)"><meta property="og:description" content="Tek tabloda filtreleme, sıralama, gruplama ve metin işlemleri pratiği."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/kamp-musteri/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Alıştırma Kampı: Müşteri verisi (10 soru)","description":"Tek tabloda filtreleme, sıralama, gruplama ve metin işlemleri pratiği.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/kamp-musteri/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Alıştırma Kampı</span><h1>Alıştırma Kampı: Müşteri verisi (10 soru)</h1><p class="st-l">Tek tabloda filtreleme, sıralama, gruplama ve metin işlemleri pratiği.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-kamp-musteri">Uygulamada aç, 12 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Bol pratik, tek tablo</h2>
+<p>Dil öğrenirken olduğu gibi SQL'de de akıcılık tekrarla gelir. Bu kampta yalnızca <code>customers</code> tablosuyla 10 soru çözeceksin. Her soru bir öncekinden biraz daha zor. Takıldığında ipucuna bak; çözdüğün sorular Tekrar sayfasında yeniden karşına çıkacak.</p>
+<div class="tip"><b>Tablo</b><code>customers</code>: customer_id, first_name, last_name, gender, birth_year, city, email, signup_date, segment. Veri setleri sayfasından inceleyebilirsin.</div>
+
+<h2>Nasıl çalışmalı?</h2>
+<ol>
+<li>Soruyu oku ve sonuçta hangi sütunların, kaç satırın bekleneceğini tahmin et.</li>
+<li>Önce <code>SELECT *</code> ile ilgili satırlara bak; sonra sütunları ve koşulları ekle.</li>
+<li><b>Kontrol et</b>'e basmadan önce <b>Sadece çalıştır</b> ile sonucu incele.</li>
+<li>İki denemede çözemezsen ipucuna bak; çözümü görmek XP'yi azaltır ama soruyu Tekrar listesine ekler.</li>
+</ol>
+<h2>Bu kampta en çok kullanacağın kalıplar</h2>
+<table><tr><th>İhtiyaç</th><th>Kalıp</th></tr><tr><td>Filtre</td><td><code>WHERE city = 'İzmir' AND gender = 'K'</code></td></tr><tr><td>Boş değer</td><td><code>WHERE city IS NULL</code></td></tr><tr><td>Desen</td><td><code>WHERE first_name LIKE 'E%'</code></td></tr><tr><td>Grup ve sayı</td><td><code>GROUP BY city HAVING COUNT(*) >= 5</code></td></tr><tr><td>Koşullu sayım</td><td><code>SUM(CASE WHEN segment = 'Premium' THEN 1 ELSE 0 END)</code></td></tr><tr><td>Metin parçası</td><td><code>SUBSTR(email, INSTR(email, '@') + 1)</code></td></tr></table>
+<div class="note"><b>Tablolar</b>Yalnızca <code>customers</code>. Sütunların açıklamaları ve örnek satırlar Veri setleri sayfasında.</div>
+<h2>Derinleş: kampı gerçek bir iş gibi çalışmak</h2>
+<p>Bu on soru ayrı ayrı alıştırma gibi görünür, ama bir arada bir müşteri tabanı raporu oluşturur. Kampı aşağıdaki brifle çözersen hem hız hem iş refleksi kazanırsın.</p>
+<div class="note"><b>Brif: CRM uzmanı</b>“Gelecek ay e-posta ve SMS kampanyası başlatıyoruz. Kaç kişiye ulaşabiliriz, kimler, hangi şehirlerde? Cuma günü bana kısa bir müşteri tabanı kartı gönder.”</div>
+<h3>Çalışma planı</h3>
+<ol>
+<li><b>Önce veriyi tanı.</b> <code>COUNT(*)</code> ile <code>COUNT(sütun)</code> arasındaki fark, o sütundaki boş değer sayısıdır. Aşağıdaki sorgu 150 müşteriden 143'ünün şehrinin bilindiğini ve 12 farklı şehir olduğunu gösterir.</li>
+<li><b>Soruyu grupla.</b> Filtre soruları (1–4), gruplama soruları (5–6, 8–9) ve dönüşüm soruları (7, 10) ayrı beceriler ister. Takıldığın grubu not et.</li>
+<li><b>Varsayımı yaz.</b> Yaş için referans yıl 2024; e-postası boş müşteri kampanyaya giremez.</li>
+</ol>
+<pre class="code">SELECT COUNT(*) AS satir, COUNT(city) AS sehir_dolu,
+       COUNT(DISTINCT city) AS farkli_sehir, COUNT(email) AS email_dolu
+FROM customers;</pre>
+<h3>Kontrol listesi</h3>
+<ul>
+<li><b>Gruplar toplamı veriyor mu?</b> Yaş gruplarının toplamı 150 olmalı. “bilinmiyor” grubunu unutursan toplam eksik kalır.</li>
+<li><b>NULL nereye gitti?</b> <code>WHERE city = 'İzmir'</code> şehri boş olanları zaten dışlar; ama <code>city &lt;&gt; 'İzmir'</code> de onları dışlar. Bu ikinci durum çoğu kişiyi şaşırtır.</li>
+<li><b>Yazım farkları.</b> “İzmir” ile “izmir” farklı grup oluşturur; şehir listesine bir kez göz at.</li>
+</ul>
+<h3>Teslim</h3>
+<div class="tip"><b>Yönetici özeti örneği</b>150 müşterinin %56,7'si Bireysel, kalanı Premium ve Kurumsal arasında neredeyse eşit bölünüyor. 11 müşterinin e-postası boş; e-posta kampanyası en fazla 139 kişiye ulaşır. En kalabalık şehir İstanbul (28 müşteri); şehir hedeflemesi için ilk dört şehir tabanın yarıdan fazlasını kapsıyor.</div>
+<h3>Kendini değerlendir</h3>
+<table><tr><th>Ölçüt</th><th>Başlangıç</th><th>İyi</th><th>Mükemmel</th></tr><tr><td>Doğruluk</td><td>10 sorunun 6–7'si</td><td>10 sorunun hepsi, ipucuyla</td><td>Hepsi ipucusuz ve ilk denemede</td></tr><tr><td>NULL farkındalığı</td><td>Boş değerler gözden kaçmış</td><td>IS NULL doğru kullanılmış</td><td>Her sonuçta boşların nereye gittiği açıklanabiliyor</td></tr><tr><td>Hız</td><td>Soru başına 10+ dakika</td><td>5 dakika</td><td>2–3 dakika ve kalıp ezberde</td></tr></table></article>
+<div class="st-c"><a class="st-p" href="../../#ders-kamp-musteri">Alıştırmalara geç (12)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../lab-gda/">← BigQuery laboratuvarı: Google veri analitiği yazımıyla uygulama</a><a href="../kamp-ik/">Alıştırma Kampı: İnsan kaynakları (10 soru) →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

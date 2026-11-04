@@ -1,0 +1,38 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LEFT JOIN ve eşi olmayanları bulmak | Kesit SQL</title><meta name="description" content="Sol tablonun tüm satırlarını korumak, anti-join kalıbı."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/left-join/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="LEFT JOIN ve eşi olmayanları bulmak"><meta property="og:description" content="Sol tablonun tüm satırlarını korumak, anti-join kalıbı."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/left-join/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"LEFT JOIN ve eşi olmayanları bulmak","description":"Sol tablonun tüm satırlarını korumak, anti-join kalıbı.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/left-join/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Tabloları Birleştirme</span><h1>LEFT JOIN ve eşi olmayanları bulmak</h1><p class="st-l">Sol tablonun tüm satırlarını korumak, anti-join kalıbı.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-left-join">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Soldaki her satır kalsın</h2>
+<p><b>LEFT JOIN</b> (LEFT OUTER JOIN), sol tablodaki <b>tüm</b> satırları döndürür. Sağda eşi yoksa sağ tablonun sütunları NULL gelir.</p>
+<pre class="code">SELECT d.name AS departman, e.first_name
+FROM departments d
+LEFT JOIN employees e ON e.dept_id = d.dept_id
+ORDER BY d.dept_id;</pre>
+<p>Hukuk departmanında çalışan olmadığı için o satırda <code>first_name</code> NULL görünür. INNER JOIN kullansaydık Hukuk hiç görünmezdi.</p>
+<h2>Anti-join: hiç sipariş vermemiş müşteriler</h2>
+<p>LEFT JOIN'den sonra sağ tablonun anahtarı NULL olan satırları seçmek, “eşi olmayanları” bulmanın klasik yoludur:</p>
+<pre class="code">SELECT c.customer_id, c.first_name, c.last_name
+FROM customers c
+LEFT JOIN orders o ON o.customer_id = c.customer_id
+WHERE o.order_id IS NULL;</pre>
+<h2>ON mu WHERE mi?</h2>
+<p>LEFT JOIN'de sağ tabloya ait filtreyi <b>WHERE</b>'e yazarsan, NULL satırlar elenir ve sorgu farkında olmadan INNER JOIN'e dönüşür. Filtreyi <b>ON</b> içine yazarsan sol tablo korunur:</p>
+<pre class="code">-- Her müşteri ve 2024'teki sipariş sayısı (siparişi olmayan 0 görünür)
+SELECT c.customer_id, COUNT(o.order_id) AS siparis_2024
+FROM customers c
+LEFT JOIN orders o
+       ON o.customer_id = c.customer_id
+      AND o.order_date >= '2024-01-01'
+GROUP BY c.customer_id
+ORDER BY siparis_2024
+LIMIT 10;</pre>
+<div class="warn"><b>COUNT(*) değil COUNT(sütun)</b>LEFT JOIN sonrası COUNT(*) eşi olmayan satırı da 1 sayar. Sağ tablodaki bir sütunu saymak (<code>COUNT(o.order_id)</code>) doğru sonucu verir.</div>
+<h2>Derinleş: ON ile WHERE farkı tek tabloda</h2><table><tr><th>Yazım</th><th>Sonuç</th></tr><tr><td><code>LEFT JOIN o ON o.courier_id = c.courier_id AND o.status = 'teslim'</code></td><td>Tüm kuryeler; teslimatı olmayanlar NULL ile</td></tr><tr><td><code>LEFT JOIN o ON o.courier_id = c.courier_id WHERE o.status = 'teslim'</code></td><td>Yalnızca teslimatı olan kuryeler (fiilen INNER JOIN)</td></tr><tr><td><code>... WHERE o.order_id IS NULL</code></td><td>Yalnızca eşi olmayanlar (anti-join)</td></tr></table>
+<p>LEFT JOIN sonrası <code>COUNT(*)</code> eşi olmayan satırı 1 sayar; <code>COUNT(sağ_tablo.anahtar)</code> 0 sayar.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-left-join">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../inner-join/">← INNER JOIN</a><a href="../ddl-create/">CREATE TABLE, veri tipleri ve kısıtlar →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

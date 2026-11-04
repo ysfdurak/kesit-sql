@@ -1,0 +1,119 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Büyük veri: partition, clustering, dosya formatları | Kesit SQL</title><meta name="description" content="Petabayt ölçeğinde SQL'in hızlı ve ucuz çalışması."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/de-partition/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Büyük veri: partition, clustering, dosya formatları"><meta property="og:description" content="Petabayt ölçeğinde SQL'in hızlı ve ucuz çalışması."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/de-partition/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Büyük veri: partition, clustering, dosya formatları","description":"Petabayt ölçeğinde SQL'in hızlı ve ucuz çalışması.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/de-partition/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Veri Mühendisliği</span><h1>Büyük veri: partition, clustering, dosya formatları</h1><p class="st-l">Petabayt ölçeğinde SQL'in hızlı ve ucuz çalışması.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-de-partition">Uygulamada aç, 10 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Partitioning (bölümleme)</h2>
+<p>Tablo, bir sütuna (çoğunlukla tarih) göre fiziksel parçalara ayrılır. <code>WHERE event_date = '2024-12-01'</code> yazdığında motor sadece o günün bölümünü okur (<b>partition pruning</b>).</p>
+<pre class="code" data-norun>-- BigQuery
+CREATE TABLE analytics.events
+PARTITION BY DATE(event_time)
+CLUSTER BY user_id, event_type AS
+SELECT * FROM raw.events;</pre>
+<h2>Clustering / sıralama anahtarı</h2>
+<p>Bölüm içindeki veriyi belirli sütunlara göre sıralı tutar; filtrelenen bloklar atlanır (Snowflake micro-partition, Redshift sort key, Delta Z-order).</p>
+<h2>Dosya formatları</h2>
+<table><tr><th>Format</th><th>Yapı</th><th>Not</th></tr>
+<tr><td>CSV / JSON</td><td>Satır, metin</td><td>İnsan okur, büyük ve yavaş</td></tr>
+<tr><td>Parquet / ORC</td><td>Sütun tabanlı, sıkıştırılmış, şemalı</td><td>Analitik için standart</td></tr>
+<tr><td>Avro</td><td>Satır tabanlı, şemalı</td><td>Akış ve şema evrimi</td></tr>
+</table>
+<h2>Maliyet bilinci</h2>
+<ul><li>Sütun tabanlı ambarlarda <b>SELECT *</b> taranan veri miktarını (ve faturayı) katlar.</li><li>Partition filtresi olmayan sorguları engelleyen ayarlar (require partition filter) kullan.</li><li>Sık kullanılan ağır sorguları materialized view veya özet tabloya çevir.</li></ul>
+<h2>Derinleş: bölüm budamasını gerçekten çalıştırmak</h2>
+<p><b>Bölüm budaması</b> (partition pruning), sorgu motorunun filtreye bakarak okunması gereksiz bölümleri hiç açmamasıdır. Bulut ambarlarında taranan bayt faturalandığı için bu doğrudan para demektir: 3 yıllık olay tablosunda bir günlük sorgu, budama çalışırsa verinin yaklaşık 1/1000'ini okur.</p>
+<h3>Budamayı bozan yazımlar</h3>
+<p>Budama, filtre <b>bölümleme sütununun kendisi</b> üzerinde ve sabit değerlerle yazıldığında çalışır. Sütuna fonksiyon uygularsan motor çoğu durumda hangi bölümlere bakacağını çıkaramaz:</p>
+<pre class="code">-- Budama dostu değil: sütun fonksiyonun içinde
+SELECT COUNT(*) AS adet, ROUND(SUM(amount)) AS toplam
+FROM bank_txns
+WHERE strftime('%Y-%m', txn_time) = '2024-03';
+
+-- Budama dostu: sütun yalın, sınırlar sabit
+SELECT COUNT(*) AS adet, ROUND(SUM(amount)) AS toplam
+FROM bank_txns
+WHERE txn_time >= '2024-03-01' AND txn_time &lt; '2024-04-01';</pre>
+<p>İki sorgu da aynı sonucu (3.510 işlem) verir; ama bölümlenmiş bir tabloda ilki tüm bölümleri tarar. Aynı ilke indeksler için de geçerlidir (sargable koşul). Benzer tuzaklar: <code>CAST(tarih AS STRING) LIKE '2024%'</code>, alt sorgudan gelen dinamik tarih (bazı motorlar budayamaz), bölüm sütununu hiç filtrelememek.</p>
+<h3>Bölüm büyüklüğünü seçmek</h3>
+<pre class="code">SELECT COUNT(*) AS satir,
+       COUNT(DISTINCT date(txn_time)) AS gunluk_bolum,
+       COUNT(DISTINCT strftime('%Y-%m', txn_time)) AS aylik_bolum,
+       ROUND(1.0 * COUNT(*) / COUNT(DISTINCT date(txn_time))) AS gun_basina_satir
+FROM bank_txns;</pre>
+<p>Ilgaz Bank'ta 2024'te 42.284 işlem var: günlük bölümlemede 366 bölüm ve bölüm başına yaklaşık 116 satır. Bu, gerçek bir ambar için <b>fazla küçük</b> bir bölümdür; her bölümün dosya ve meta veri maliyeti olduğundan çok sayıda küçük bölüm sorguyu yavaşlatır. Kural olarak bölüm başına yüzlerce MB – birkaç GB hedeflenir; küçük tablolarda aylık bölüm ya da hiç bölümlememek daha iyidir.</p>
+<table><tr><th>Teknik</th><th>Ne yapar?</th><th>İyi olduğu filtre</th></tr>
+<tr><td>Partition</td><td>Veriyi fiziksel parçalara böler</td><td>Tarih aralığı</td></tr>
+<tr><td>Clustering / sort key</td><td>Bölüm içinde sıralı tutar, blok atlar</td><td>Yüksek kardinaliteli eşitlik (user_id)</td></tr>
+<tr><td>İndeks (OLTP)</td><td>Satır konumuna hızlı erişim</td><td>Az sayıda satır döndüren arama</td></tr>
+<tr><td>Materialized view</td><td>Sonucu önceden hesaplar</td><td>Sık tekrarlanan ağır toplama</td></tr></table>
+<div class="tip"><b>Sıcak bölüm</b>Bölümler eşit büyüklükte olmayabilir. Ilgaz Bank'ta en kalabalık günler ay sonlarıdır (31 Aralık 201 işlem). Ay sonu raporları bu bölümlere yüklenir; kapasite planlamasında ortalamaya değil en büyük bölüme bak.</div>
+<h2>Bölüm eleme (partition pruning): gerçek çıktı</h2>
+<p><code>bank_txns</code> verisini PostgreSQL'de çeyreklere bölünmüş bir tabloya aldık (<code>tx_bolum</code>). Aşağıdakiler PostgreSQL 16.4 üzerinde üretilen gerçek planlardır.</p>
+<h3>Bölüm sütunu yalın: tek bölüm okunur</h3>
+<pre class="code" data-norun>EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT COUNT(*) FROM tx_bolum WHERE txn_time >= '2024-11-01' AND txn_time &lt; '2024-12-01';</pre><p class="plan-etiket">Gerçek çıktı (PostgreSQL 16.4, PGlite)</p><pre class="plan-cikti" tabindex="0">Aggregate  (cost=270.09..270.10 rows=1 width=8) (actual rows=1 loops=1)
+  Buffers: shared hit=100
+  ->  Seq Scan on tx_2024q4 tx_bolum  (cost=0.00..261.09 rows=3600 width=0) (actual rows=3590 loops=1)
+        Filter: ((txn_time >= '2024-11-01 00:00:00'::timestamp without time zone) AND (txn_time &lt; '2024-12-01 00:00:00'::timestamp without time zone))
+        Rows Removed by Filter: 7149
+        Buffers: shared hit=100</pre>
+<h3>Sütun fonksiyonda: bütün bölümler okunur</h3>
+<pre class="code" data-norun>EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT COUNT(*) FROM tx_bolum WHERE EXTRACT(MONTH FROM txn_time) = 11;</pre><p class="plan-etiket">Gerçek çıktı (PostgreSQL 16.4, PGlite)</p><pre class="plan-cikti" tabindex="0">Aggregate  (cost=1027.84..1027.85 rows=1 width=8) (actual rows=1 loops=1)
+  Buffers: shared hit=392
+  ->  Append  (cost=0.00..1027.32 rows=211 width=0) (actual rows=3590 loops=1)
+        Buffers: shared hit=392
+        ->  Seq Scan on tx_2024q1 tx_bolum_1  (cost=0.00..251.73 rows=52 width=0) (actual rows=0 loops=1)
+              Filter: (EXTRACT(month FROM txn_time) = '11'::numeric)
+              Rows Removed by Filter: 10382
+              Buffers: shared hit=96
+        ->  Seq Scan on tx_2024q2 tx_bolum_2  (cost=0.00..254.42 rows=52 width=0) (actual rows=0 loops=1)
+              Filter: (EXTRACT(month FROM txn_time) = '11'::numeric)
+              Rows Removed by Filter: 10495
+              Buffers: shared hit=97
+        ->  Seq Scan on tx_2024q3 tx_bolum_3  (cost=0.00..259.02 rows=53 width=0) (actual rows=0 loops=1)
+              Filter: (EXTRACT(month FROM txn_time) = '11'::numeric)
+              Rows Removed by Filter: 10668
+              Buffers: shared hit=99
+        ->  Seq Scan on tx_2024q4 tx_bolum_4  (cost=0.00..261.09 rows=54 width=0) (actual rows=3590 loops=1)
+              Filter: (EXTRACT(month FROM txn_time) = '11'::numeric)
+              Rows Removed by Filter: 7149
+              Buffers: shared hit=100</pre>
+<p>Aynı sonuç, ama 100 yerine 392 sayfa.</p>
+<h3>Alt sorgudan gelen tarih: çalışma anında eleme</h3>
+<pre class="code" data-norun>EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT COUNT(*) FROM tx_bolum WHERE txn_time >= (SELECT MAX(txn_time) - INTERVAL '30 days' FROM bank_txns);</pre><p class="plan-etiket">Gerçek çıktı (PostgreSQL 16.4, PGlite)</p><pre class="plan-cikti" tabindex="0">Aggregate  (cost=1945.83..1945.84 rows=1 width=8) (actual rows=1 loops=1)
+  Buffers: shared hit=491
+  InitPlan 1 (returns $0)
+    ->  Aggregate  (cost=919.55..919.56 rows=1 width=8) (actual rows=1 loops=1)
+          Buffers: shared hit=391
+          ->  Seq Scan on bank_txns  (cost=0.00..813.84 rows=42284 width=8) (actual rows=42284 loops=1)
+                Buffers: shared hit=391
+  ->  Append  (cost=0.00..991.02 rows=14095 width=0) (actual rows=3462 loops=1)
+        Buffers: shared hit=491
+        ->  Seq Scan on tx_2024q1 tx_bolum_1  (cost=0.00..225.78 rows=3461 width=0) (never executed)
+              Filter: (txn_time >= $0)
+        ->  Seq Scan on tx_2024q2 tx_bolum_2  (cost=0.00..228.19 rows=3498 width=0) (never executed)
+              Filter: (txn_time >= $0)
+        ->  Seq Scan on tx_2024q3 tx_bolum_3  (cost=0.00..232.35 rows=3556 width=0) (never executed)
+              Filter: (txn_time >= $0)
+        ->  Seq Scan on tx_2024q4 tx_bolum_4  (cost=0.00..234.24 rows=3580 width=0) (actual rows=3462 loops=1)
+              Filter: (txn_time >= $0)
+              Rows Removed by Filter: 7277
+              Buffers: shared hit=100</pre>
+<p>PostgreSQL değeri planlama sırasında bilmiyor, ama çalışırken bölümleri eliyor. Bu yüzden diğer bölümler <code>never executed</code> yazıyor. Motordan motora değişen konu budur: BigQuery belgesine göre alt sorgu sonucuyla karşılaştırma bölüm elemez, tarih sabit bir ifade olmalıdır.</p>
+<h2>BigQuery bölüm kuralları (belgeden)</h2>
+<ul>
+<li>Filtre bölüm sütunu üzerinde olmalı, sütun karşılaştırmanın bir tarafında yalın kalmalı.</li>
+<li>Sütunu başka bir sütunla ya da alt sorguyla karşılaştırmak eleme yapmaz.</li>
+<li>Başka sütunlarla <code>AND</code> ile birleşebilir, <code>OR</code> elemeyi bozar.</li>
+<li>Bazı yerleşik zaman fonksiyonları desteklenir, diğer fonksiyonlar ve karmaşık matematik tam tarama ister.</li>
+<li>Elemeyi doğrulamak için kuru çalıştırma (dry run) ile tahmini baytı kontrol et.</li>
+</ul>
+<p>SQLite'ın bölümleme özelliği yok. Bu yüzden görevlerde mantığı aralık koşulu ve indeksle çalıştırıyoruz, gerçek bölüm davranışını yukarıdaki çıktılardan okuyoruz.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-de-partition">Alıştırmalara geç (10)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../de-dbt/">← dbt ile SQL dönüşüm katmanı: modeller ve testler</a><a href="../ai-giris/">Yapay zekâyla SQL yazmak: doğru soruyu sormak →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

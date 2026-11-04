@@ -1,0 +1,43 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JOIN ile özetleme: satır çoğalması ve önce özetle sonra birleştir | Kesit SQL</title><meta name="description" content="Bire-çok birleştirmede toplamların şişmesi ve doğru sıralama."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/join-ozet/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="JOIN ile özetleme: satır çoğalması ve önce özetle sonra birleştir"><meta property="og:description" content="Bire-çok birleştirmede toplamların şişmesi ve doğru sıralama."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/join-ozet/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"JOIN ile özetleme: satır çoğalması ve önce özetle sonra birleştir","description":"Bire-çok birleştirmede toplamların şişmesi ve doğru sıralama.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/join-ozet/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Tabloları Birleştirme</span><h1>JOIN ile özetleme: satır çoğalması ve önce özetle sonra birleştir</h1><p class="st-l">Bire-çok birleştirmede toplamların şişmesi ve doğru sıralama.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-join-ozet">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Sorun: şişen toplamlar</h2>
+<p>Müşteri tablosunu siparişlerle, siparişleri satırlarla birleştirdiğinde her müşteri, sipariş satırı kadar tekrar eder. Bu satırlarda müşteri düzeyindeki bir değeri (ör. sipariş sayısı) toplarsan sonuç şişer.</p>
+<pre class="code">-- YANLIŞ: sipariş sayısı satır sayısı kadar şişiyor
+SELECT c.segment, COUNT(o.order_id) AS siparis
+FROM customers c
+JOIN orders o       ON o.customer_id = c.customer_id
+JOIN order_items oi ON oi.order_id = o.order_id
+GROUP BY c.segment;</pre>
+<pre class="code">-- DOĞRU 1: tekrarsız say
+SELECT c.segment, COUNT(DISTINCT o.order_id) AS siparis
+FROM customers c
+JOIN orders o       ON o.customer_id = c.customer_id
+JOIN order_items oi ON oi.order_id = o.order_id
+GROUP BY c.segment;</pre>
+<h2>Önce özetle, sonra birleştir</h2>
+<p>İki farklı ayrıntı düzeyindeki ölçüyü (sipariş sayısı ve ciro) birlikte istiyorsan her birini kendi düzeyinde özetleyip sonra birleştir:</p>
+<pre class="code">WITH s AS (                       -- müşteri başına sipariş sayısı
+  SELECT customer_id, COUNT(*) AS siparis FROM orders GROUP BY customer_id
+), c AS (                         -- müşteri başına net ciro
+  SELECT o.customer_id, SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) AS ciro
+  FROM orders o JOIN order_items oi ON oi.order_id = o.order_id
+  WHERE o.status = 'delivered'
+  GROUP BY o.customer_id
+)
+SELECT s.customer_id, s.siparis, ROUND(c.ciro, 0) AS ciro
+FROM s JOIN c ON c.customer_id = s.customer_id
+ORDER BY ciro DESC
+LIMIT 5;</pre>
+<div class="tip"><b>Sağlama</b>Birleştirmeden önce ve sonra satır sayısını ve bir toplamı karşılaştır. Tutmuyorsa bir yerde çoğalma vardır.</div>
+<h2>Ayrıntı düzeyi (grain)</h2>
+<p>Her tablonun bir satırı neyi temsil eder? <code>orders</code>: bir sipariş; <code>order_items</code>: bir sipariş satırı. Sorgunun sonucundaki bir satırın neyi temsil edeceğini önceden söylemek, çoğalma hatalarının çoğunu önler.</p>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-join-ozet">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../exists-anyall/">← EXISTS, NOT EXISTS, ANY ve ALL: yarı ve karşıt birleştirmeler</a><a href="../sik-hatalar/">Sık yapılan SQL hataları: düzelt ve öğren →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,60 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Büyük sorgu 4: havayolu günlük operasyon panosu | Kesit SQL</title><meta name="description" content="Uçuş, gün ve neden düzeylerini ayrı CTE'lerde kurup tek pano satırında birleştirmek; günün başlıca rötar nedeni ve 7 günlük hareketli dakiklik."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/bs-ops/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Büyük sorgu 4: havayolu günlük operasyon panosu"><meta property="og:description" content="Uçuş, gün ve neden düzeylerini ayrı CTE'lerde kurup tek pano satırında birleştirmek; günün başlıca rötar nedeni ve 7 günlük hareketli dakiklik."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/bs-ops/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Büyük sorgu 4: havayolu günlük operasyon panosu","description":"Uçuş, gün ve neden düzeylerini ayrı CTE'lerde kurup tek pano satırında birleştirmek; günün başlıca rötar nedeni ve 7 günlük hareketli dakiklik.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/bs-ops/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Büyük Sorgular</span><h1>Büyük sorgu 4: havayolu günlük operasyon panosu</h1><p class="st-l">Uçuş, gün ve neden düzeylerini ayrı CTE'lerde kurup tek pano satırında birleştirmek; günün başlıca rötar nedeni ve 7 günlük hareketli dakiklik.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-bs-ops">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Soru</h2>
+<p>Kanat Havayolları operasyon merkezi her sabah bir pano açıyor: Dün kaç uçuş planlandı, kaçı iptal edildi, zamanında kalkış oranı ne, son yedi günün eğilimi ne, rötarların başlıca nedeni neydi? Bu soruların her biri farklı bir grain düzeyinde hesaplanır ve sonunda gün düzeyinde birleşir.</p>
+<h2>Sorgu</h2>
+<div class="note"><b>Büyük sorgu nasıl okunur?</b>Yukarıdan aşağı, her CTE'yi ayrı bir tablo gibi düşün. Bir adımı anlamadıysan o CTE'nin adını en sondaki SELECT'e yazıp yalnızca onu çalıştır: <code>SELECT * FROM adim_adi LIMIT 20;</code></div>
+<pre class="code">WITH ucus AS (           -- 1) Uçuş düzeyi: gün, gecikme, iptal bayrağı
+  SELECT f.flight_id, date(f.sched_dep) AS gun, f.status,
+         ROUND((julianday(f.actual_dep) - julianday(f.sched_dep)) * 1440) AS gecikme
+  FROM hv_flights f
+  WHERE f.sched_dep >= '2024-12-01' AND f.sched_dep < '2025-01-01'
+),
+gunluk AS (              -- 2) Gün düzeyi: planlanan, iptal, zamanında kalkan
+  SELECT gun,
+         COUNT(*) AS planlanan,
+         SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS iptal,
+         SUM(CASE WHEN gecikme <= 15 THEN 1 ELSE 0 END) AS zamaninda,
+         COUNT(gecikme) AS kalkan
+  FROM ucus
+  GROUP BY gun
+),
+neden AS (               -- 3) Her günün rötar nedenleri ve dakikaları
+  SELECT u.gun, d.reason, SUM(d.minutes) AS dakika
+  FROM hv_delays d
+  JOIN ucus u ON u.flight_id = d.flight_id
+  GROUP BY u.gun, d.reason
+),
+baslica AS (             -- 4) Günün en çok dakika getiren nedeni (eşitlikte alfabetik)
+  SELECT gun, reason, dakika,
+         ROW_NUMBER() OVER (PARTITION BY gun ORDER BY dakika DESC, reason) AS sira
+  FROM neden
+)
+SELECT g.gun,                 -- 5) Pano: günlük değerler + 7 günlük hareketli zamanında kalkış
+       g.planlanan, g.iptal,
+       ROUND(100.0 * g.zamaninda / g.kalkan, 1) AS otp,
+       ROUND(100.0 * SUM(g.zamaninda) OVER w / SUM(g.kalkan) OVER w, 1) AS otp_7gun,
+       b.reason AS baslica_neden,
+       b.dakika AS neden_dk
+FROM gunluk g
+LEFT JOIN baslica b ON b.gun = g.gun AND b.sira = 1
+WINDOW w AS (ORDER BY g.gun ROWS BETWEEN 6 PRECEDING AND CURRENT ROW)
+ORDER BY g.gun;</pre>
+<h2>Adım adım</h2>
+<table><tr><th>Adım</th><th>Ne yapar?</th><th>Çıktının bir satırı</th></tr><tr><td><code>ucus</code></td><td>Aralık uçuşları; gün, durum ve kalkış gecikmesi</td><td>2341, 2024-12-05, landed, 22</td></tr><tr><td><code>gunluk</code></td><td>Gün düzeyi sayımlar; kalkan = gecikmesi bilinen uçuş</td><td>2024-12-05, 27, 1, 15, 26</td></tr><tr><td><code>neden</code></td><td>Gün × neden düzeyinde rötar dakikası</td><td>2024-12-05, hava, 180</td></tr><tr><td><code>baslica</code></td><td>Her gün için nedenleri dakikaya göre sıralar</td><td>hava, 180, sıra 1</td></tr><tr><td><code>son SELECT</code></td><td>Günlük satıra en başlıca nedeni LEFT JOIN ile ekler; hareketli oran WINDOW ile</td><td>2024-12-05, 27, 1, 57.7, 61.2, hava, 180</td></tr></table>
+<h2>İki önemli ayrıntı</h2>
+<ul>
+<li><b>Hareketli oran:</b> 7 günün oranlarının ortalaması değil, 7 günün <i>toplam</i> zamanında kalkışının toplam kalkışa oranıdır: <code>SUM(zamaninda) OVER w / SUM(kalkan) OVER w</code>.</li>
+<li><b>Adlandırılmış pencere:</b> <code>WINDOW w AS (...)</code> aynı çerçeveyi iki kez yazmaktan kurtarır. SQL Server 2022 öncesi ve bazı SQL türleri desteklemez; o durumda çerçeve her OVER içinde tekrarlanır.</li>
+</ul>
+<div class="tip"><b>Neden LEFT JOIN?</b>Hiç rötar yaşanmayan bir günde <code>baslica</code> satırı yoktur. INNER JOIN o günü panodan düşürür; LEFT JOIN günü korur ve nedeni boş bırakır.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-bs-ops">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../bs-rfm/">← Büyük sorgu 3: RFM puanlama ve müşteri segmentleri</a><a href="../bs-aml/">Büyük sorgu 5: bankada şüpheli işlem kural motoru →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

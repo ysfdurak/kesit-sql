@@ -1,0 +1,53 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tasarım kalıpları ve kötü pratikler: soft delete, denetim sütunları, EAV, JSON mu tablo mu? | Kesit SQL</title><meta name="description" content="Gerçek projelerde sık karşılaşılan tasarım kararları ve sonuçları."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/tasarim-kaliplari/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Tasarım kalıpları ve kötü pratikler: soft delete, denetim sütunları, EAV, JSON mu tablo mu?"><meta property="og:description" content="Gerçek projelerde sık karşılaşılan tasarım kararları ve sonuçları."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/tasarim-kaliplari/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Tasarım kalıpları ve kötü pratikler: soft delete, denetim sütunları, EAV, JSON mu tablo mu?","description":"Gerçek projelerde sık karşılaşılan tasarım kararları ve sonuçları.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/tasarim-kaliplari/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veritabanı Tasarımı</span><h1>Tasarım kalıpları ve kötü pratikler: soft delete, denetim sütunları, EAV, JSON mu tablo mu?</h1><p class="st-l">Gerçek projelerde sık karşılaşılan tasarım kararları ve sonuçları.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-tasarim-kaliplari">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Denetim sütunları</h2>
+<p>Neredeyse her iş tablosunda bulunur: <code>created_at</code>, <code>created_by</code>, <code>updated_at</code>, <code>updated_by</code>. Varsayılan değerle (<code>DEFAULT CURRENT_TIMESTAMP</code>) ve güncellemede trigger veya uygulama katmanıyla doldurulur. Ayrıntılı geçmiş gerekiyorsa temporal tablo veya ayrı bir geçmiş tablosu.</p>
+<h2>Soft delete (yumuşak silme)</h2>
+<p>Satırı silmek yerine <code>is_deleted = 1</code> veya <code>deleted_at</code> işaretlemek. Geri alınabilirlik ve denetim sağlar ama bedeli vardır:</p>
+<ul>
+<li>Her sorguya <code>WHERE deleted_at IS NULL</code> eklemek gerekir; unutulursa silinmiş veri raporlara karışır. Çözüm: aktif satırları gösteren bir <b>görünüm</b>.</li>
+<li>Tekil kısıtlar bozulur (silinen e-postayla yeni kayıt açılamaz). Çözüm: filtreli/kısmi indeks (<code>CREATE UNIQUE INDEX ... WHERE deleted_at IS NULL</code>, PostgreSQL ve SQL Server destekler).</li>
+<li>KVKK açısından “silindi” sayılmaz; kişisel veri imhası ayrıca yapılmalı.</li>
+</ul>
+<pre class="code">CREATE TABLE etiket (
+  etiket_id  INTEGER PRIMARY KEY,
+  ad         TEXT NOT NULL,
+  deleted_at TEXT
+);
+INSERT INTO etiket VALUES (1, 'kampanya', NULL), (2, 'yeni', '2024-11-01'), (3, 'indirim', NULL);
+CREATE VIEW v_etiket AS SELECT etiket_id, ad FROM etiket WHERE deleted_at IS NULL;
+SELECT * FROM v_etiket;</pre>
+<h2>EAV: varlık-öznitelik-değer tuzağı</h2>
+<p>“Her ürünün farklı özellikleri var” diye tek bir <code>(urun_id, ozellik, deger)</code> tablosu kurmak esnek görünür ama:</p>
+<ul>
+<li>Tip güvenliği yoktur (her değer metin), kısıt yazılamaz.</li>
+<li>Basit bir rapor bile çok sayıda self join veya pivot gerektirir.</li>
+<li>İndekslemek ve optimize etmek zordur.</li>
+</ul>
+<p>Alternatifler: ortak alanlar sütun, değişken alanlar <b>JSON</b> sütunu (PostgreSQL <code>jsonb</code> + GIN indeks, SQL Server JSON fonksiyonları, MySQL JSON); ya da alt tip tabloları.</p>
+<h2>JSON mu, tablo mu?</h2>
+<table>
+<tr><th>Tablo/sütun seç</th><th>JSON seç</th></tr>
+<tr><td>Alan sık filtreleniyor, birleştiriliyor, toplanıyor</td><td>Alan yalnızca saklanıp aynen gösteriliyor</td></tr>
+<tr><td>Kısıt ve tip güvenliği gerekiyor</td><td>Yapı kaynağa göre değişiyor (API yanıtları, olay yükleri)</td></tr>
+<tr><td>Raporlama ve BI kullanacak</td><td>Seyrek, isteğe bağlı nitelikler</td></tr>
+</table>
+<h2>Diğer kalıplar ve tuzaklar</h2>
+<ul>
+<li><b>Virgülle ayrılmış liste</b> (<code>etiketler = 'a,b,c'</code>): 1NF ihlali; ara tablo kullan.</li>
+<li><b>Çok amaçlı arama tablosu</b> (tüm kodlar tek tabloda, <code>tur</code> sütunuyla): yabancı anahtar kurulamaz; her kod listesi ayrı tablo.</li>
+<li><b>Polimorfik ilişki</b> (<code>hedef_tur, hedef_id</code>): yabancı anahtar yok; her hedef için ayrı nullable FK sütunu veya ayrı ara tablo.</li>
+<li><b>Para birimi olmadan tutar</b>: çok para birimli sistemde <code>currency</code> sütunu şart.</li>
+<li><b>Adlandırma</b>: tutarlı tekil/çoğul, snake_case, anlamlı adlar (<code>tarih1</code> değil <code>order_date</code>); ayrılmış kelimelerden kaçın.</li>
+<li><b>Durum sütunu</b>: serbest metin yerine sınırlı değer listesi (CHECK veya arama tablosu).</li>
+</ul>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-tasarim-kaliplari">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../normalizasyon/">← Normalizasyon: 1NF, 2NF, 3NF, BCNF</a><a href="../index/">İndeksler (index) ve sorgu planı →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

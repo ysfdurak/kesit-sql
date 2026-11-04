@@ -1,0 +1,43 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Uygulama veritabanı desenleri: yumuşak silme, denetim sütunları, iyimser kilit | Kesit SQL</title><meta name="description" content="Gerçek uygulamalarda her tabloda karşılaşılan kalıplar."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/be-desenler/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Uygulama veritabanı desenleri: yumuşak silme, denetim sütunları, iyimser kilit"><meta property="og:description" content="Gerçek uygulamalarda her tabloda karşılaşılan kalıplar."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/be-desenler/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Uygulama veritabanı desenleri: yumuşak silme, denetim sütunları, iyimser kilit","description":"Gerçek uygulamalarda her tabloda karşılaşılan kalıplar.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/be-desenler/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Uygulama Geliştirme</span><h1>Uygulama veritabanı desenleri: yumuşak silme, denetim sütunları, iyimser kilit</h1><p class="st-l">Gerçek uygulamalarda her tabloda karşılaşılan kalıplar.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-be-desenler">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Yumuşak silme (soft delete)</h2>
+<p>Satırı gerçekten silmek yerine <code>deleted_at</code> sütununa tarih yazılır. Kayıt geri getirilebilir, geçmiş raporlar bozulmaz. Bedeli: <b>her sorguda</b> <code>WHERE deleted_at IS NULL</code> unutulmamalıdır. Bunu garanti etmenin yolu, uygulamanın tabloya değil bir görünüme bakmasıdır.</p>
+<pre class="code">ALTER TABLE products ADD COLUMN deleted_at TEXT;
+
+UPDATE products SET deleted_at = '2024-12-31' WHERE product_id IN (39, 40);
+
+CREATE VIEW v_aktif_urunler AS
+SELECT product_id, name, category, price
+FROM products
+WHERE deleted_at IS NULL;
+
+SELECT COUNT(*) AS aktif FROM v_aktif_urunler;</pre>
+<div class="warn"><b>Benzersizlik tuzağı</b>E-posta tekil olmalıysa, silinmiş bir kaydın e-postası yeni kayda engel olur. SQL Server ve PostgreSQL'de filtreli/kısmi tekil indeks (<code>WHERE deleted_at IS NULL</code>) bunu çözer.</div>
+<h2>Denetim (audit) sütunları</h2>
+<p>Hemen her tabloda bulunur: <code>created_at</code>, <code>created_by</code>, <code>updated_at</code>, <code>updated_by</code>. Oluşturma zamanı varsayılan değerle, güncelleme zamanı uygulama veya trigger ile doldurulur. Değerlerin tam geçmişi gerekiyorsa ayrı bir geçmiş tablosu (veya SQL Server'ın <b>temporal table</b> özelliği) kullanılır.</p>
+<h2>İyimser kilit (optimistic concurrency)</h2>
+<p>İki kullanıcı aynı kaydı açıp düzenliyor. İkincisi kaydettiğinde birincinin değişikliğini <b>sessizce ezmemeli</b>. Çözüm: her satırda bir <code>versiyon</code> sütunu tut; güncellerken okuduğun versiyonu koşula ekle.</p>
+<pre class="code">CREATE TABLE hesap (id INTEGER PRIMARY KEY, bakiye INTEGER, versiyon INTEGER);
+INSERT INTO hesap VALUES (1, 1000, 1);
+
+-- Ayşe ve Mehmet ikisi de versiyon = 1 olarak okudu.
+-- Ayşe önce kaydeder: 1 satır etkilenir, versiyon 2 olur
+UPDATE hesap SET bakiye = 900, versiyon = versiyon + 1 WHERE id = 1 AND versiyon = 1;
+
+-- Mehmet eski versiyonla kaydetmeye çalışır: 0 satır etkilenir
+UPDATE hesap SET bakiye = 1200, versiyon = versiyon + 1 WHERE id = 1 AND versiyon = 1;
+
+SELECT * FROM hesap;</pre>
+<p>Uygulama etkilenen satır sayısına bakar; 0 ise “kayıt siz düzenlerken değişti, yeniden yükleyin” der. SQL Server'da bunun için hazır <code>rowversion</code> veri tipi vardır.</p>
+<h2>Tekrarlanabilir (idempotent) istekler</h2>
+<p>Ödeme gibi işlemlerde ağ hatası yüzünden aynı istek iki kez gelebilir. İsteğe tekil bir <b>idempotency anahtarı</b> verilip tekil kısıtla saklanır; ikinci istek kısıta takılır ve ilk sonucun aynısı döndürülür.</p>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-be-desenler">Alıştırmalara geç (4)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../be-sayfalama/">← Uygulamalarda sayfalama: OFFSET ve keyset</a><a href="../be-kilit/">Eşzamanlılık uygulaması: çift rezervasyon, FOR UPDATE, SKIP LOCKED →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

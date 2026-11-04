@@ -1,0 +1,42 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SQL nerede yazılır? Araçlar ve komut grupları | Kesit SQL</title><meta name="description" content="SSMS, DBeaver, pgAdmin gibi araçlar; DDL, DML, DCL, TCL ayrımı."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/araclar/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="SQL nerede yazılır? Araçlar ve komut grupları"><meta property="og:description" content="SSMS, DBeaver, pgAdmin gibi araçlar; DDL, DML, DCL, TCL ayrımı."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/araclar/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"SQL nerede yazılır? Araçlar ve komut grupları","description":"SSMS, DBeaver, pgAdmin gibi araçlar; DDL, DML, DCL, TCL ayrımı.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/araclar/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Temeller</span><h1>SQL nerede yazılır? Araçlar ve komut grupları</h1><p class="st-l">SSMS, DBeaver, pgAdmin gibi araçlar; DDL, DML, DCL, TCL ayrımı.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-araclar">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Sunucu ve istemci</h2>
+<p>Veritabanı bir <b>sunucu</b> programıdır (SQL Server, PostgreSQL, MySQL, Oracle). Sorguyu ise bir <b>istemci araçta</b> yazarsın; araç sorguyu sunucuya gönderir, sonucu tablo olarak gösterir. Bu uygulamada istemci de veritabanı da tarayıcının içinde çalışır. İş hayatında ise genellikle şu araçlardan birini kullanırsın:</p>
+<table>
+<tr><th>SQL türü</th><th>Resmi araç</th><th>Not</th></tr>
+<tr><td>SQL Server</td><td>SQL Server Management Studio (SSMS)</td><td>Windows'ta en yaygın araç. VS Code için resmi <b>MSSQL eklentisi</b> de var.</td></tr>
+<tr><td>PostgreSQL</td><td>pgAdmin, psql (komut satırı)</td><td>psql, sunucu yönetiminde çok kullanılır.</td></tr>
+<tr><td>MySQL</td><td>MySQL Workbench</td><td>Modelleme (ER diyagramı) özellikleri de vardır.</td></tr>
+<tr><td>Oracle</td><td>SQL Developer, SQL*Plus</td><td>PL/SQL geliştirme için.</td></tr>
+<tr><td>SQLite</td><td>DB Browser for SQLite</td><td>Tek dosyalık veritabanlarını açar.</td></tr>
+<tr><td>Hepsi</td><td>DBeaver, DataGrip, VS Code</td><td>Birden çok SQL türüyle çalışanlar için tek araç.</td></tr>
+</table>
+<div class="tip"><b>Kendi bilgisayarında denemek istersen</b>SQL Server'ın <b>Developer</b> ve <b>Express</b> sürümleri, PostgreSQL ve MySQL'in topluluk sürümleri ücretsizdir. Docker biliyorsan tek komutla bir veritabanı sunucusu başlatabilirsin.</div>
+<h2>Sorgu nasıl çalıştırılır?</h2>
+<ul>
+<li><b>SSMS:</b> F5 veya Ctrl+E. Bir bölümü seçip F5'e basarsan <b>yalnızca seçili kısım</b> çalışır; bu, uzun betiklerde en çok kullanılan alışkanlıktır.</li>
+<li><b>SSMS'te GO:</b> Betiği “batch”lere böler. GO bir SQL komutu değil, aracın ayırıcısıdır.</li>
+<li><b>pgAdmin / DBeaver:</b> Ctrl+Enter (imlecin bulunduğu ifade) ya da F5.</li>
+<li><b>Bu uygulama:</b> Ctrl+Enter (Mac'te ⌘+Enter) sorguyu kontrol eder.</li>
+</ul>
+<h2>SQL komut grupları</h2>
+<p>SQL komutları ne iş yaptıklarına göre beş gruba ayrılır. İş ilanlarında ve mülakatlarda bu kısaltmalar sık geçer:</p>
+<table>
+<tr><th>Grup</th><th>Açılımı</th><th>Komutlar</th><th>Ne yapar?</th></tr>
+<tr><td><b>DQL</b></td><td>Data Query Language</td><td><code>SELECT</code></td><td>Veriyi okur</td></tr>
+<tr><td><b>DML</b></td><td>Data Manipulation Language</td><td><code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>, <code>MERGE</code></td><td>Veriyi değiştirir</td></tr>
+<tr><td><b>DDL</b></td><td>Data Definition Language</td><td><code>CREATE</code>, <code>ALTER</code>, <code>DROP</code>, <code>TRUNCATE</code></td><td>Tablo gibi nesneleri tanımlar</td></tr>
+<tr><td><b>DCL</b></td><td>Data Control Language</td><td><code>GRANT</code>, <code>REVOKE</code>, <code>DENY</code></td><td>Yetki verir veya alır</td></tr>
+<tr><td><b>TCL</b></td><td>Transaction Control Language</td><td><code>BEGIN</code>, <code>COMMIT</code>, <code>ROLLBACK</code>, <code>SAVEPOINT</code></td><td>İşlemleri yönetir</td></tr>
+</table>
+<div class="note"><b>Bazı kaynaklar DQL'i ayırmaz</b>SELECT'i DML'in içinde sayan kitaplar da var. Önemli olan ayrım şudur: veriyi mi değiştiriyorsun, yapıyı mı, yetkiyi mi?</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-araclar">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../sozdizimi/">← SQL yazım kuralları: anahtar kelime, noktalı virgül, yorum ve tırnak</a><a href="../tarih/">SQL'in tarihi: bir makaleden dünya standardına (isteğe bağlı okuma) →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

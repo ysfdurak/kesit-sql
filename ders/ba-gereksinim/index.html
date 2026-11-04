@@ -1,0 +1,78 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gereksinim yazmak (requirements): iş kuralı, kullanıcı hikâyesi, kabul kriteri, kenar durumlar | Kesit SQL</title><meta name="description" content="İşlevsel ve işlevsel olmayan gereksinim, test edilebilir ifade, INVEST, Given/When/Then, kenar durumları veriden bulmak."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ba-gereksinim/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Gereksinim yazmak (requirements): iş kuralı, kullanıcı hikâyesi, kabul kriteri, kenar durumlar"><meta property="og:description" content="İşlevsel ve işlevsel olmayan gereksinim, test edilebilir ifade, INVEST, Given/When/Then, kenar durumları veriden bulmak."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ba-gereksinim/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Gereksinim yazmak (requirements): iş kuralı, kullanıcı hikâyesi, kabul kriteri, kenar durumlar","description":"İşlevsel ve işlevsel olmayan gereksinim, test edilebilir ifade, INVEST, Given/When/Then, kenar durumları veriden bulmak.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ba-gereksinim/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · BT İş Analizi</span><h1>Gereksinim yazmak (requirements): iş kuralı, kullanıcı hikâyesi, kabul kriteri, kenar durumlar</h1><p class="st-l">İşlevsel ve işlevsel olmayan gereksinim, test edilebilir ifade, INVEST, Given/When/Then, kenar durumları veriden bulmak.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ba-gereksinim">Uygulamada aç, 11 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory"><p>Görüşmeler bitti. Şimdi konuşulanları, başka biri okuyup aynı şeyi yapacak hâle getiriyorsun. İyi bir gereksinimin ölçüsü basit: geliştirici ve test uzmanı birbirine sormadan aynı sonuca varır.</p>
+<h2>Üç tür ifade</h2>
+<table><tr><th>Tür</th><th>Neyi söyler?</th><th>Kupon örneği</th></tr>
+<tr><td><b>İşlevsel gereksinim</b> (functional)</td><td>Sistem ne yapar</td><td>Sistem, geç teslim edilen siparişte müşteriye kupon oluşturur.</td></tr>
+<tr><td><b>İşlevsel olmayan gereksinim</b> (non-functional)</td><td>Sistem bunu hangi nitelikte yapar: hız, güvenlik, kayıt, erişilebilirlik</td><td>Kupon, teslim kaydından en geç 5 dakika sonra görünür.</td></tr>
+<tr><td><b>İş kuralı</b> (business rule)</td><td>Sistemden bağımsız şirket kararı</td><td>Bir müşteri bir takvim ayında en çok 2 kupon alır.</td></tr></table>
+<p>Tutar değişirse kod değil, kural değişmelidir. Bu ayrımı yazmak, geliştiriciye “bu değer sabit mi, ayar mı?” sorusunu baştan sordurur.</p>
+<h2>Belirsizden açığa</h2>
+<table><tr><th>Belirsiz</th><th>Neden sorunlu?</th><th>Test edilebilir hâli</th></tr>
+<tr><td>Geç teslimlerde hızlıca kupon verilir.</td><td>Geç ve hızlı kişiye göre değişir</td><td>Teslim süresi 2.700 saniyeyi aşan siparişte kupon, teslim kaydından en geç 5 dakika sonra oluşur.</td></tr>
+<tr><td>Kupon makul bir tutarda olur.</td><td>Makul bir sayı değil</td><td>Süre 2.700 saniyeyi aşıp 3.600 saniyeyi aşmıyorsa 30 TL, 3.600 saniyeyi aşıyorsa 60 TL.</td></tr>
+<tr><td>Kötüye kullanım engellenir.</td><td>Hangi davranış, ne olur?</td><td>Takvim ayında 2 kupon almış müşteriye yeni kupon üretilmez, kayıt “sınır dolu” nedeniyle loglanır.</td></tr>
+<tr><td>Müşteri bilgilendirilir.</td><td>Hangi kanal, hangi metin?</td><td>Kupon oluşunca uygulama içi bildirim gider; metin ve kanal EK-2'dedir.</td></tr></table>
+<p>“Hızlı, kolay, uygun, gerektiğinde, vb.” sözcüklerini gördüğünde dur. Yerine sayı, koşul ya da liste yaz.</p>
+<h2>Kullanıcı hikâyesi (user story)</h2>
+<p>Agile (çevik) ekiplerde iş çoğu zaman şu kalıpla yazılır: <b>Bir [kim] olarak, [ne] istiyorum, böylece [neden].</b></p>
+<pre class="code" data-norun>Bir müşteri olarak,
+siparişim söz verilen süreyi aştığında otomatik telafi kuponu almak istiyorum,
+böylece destek ekibine yazmadan hakkım olanı alırım.</pre>
+<p>Hikâyenin yeterince iyi olup olmadığını <b>INVEST</b> ile sınarsın:</p>
+<table><tr><th>Harf</th><th>Soru</th><th>Kuponda</th></tr>
+<tr><td><b>I</b>ndependent (bağımsız)</td><td>Başka hikâyeyi beklemeden yapılabilir mi?</td><td>Kupon üretimi ödeme ekranı değişikliğini beklemez</td></tr>
+<tr><td><b>N</b>egotiable (konuşulabilir)</td><td>Ayrıntı ekiple netleşebilir mi?</td><td>Bildirim metni birlikte yazılır</td></tr>
+<tr><td><b>V</b>aluable (değerli)</td><td>Birine değer sağlıyor mu?</td><td>Müşteri ve destek ekibi kazanır</td></tr>
+<tr><td><b>E</b>stimable (tahmin edilebilir)</td><td>Ekip büyüklüğünü kestirebilir mi?</td><td>Kurallar yazılıysa evet</td></tr>
+<tr><td><b>S</b>mall (küçük)</td><td>Bir iterasyona sığıyor mu?</td><td>“Kupon sistemini kur” değil, “geç teslimde kupon üret”</td></tr>
+<tr><td><b>T</b>estable (test edilebilir)</td><td>Bitti diyebilir miyiz?</td><td>Kabul kriterleri var</td></tr></table>
+<h2>Kabul kriteri (acceptance criteria): Given / When / Then</h2>
+<p><b>Given</b> başlangıç durumu, <b>When</b> olay, <b>Then</b> beklenen sonuçtur. Türkçe çalışan ekipler bunu “Diyelim ki / Eğer ki / O zaman” diye de yazabilir.</p>
+<pre class="code" data-norun>Senaryo: 60 dakikayı aşan teslim
+Given durumu "teslim" olan bir sipariş var
+  And sipariş ile teslim arası 3.601 saniye
+  And müşterinin bu ay aldığı kupon sayısı 1
+When kupon işi siparişi değerlendirir
+Then müşteriye 60 TL kupon oluşur
+  And kupon teslim kaydından en geç 5 dakika sonra görünür
+
+Senaryo: İade edilmiş sipariş
+Given durumu "iade" olan bir sipariş var
+  And sipariş ile teslim arası 4.000 saniye
+When kupon işi siparişi değerlendirir
+Then kupon oluşmaz
+
+Senaryo: Kupondan sonra gelen iade
+Given 3.000 saniyede teslim edilen siparişe 30 TL kupon oluşmuş
+  And kupon henüz kullanılmamış
+When sipariş iade edilir
+Then kupon iptal edilir
+  And iptal, sipariş numarasıyla kayda geçer</pre>
+<p>Oluşturma senaryolarının tetikleyicisi tek: teslim kaydı kupon işini başlatır, iş siparişi değerlendirir. Her kriterde aynı cümleyi yaz; farklı yazarsan okuyan iki ayrı olay olduğunu sanar. Üçüncü senaryonun olayı gerçekten farklıdır: iade, kupondan sonra gelir.</p>
+<h2>Kenar durumları veriden bul</h2>
+<p>Toplantıda aklına gelmeyen durumları veri söyler. Her biri bir soru üretir, cevabı bir kural olur.</p>
+<pre class="code">SELECT status, COUNT(*) AS siparis,
+       SUM(CASE WHEN delivered_at IS NULL THEN 1 ELSE 0 END) AS teslim_zamani_bos,
+       SUM(CASE WHEN courier_id IS NULL THEN 1 ELSE 0 END) AS kurye_bos
+FROM lk_orders
+WHERE placed_at >= '2024-10-01' AND placed_at &lt; '2025-01-01'
+GROUP BY status
+ORDER BY status;</pre>
+<table><tr><th>Veride gördüğün</th><th>Doğan soru</th><th>Kural</th></tr>
+<tr><td>356 iptal siparişte teslim zamanı boş, 195 tanesinde kurye de yok</td><td>Süre hesaplanmayan kayıt ne olacak?</td><td>İptalde kupon yok; süre hesaplanmaz</td></tr>
+<tr><td>35 iade siparişi de 45 dakikayı aşmış</td><td>Parası iade edilene bir de kupon mu?</td><td>Yalnız “teslim” durumu kupon alır</td></tr>
+<tr><td>3 teslimat tam 2.700 saniye sürmüş</td><td>“Aşan” mı, “ve üzeri” mi?</td><td>2.700 geç değildir; sınır dahil değil</td></tr>
+<tr><td>32 müşteri-ayda 2'den çok geç teslim var</td><td>Sınır gerçekten çalışır mı?</td><td>Ayda en çok 2; 35 kupon sınırdan düşer</td></tr>
+<tr><td>Dönem sınırında 3 sipariş 1 Ocak 2025'e sarkmış</td><td>Hangi aya yazılır?</td><td>Ay, sipariş zamanına göre belirlenir</td></tr>
+<tr><td>Dönemde 182 iade var, ama iadenin ne zaman yapıldığı tutulmuyor</td><td>Kupon 5 dakikada oluşur, iade sonra gelirse kupon geri alınır mı?</td><td>Öneri: kullanılmamış kupon iptal edilir; kullanılmışsa geri alınmaz. Karar finansın, açık soruya yazılır</td></tr></table>
+<div class="warn"><b>Dakika mı, saniye mi?</b>Süreyi dakikaya kesen bir hesapla “45'ten büyük” yazarsan 45 dakika 30 saniye süren teslimat geç sayılmaz. Bu veride 153 teslimat tam bu aralıkta: toplam 4.590 TL'lik kupon sessizce kaybolur. SQL türlerinin dakika farkı fonksiyonları da aynı davranmaz; SQL Server'ın <code>DATEDIFF(minute, ...)</code> ifadesi dakika sınırı geçişlerini sayar. Bu yüzden kural saniye ile yazıldı. Böyle bir ayrıntı gereksinimde açık yazılmazsa testte değil canlıda ortaya çıkar.</div>
+<p>Çıktın: numaralı gereksinim listesi, iş kuralları tablosu, hikâyeler ve her hikâyenin kabul kriterleri. Bunlar BRD'nin kalbidir.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ba-gereksinim">Alıştırmalara geç (11)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ba-talep/">← Talebi anlamak: asıl sorun, görüşme soruları ve sorunu SQL ile boyutlandırmak</a><a href="../ba-surec/">Süreci çizmek: AS-IS, TO-BE, BPMN, sıra diyagramı (sequence diagram), karar tablosu →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

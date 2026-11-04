@@ -1,0 +1,81 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kullanıcı kabul testi (UAT): senaryolar, test verisi, mutabakat, hata kaydı, onay | Kesit SQL</title><meta name="description" content="Kabul kriterinden test senaryosuna, olumlu, olumsuz ve sınır durumları, SQL ile test verisi ve mutabakat, iyi hata kaydı, önem ve öncelik, UAT onayı."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ba-uat/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Kullanıcı kabul testi (UAT): senaryolar, test verisi, mutabakat, hata kaydı, onay"><meta property="og:description" content="Kabul kriterinden test senaryosuna, olumlu, olumsuz ve sınır durumları, SQL ile test verisi ve mutabakat, iyi hata kaydı, önem ve öncelik, UAT onayı."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ba-uat/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Kullanıcı kabul testi (UAT): senaryolar, test verisi, mutabakat, hata kaydı, onay","description":"Kabul kriterinden test senaryosuna, olumlu, olumsuz ve sınır durumları, SQL ile test verisi ve mutabakat, iyi hata kaydı, önem ve öncelik, UAT onayı.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ba-uat/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · BT İş Analizi</span><h1>Kullanıcı kabul testi (UAT): senaryolar, test verisi, mutabakat, hata kaydı, onay</h1><p class="st-l">Kabul kriterinden test senaryosuna, olumlu, olumsuz ve sınır durumları, SQL ile test verisi ve mutabakat, iyi hata kaydı, önem ve öncelik, UAT onayı.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ba-uat">Uygulamada aç, 11 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory"><p>Geliştirici “bitti” dedi, sistem testi geçti. Sıra <b>kullanıcı kabul testinde</b> (UAT, user acceptance testing): iş birimi, sistemin kendi işini gerçekten çözüp çözmediğine karar verir. İş analisti çoğu ekipte senaryoları hazırlar, testi yürütür ve kararı destekler. Onayı iş birimi verir.</p>
+<table><tr><th>Test</th><th>Soru</th><th>Kim?</th></tr>
+<tr><td>Birim ve entegrasyon testi</td><td>Kod doğru çalışıyor mu?</td><td>Geliştirici</td></tr>
+<tr><td>Sistem testi</td><td>Sistem gereksinimi karşılıyor mu?</td><td>Test uzmanı</td></tr>
+<tr><td>UAT</td><td>Bu işi kabul ediyor muyuz?</td><td>İş birimi, iş analisti destekler</td></tr></table>
+<h2>Kabul kriterinden senaryoya</h2>
+<p>Her kabul kriteri en az bir senaryo olur. Üç tür düşün:</p>
+<ul><li><b>Olumlu</b> (positive): kural işlemeli. 3.000 saniyelik teslimat 30 TL alır.</li>
+<li><b>Olumsuz</b> (negative): sistem bir şey yapmamalı. İptal edilen sipariş kupon almaz.</li>
+<li><b>Sınır</b> (boundary): hatalar en çok sınırda çıkar. 2.700, 2.701, 3.600, 3.601.</li></ul>
+<table><tr><th>Senaryo</th><th>Durum</th><th>Süre</th><th>Bu ayki kupon</th><th>Beklenen</th></tr>
+<tr><td>olumlu-30</td><td>teslim</td><td>3.000</td><td>0</td><td>30</td></tr>
+<tr><td>olumsuz-iptal</td><td>iptal</td><td>boş</td><td>0</td><td>0</td></tr>
+<tr><td>sinir-2700</td><td>teslim</td><td>2.700</td><td>0</td><td>0</td></tr>
+<tr><td>sinir-2701</td><td>teslim</td><td>2.701</td><td>0</td><td>30</td></tr>
+<tr><td>aylik-sinir</td><td>teslim</td><td>4.000</td><td>2</td><td>0</td></tr>
+<tr><td>sonradan-iade</td><td>teslim, sonra iade</td><td>3.000</td><td>0</td><td>30, sonra kupon iptal</td></tr></table>
+<h2>Test verisi</h2>
+<p>Sınır durumu canlı veride her zaman bulunmaz. Test ortamında kendi verini kurarsın. Kişisel veri içeren canlı kaydı test ortamına kopyalama; gerekirse maskele (<b>KVKK</b> dersi isteğe bağlı bölümde). Burada test verisini küçük bir tablo olarak tutuyoruz:</p>
+<pre class="code">CREATE TABLE ba_test (
+  senaryo     VARCHAR(30),
+  status      VARCHAR(10),
+  sure_sn     INT,
+  aylik_kupon INT,
+  beklenen    INT
+);
+INSERT INTO ba_test VALUES ('olumlu-30', 'teslim', 3000, 0, 30);
+INSERT INTO ba_test VALUES ('olumlu-60', 'teslim', 4000, 0, 60);
+INSERT INTO ba_test VALUES ('olumsuz-zamaninda', 'teslim', 1800, 0, 0);
+INSERT INTO ba_test VALUES ('olumsuz-iptal', 'iptal', NULL, 0, 0);
+INSERT INTO ba_test VALUES ('olumsuz-iade', 'iade', 4000, 0, 0);
+INSERT INTO ba_test VALUES ('sinir-2700', 'teslim', 2700, 0, 0);
+INSERT INTO ba_test VALUES ('sinir-2701', 'teslim', 2701, 0, 30);
+INSERT INTO ba_test VALUES ('sinir-3600', 'teslim', 3600, 0, 30);
+INSERT INTO ba_test VALUES ('sinir-3601', 'teslim', 3601, 0, 60);
+INSERT INTO ba_test VALUES ('aylik-sinir', 'teslim', 4000, 2, 0);
+SELECT senaryo, status, sure_sn, aylik_kupon, beklenen FROM ba_test ORDER BY senaryo;</pre>
+<p>Kuralı SQL ile yazıp her senaryoda sonucu karşılaştırmak, geliştiriciden bağımsız ikinci bir hesap demektir. Boş dönen fark sorgusu testin geçtiğini gösterir; bu <b>Veri kalitesi</b> ve <b>SQL kodunu test etmek</b> derslerindeki “hata varsa satır döndür” kalıbıdır.</p>
+<h2>Mutabakat (reconciliation)</h2>
+<p>Test verisi kuralı sınar, mutabakat işi sınar: gerçek dönem verisinde üretilen kuponlar beklenenle aynı mı? Bağımsız bir “beklenen” listesi kur, sonra üç soru sor: fazla kim, eksik kim, tutarı farklı kim?</p>
+<pre class="code">WITH b AS (
+  SELECT order_id,
+         CASE WHEN ROUND((julianday(delivered_at) - julianday(placed_at)) * 86400) > 3600 THEN 60 ELSE 30 END AS tutar
+  FROM lk_orders
+  WHERE status = 'teslim'
+    AND placed_at >= '2024-12-01' AND placed_at &lt; '2025-01-01'
+    AND ROUND((julianday(delivered_at) - julianday(placed_at)) * 86400) > 2700
+)
+SELECT COUNT(*) AS beklenen_kupon, SUM(tutar) AS beklenen_tutar FROM b;</pre>
+<p>Alıştırmalarda hatalı bir kupon işinin çıktısını bu listeyle karşılaştırıp hataları bulacaksın.</p>
+<h2>İyi hata kaydı (defect report)</h2>
+<p>Hata kaydını okuyan, sana sormadan hatayı yeniden üretebilmeli.</p>
+<pre class="code" data-norun>Başlık: Tam 2.700 saniyelik teslimata 30 TL kupon üretiliyor
+Ortam: UAT, sürüm 1.4.0, 12.03 tarihli veri
+Adımlar:
+  1. Teslim süresi tam 2.700 saniye olan sipariş oluştur (test kaydı: sinir-2700)
+  2. Kupon işini çalıştır
+  3. ba_kupon tablosunu sipariş numarasıyla sorgula
+Beklenen: Kupon yok (Kural K2: "aşan" sınırı dahil etmez; GRS-04)
+Gerçekleşen: 30 TL kupon oluştu
+Etki: Dönem verisine göre birkaç sipariş; tutar etkisi küçük ama kural yanlış
+Ek: Sorgu ve ekran görüntüsü</pre>
+<p>“Kupon çalışmıyor” başlığı hata kaydı değildir. Yorum yazma, gözlem yaz. Gereksinim numarasına bağla: bu izlenebilirlik (traceability) sayesinde hangi kuralın test edildiği belli olur.</p>
+<h2>Önem ve öncelik (severity, priority)</h2>
+<p><b>Önem</b> hatanın sistem üzerindeki etkisidir, teknik olarak değerlendirilir. <b>Öncelik</b> ne zaman düzeltileceğidir, iş kararıdır. İkisi farklı şeydir.</p>
+<table><tr><th>Örnek</th><th>Önem</th><th>Öncelik</th></tr>
+<tr><td>Kupon işi her gece duruyor</td><td>yüksek</td><td>yüksek</td></tr>
+<tr><td>Bildirim metninde şirket adı yanlış</td><td>düşük</td><td>yüksek</td></tr>
+<tr><td>Yılda bir kez çalışan arşiv raporu hata veriyor</td><td>yüksek</td><td>düşük</td></tr></table>
+<h2>Onay (UAT sign-off)</h2>
+<p>Onay kapısı baştan yazılır, test bitince tartışılmaz. Örnek çıkış ölçütü: bütün senaryolar çalıştı, yüksek önemli açık hata yok, açık kalan düşük hatalar sahibi ve tarihiyle listelendi, mutabakat farkı sıfır. Onayı veren kişi iş birimidir, belge kayıt altına alınır. Şartlı onay da mümkündür: “şu iki hata ilk haftada kapanacak” yazılır.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ba-uat">Alıştırmalara geç (11)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ba-api/">← API sözleşmesini okumak (API contract): REST, JSON, durum kodları, idempotency, hata durumları</a><a href="../ba-cevik/">Agile ve Waterfall ortamlarında iş analizi →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

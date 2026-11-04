@@ -1,0 +1,45 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mülakat kalıbı: oranlar, paydalar ve dönüşüm | Kesit SQL</title><meta name="description" content="Doğru paydayı seçmek, tam sayı bölmesi, oranların ortalaması tuzağı ve koşullu sayım."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/mk-oran/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Mülakat kalıbı: oranlar, paydalar ve dönüşüm"><meta property="og:description" content="Doğru paydayı seçmek, tam sayı bölmesi, oranların ortalaması tuzağı ve koşullu sayım."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/mk-oran/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Mülakat kalıbı: oranlar, paydalar ve dönüşüm","description":"Doğru paydayı seçmek, tam sayı bölmesi, oranların ortalaması tuzağı ve koşullu sayım.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/mk-oran/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Mülakat Hazırlığı</span><h1>Mülakat kalıbı: oranlar, paydalar ve dönüşüm</h1><p class="st-l">Doğru paydayı seçmek, tam sayı bölmesi, oranların ortalaması tuzağı ve koşullu sayım.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-mk-oran">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Soru</h2>
+<div class="note"><b>Görüşmeci</b>“Her cihaz için ziyaretçilerin yüzde kaçı satın almış?” Takip: “Peki A/B testinde B varyantı A'ya göre ne kadar iyi?”</div>
+<h2>Önce netleştir</h2>
+<p>Kod yazmadan önce sorulacak sorular. Her biri farklı bir sorguya götürür; sormamak en sık puan kaybıdır.</p>
+<ul><li>Payda ne: ziyaret eden <b>kullanıcı</b> mı, <b>oturum</b> mu, <b>olay</b> mı?</li><li>Bir kullanıcı iki cihaz kullandıysa hangisine yazılır?</li><li>Satın alma ziyaretten önce kaydedilmişse (veri hatası) sayılır mı?</li><li>Oran yüzde mi, ondalık mı; kaç basamak?</li></ul>
+<h2>Yaklaşım</h2>
+<ol><li>Payda kümesini tanımla (ziyaret eden kullanıcılar).</li><li>Pay kümesini aynı grain düzeyinde tanımla (satın alan kullanıcılar).</li><li>Koşullu sayımla ikisini tek geçişte hesapla.</li><li>100.0 ile çarparak tam sayı bölmesinden kaç.</li></ol>
+<h2>Çözüm 1: koşullu COUNT DISTINCT</h2>
+<pre class="code">SELECT device,
+       COUNT(DISTINCT CASE WHEN event_type = 'visit' THEN user_id END) AS ziyaretci,
+       COUNT(DISTINCT CASE WHEN event_type = 'purchase' THEN user_id END) AS alici,
+       ROUND(100.0 * COUNT(DISTINCT CASE WHEN event_type = 'purchase' THEN user_id END)
+             / COUNT(DISTINCT CASE WHEN event_type = 'visit' THEN user_id END), 2) AS donusum
+FROM web_events
+GROUP BY device;</pre>
+<h2>Çözüm 2: kullanıcı düzeyinde bayraklar</h2>
+<pre class="code">WITH k AS (
+  SELECT device, user_id,
+         MAX(CASE WHEN event_type = 'visit' THEN 1 ELSE 0 END) AS ziyaret,
+         MAX(CASE WHEN event_type = 'purchase' THEN 1 ELSE 0 END) AS aldi
+  FROM web_events
+  GROUP BY device, user_id
+)
+SELECT device, SUM(ziyaret) AS ziyaretci, SUM(aldi) AS alici,
+       ROUND(100.0 * SUM(CASE WHEN ziyaret = 1 AND aldi = 1 THEN 1 ELSE 0 END) / SUM(ziyaret), 2) AS donusum
+FROM k
+GROUP BY device;</pre>
+<p>İkinci çözüm önce kullanıcı düzeyine iner; “ziyaret edip satın alan” gibi birleşik koşullar ve huni adımları için daha esnektir. Birinci çözüm daha kısadır ama payda ile payın aynı kişiler olduğunu garanti etmez (ziyareti olmayan bir alıcı paya girer).</p>
+<h2>Sınır durumları</h2>
+<table><tr><th>Durum</th><th>Ne olur?</th></tr><tr><td>Tam sayı bölmesi</td><td>7 / 10 = 0 (SQL Server, PostgreSQL, SQLite). 100.0 * ile başla</td></tr><tr><td>Payda sıfır</td><td>NULLIF(payda, 0) ile sıfıra bölmeyi önle</td></tr><tr><td>Oranların ortalaması</td><td>Günlük oranların ortalaması, toplam dönüşüm / toplam ziyaret ile aynı değildir</td></tr><tr><td>Çift sayım</td><td>Aynı kullanıcının birden çok satın alması: COUNT(DISTINCT user_id)</td></tr></table>
+<h2>Takip soruları</h2>
+<ul><li>Sonuç istatistiksel olarak anlamlı mı? (iki oran z-testi)</li><li>Dönüşümü 7 günlük pencereyle (ziyaretten sonraki 7 gün içinde) nasıl hesaplarsın?</li><li>Mobil ile masaüstü arasındaki farkın nedeni ne olabilir? (veri değil, ürün sorusu)</li></ul>
+<div class="tip"><b>Görüşmeci neye bakıyor?</b>Paydayı netleştirmen, tam sayı bölmesini kendiliğinden önlemen ve “oranların ortalaması” tuzağını bilmen.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-mk-oran">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../mk-ardisik/">← Mülakat kalıbı: ardışık günler, seriler ve “en az 3 gün üst üste”</a><a href="../mk-tekrar/">Mülakat kalıbı: tekrarlar, ilk ve son kayıt, ikinci sipariş →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

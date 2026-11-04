@@ -1,0 +1,35 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>A/B testi analizi | Kesit SQL</title><meta name="description" content="Dönüşüm oranı, lift ve iki oran z-testi."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ds-ab/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="A/B testi analizi"><meta property="og:description" content="Dönüşüm oranı, lift ve iki oran z-testi."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ds-ab/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"A/B testi analizi","description":"Dönüşüm oranı, lift ve iki oran z-testi.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/ds-ab/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Veri Bilimi</span><h1>A/B testi analizi</h1><p class="st-l">Dönüşüm oranı, lift ve iki oran z-testi.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ds-ab">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Deney sonuçları</h2>
+<p><code>ab_test</code> tablosunda her kullanıcı A (kontrol) veya B (yeni tasarım) grubunda. Önce temel tablo:</p>
+<pre class="code">SELECT variant,
+       COUNT(*) AS kullanici,
+       SUM(converted) AS donusen,
+       ROUND(AVG(converted) * 100, 2) AS donusum_yuzde,
+       ROUND(SUM(revenue) / COUNT(*), 2) AS kullanici_basi_gelir
+FROM ab_test
+GROUP BY variant;</pre>
+<h2>İki oran z-testi</h2>
+<p>B'nin oranı A'dan anlamlı derecede yüksek mi?</p>
+<p><code>p = (x₁ + x₂)/(n₁ + n₂)</code>, <code>SE = √(p(1−p)(1/n₁ + 1/n₂))</code>, <code>z = (p₂ − p₁)/SE</code>. |z| &gt; 1.96 ise %95 güvenle fark anlamlıdır.</p>
+<pre class="code">WITH g AS (
+  SELECT variant, COUNT(*) AS n, SUM(converted) AS x, AVG(converted) AS p
+  FROM ab_test GROUP BY variant
+),
+a AS (SELECT * FROM g WHERE variant = 'A'),
+b AS (SELECT * FROM g WHERE variant = 'B')
+SELECT ROUND(a.p * 100, 2) AS p_a, ROUND(b.p * 100, 2) AS p_b,
+       ROUND(100 * (b.p / a.p - 1), 1) AS lift_yuzde,
+       ROUND((b.p - a.p) / SQRT(((a.x + b.x) * 1.0 / (a.n + b.n)) * (1 - (a.x + b.x) * 1.0 / (a.n + b.n)) * (1.0 / a.n + 1.0 / b.n)), 2) AS z
+FROM a, b;</pre>
+<div class="note"><b>İyi uygulamalar</b>Örneklem büyüklüğünü test öncesi belirle, sonuçlara test bitmeden bakıp durdurma (peeking), grupların dengeli dağıldığını (SRM kontrolü) doğrula, birden çok metriğe bakıyorsan çoklu test düzeltmesini düşün.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ds-ab">Alıştırmalara geç (4)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ds-korelasyon/">← Korelasyon ve basit doğrusal regresyon</a><a href="../ds-ornekleme/">Örnekleme ve eğitim/test ayrımı →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,52 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>İzleme: DMV'ler, bekleme istatistikleri, engelleme ve deadlock | Kesit SQL</title><meta name="description" content="Sunucu yavaşladığında nereye bakılır?"><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/dba-izleme/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="İzleme: DMV'ler, bekleme istatistikleri, engelleme ve deadlock"><meta property="og:description" content="Sunucu yavaşladığında nereye bakılır?"><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/dba-izleme/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"İzleme: DMV'ler, bekleme istatistikleri, engelleme ve deadlock","description":"Sunucu yavaşladığında nereye bakılır?","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/dba-izleme/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Veritabanı Yönetimi (DBA)</span><h1>İzleme: DMV'ler, bekleme istatistikleri, engelleme ve deadlock</h1><p class="st-l">Sunucu yavaşladığında nereye bakılır?</p>
+<div class="st-c"><a class="st-p" href="../../#ders-dba-izleme">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>“Sunucu yavaş” dendiğinde</h2>
+<ol>
+<li><b>Şu an ne çalışıyor?</b> Aktif istekler ve kim kimi engelliyor?</li>
+<li><b>Sunucu neyi bekliyor?</b> Bekleme istatistikleri darboğazın türünü söyler.</li>
+<li><b>En pahalı sorgular hangileri?</b> Toplam CPU ve okuma bazında.</li>
+</ol>
+<h3>Aktif istekler ve engelleme</h3>
+<pre class="code" data-norun>SELECT r.session_id, r.status, r.blocking_session_id, r.wait_type,
+       r.wait_time, r.cpu_time, r.logical_reads, t.text AS sorgu
+FROM sys.dm_exec_requests r
+CROSS APPLY sys.dm_exec_sql_text(r.sql_handle) t
+WHERE r.session_id &lt;&gt; @@SPID;</pre>
+<p><code>blocking_session_id</code> dolu olan satırlar, başka bir oturumun kilidini bekliyor demektir. Zincirin başındaki oturum genellikle uzun süren veya COMMIT edilmeyi unutulmuş bir işlemdir.</p>
+<h3>En pahalı sorgular</h3>
+<pre class="code" data-norun>SELECT TOP 10
+       qs.total_worker_time / qs.execution_count AS ort_cpu,
+       qs.total_logical_reads / qs.execution_count AS ort_okuma,
+       qs.execution_count,
+       SUBSTRING(t.text, 1, 200) AS sorgu
+FROM sys.dm_exec_query_stats qs
+CROSS APPLY sys.dm_exec_sql_text(qs.sql_handle) t
+ORDER BY qs.total_logical_reads DESC;</pre>
+<h2>Bekleme türleri</h2>
+<table>
+<tr><th>Bekleme</th><th>Genellikle işaret ettiği</th></tr>
+<tr><td><code>PAGEIOLATCH_*</code></td><td>Diskten sayfa okuma: bellek yetersiz veya eksik indeks yüzünden çok okuma</td></tr>
+<tr><td><code>LCK_M_*</code></td><td>Kilit bekleme: engelleme, uzun işlemler</td></tr>
+<tr><td><code>CXPACKET</code> / <code>CXCONSUMER</code></td><td>Paralel sorgu senkronizasyonu</td></tr>
+<tr><td><code>WRITELOG</code></td><td>Günlük diski yavaş</td></tr>
+<tr><td><code>SOS_SCHEDULER_YIELD</code></td><td>CPU baskısı</td></tr>
+</table>
+<h2>Deadlock (kilitlenme)</h2>
+<p>İki işlem birbirinin kilidini bekler: A, X'i kilitleyip Y'yi ister; B, Y'yi kilitleyip X'i ister. SQL Server bunu otomatik algılar ve birini <b>kurban</b> seçip geri alır (hata 1205). Uygulama bu hatayı yakalayıp işlemi yeniden denemelidir.</p>
+<ul>
+<li>Tabloları her işlemde <b>aynı sırayla</b> güncelle.</li>
+<li>İşlemleri kısa tut; kullanıcı girdisi beklerken işlem açık bırakma.</li>
+<li>Uygun indekslerle daha az satır kilitle.</li>
+<li>Okuma ağırlıklı sistemlerde <code>READ_COMMITTED_SNAPSHOT</code> düşün.</li>
+</ul>
+<div class="tip"><b>Araçlar</b>Query Store (sorgu geçmişi), Extended Events (deadlock grafikleri dahil hafif izleme), Activity Monitor. PostgreSQL'de <code>pg_stat_activity</code> ve <code>pg_stat_statements</code>; MySQL'de <code>performance_schema</code> ve sys şeması; Oracle'da AWR raporları.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-dba-izleme">Alıştırmalara geç (4)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../dba-bakim/">← Bakım: indeks parçalanması, istatistikler, DBCC ve Agent işleri</a><a href="../dba-ha/">Yüksek erişilebilirlik ve ölçekleme: Always On, replikasyon, sharding →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

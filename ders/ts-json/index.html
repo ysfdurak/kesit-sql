@@ -1,0 +1,57 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SQL Server'da JSON: FOR JSON, OPENJSON, JSON_VALUE | Kesit SQL</title><meta name="description" content="Sorgu sonucunu JSON'a, JSON'u tabloya çevirmek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-json/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="SQL Server'da JSON: FOR JSON, OPENJSON, JSON_VALUE"><meta property="og:description" content="Sorgu sonucunu JSON'a, JSON'u tabloya çevirmek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-json/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"SQL Server'da JSON: FOR JSON, OPENJSON, JSON_VALUE","description":"Sorgu sonucunu JSON'a, JSON'u tabloya çevirmek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-json/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · T-SQL (SQL Server)</span><h1>SQL Server'da JSON: FOR JSON, OPENJSON, JSON_VALUE</h1><p class="st-l">Sorgu sonucunu JSON'a, JSON'u tabloya çevirmek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-json">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>SQL Server ve JSON</h2>
+<p>SQL Server 2016'dan beri JSON'u metin (<code>NVARCHAR</code>) olarak saklayıp işleyebilir; SQL Server 2025 ve Azure SQL'de ayrıca yerel <code>json</code> veri tipi vardır. Dört temel araç:</p>
+<table>
+<tr><th>Araç</th><th>Yön</th><th>Ne yapar?</th></tr>
+<tr><td><code>FOR JSON PATH</code></td><td>Tablo → JSON</td><td>Sorgu sonucunu JSON dizisine çevirir. API'lere veri vermek için.</td></tr>
+<tr><td><code>OPENJSON</code></td><td>JSON → tablo</td><td>JSON dizisini satırlara açar.</td></tr>
+<tr><td><code>JSON_VALUE</code> / <code>JSON_QUERY</code></td><td>JSON → değer</td><td>Tek bir alanı (skaler) veya alt nesneyi okur.</td></tr>
+<tr><td><code>JSON_MODIFY</code>, <code>ISJSON</code></td><td>Düzenleme, doğrulama</td><td>Alanı değiştirir; metnin geçerli JSON olup olmadığını söyler.</td></tr>
+</table>
+<h2>FOR JSON PATH</h2>
+<pre class="code" data-base="tsql">SELECT TOP 2 customer_id AS id,
+       first_name AS [musteri.ad],
+       city AS [musteri.sehir]
+FROM customers
+ORDER BY customer_id
+FOR JSON PATH, ROOT('musteriler');</pre>
+<p>Takma addaki nokta (<code>musteri.ad</code>) iç içe nesne oluşturur. Varsayılan olarak NULL alanlar JSON'a <b>yazılmaz</b>; yazılsın istiyorsan <code>INCLUDE_NULL_VALUES</code> ekle. Tek satır dönecekse <code>WITHOUT_ARRAY_WRAPPER</code> köşeli parantezleri kaldırır.</p>
+<h3>İç içe JSON: alt sorgu ile</h3>
+<pre class="code" data-base="tsql">SELECT c.customer_id,
+       c.first_name,
+       (SELECT o.order_id, o.status
+        FROM orders o
+        WHERE o.customer_id = c.customer_id
+        ORDER BY o.order_id
+        FOR JSON PATH) AS siparisler
+FROM customers c
+WHERE c.customer_id &lt;= 3;</pre>
+<h2>OPENJSON</h2>
+<pre class="code" data-base="tsql">DECLARE @sepet NVARCHAR(MAX) = N'[
+  {&quot;urun_id&quot;: 1, &quot;adet&quot;: 2},
+  {&quot;urun_id&quot;: 5, &quot;adet&quot;: 1}
+]';
+
+SELECT j.urun_id, p.name, j.adet, j.adet * p.price AS tutar
+FROM OPENJSON(@sepet)
+     WITH (urun_id INT '$.urun_id', adet INT '$.adet') AS j
+JOIN products p ON p.product_id = j.urun_id;</pre>
+<p><code>WITH</code> bölümü yazılmazsa OPENJSON üç sütun döndürür: <code>key</code>, <code>value</code> ve <code>type</code> (0: null, 1: metin, 2: sayı, 3: true/false, 4: dizi, 5: nesne).</p>
+<h2>JSON_VALUE ve JSON_MODIFY</h2>
+<pre class="code" data-base="tsql">DECLARE @profil NVARCHAR(MAX) = N'{&quot;ad&quot;: &quot;Ayşe&quot;, &quot;adres&quot;: {&quot;sehir&quot;: &quot;İzmir&quot;}, &quot;puan&quot;: 4}';
+
+SELECT JSON_VALUE(@profil, '$.adres.sehir') AS sehir,
+       ISJSON(@profil) AS gecerli,
+       JSON_MODIFY(@profil, '$.puan', 5) AS guncel;</pre>
+<div class="tip"><b>Performans</b>JSON içindeki bir alana sık filtre uyguluyorsan, o alanı <b>hesaplanmış sütun</b> olarak çıkarıp indeksle: <code>ALTER TABLE t ADD sehir AS JSON_VALUE(profil, '$.adres.sehir'); CREATE INDEX ix_sehir ON t(sehir);</code></div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-json">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-dinamik/">← Dinamik SQL: EXEC ve sp_executesql</a><a href="../ts-index/">SQL Server indeksleri: clustered, nonclustered, INCLUDE, filtreli →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

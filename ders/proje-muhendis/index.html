@@ -1,0 +1,45 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bitirme projesi (Veri Mühendisi): ham kayıttan temiz boyut tablosuna ve veri testlerine | Kesit SQL</title><meta name="description" content="Staging, temizleme, tekilleştirme, boyut ve olgu tabloları, artımlı yükleme ve testler."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/proje-muhendis/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Bitirme projesi (Veri Mühendisi): ham kayıttan temiz boyut tablosuna ve veri testlerine"><meta property="og:description" content="Staging, temizleme, tekilleştirme, boyut ve olgu tabloları, artımlı yükleme ve testler."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/proje-muhendis/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Bitirme projesi (Veri Mühendisi): ham kayıttan temiz boyut tablosuna ve veri testlerine","description":"Staging, temizleme, tekilleştirme, boyut ve olgu tabloları, artımlı yükleme ve testler.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/proje-muhendis/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Bitirme Projeleri</span><h1>Bitirme projesi (Veri Mühendisi): ham kayıttan temiz boyut tablosuna ve veri testlerine</h1><p class="st-l">Staging, temizleme, tekilleştirme, boyut ve olgu tabloları, artımlı yükleme ve testler.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-muhendis">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Senaryo</h2>
+<p>Pazarlama formlarından gelen <code>raw_signups</code> verisi kirli: büyük/küçük harf karışık, tekrar eden satırlar, iki farklı tarih biçimi. Ayrıca fiyat güncellemeleri ayrı bir dosyadan geliyor. Senden temiz tablolar ve bunları koruyan testler isteniyor.</p>
+<h2>Katmanlar</h2>
+<ol>
+<li><b>staging</b>: ham verinin tip ve biçim olarak standartlaştırılmış kopyası</li>
+<li><b>temiz</b>: tekilleştirilmiş, iş kurallarına uygun tablo</li>
+<li><b>mart</b>: raporlamaya hazır özet</li>
+<li><b>test</b>: her katmanın doğruluğunu denetleyen sorgular</li>
+</ol>
+<div class="note"><b>Not</b>Her adım boş bir veritabanında ayrı denetlendiği için, önceki adımın tablosu gerekiyorsa adımın içinde yeniden oluşturulur. Gerçek projede bu adımlar bir dbt modeli veya saklı yordam zinciri olur.</div>
+<h2>Derinleş: boru hattını teslim etmek</h2>
+<div class="note"><b>Brif: Veri platformu yöneticisi</b>“Pazarlama, form kayıtlarını her gece CRM'e aktarmak istiyor. Temiz tabloyu ve testleri cuma günü üretime alacağız; test kırmızıysa yükleme durmalı. Bana model kodu, test listesi ve bir sayfalık değişiklik notu ver.”</div>
+<h3>Çalışma planı</h3>
+<ol>
+<li><b>Ham veriyi profille.</b> Aşağıdaki sorgu: 52 satır, 40 tekil id, 20 satır GG.AA.YYYY biçiminde, 10 satırda şehir boş ya da boşluk.</li>
+<li><b>İş anahtarını belirle.</b> Tekilleştirme <code>id</code> üzerinden mi, e-posta üzerinden mi? İkisi farklı sonuç verir; karar iş biriminindir, sen veriyle soruyu hazırlarsın (Ek görev 2).</li>
+<li><b>Kuralları yaz, sonra kodla.</b> “E-posta küçük harf ve kırpılmış”, “boş şehir NULL”, “tarih ISO biçiminde”. Her kural bir teste dönüşür.</li>
+</ol>
+<pre class="code">SELECT COUNT(*) AS satir, COUNT(DISTINCT id) AS tekil_id,
+       SUM(CASE WHEN signup_date LIKE '__.__.____' THEN 1 ELSE 0 END) AS nokta_bicim,
+       SUM(CASE WHEN city IS NULL OR TRIM(city) = '' THEN 1 ELSE 0 END) AS sehir_bos
+FROM raw_signups;</pre>
+<h3>Kontrol listesi</h3>
+<ul>
+<li><b>Satır mutabakatı.</b> ham satır − elenen tekrar = temiz satır: 52 − 12 = 40. Elenen her satırın nedeni bilinmeli.</li>
+<li><b>Benzersizlik testi.</b> Temiz tabloda <code>id</code> tekrarı sıfır olmalı (Adım 5'teki testin temiz tabloya uygulanmışı).</li>
+<li><b>Değer kümesi testi.</b> Standart şehir sütunu yalnızca beklenen değerleri içermeli (Ek görev 1).</li>
+<li><b>Tekrar çalıştırma.</b> Model iki kez çalışınca aynı sonucu vermeli (idempotent); artımlı yüklemede aynı güncelleme iki kez uygulanırsa fiyat değişmemeli.</li>
+</ul>
+<h3>Teslim</h3>
+<p>Değişiklik notu: katmanlar, kurallar, test listesi (ad, sorgu, beklenen = 0) ve açık sorular.</p>
+<div class="tip"><b>Yönetici özeti örneği</b>Ham 52 satır 40 tekil kayda indi; 12 id tekrarlıydı ve 20 satırın tarihi ISO biçimine çevrildi. Şehir alanındaki 7 farklı yazım 3 standart değere indirildi; 6 kaydın şehri bilinmiyor. Açık soru: can.kaya@gmail.com iki farklı id'de kayıtlı; aynı kişi mi, iş biriminin kararı gerekiyor.</div>
+<h3>Kendini değerlendir</h3>
+<table><tr><th>Ölçüt</th><th>Başlangıç</th><th>İyi</th><th>Mükemmel</th></tr><tr><td>Temizlik</td><td>Biçimler düzeltilmiş</td><td>Tekilleştirme kuralı yazılı</td><td>İş anahtarı çatışmaları raporlanmış</td></tr><tr><td>Testler</td><td>Yok</td><td>Ham veride üç test</td><td>Her katmanda test, beklenen değer 0 ve satır mutabakatı</td></tr><tr><td>Teslim</td><td>SQL dosyası</td><td>Katmanlı modeller</td><td>Modeller + testler + değişiklik notu + açık sorular</td></tr></table></article>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-muhendis">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../proje-bilimci/">← Bitirme projesi (Veri Bilimi): şüpheli işlem tespiti ve müşteri özellik tablosu</a><a href="../proje-dba/">Bitirme projesi (DBA): yavaş raporu hızlandır ve veritabanını güvenceye al →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,75 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SQL ile JSON verisi | Kesit SQL</title><meta name="description" content="Yarı yapılandırılmış veriyi sorgulamak ve üretmek; SQL türleri arası farklar."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/json/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="SQL ile JSON verisi"><meta property="og:description" content="Yarı yapılandırılmış veriyi sorgulamak ve üretmek; SQL türleri arası farklar."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/json/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"SQL ile JSON verisi","description":"Yarı yapılandırılmış veriyi sorgulamak ve üretmek; SQL türleri arası farklar.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/json/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Modern SQL</span><h1>SQL ile JSON verisi</h1><p class="st-l">Yarı yapılandırılmış veriyi sorgulamak ve üretmek; SQL türleri arası farklar.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-json">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Neden JSON?</h2>
+<p>Uygulama olayları, API yanıtları ve esnek nitelikler çoğu zaman JSON olarak gelir. SQL:2016 ile JSON desteği standarda girdi; ama her SQL türü kendi fonksiyonlarını kullanır.</p>
+<div class="tbl-wrap"><table><tr><th>İşlem</th><th>SQL Server</th><th>PostgreSQL</th><th>MySQL</th><th>Oracle</th><th>SQLite</th></tr>
+<tr><td>Alan oku</td><td><code>JSON_VALUE(j, '$.a.b')</code></td><td><code>j-&gt;'a'-&gt;&gt;'b'</code></td><td><code>j-&gt;&gt;'$.a.b'</code></td><td><code>JSON_VALUE(j, '$.a.b')</code></td><td><code>json_extract(j, '$.a.b')</code></td></tr>
+<tr><td>Diziyi satırlara aç</td><td><code>OPENJSON</code></td><td><code>jsonb_array_elements</code></td><td><code>JSON_TABLE</code></td><td><code>JSON_TABLE</code></td><td><code>json_each</code></td></tr>
+<tr><td>JSON üret</td><td><code>FOR JSON PATH</code>, <code>JSON_OBJECT</code> (2022)</td><td><code>json_build_object</code>, <code>json_agg</code></td><td><code>JSON_OBJECT</code>, <code>JSON_ARRAYAGG</code></td><td><code>JSON_OBJECT</code>, <code>JSON_ARRAYAGG</code></td><td><code>json_object</code>, <code>json_group_array</code></td></tr>
+</table></div>
+<pre class="code" data-v="{&quot;tsql&quot;:&quot;WITH olaylar AS (\n  SELECT * FROM (VALUES\n    (1, N'{\&quot;user\&quot;: {\&quot;id\&quot;: 7, \&quot;city\&quot;: \&quot;Bursa\&quot;}, \&quot;total\&quot;: 420}'),\n    (2, N'{\&quot;user\&quot;: {\&quot;id\&quot;: 9, \&quot;city\&quot;: \&quot;Konya\&quot;}, \&quot;total\&quot;: 2499}')\n  ) AS v(id, payload)\n)\nSELECT id,\n       JSON_VALUE(payload, '$.user.city') AS sehir,\n       JSON_VALUE(payload, '$.total') AS toplam\nFROM olaylar;&quot;,&quot;pg&quot;:&quot;WITH olaylar(id, payload) AS (\n  VALUES (1, '{\&quot;user\&quot;: {\&quot;id\&quot;: 7, \&quot;city\&quot;: \&quot;Bursa\&quot;}, \&quot;total\&quot;: 420}'::jsonb),\n         (2, '{\&quot;user\&quot;: {\&quot;id\&quot;: 9, \&quot;city\&quot;: \&quot;Konya\&quot;}, \&quot;total\&quot;: 2499}'::jsonb)\n)\nSELECT id,\n       payload-&gt;'user'-&gt;&gt;'city' AS sehir,\n       payload-&gt;&gt;'total' AS toplam\nFROM olaylar;&quot;,&quot;mysql&quot;:&quot;WITH olaylar(id, payload) AS (\n  SELECT 1, '{\&quot;user\&quot;: {\&quot;id\&quot;: 7, \&quot;city\&quot;: \&quot;Bursa\&quot;}, \&quot;total\&quot;: 420}'\n  UNION ALL SELECT 2, '{\&quot;user\&quot;: {\&quot;id\&quot;: 9, \&quot;city\&quot;: \&quot;Konya\&quot;}, \&quot;total\&quot;: 2499}'\n)\nSELECT id,\n       payload-&gt;&gt;'$.user.city' AS sehir,\n       payload-&gt;&gt;'$.total' AS toplam\nFROM olaylar;&quot;,&quot;oracle&quot;:&quot;WITH olaylar AS (\n  SELECT 1 AS id, '{\&quot;user\&quot;: {\&quot;id\&quot;: 7, \&quot;city\&quot;: \&quot;Bursa\&quot;}, \&quot;total\&quot;: 420}' AS payload FROM dual\n  UNION ALL SELECT 2, '{\&quot;user\&quot;: {\&quot;id\&quot;: 9, \&quot;city\&quot;: \&quot;Konya\&quot;}, \&quot;total\&quot;: 2499}' FROM dual\n)\nSELECT id,\n       JSON_VALUE(payload, '$.user.city') AS sehir,\n       JSON_VALUE(payload, '$.total') AS toplam\nFROM olaylar;&quot;}" data-nr="tsql pg mysql">WITH olaylar(id, payload) AS (
+  VALUES (1, '{&quot;user&quot;: {&quot;id&quot;: 7, &quot;city&quot;: &quot;Bursa&quot;}, &quot;total&quot;: 420}'),
+         (2, '{&quot;user&quot;: {&quot;id&quot;: 9, &quot;city&quot;: &quot;Konya&quot;}, &quot;total&quot;: 2499}')
+)
+SELECT id,
+       json_extract(payload, '$.user.city') AS sehir,
+       json_extract(payload, '$.total') AS toplam
+FROM olaylar;</pre>
+<h2>SQL ile JSON üretmek</h2>
+<pre class="code" data-v="{&quot;tsql&quot;:&quot;SELECT TOP 3 customer_id AS id, first_name AS ad, city AS sehir\nFROM customers\nORDER BY customer_id\nFOR JSON PATH;&quot;,&quot;pg&quot;:&quot;SELECT json_build_object('id', customer_id, 'ad', first_name, 'sehir', city) AS musteri_json\nFROM customers ORDER BY customer_id LIMIT 3;&quot;,&quot;mysql&quot;:&quot;SELECT JSON_OBJECT('id', customer_id, 'ad', first_name, 'sehir', city) AS musteri_json\nFROM customers ORDER BY customer_id LIMIT 3;&quot;,&quot;oracle&quot;:&quot;SELECT JSON_OBJECT('id' VALUE customer_id, 'ad' VALUE first_name, 'sehir' VALUE city) AS musteri_json\nFROM customers ORDER BY customer_id FETCH FIRST 3 ROWS ONLY;&quot;}" data-nr="tsql">SELECT json_object('id', customer_id, 'ad', first_name, 'sehir', city) AS musteri_json
+FROM customers
+ORDER BY customer_id
+LIMIT 3;</pre>
+<h2>Derinleş: JSON ile çalışırken SQL türleri arası farklar</h2>
+<p>JSON fonksiyonlarının adları SQL türüne göre değişir, ama asıl farklar daha derindedir: <b>saklama tipi</b>, <b>dönen değerin tipi</b> ve <b>dizileri satırlara açma</b> yöntemi.</p>
+<table><tr><th>SQL türü</th><th>Saklama</th><th>Not</th></tr>
+<tr><td>PostgreSQL</td><td><code>json</code> (metin olarak) ve <code>jsonb</code> (ikili, indekslenebilir)</td><td>Analitik için <code>jsonb</code> + GIN indeks</td></tr>
+<tr><td>MySQL</td><td><code>JSON</code> tipi (doğrulanır, ikili saklanır)</td><td>Üretilmiş (generated) sütunla indekslenir</td></tr>
+<tr><td>SQL Server</td><td>Ayrı tip yok (2025 öncesi): <code>NVARCHAR(MAX)</code></td><td><code>ISJSON()</code> ile CHECK kısıtı ekle</td></tr>
+<tr><td>Oracle</td><td><code>JSON</code> (21c+), öncesinde <code>CLOB</code> + <code>IS JSON</code></td><td>Nokta yazımı: <code>t.j.user.city</code></td></tr>
+<tr><td>BigQuery</td><td><code>JSON</code> tipi ya da <code>STRING</code></td><td><code>JSON_VALUE</code>, <code>JSON_QUERY_ARRAY</code></td></tr>
+<tr><td>SQLite</td><td>Metin</td><td><code>json_extract</code> sayıyı sayı olarak döndürür</td></tr></table>
+<h3>Dönen tip tuzağı</h3>
+<p>PostgreSQL'de <code>-&gt;&gt;</code>, SQL Server ve Oracle'da <code>JSON_VALUE</code> her zaman <b>metin</b> döndürür. <code>'9' &gt; '10'</code> metin karşılaştırmasında doğrudur; sıralama ve filtrede sayısal alanı mutlaka <code>CAST</code> et:</p>
+<pre class="code">WITH t AS (
+  SELECT restaurant_id,
+         json_object('ad', name, 'sehir', city, 'komisyon', commission_pct) AS j
+  FROM lk_restaurants
+)
+SELECT json_extract(j, '$.sehir') AS sehir, COUNT(*) AS restoran
+FROM t
+WHERE CAST(json_extract(j, '$.komisyon') AS REAL) >= 20
+GROUP BY json_extract(j, '$.sehir')
+ORDER BY sehir;</pre>
+<h3>Diziyi satırlara açmak</h3>
+<p>Olay verisinde etiketler çoğu zaman bir dizi olarak gelir. Etiket başına sayım için dizi satırlara açılır: SQLite'ta <code>json_each</code>, SQL Server'da <code>CROSS APPLY OPENJSON</code>.</p>
+<pre class="code" data-v="{&quot;tsql&quot;:&quot;WITH olaylar AS (\n  SELECT * FROM (VALUES\n    (1, N'{\&quot;user\&quot;: 7, \&quot;etiketler\&quot;: [\&quot;indirim\&quot;, \&quot;mobil\&quot;]}'),\n    (2, N'{\&quot;user\&quot;: 9, \&quot;etiketler\&quot;: [\&quot;mobil\&quot;]}'),\n    (3, N'{\&quot;user\&quot;: 7, \&quot;etiketler\&quot;: []}')\n  ) AS v(id, payload)\n)\nSELECT j.value AS etiket, COUNT(*) AS olay\nFROM olaylar o\nCROSS APPLY OPENJSON(o.payload, '$.etiketler') AS j\nGROUP BY j.value\nORDER BY olay DESC, etiket;&quot;}" data-na="pg mysql oracle bq">WITH olaylar(id, payload) AS (
+  VALUES (1, '{"user": 7, "etiketler": ["indirim", "mobil"]}'),
+         (2, '{"user": 9, "etiketler": ["mobil"]}'),
+         (3, '{"user": 7, "etiketler": []}')
+)
+SELECT j.value AS etiket, COUNT(*) AS olay
+FROM olaylar o, json_each(json_extract(o.payload, '$.etiketler')) j
+GROUP BY j.value
+ORDER BY olay DESC, etiket;</pre>
+<pre class="code" data-norun>-- PostgreSQL
+SELECT e.etiket, COUNT(*) FROM olaylar o
+CROSS JOIN LATERAL jsonb_array_elements_text(o.payload -> 'etiketler') AS e(etiket)
+GROUP BY e.etiket;
+
+-- MySQL 8 / Oracle
+SELECT jt.etiket, COUNT(*) FROM olaylar o,
+JSON_TABLE(o.payload, '$.etiketler[*]' COLUMNS (etiket VARCHAR(50) PATH '$')) jt
+GROUP BY jt.etiket;</pre>
+<p>Boş dizili 3 numaralı olay sonuçta görünmez; çünkü açılacak eleman yoktur (iç birleştirme gibi davranır). “Etiketsiz olay” sayısı da gerekiyorsa ayrıca hesapla ya da LEFT JOIN LATERAL / OUTER APPLY kullan.</p>
+<p><b>Performans:</b> JSON içindeki bir alana göre sık filtreleme yapılıyorsa her satırda metni yeniden ayrıştırmak pahalıdır. PostgreSQL'de <code>jsonb</code> sütununa GIN indeks, MySQL'de alanı üretilmiş sütuna çıkarıp indeksleme (<code>ALTER TABLE t ADD sehir VARCHAR(50) AS (j-&gt;&gt;'$.sehir'), ADD INDEX (sehir)</code>), SQL Server'da hesaplanmış sütun + indeks kullanılır.</p>
+<div class="tip"><b>Ne zaman JSON, ne zaman sütun?</b>Sık filtrelenen, raporlanan veya birleştirilen alanları gerçek sütunlara çıkar. JSON'u gerçekten esnek, seyrek ve kaynağa göre değişen nitelikler için bırak.</div></article>
+<div class="st-c"><a class="st-p" href="../../#ders-json">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../acid/">← ACID, izolasyon seviyeleri ve eşzamanlılık</a><a href="../cografi/">Coğrafi veri: mesafe, en yakın nokta ve uzamsal tipler →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

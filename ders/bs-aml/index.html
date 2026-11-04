@@ -1,0 +1,74 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Büyük sorgu 5: bankada şüpheli işlem kural motoru | Kesit SQL</title><meta name="description" content="Her kuralı ayrı bir CTE olarak yazmak, UNION ALL ile alarm tablosu kurmak, hesap başına risk puanı ve öncelik sırası."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/bs-aml/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Büyük sorgu 5: bankada şüpheli işlem kural motoru"><meta property="og:description" content="Her kuralı ayrı bir CTE olarak yazmak, UNION ALL ile alarm tablosu kurmak, hesap başına risk puanı ve öncelik sırası."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/bs-aml/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Büyük sorgu 5: bankada şüpheli işlem kural motoru","description":"Her kuralı ayrı bir CTE olarak yazmak, UNION ALL ile alarm tablosu kurmak, hesap başına risk puanı ve öncelik sırası.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/bs-aml/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Büyük Sorgular</span><h1>Büyük sorgu 5: bankada şüpheli işlem kural motoru</h1><p class="st-l">Her kuralı ayrı bir CTE olarak yazmak, UNION ALL ile alarm tablosu kurmak, hesap başına risk puanı ve öncelik sırası.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-bs-aml">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Soru</h2>
+<p>Ilgaz Bank uyum ekibi her sabah incelenecek hesapların listesini istiyor. Kurallar iş biriminden gelir ve sık değişir; bu yüzden sorgu, her kuralın ayrı bir blok olduğu ve kolayca eklenip çıkarılabildiği bir yapıda yazılır.</p>
+<h2>Sorgu</h2>
+<div class="note"><b>Büyük sorgu nasıl okunur?</b>Yukarıdan aşağı, her CTE'yi ayrı bir tablo gibi düşün. Bir adımı anlamadıysan o CTE'nin adını en sondaki SELECT'e yazıp yalnızca onu çalıştır: <code>SELECT * FROM adim_adi LIMIT 20;</code></div>
+<pre class="code">WITH harcama AS (        -- 0) Kart harcamaları, tutar pozitif
+  SELECT t.txn_id, t.account_id, t.txn_time, -t.amount AS tutar, t.merchant_category AS kat,
+         CAST(strftime('%H', t.txn_time) AS INTEGER) AS saat
+  FROM bank_txns t
+  WHERE t.txn_type = 'kart_harcama'
+),
+ort AS (                 -- 1) Hesabın kendi ortalaması (kişiye göre normal)
+  SELECT account_id, AVG(tutar) AS ort_tutar, COUNT(*) AS adet
+  FROM harcama
+  GROUP BY account_id
+),
+k1 AS (                  -- Kural 1: gece 01–05 arası 20.000 TL üzeri harcama
+  SELECT account_id, txn_id, 'gece_yuksek' AS kural, 3 AS puan
+  FROM harcama
+  WHERE saat BETWEEN 1 AND 4 AND tutar > 20000
+),
+k2 AS (                  -- Kural 2: hesabın kendi ortalamasının 8 katından büyük harcama
+  SELECT h.account_id, h.txn_id, 'ortalama_8x' AS kural, 2 AS puan
+  FROM harcama h
+  JOIN ort o ON o.account_id = h.account_id
+  WHERE o.adet >= 5 AND h.tutar > 8 * o.ort_tutar
+),
+k3 AS (                  -- Kural 3: aynı hesapta 10 dakika içinde art arda e-ticaret harcaması
+  SELECT DISTINCT h.account_id, h.txn_id, 'hizli_tekrar' AS kural, 1 AS puan
+  FROM harcama h
+  JOIN harcama p ON p.account_id = h.account_id AND p.txn_id <> h.txn_id
+                AND p.kat = 'e_ticaret'
+                AND p.txn_time <= h.txn_time
+                AND p.txn_time >= datetime(h.txn_time, '-10 minutes')
+  WHERE h.kat = 'e_ticaret'
+),
+alarm AS (               -- 2) Tüm kuralları alt alta topla
+  SELECT * FROM k1 UNION ALL SELECT * FROM k2 UNION ALL SELECT * FROM k3
+),
+hesap AS (               -- 3) Hesap başına toplam risk puanı ve tetiklenen kurallar
+  SELECT account_id,
+         SUM(puan) AS risk,
+         COUNT(DISTINCT txn_id) AS supheli_islem,
+         COUNT(DISTINCT kural) AS kural_sayisi
+  FROM alarm
+  GROUP BY account_id
+)
+SELECT h.account_id, c.full_name, c.segment, h.risk, h.supheli_islem, h.kural_sayisi,
+       DENSE_RANK() OVER (ORDER BY h.risk DESC) AS oncelik
+FROM hesap h
+JOIN bank_accounts a ON a.account_id = h.account_id
+JOIN bank_customers c ON c.customer_id = a.customer_id
+ORDER BY oncelik, h.account_id
+LIMIT 15;</pre>
+<h2>Adım adım</h2>
+<table><tr><th>Adım</th><th>Ne yapar?</th><th>Çıktının bir satırı</th></tr><tr><td><code>harcama</code></td><td>Kart harcamaları; tutar artı, saat ayrı sütunda</td><td>18802, 100231, 02:14, 27500</td></tr><tr><td><code>ort</code></td><td>Hesabın kendi harcama ortalaması ve adedi</td><td>100231, 1840, 41</td></tr><tr><td><code>k1 / k2 / k3</code></td><td>Her kural kendi koşuluyla aynı biçimde (hesap, işlem, kural, puan) satır üretir</td><td>100231, 18802, gece_yuksek, 3</td></tr><tr><td><code>alarm</code></td><td>Kural çıktıları UNION ALL ile alt alta</td><td>…</td></tr><tr><td><code>hesap</code></td><td>Hesap başına toplam risk ve tetiklenen kural sayısı</td><td>100231, 5, 2, 2</td></tr><tr><td><code>son SELECT</code></td><td>Müşteri bilgisi ve DENSE_RANK ile öncelik</td><td>100231, …, öncelik 1</td></tr></table>
+<h2>Neden bu yapı?</h2>
+<ul>
+<li><b>Aynı şema:</b> Her kural CTE'si aynı dört sütunu döndürür; UNION ALL bu sayede çalışır. Yeni bir kural, yeni bir CTE ve alarm satırına bir <code>UNION ALL SELECT * FROM k4</code> eklemekten ibarettir.</li>
+<li><b>Kişiye göre normal:</b> Kural 2 sabit bir eşik yerine hesabın kendi ortalamasını kullanır; büyük harcama yapan bir müşteri her harcamasında alarm üretmez.</li>
+<li><b>UNION ALL, UNION değil:</b> Aynı işlem iki kurala takılırsa iki satır olmalıdır; puanlar toplanır. UNION tekrar eden satırları silerek puanı düşürürdü.</li>
+</ul>
+<div class="warn"><b>Kural 3'ün maliyeti</b>Kendi kendine birleştirme ve zaman aralığı koşulu büyük tablolarda pahalıdır. Gerçek sistemlerde (account_id, txn_time) üzerinde indeks ya da LAG ile yeniden yazım tercih edilir. Alıştırmalardan biri bunu istiyor.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-bs-aml">Alıştırmalara geç (4)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../bs-ops/">← Büyük sorgu 4: havayolu günlük operasyon panosu</a><a href="../bs-scd/">Büyük sorgu 6: SCD 2 fiyat boyutu ve nokta-zaman birleştirme →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

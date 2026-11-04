@@ -1,0 +1,44 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mülakat kalıbı: grup başına ilk N ve N'inci en yüksek değer | Kesit SQL</title><meta name="description" content="ROW_NUMBER, RANK ve DENSE_RANK farkı; eşitlik, NULL ve “N'inci en yüksek yoksa” durumları."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/mk-topn/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Mülakat kalıbı: grup başına ilk N ve N'inci en yüksek değer"><meta property="og:description" content="ROW_NUMBER, RANK ve DENSE_RANK farkı; eşitlik, NULL ve “N'inci en yüksek yoksa” durumları."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/mk-topn/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Mülakat kalıbı: grup başına ilk N ve N'inci en yüksek değer","description":"ROW_NUMBER, RANK ve DENSE_RANK farkı; eşitlik, NULL ve “N'inci en yüksek yoksa” durumları.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/mk-topn/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Mülakat Hazırlığı</span><h1>Mülakat kalıbı: grup başına ilk N ve N'inci en yüksek değer</h1><p class="st-l">ROW_NUMBER, RANK ve DENSE_RANK farkı; eşitlik, NULL ve “N'inci en yüksek yoksa” durumları.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-mk-topn">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Soru</h2>
+<div class="note"><b>Görüşmeci</b>“Her departmanda en yüksek maaşı alan ilk 2 çalışanı getir.” Takip olarak: “Şirketteki 3. en yüksek <b>farklı</b> maaş nedir?”</div>
+<h2>Önce netleştir</h2>
+<p>Kod yazmadan önce sorulacak sorular. Her biri farklı bir sorguya götürür; sormamak en sık puan kaybıdır.</p>
+<ul><li>Eşit maaşta iki çalışan varsa ikisi de mi dönsün, yoksa tam 2 satır mı?</li><li>Departmanı olmayan çalışan (Genel Müdür) dahil mi?</li><li>“3. en yüksek” farklı değerler arasında mı (DENSE_RANK) yoksa sıra numarası mı (ROW_NUMBER)?</li><li>Departmanda 2'den az çalışan varsa ne olsun?</li></ul>
+<h2>Yaklaşım</h2>
+<ol><li>Her satıra departman içinde maaşa göre sıra numarası ver.</li><li>Eşitlik kuralına göre fonksiyonu seç: tam N satır → ROW_NUMBER (eşitlikte ikinci bir sıralama sütunu ekle), eşitler dahil → DENSE_RANK veya RANK.</li><li>Pencere sonucunu dış sorguda filtrele (WHERE içinde pencere fonksiyonu kullanılamaz).</li></ol>
+<h2>Çözüm 1: pencere fonksiyonu</h2>
+<pre class="code">WITH s AS (
+  SELECT dept_id, first_name, salary,
+         DENSE_RANK() OVER (PARTITION BY dept_id ORDER BY salary DESC) AS sira
+  FROM employees
+  WHERE dept_id IS NOT NULL
+)
+SELECT dept_id, first_name, salary, sira
+FROM s
+WHERE sira <= 2
+ORDER BY dept_id, sira, first_name;</pre>
+<h2>Çözüm 2: ilişkili alt sorgu (pencere fonksiyonu bilinmiyorsa)</h2>
+<pre class="code">SELECT e.dept_id, e.first_name, e.salary
+FROM employees e
+WHERE e.dept_id IS NOT NULL
+  AND (SELECT COUNT(DISTINCT e2.salary)
+       FROM employees e2
+       WHERE e2.dept_id = e.dept_id AND e2.salary > e.salary) < 2
+ORDER BY e.dept_id, e.salary DESC, e.first_name;</pre>
+<p>İkinci çözüm, “benden yüksek kaç farklı maaş var?” sorusunu sorar; 2'den azsa ilk ikidedir. DENSE_RANK ile aynı sonucu verir ama her satır için alt sorgu çalıştığından büyük tablolarda yavaştır. Mülakatta önce pencere çözümünü yaz, alternatifi sözlü anlat.</p>
+<h2>Sınır durumları</h2>
+<table><tr><th>Durum</th><th>Ne olur?</th></tr><tr><td>Eşit maaşlar</td><td>DENSE_RANK ikisini de 1 yapar; ROW_NUMBER birini 2. sıraya iter (hangisi olacağı belirsiz, ikinci sıralama sütunu ekle)</td></tr><tr><td>Departmanda tek çalışan</td><td>Yalnızca o çalışan döner; hata yok</td></tr><tr><td>NULL maaş</td><td>Sıralamada SQL türüne göre en başa veya sona düşer; gerekirse WHERE salary IS NOT NULL</td></tr><tr><td>3. farklı maaş yoksa</td><td>Alt sorgu çözümünde NULL dönmesi istenir; MAX(...) ile sarmak boş sonuç yerine NULL verir</td></tr></table>
+<h2>Takip soruları</h2>
+<ul><li>N parametre olsaydı nasıl yazardın? (değişken / sorgu parametresi)</li><li>Büyük tabloda hangi indeks yardımcı olur? (dept_id, salary DESC)</li><li>SQL Server'da aynı iş TOP ve CROSS APPLY ile nasıl yazılır?</li></ul>
+<div class="tip"><b>Görüşmeci neye bakıyor?</b>Eşitlik sorusunu kendiliğinden sorman ve ROW_NUMBER / RANK / DENSE_RANK farkını tek cümleyle açıklayabilmen.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-mk-topn">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../mk-yontem/">← SQL mülakatı: nasıl düşünülür, nasıl anlatılır?</a><a href="../mk-ardisik/">Mülakat kalıbı: ardışık günler, seriler ve “en az 3 gün üst üste” →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

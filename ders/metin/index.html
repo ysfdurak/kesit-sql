@@ -1,0 +1,36 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Metin fonksiyonları | Kesit SQL</title><meta name="description" content="Büyük/küçük harf, uzunluk, parça alma, arama, birleştirme ve SQL türleri arası farklar."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/metin/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Metin fonksiyonları"><meta property="og:description" content="Büyük/küçük harf, uzunluk, parça alma, arama, birleştirme ve SQL türleri arası farklar."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/metin/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Metin fonksiyonları","description":"Büyük/küçük harf, uzunluk, parça alma, arama, birleştirme ve SQL türleri arası farklar.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/metin/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Fonksiyonlar</span><h1>Metin fonksiyonları</h1><p class="st-l">Büyük/küçük harf, uzunluk, parça alma, arama, birleştirme ve SQL türleri arası farklar.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-metin">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>En sık kullanılan metin işlemleri</h2>
+<p>Metin fonksiyonları SQL türleri arasında en çok isim değiştiren gruptur. Tabloyu bir başvuru olarak kullan; kod kutularında seçili SQL türünün yazımı görünür.</p>
+<div class="tbl-wrap"><table><tr><th>İşlem</th><th>SQL Server</th><th>PostgreSQL</th><th>MySQL</th><th>Oracle</th><th>SQLite</th></tr>
+<tr><td>Büyük / küçük harf</td><td colspan="5"><code>UPPER(s)</code>, <code>LOWER(s)</code> (hepsinde aynı)</td></tr>
+<tr><td>Uzunluk</td><td><code>LEN(s)</code></td><td><code>LENGTH(s)</code></td><td><code>CHAR_LENGTH(s)</code></td><td><code>LENGTH(s)</code></td><td><code>LENGTH(s)</code></td></tr>
+<tr><td>Parça al</td><td><code>SUBSTRING(s, 1, 4)</code></td><td><code>SUBSTRING(s, 1, 4)</code></td><td><code>SUBSTRING(s, 1, 4)</code></td><td><code>SUBSTR(s, 1, 4)</code></td><td><code>SUBSTR(s, 1, 4)</code></td></tr>
+<tr><td>Soldan / sağdan</td><td><code>LEFT(s,3)</code></td><td><code>LEFT(s,3)</code></td><td><code>LEFT(s,3)</code></td><td><code>SUBSTR(s,1,3)</code></td><td><code>SUBSTR(s,1,3)</code></td></tr>
+<tr><td>Konum bul</td><td><code>CHARINDEX('@', s)</code></td><td><code>STRPOS(s, '@')</code></td><td><code>INSTR(s, '@')</code></td><td><code>INSTR(s, '@')</code></td><td><code>INSTR(s, '@')</code></td></tr>
+<tr><td>Birleştir</td><td><code>a + b</code>, <code>CONCAT(a, b)</code></td><td><code>a || b</code></td><td><code>CONCAT(a, b)</code></td><td><code>a || b</code></td><td><code>a || b</code></td></tr>
+<tr><td>Boşluk temizle</td><td colspan="5"><code>TRIM(s)</code>, <code>LTRIM(s)</code>, <code>RTRIM(s)</code></td></tr>
+<tr><td>Değiştir</td><td colspan="5"><code>REPLACE(s, 'eski', 'yeni')</code></td></tr>
+</table></div>
+<h2>E-postadan alan adı çıkarmak</h2>
+<pre class="code">SELECT email,
+       SUBSTR(email, INSTR(email, '@') + 1) AS alan_adi
+FROM customers
+WHERE email IS NOT NULL;</pre>
+<h2>Baş harfler ve birleştirme</h2>
+<pre class="code">SELECT first_name, last_name,
+       SUBSTR(first_name, 1, 1) || '.' || SUBSTR(last_name, 1, 1) || '.' AS bas_harf
+FROM employees;</pre>
+<div class="warn"><b>Birleştirme ve NULL</b><code>||</code> ve SQL Server'daki <code>+</code>, bir taraf NULL ise sonucu NULL yapar. <code>CONCAT()</code> ise SQL Server, PostgreSQL ve Oracle'da NULL'ı boş metin sayar; MySQL'de CONCAT yine NULL döner. Oracle'da boş metin <code>''</code> zaten NULL'dır.</div>
+<div class="warn" data-d="mysql"><b>MySQL tuzağı</b>MySQL'de <code>||</code> varsayılan olarak mantıksal VEYA (OR) demektir: <code>'a' || 'b'</code> sonuç olarak 0 döner. Metin birleştirmek için her zaman <code>CONCAT</code> kullan.</div>
+<div class="note"><b>Türkçe karakterler</b>Bu uygulamada <code>UPPER</code> ve <code>LOWER</code> Türkçe kurala göre çalışır: i ↔ İ, ı ↔ I (içinde @ geçen metinlerde, yani e-postalarda, İngilizce kurala göre). Gerçek sunucuda sonucu <i>collation</i> ya da yerel ayarı belirler: Yerel ayarı Türkçe olmayan bir PostgreSQL <code>UPPER('inci')</code> için <code>INCI</code> döndürür, saf SQLite ise yalnız İngilizce harfleri çevirir. İşe başladığın sunucuda “i” ile “İ” dönüşümünü mutlaka test et.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-metin">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../metin-birlestir/">← Satırları tek metinde toplamak: STRING_AGG, LISTAGG, GROUP_CONCAT</a><a href="../sayi-tip/">Sayılar, veri tipleri ve CAST →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

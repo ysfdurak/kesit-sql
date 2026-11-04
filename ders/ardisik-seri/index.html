@@ -1,0 +1,43 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Boşluklar ve adalar: ardışık serileri bulmak (gaps and islands) | Kesit SQL</title><meta name="description" content="ROW_NUMBER farkı yöntemiyle ardışık gün/ay serileri ve kesintiler."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ardisik-seri/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Boşluklar ve adalar: ardışık serileri bulmak (gaps and islands)"><meta property="og:description" content="ROW_NUMBER farkı yöntemiyle ardışık gün/ay serileri ve kesintiler."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ardisik-seri/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Boşluklar ve adalar: ardışık serileri bulmak (gaps and islands)","description":"ROW_NUMBER farkı yöntemiyle ardışık gün/ay serileri ve kesintiler.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ardisik-seri/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · İleri Sorgu Yapıları</span><h1>Boşluklar ve adalar: ardışık serileri bulmak (gaps and islands)</h1><p class="st-l">ROW_NUMBER farkı yöntemiyle ardışık gün/ay serileri ve kesintiler.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ardisik-seri">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Problem</h2>
+<p>“Müşteri kaç ay üst üste alışveriş yaptı?”, “Sensör hangi aralıklarda veri göndermedi?” gibi sorular <b>boşluklar ve adalar</b> (gaps and islands) problemidir. Ada: kesintisiz bir seri; boşluk: iki seri arasındaki kesinti.</p>
+<h2>ROW_NUMBER farkı yöntemi</h2>
+<p>Ardışık değerlerden sıra numarasını çıkarırsan, aynı serideki tüm satırlar <b>aynı sabiti</b> verir:</p>
+<table>
+<tr><th>ay no</th><th>sıra</th><th>fark</th></tr>
+<tr><td>24291</td><td>1</td><td>24290</td></tr>
+<tr><td>24292</td><td>2</td><td>24290</td></tr>
+<tr><td>24295</td><td>3</td><td>24292</td></tr>
+<tr><td>24296</td><td>4</td><td>24292</td></tr>
+</table>
+<pre class="code">WITH m AS (               -- 1 numaralı müşterinin sipariş verdiği aylar (ay numarası)
+  SELECT DISTINCT CAST(strftime('%Y', order_date) AS INTEGER) * 12
+                + CAST(strftime('%m', order_date) AS INTEGER) AS ay_no,
+         strftime('%Y-%m', order_date) AS ay
+  FROM orders WHERE customer_id = 1
+), g AS (
+  SELECT ay, ay_no - ROW_NUMBER() OVER (ORDER BY ay_no) AS grp FROM m
+)
+SELECT MIN(ay) AS baslangic, MAX(ay) AS bitis, COUNT(*) AS ay_sayisi
+FROM g
+GROUP BY grp
+ORDER BY baslangic;</pre>
+<h2>Boşlukları bulmak: LEAD</h2>
+<pre class="code">WITH m AS (
+  SELECT DISTINCT order_date AS gun FROM orders
+  WHERE order_date >= '2024-12-01' AND order_date < '2025-01-01'
+)
+SELECT gun AS son_dolu, LEAD(gun) OVER (ORDER BY gun) AS sonraki_dolu
+FROM m;</pre>
+<p>Sonraki dolu gün ile aradaki fark 1'den büyükse arada boşluk vardır.</p>
+<h2>Derinleş: takvim günü mü, kayıt mı?</h2><p>“Art arda gün” sorularında önce veriyi <b>gün düzeyine</b> indir (DISTINCT), sonra sıra numarası farkını uygula. Aynı gün birden çok kayıt varsa ROW_NUMBER iki kez artar ve seri kırılmış görünür. Saatli zaman damgalarında <code>date(...)</code> ile gün çıkar; gün farkı hesaplarken de saatleri at: <code>julianday(date(b)) - julianday(date(a))</code>.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ardisik-seri">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../pencere-cerceve/">← İleri pencere çerçeveleri: ROWS, RANGE, GROUPS ve EXCLUDE</a><a href="../zaman-araligi/">Zaman aralıkları: çakışma, eşzamanlılık ve birleştirme →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

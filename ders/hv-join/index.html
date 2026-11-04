@@ -1,0 +1,53 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Uçuş, rota, havalimanı ve uçak: JOIN zinciri | Kesit SQL</title><meta name="description" content="Dört tabloyu adım adım birleştirmek, eşi olmayanı LEFT JOIN ile bulmak ve rötar nedenlerini özetlemek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/hv-join/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Uçuş, rota, havalimanı ve uçak: JOIN zinciri"><meta property="og:description" content="Dört tabloyu adım adım birleştirmek, eşi olmayanı LEFT JOIN ile bulmak ve rötar nedenlerini özetlemek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/hv-join/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Uçuş, rota, havalimanı ve uçak: JOIN zinciri","description":"Dört tabloyu adım adım birleştirmek, eşi olmayanı LEFT JOIN ile bulmak ve rötar nedenlerini özetlemek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/hv-join/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Kanat Havayolları</span><h1>Uçuş, rota, havalimanı ve uçak: JOIN zinciri</h1><p class="st-l">Dört tabloyu adım adım birleştirmek, eşi olmayanı LEFT JOIN ile bulmak ve rötar nedenlerini özetlemek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-hv-join">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Bir uçuşun tam resmi</h2>
+<p><code>hv_flights</code> tek başına “KN101 kalktı” der ama nereden nereye uçtuğunu, hangi uçakla uçtuğunu söylemez. Bunlar başka tablolardadır ve yabancı anahtarlarla bağlanır:</p>
+<pre class="code" data-norun>hv_flights.route_id ──> hv_routes.route_id ──> origin, dest ──> hv_airports.airport_code
+hv_flights.tail_no  ──> hv_aircraft.tail_no
+hv_bookings.flight_id ──> hv_flights.flight_id
+hv_bookings.passenger_id ──> hv_passengers.passenger_id</pre>
+<pre class="code">SELECT f.flight_no, r.origin, r.dest, a.model, f.sched_dep
+FROM hv_flights f
+JOIN hv_routes r   ON r.route_id = f.route_id
+JOIN hv_aircraft a ON a.tail_no = f.tail_no
+WHERE f.sched_dep >= '2024-12-31' AND f.sched_dep < '2025-01-01'
+ORDER BY f.sched_dep
+LIMIT 5;</pre>
+<h2>Doluluk oranı: iki tablodan gelen iki sayı</h2>
+<p>Doluluk (load factor) = binen yolcu ÷ koltuk. Yolcu uçuştan, koltuk uçaktan gelir:</p>
+<pre class="code">SELECT a.model, ROUND(100.0 * SUM(f.pax) / SUM(a.seats), 1) AS doluluk
+FROM hv_flights f
+JOIN hv_aircraft a ON a.tail_no = f.tail_no
+WHERE f.status <> 'cancelled'
+GROUP BY a.model;</pre>
+<div class="tip"><b>Oranların ortalaması değil, toplamların oranı</b>Her uçuşun doluluğunu ayrı hesaplayıp ortalamasını almak, küçük ve büyük uçakları eşit ağırlıklandırır. Sektör tanımı toplam yolcu ÷ toplam koltuktur.</div>
+<h2>Derinleş: JOIN sonrası çoğalma: rötar tablosu örneği</h2>
+<p>JOIN'de en sinsi hata, sorgunun hata vermeden <b>yanlış sayı</b> üretmesidir. Bunun en yaygın sebebi, birleştirilen tablolardan birinin bir satıra birden çok eşleşme getirmesidir. Kanat'ta <code>hv_delays</code> tablosu buna iyi bir örnek: bir uçuşun birden çok rötar nedeni olabilir (ör. hava + geç gelen uçak). 1.228 rötarlı uçuşun 122'sinde iki neden kayıtlı.</p>
+<pre class="code">SELECT 'JOIN sonrası' AS yontem, COUNT(*) AS satir, SUM(f.pax) AS yolcu
+FROM hv_flights f
+JOIN hv_delays d ON d.flight_id = f.flight_id
+UNION ALL
+SELECT 'önce tekilleştir', COUNT(*), SUM(f.pax)
+FROM hv_flights f
+JOIN (SELECT DISTINCT flight_id FROM hv_delays) d ON d.flight_id = f.flight_id;</pre>
+<p>İlk satırda 1.350 “uçuş” ve 215.146 yolcu var. İki nedenli her uçuş iki kez sayılmış. Doğru cevap 1.228 uçuş ve 195.874 yolcudur. “Rötardan etkilenen yolcu” sayısı yaklaşık 20 bin fazla raporlanırdı.</p>
+<h3>Çoğalmayı önlemenin üç yolu</h3>
+<table>
+<tr><th>Yöntem</th><th>Ne zaman?</th></tr>
+<tr><td><b>Önce özetle, sonra birleştir:</b> <code>JOIN (SELECT flight_id, SUM(minutes) ... GROUP BY flight_id)</code></td><td>Çok taraftan bir sayı (toplam dakika) gerekiyorsa</td></tr>
+<tr><td><b>EXISTS / IN:</b> <code>WHERE EXISTS (SELECT 1 FROM hv_delays ...)</code></td><td>Yalnızca “rötarı var mı?” sorusu soruluyorsa</td></tr>
+<tr><td><b>COUNT(DISTINCT ...)</b></td><td>Sayım için işe yarar ama <code>SUM(pax)</code>'ı düzeltmez</td></tr>
+</table>
+<h3>Taneciği önceden bil</h3>
+<p>Her JOIN'den önce kendine şunu sor: “Sol tablodaki bir satır, sağ tabloda kaç satırla eşleşebilir?” <code>hv_flights → hv_routes</code> ve <code>hv_flights → hv_aircraft</code> çoka-bir ilişkilerdir; satır sayısı değişmez. <code>hv_flights → hv_bookings</code> ve <code>hv_flights → hv_delays</code> ise bire-çok ilişkilerdir; satır çoğalır. Bir sorguda iki ayrı bire-çok tabloyu aynı anda birleştirirsen (rezervasyonlar <b>ve</b> rötarlar) çoğalma çarpılarak büyür. Bu durumda her birini ayrı bir alt sorguda özetlemek gerekir.</p>
+<div class="tip"><b>Hızlı kontrol</b>JOIN'den sonra <code>COUNT(*)</code> ile <code>COUNT(DISTINCT f.flight_id)</code>'yi karşılaştır. Eşit değillerse taneciğin değişti ve toplamların şişmiş olabilir.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-hv-join">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../hv-zaman/">← Saat ve süre hesapları: rötar dakikası, saat dilimleri, zamanında kalkış</a><a href="../hv-self/">Aynı tabloyu iki kez kullanmak: kalkış ve varış şehri, aktarmalı yolculuklar →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,45 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bitirme projesi (Kanat Havayolları): operasyon ve gelir raporu | Kesit SQL</title><meta name="description" content="Operasyon direktörü ve gelir müdürü için altı soruluk, baştan sona bir analiz."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/proje-hava/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Bitirme projesi (Kanat Havayolları): operasyon ve gelir raporu"><meta property="og:description" content="Operasyon direktörü ve gelir müdürü için altı soruluk, baştan sona bir analiz."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/proje-hava/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Bitirme projesi (Kanat Havayolları): operasyon ve gelir raporu","description":"Operasyon direktörü ve gelir müdürü için altı soruluk, baştan sona bir analiz.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/proje-hava/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Kanat Havayolları</span><h1>Bitirme projesi (Kanat Havayolları): operasyon ve gelir raporu</h1><p class="st-l">Operasyon direktörü ve gelir müdürü için altı soruluk, baştan sona bir analiz.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-hava">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Senaryo</h2>
+<p>Kanat Havayolları'nın yönetim kurulu Ocak toplantısında son dört ayı değerlendirecek. Operasyon direktörü dakiklik ve iptallerle, gelir müdürü sadakat üyelerinin gelirle ilgileniyor. Senden altı soruluk bir rapor isteniyor; her sorunun sonucu bir slayda dönüşecek.</p>
+<table>
+<tr><th>Soru</th><th>Kullanacağın beceriler</th></tr>
+<tr><td>1. Operasyon özeti</td><td>Koşullu sayım, dakika farkı, oranlar</td></tr>
+<tr><td>2. Sorunlu havalimanları</td><td>JOIN, GROUP BY, HAVING, sıralama</td></tr>
+<tr><td>3. Rötar nedenleri aylara göre</td><td>Pivot (koşullu toplama)</td></tr>
+<tr><td>4. Aylık üye geliri ve değişim</td><td>CTE, LAG</td></tr>
+<tr><td>5. En değerli üyeler</td><td>JOIN, toplama, sıralama</td></tr>
+<tr><td>6. Kış iptal riski</td><td>Rota düzeyinde oran, minimum hacim filtresi</td></tr>
+</table>
+<div class="tip"><b>Her sonucu bir cümleyle yorumla</b>“Aralık'ta ortalama gecikme 35 dakikaya çıktı ve en büyük pay hava koşullarında” gibi bir cümle, tablonun kendisinden daha çok iş görür. Raporu yazarken sayının arkasındaki nedeni ara.</div>
+<h2>Derinleş: yönetim kuruluna giden rapor</h2>
+<div class="note"><b>Brif: Operasyon direktörü ve gelir müdürü</b>“Kurul, kış tarifesinde ek yedek uçak ve hava koşulu planı için bütçe isteyip istemeyeceğimize karar verecek. Bize altı slayt lazım; her slaytta bir sayı, bir neden, bir öneri.”</div>
+<h3>Çalışma planı</h3>
+<ol>
+<li><b>Dönemi ve tanımları sabitle.</b> Veri 2024-09-01 ile 2024-12-31 arasında 3.173 planlı uçuş içeriyor. “Zamanında” = planlanan kalkıştan en fazla 15 dakika sonra; iptal edilen 62 uçuşun gerçek kalkışı NULL'dır.</li>
+<li><b>Tablo grain düzeyini (tanecik) öğren.</b> <code>hv_delays</code>'te bir uçuşun birden fazla rötar satırı olabilir. Aşağıdaki sorgu bunu gösterir: 1.350 satır ama yalnızca 1.228 uçuş.</li>
+<li><b>Operasyon ve gelir sorularını ayır.</b> Gelir sorularında yalnızca <code>status = 'flown'</code> rezervasyonlar sayılır; iptal edilen uçuşların rezervasyonları zaten iptal durumundadır.</li>
+</ol>
+<pre class="code">SELECT COUNT(*) AS satir, COUNT(DISTINCT flight_id) AS ucus, SUM(minutes) AS dakika
+FROM hv_delays;</pre>
+<h3>Kontrol listesi</h3>
+<ul>
+<li><b>JOIN şişmesi.</b> Uçuşları rötarlarla birleştirip <code>AVG(gecikme)</code> alırsan iki nedenli uçuşlar iki kez sayılır. Uçuş düzeyindeki ölçüyü JOIN'den önce hesapla.</li>
+<li><b>Mutabakat.</b> Rötar kayıtlarındaki dakikaların toplamı, aynı uçuşların gerçek kalkış gecikmesine eşit olmalı (Ek görev 1). Eşitse neden dağılımına güvenebilirsin.</li>
+<li><b>Payda.</b> OTP'nin paydası kalkan uçuşlardır, iptal oranının paydası planlanan uçuşlar. İkisini karıştırmak oranı birkaç puan oynatır.</li>
+<li><b>Küçük hacim.</b> 3 uçuşluk bir rotada 1 iptal %33 eder; bu yüzden en az 20 uçuş eşiği var.</li>
+</ul>
+<h3>Teslim</h3>
+<p>Aylık gecikme için çizgi grafik, rötar nedenleri için yığılmış sütun, riskli rotalar için kısa tablo.</p>
+<div class="tip"><b>Yönetici özeti örneği</b>Aralık'ta ortalama kalkış gecikmesi 35,2 dakikaya çıktı (Eylül: 20,2); artışın en büyük kaynakları hava (9.199 dk) ve geç gelen uçak (9.160 dk). Dönem genelinde iptal oranı %1,95, ancak 62 iptalin 24'ü Aralık'ta. Kış için GZT–IST hattı (%8,6 iptal) öncelikli izlemeye alınmalı ve geç gelen uçak zincirini kırmak için yedek uçak planlanmalı.</div>
+<h3>Kendini değerlendir</h3>
+<table><tr><th>Ölçüt</th><th>Başlangıç</th><th>İyi</th><th>Mükemmel</th></tr><tr><td>Doğruluk</td><td>Sonuçlar çıkıyor</td><td>Paydalar ve iptal hariç tutma doğru</td><td>JOIN grain düzeyi kontrol edilmiş, mutabakat sıfır fark veriyor</td></tr><tr><td>Yorum</td><td>Sayı listesi</td><td>Her slaytta bir neden</td><td>Neden + önerilen aksiyon + beklenen etki</td></tr><tr><td>Sunum</td><td>Tablolar</td><td>Uygun grafik türü</td><td>Kurulun kararına bağlanan tek sayfalık özet</td></tr></table></article>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-hava">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../hv-veri/">← Veri değiştirme ve bütünlük: iptal, yeni rota, kısıtlar ve işlemler</a><a href="../er-modelleme/">Veri modelleme ve ER diyagramı: varlıktan tabloya →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

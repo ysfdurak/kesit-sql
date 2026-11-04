@@ -1,0 +1,41 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Keşifsel veri analizi (EDA): bir tabloyu tanımak | Kesit SQL</title><meta name="description" content="Profil çıkarma: dağılım, boşluklar, uç değerler ve tutarlılık kontrolleri."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/an-eda/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Keşifsel veri analizi (EDA): bir tabloyu tanımak"><meta property="og:description" content="Profil çıkarma: dağılım, boşluklar, uç değerler ve tutarlılık kontrolleri."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/an-eda/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Keşifsel veri analizi (EDA): bir tabloyu tanımak","description":"Profil çıkarma: dağılım, boşluklar, uç değerler ve tutarlılık kontrolleri.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/an-eda/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veri Analisti</span><h1>Keşifsel veri analizi (EDA): bir tabloyu tanımak</h1><p class="st-l">Profil çıkarma: dağılım, boşluklar, uç değerler ve tutarlılık kontrolleri.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-an-eda">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Analizden önce profil</h2>
+<p>Yeni bir tabloyla karşılaştığında hemen rapora geçme. Önce tablonun <b>profilini</b> çıkar. Bu adım hem veriyi tanımanı sağlar hem de kirli veriyi erkenden yakalar.</p>
+<table>
+<tr><th>Soru</th><th>SQL</th></tr>
+<tr><td>Kaç satır? Tanecik ne?</td><td><code>COUNT(*)</code>, <code>COUNT(DISTINCT anahtar)</code></td></tr>
+<tr><td>Hangi sütunlar boş?</td><td><code>COUNT(*) - COUNT(sutun)</code></td></tr>
+<tr><td>Sayısal aralık mantıklı mı?</td><td><code>MIN</code>, <code>MAX</code>, <code>AVG</code>, medyan</td></tr>
+<tr><td>Kategorik değerler neler?</td><td><code>GROUP BY sutun ORDER BY COUNT(*) DESC</code></td></tr>
+<tr><td>Tarih aralığı?</td><td><code>MIN(tarih)</code>, <code>MAX(tarih)</code></td></tr>
+<tr><td>İş kurallarına aykırı satır var mı?</td><td>Fiyat &lt; maliyet, negatif adet, gelecek tarih…</td></tr>
+<tr><td>Anahtar tekrar ediyor mu?</td><td><code>GROUP BY anahtar HAVING COUNT(*) &gt; 1</code></td></tr>
+</table>
+<h3>Tek sorguda sayısal profil</h3>
+<pre class="code">SELECT COUNT(*) AS satir,
+       COUNT(DISTINCT order_id) AS siparis,
+       MIN(quantity) AS min_adet,
+       MAX(quantity) AS max_adet,
+       ROUND(AVG(quantity * 1.0), 2) AS ort_adet,
+       MIN(discount) AS min_indirim,
+       MAX(discount) AS max_indirim
+FROM order_items;</pre>
+<h3>Kategorik değerlerin dağılımı</h3>
+<pre class="code">SELECT status,
+       COUNT(*) AS adet,
+       ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 1) AS yuzde
+FROM orders
+GROUP BY status
+ORDER BY adet DESC;</pre>
+<div class="tip"><b>Sayılar mantıklı mı?</b>Profil sonuçlarını iş bilgisiyle karşılaştır: indirim oranı 1'den büyük olabilir mi? Doğum yılı 1900 öncesi mi? En pahalı ürün gerçekten o mu? EDA'nın değeri bu soruları sormaktadır.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-an-eda">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../an-temizlik/">← Veri temizleme</a><a href="../an-dashboard/">Dashboard için sorgu tasarımı →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

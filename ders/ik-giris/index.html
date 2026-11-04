@@ -1,0 +1,30 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>İK analitiğine giriş: Pusula A.Ş. verisini tanımak | Kesit SQL</title><meta name="description" content="İnsan kaynakları verisinin yapısı: çalışan, görev, maaş ve olay tabloları; “o tarihte aktif” mantığı ve ilk metrikler."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ik-giris/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="İK analitiğine giriş: Pusula A.Ş. verisini tanımak"><meta property="og:description" content="İnsan kaynakları verisinin yapısı: çalışan, görev, maaş ve olay tabloları; “o tarihte aktif” mantığı ve ilk metrikler."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ik-giris/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"İK analitiğine giriş: Pusula A.Ş. verisini tanımak","description":"İnsan kaynakları verisinin yapısı: çalışan, görev, maaş ve olay tabloları; “o tarihte aktif” mantığı ve ilk metrikler.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ik-giris/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · İK Analitiği</span><h1>İK analitiğine giriş: Pusula A.Ş. verisini tanımak</h1><p class="st-l">İnsan kaynakları verisinin yapısı: çalışan, görev, maaş ve olay tabloları; “o tarihte aktif” mantığı ve ilk metrikler.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ik-giris">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>İK verisi neden farklı?</h2>
+<p>Satış verisinde her satır bir olaydır (sipariş). İK verisinde ise çoğu bilgi bir <b>zaman aralığında</b> geçerlidir: bir kişi bir tarihte işe girer, belli bir tarihe kadar bir görevde kalır, maaşı belli bir tarihten itibaren değişir. Bu yüzden İK sorularının neredeyse hepsi şu kalıba dayanır: <b>“X tarihinde durum neydi?”</b></p>
+<table><tr><th>Tablo</th><th>Bir satır</th><th>Zaman mantığı</th></tr>
+<tr><td>ik_employees</td><td>bir çalışan (ayrılanlar dahil)</td><td>hire_date … term_date</td></tr>
+<tr><td>ik_job_history</td><td>bir kişinin bir görevi</td><td>start_date … end_date</td></tr>
+<tr><td>ik_salaries</td><td>bir maaş değişikliği</td><td>effective_date’ten bir sonraki kayda kadar</td></tr>
+<tr><td>ik_reviews</td><td>bir kişinin bir yılki değerlendirmesi</td><td>yıl</td></tr>
+<tr><td>ik_leaves, ik_training</td><td>bir olay</td><td>tarih</td></tr>
+<tr><td>ik_candidates</td><td>bir aday başvurusu</td><td>son aşama</td></tr></table>
+<h2>“O tarihte aktif” koşulu</h2>
+<p>Bir çalışan <code>t</code> tarihinde aktiftir, eğer o tarihte ya da önce işe girmiş ve o tarihten önce ayrılmamışsa:</p>
+<pre class="code">SELECT COUNT(*) AS aktif
+FROM ik_employees e
+WHERE e.hire_date <= '2024-12-31'
+  AND (e.term_date IS NULL OR e.term_date > '2024-12-31');</pre>
+<p><code>term_date IS NULL</code> “hâlâ çalışıyor” demektir. Bu koşulu unutmak ya da <code>term_date &gt; t</code> yazıp NULL’ları kaybetmek İK raporlarındaki en yaygın hatadır.</p>
+<h2>Kişisel veri</h2>
+<div class="note"><b>Etik ve hukuk</b>İK verisi kişisel veridir (KVKK). Gerçek işte ad, doğum yılı ve maaş gibi alanlar yalnızca yetkili kişilerce, amaca uygun ve mümkünse toplulaştırılarak kullanılır. Küçük gruplarda (ör. 5 kişiden az) ortalama vermek kişiyi tanınır hâle getirebilir; raporlarda alt sınır koy. Bu veri setindeki kişiler hayalidir.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ik-giris">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../an-rfm/">← RFM müşteri segmentasyonu</a><a href="../ik-kadro/">Kadro (headcount): bir tarihte, her ay ve kırılımlarıyla →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

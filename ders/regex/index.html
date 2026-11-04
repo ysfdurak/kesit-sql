@@ -1,0 +1,53 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Desen eşleme: LIKE'tan düzenli ifadelere (REGEX) | Kesit SQL</title><meta name="description" content="REGEXP_LIKE, REGEXP_REPLACE, REGEXP_SUBSTR ve SQL türleri arası farklar."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/regex/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Desen eşleme: LIKE'tan düzenli ifadelere (REGEX)"><meta property="og:description" content="REGEXP_LIKE, REGEXP_REPLACE, REGEXP_SUBSTR ve SQL türleri arası farklar."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/regex/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Desen eşleme: LIKE'tan düzenli ifadelere (REGEX)","description":"REGEXP_LIKE, REGEXP_REPLACE, REGEXP_SUBSTR ve SQL türleri arası farklar.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/regex/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Fonksiyonlar</span><h1>Desen eşleme: LIKE'tan düzenli ifadelere (REGEX)</h1><p class="st-l">REGEXP_LIKE, REGEXP_REPLACE, REGEXP_SUBSTR ve SQL türleri arası farklar.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-regex">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>LIKE yetmediğinde</h2>
+<p><code>LIKE</code> yalnızca iki joker bilir: <code>%</code> ve <code>_</code>. “İçinde rakam geçen e-postalar”, “birden fazla boşluk”, “@ işaretinden sonraki kısım” gibi işler için <b>düzenli ifadeler</b> (regular expressions, regex) kullanılır.</p>
+<table>
+<tr><th>Desen</th><th>Anlamı</th><th>Örnek</th></tr>
+<tr><td><code>^</code> / <code>$</code></td><td>Metnin başı / sonu</td><td><code>^A</code>: A ile başlar</td></tr>
+<tr><td><code>.</code></td><td>Herhangi bir karakter</td><td><code>a.c</code>: abc, a1c</td></tr>
+<tr><td><code>[abc]</code>, <code>[0-9]</code></td><td>Kümeden bir karakter</td><td><code>[0-9]</code>: bir rakam</td></tr>
+<tr><td><code>[^0-9]</code></td><td>Küme dışından bir karakter</td><td>rakam olmayan</td></tr>
+<tr><td><code>*</code> <code>+</code> <code>?</code></td><td>0 veya daha çok / 1 veya daha çok / 0 ya da 1</td><td><code>[0-9]+</code>: bir veya daha çok rakam</td></tr>
+<tr><td><code>{n}</code>, <code>{n,m}</code></td><td>Tam n kez / n ile m arası</td><td><code>[0-9]{4}</code>: 4 rakam</td></tr>
+<tr><td><code>a|b</code></td><td>a veya b</td><td><code>gmail|hotmail</code></td></tr>
+<tr><td><code>\.</code></td><td>Özel karakterin kendisi</td><td><code>\.com$</code></td></tr>
+</table>
+<h2>SQL türlerine göre regex</h2>
+<table>
+<tr><th>SQL türü</th><th>Eşleşiyor mu?</th><th>Değiştir</th><th>Parça al</th></tr>
+<tr><td>SQL Server 2025</td><td><code>REGEXP_LIKE(s, p)</code></td><td><code>REGEXP_REPLACE</code></td><td><code>REGEXP_SUBSTR</code></td></tr>
+<tr><td>PostgreSQL</td><td><code>s ~ p</code>, büyük/küçük harf duyarsız: <code>s ~* p</code></td><td><code>regexp_replace(s, p, r, 'g')</code></td><td><code>regexp_substr</code> (15+)</td></tr>
+<tr><td>MySQL 8</td><td><code>s REGEXP p</code>, <code>REGEXP_LIKE</code></td><td><code>REGEXP_REPLACE</code></td><td><code>REGEXP_SUBSTR</code></td></tr>
+<tr><td>Oracle</td><td><code>REGEXP_LIKE(s, p)</code> (yalnızca WHERE içinde)</td><td><code>REGEXP_REPLACE</code></td><td><code>REGEXP_SUBSTR</code></td></tr>
+<tr><td>SQLite</td><td><code>s REGEXP p</code> (eklenti gerekir)</td><td colspan="2">Yerleşik değil</td></tr>
+</table>
+<div class="warn"><b>SQL Server'ın eski sürümleri</b>REGEXP fonksiyonları SQL Server 2025 ile geldi. Daha eski sürümlerde <code>LIKE '%[0-9]%'</code> ve <code>PATINDEX</code> ile idare edilir.</div>
+<h3>Deseni sağlayan satırları bulmak</h3>
+<pre class="code" data-v="{&quot;pg&quot;:&quot;SELECT customer_id, email\nFROM customers\nWHERE email ~ '^[a-z]+\\.[a-z]+@gmail\\.com$';&quot;,&quot;mysql&quot;:&quot;SELECT customer_id, email\nFROM customers\nWHERE email REGEXP '^[a-z]+\\\\.[a-z]+@gmail\\\\.com$';&quot;,&quot;oracle&quot;:&quot;SELECT customer_id, email\nFROM customers\nWHERE REGEXP_LIKE(email, '^[a-z]+\\.[a-z]+@gmail\\.com$');&quot;,&quot;sqlite&quot;:&quot;SELECT customer_id, email\nFROM customers\nWHERE email REGEXP '^[a-z]+\\.[a-z]+@gmail\\.com$';&quot;}" data-base="tsql">SELECT customer_id, email
+FROM customers
+WHERE REGEXP_LIKE(email, '^[a-z]+\.[a-z]+@gmail\.com$');</pre>
+<div class="note"><b>MySQL'de çift ters bölü</b>MySQL metin sabitlerinde <code>\</code> kaçış karakteridir; desendeki <code>\.</code> için <code>'\\.'</code> yazılır. Bunun yerine <code>[.]</code> yazmak her SQL türünde çalışır.</div>
+<h3>Değiştirmek</h3>
+<p>Ad soyad alanındaki fazladan boşlukları teke indirelim. PostgreSQL'de <code>'g'</code> bayrağı yazılmazsa yalnızca <b>ilk</b> eşleşme değişir; diğer SQL türleri varsayılan olarak hepsini değiştirir.</p>
+<pre class="code" data-v="{&quot;pg&quot;:&quot;SELECT id,\n       full_name,\n       TRIM(regexp_replace(full_name, ' +', ' ', 'g')) AS temiz_ad\nFROM raw_signups;&quot;,&quot;mysql&quot;:&quot;SELECT id,\n       full_name,\n       TRIM(REGEXP_REPLACE(full_name, ' +', ' ')) AS temiz_ad\nFROM raw_signups;&quot;,&quot;oracle&quot;:&quot;SELECT id,\n       full_name,\n       TRIM(REGEXP_REPLACE(full_name, ' +', ' ')) AS temiz_ad\nFROM raw_signups;&quot;}" data-base="tsql">SELECT id,
+       full_name,
+       TRIM(REGEXP_REPLACE(full_name, ' +', ' ')) AS temiz_ad
+FROM raw_signups;</pre>
+<h3>Parça almak</h3>
+<pre class="code" data-v="{&quot;pg&quot;:&quot;SELECT regexp_substr(email, '[^@]+$') AS alan_adi,\n       COUNT(*) AS musteri\nFROM customers\nWHERE email IS NOT NULL\nGROUP BY regexp_substr(email, '[^@]+$');&quot;,&quot;mysql&quot;:&quot;SELECT REGEXP_SUBSTR(email, '[^@]+$') AS alan_adi,\n       COUNT(*) AS musteri\nFROM customers\nWHERE email IS NOT NULL\nGROUP BY alan_adi;&quot;,&quot;oracle&quot;:&quot;SELECT REGEXP_SUBSTR(email, '[^@]+$') AS alan_adi,\n       COUNT(*) AS musteri\nFROM customers\nWHERE email IS NOT NULL\nGROUP BY REGEXP_SUBSTR(email, '[^@]+$');&quot;}" data-base="tsql">SELECT REGEXP_SUBSTR(email, '[^@]+$') AS alan_adi,
+       COUNT(*) AS musteri
+FROM customers
+WHERE email IS NOT NULL
+GROUP BY REGEXP_SUBSTR(email, '[^@]+$');</pre>
+<div class="tip"><b>Regex pahalıdır</b>Regex koşulları indeks kullanamaz ve her satırda çalışır. Büyük tablolarda önce basit bir filtreyle (tarih, durum) satır sayısını azalt.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-regex">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ddl-create/">← CREATE TABLE, veri tipleri ve kısıtlar</a><a href="../metin-benzerlik/">Metin temizleme ve benzerlik: TRANSLATE, SOUNDEX, Levenshtein →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

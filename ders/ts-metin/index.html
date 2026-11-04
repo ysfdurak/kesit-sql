@@ -1,0 +1,51 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>T-SQL metin fonksiyonları | Kesit SQL</title><meta name="description" content="LEN, LEFT/RIGHT, SUBSTRING, CHARINDEX, STUFF, REPLICATE, CONCAT, STRING_AGG."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-metin/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="T-SQL metin fonksiyonları"><meta property="og:description" content="LEN, LEFT/RIGHT, SUBSTRING, CHARINDEX, STUFF, REPLICATE, CONCAT, STRING_AGG."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-metin/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"T-SQL metin fonksiyonları","description":"LEN, LEFT/RIGHT, SUBSTRING, CHARINDEX, STUFF, REPLICATE, CONCAT, STRING_AGG.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-metin/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · T-SQL (SQL Server)</span><h1>T-SQL metin fonksiyonları</h1><p class="st-l">LEN, LEFT/RIGHT, SUBSTRING, CHARINDEX, STUFF, REPLICATE, CONCAT, STRING_AGG.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-metin">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>SQL Server'ın metin araç kutusu</h2>
+<table><tr><th>Fonksiyon</th><th>Örnek → Sonuç</th></tr>
+<tr><td><code>LEN(s)</code></td><td><code>LEN('Ankara  ')</code> → 6 (sondaki boşlukları saymaz)</td></tr>
+<tr><td><code>DATALENGTH(s)</code></td><td>Bayt sayısı (NVARCHAR'da karakter başına 2)</td></tr>
+<tr><td><code>LEFT(s, n)</code>, <code>RIGHT(s, n)</code></td><td><code>LEFT('Anadolu', 3)</code> → Ana</td></tr>
+<tr><td><code>SUBSTRING(s, başlangıç, uzunluk)</code></td><td><code>SUBSTRING('2024-05-17', 6, 2)</code> → 05</td></tr>
+<tr><td><code>CHARINDEX(aranan, s)</code></td><td><code>CHARINDEX('@', 'ali@x.com')</code> → 4</td></tr>
+<tr><td><code>REPLACE</code>, <code>REPLICATE(s, n)</code>, <code>REVERSE</code></td><td><code>REPLICATE('*', 3)</code> → ***</td></tr>
+<tr><td><code>STUFF(s, baş, uzunluk, yeni)</code></td><td><code>STUFF('ABCDE', 2, 3, '*')</code> → A*E</td></tr>
+<tr><td><code>CONCAT(a, b, ...)</code>, <code>CONCAT_WS(ayraç, ...)</code></td><td>NULL'ları boş metin sayar</td></tr>
+<tr><td><code>TRIM</code>, <code>LTRIM</code>, <code>RTRIM</code>, <code>UPPER</code>, <code>LOWER</code></td><td>TRIM 2017+</td></tr>
+<tr><td><code>STRING_AGG(s, ayraç)</code></td><td>Satırları tek metinde birleştirir (2017+)</td></tr>
+</table>
+<pre class="code" data-base="tsql">SELECT first_name,
+       LEN(first_name) AS uzunluk,
+       LEFT(first_name, 1) + '.' + LEFT(last_name, 1) + '.' AS bas_harf,
+       UPPER(last_name) AS soyad,
+       CONCAT(first_name, ' ', last_name) AS tam_ad
+FROM employees;</pre>
+<h2>+ ile CONCAT farkı</h2>
+<pre class="code" data-base="tsql">SELECT first_name + ' ' + NULL AS arti_ile,
+       CONCAT(first_name, ' ', NULL) AS concat_ile,
+       CONCAT_WS(' - ', first_name, last_name, title) AS ws_ile
+FROM employees
+WHERE emp_id = 1;</pre>
+<p><code>+</code> bir NULL ile karşılaşınca sonucu NULL yapar; CONCAT NULL'ı boş metin sayar. Ayrıca <code>+</code> bir sayı ile bir metni birleştirmeye çalışırsa SQL Server metni sayıya çevirmeye çalışır ve hata verir: <code>'Adet: ' + 5</code> hata, <code>CONCAT('Adet: ', 5)</code> çalışır.</p>
+<h2>E-posta maskeleme: STUFF + REPLICATE + CHARINDEX</h2>
+<pre class="code" data-base="tsql">SELECT TOP 5 email,
+       STUFF(email, 2, CHARINDEX('@', email) - 2,
+             REPLICATE('*', CHARINDEX('@', email) - 2)) AS maskeli
+FROM customers
+WHERE email IS NOT NULL;</pre>
+<h2>STRING_AGG ile listeleri birleştirmek</h2>
+<pre class="code" data-v="{&quot;pg&quot;:&quot;SELECT d.name AS departman,\n       STRING_AGG(e.first_name, ', ' ORDER BY e.first_name) AS calisanlar\nFROM departments d\nJOIN employees e ON e.dept_id = d.dept_id\nGROUP BY d.name;&quot;,&quot;mysql&quot;:&quot;SELECT d.name AS departman,\n       GROUP_CONCAT(e.first_name ORDER BY e.first_name SEPARATOR ', ') AS calisanlar\nFROM departments d\nJOIN employees e ON e.dept_id = d.dept_id\nGROUP BY d.name;&quot;,&quot;oracle&quot;:&quot;SELECT d.name AS departman,\n       LISTAGG(e.first_name, ', ') WITHIN GROUP (ORDER BY e.first_name) AS calisanlar\nFROM departments d\nJOIN employees e ON e.dept_id = d.dept_id\nGROUP BY d.name;&quot;}" data-base="tsql" data-diff="tsql pg mysql oracle sqlite">SELECT d.name AS departman,
+       STRING_AGG(e.first_name, ', ') WITHIN GROUP (ORDER BY e.first_name) AS calisanlar
+FROM departments d
+JOIN employees e ON e.dept_id = d.dept_id
+GROUP BY d.name;</pre>
+<div class="note"><b>Sıralama ve harmanlama</b>SQL Server'da metin karşılaştırma ve sıralama, sütunun <i>collation</i> ayarına bağlıdır. Türkçe veriler için <code>Turkish_CI_AS</code> kullanılırsa “i/İ” ve “ı/I” doğru eşleşir. Varsayılan <code>SQL_Latin1_General_CP1_CI_AS</code> büyük/küçük harf duyarsızdır (<code>WHERE city = 'izmir'</code>, 'İzmir' ile eşleşmeyebilir).</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-metin">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-top/">← TOP, WITH TIES, PERCENT ve OFFSET-FETCH</a><a href="../ts-tarih/">T-SQL tarih ve saat fonksiyonları →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

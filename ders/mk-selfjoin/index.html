@@ -1,0 +1,41 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mülakat kalıbı: kendine birleştirme klasikleri | Kesit SQL</title><meta name="description" content="Yöneticisinden fazla kazananlar, karşılıklı ilişkiler, birlikte satın alınan ürün çiftleri ve aynı gün iki olay."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/mk-selfjoin/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Mülakat kalıbı: kendine birleştirme klasikleri"><meta property="og:description" content="Yöneticisinden fazla kazananlar, karşılıklı ilişkiler, birlikte satın alınan ürün çiftleri ve aynı gün iki olay."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/mk-selfjoin/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Mülakat kalıbı: kendine birleştirme klasikleri","description":"Yöneticisinden fazla kazananlar, karşılıklı ilişkiler, birlikte satın alınan ürün çiftleri ve aynı gün iki olay.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/mk-selfjoin/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Mülakat Hazırlığı</span><h1>Mülakat kalıbı: kendine birleştirme klasikleri</h1><p class="st-l">Yöneticisinden fazla kazananlar, karşılıklı ilişkiler, birlikte satın alınan ürün çiftleri ve aynı gün iki olay.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-mk-selfjoin">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Soru</h2>
+<div class="note"><b>Görüşmeci</b>“Yöneticisinden fazla kazanan çalışanları bul.” Takip: “En sık birlikte satın alınan ürün çiftleri hangileri?”</div>
+<h2>Önce netleştir</h2>
+<p>Kod yazmadan önce sorulacak sorular. Her biri farklı bir sorguya götürür; sormamak en sık puan kaybıdır.</p>
+<ul><li>Yöneticisi olmayan (en üstteki) çalışan sonuçta görünmeli mi?</li><li>Ürün çiftinde (A, B) ile (B, A) aynı çift mi?</li><li>Aynı siparişte aynı ürün iki satırda olabilir mi?</li><li>Kaç çift isteniyor; eşitlikte ne olsun?</li></ul>
+<h2>Yaklaşım</h2>
+<ol><li>Tabloyu iki takma adla birleştir; her takma ad bir rolü temsil eder (çalışan, yönetici).</li><li>Çiftlerde tekrarı önlemek için a.id < b.id koşulu ekle.</li><li>Önce sipariş × ürün düzeyinde tekilleştir, sonra çiftleri üret ve say.</li></ol>
+<h2>Çözüm 1: yöneticiden fazla kazananlar</h2>
+<pre class="code">SELECT e.first_name AS calisan, e.salary, m.first_name AS yonetici, m.salary AS yonetici_maas
+FROM employees e
+JOIN employees m ON m.emp_id = e.manager_id
+WHERE e.salary > m.salary
+ORDER BY e.salary DESC;</pre>
+<h2>Çözüm 2: birlikte satın alınan ürün çiftleri</h2>
+<pre class="code">WITH s AS (
+  SELECT DISTINCT order_id, product_id FROM order_items
+)
+SELECT a.product_id AS urun_a, b.product_id AS urun_b, COUNT(*) AS birlikte
+FROM s a
+JOIN s b ON b.order_id = a.order_id AND a.product_id < b.product_id
+GROUP BY a.product_id, b.product_id
+ORDER BY birlikte DESC, urun_a, urun_b
+LIMIT 5;</pre>
+<p>İkisi de aynı fikir: bir tabloyu iki farklı rolde kullanmak. Anadolu Market'te birinci sorgu <b>boş</b> döner, çünkü kimse yöneticisinden fazla kazanmıyor; boş sonuç da geçerli bir cevaptır, bunu görüşmeciye söyleyip sorgunun doğru çalıştığını <code>&gt;=</code> ya da oranla gösterebilirsin. İkinci sorguda <code>a.product_id &lt; b.product_id</code> hem bir ürünün kendisiyle eşleşmesini hem de (A, B) / (B, A) çift sayımını önler. Ürün sayısı büyüdükçe çift sayısı karesel büyür; büyük veride önce popüler ürünlerle sınırlamak gerekir.</p>
+<h2>Sınır durumları</h2>
+<table><tr><th>Durum</th><th>Ne olur?</th></tr><tr><td>Yöneticisi olmayan</td><td>INNER JOIN onu düşürür; istenirse LEFT JOIN</td></tr><tr><td>Eşit maaş</td><td>> yerine >= kullanılırsa sonuç değişir; soruyu netleştir</td></tr><tr><td>Aynı ürün iki satırda</td><td>DISTINCT olmazsa çift sayısı şişer</td></tr><tr><td>Kendisiyle eşleşme</td><td>a.id < b.id ya da a.id <> b.id koşulu gerekir</td></tr></table>
+<h2>Takip soruları</h2>
+<ul><li>Çiftin “kaldıraç” (lift) değerini nasıl hesaplarsın?</li><li>Yönetim zinciri çok seviyeliyse (yöneticinin yöneticisi) ne kullanırsın? (özyinelemeli CTE)</li><li>Bu sorgu 10 milyon sipariş satırında nasıl hızlandırılır?</li></ul>
+<div class="tip"><b>Görüşmeci neye bakıyor?</b>Rolleri doğru adlandırman (e ve m), çift tekrarını kendiliğinden önlemen ve satır patlaması riskini fark etmen.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-mk-selfjoin">Alıştırmalara geç (4)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../mk-zaman/">← Mülakat kalıbı: zaman pencereleri, büyüme ve “son 30 gün”</a><a href="../mk-medyan/">Mülakat kalıbı: medyan, yüzdelik ve mod →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

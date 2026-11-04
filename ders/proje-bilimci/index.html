@@ -1,0 +1,45 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bitirme projesi (Veri Bilimi): şüpheli işlem tespiti ve müşteri özellik tablosu | Kesit SQL</title><meta name="description" content="İstatistiksel aykırı değer, kural tabanlı skor ve model için özellik tablosu."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/proje-bilimci/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Bitirme projesi (Veri Bilimi): şüpheli işlem tespiti ve müşteri özellik tablosu"><meta property="og:description" content="İstatistiksel aykırı değer, kural tabanlı skor ve model için özellik tablosu."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/proje-bilimci/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Bitirme projesi (Veri Bilimi): şüpheli işlem tespiti ve müşteri özellik tablosu","description":"İstatistiksel aykırı değer, kural tabanlı skor ve model için özellik tablosu.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/proje-bilimci/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Bitirme Projeleri</span><h1>Bitirme projesi (Veri Bilimi): şüpheli işlem tespiti ve müşteri özellik tablosu</h1><p class="st-l">İstatistiksel aykırı değer, kural tabanlı skor ve model için özellik tablosu.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-bilimci">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Senaryo</h2>
+<p>Ilgaz Bank'ın risk ekibi dolandırıcılık modeli kurmadan önce veriyi tanımak istiyor. İki şey bekleniyor: kural ve istatistikle şüpheli işlemlerin işaretlenmesi, ve her müşteri için bir satırlık <b>özellik tablosu</b> (feature table).</p>
+<h2>Yöntem</h2>
+<ul>
+<li><b>z-skoru</b>: (değer − ortalama) ÷ standart sapma. Hesap bazında hesaplanırsa “bu müşteri için olağandışı” işlemi bulur.</li>
+<li><b>Kurallar</b>: gece saatleri, yeni kanal, çok yüksek tutar gibi işaretler birleştirilerek basit bir skor oluşturulur.</li>
+<li><b>Sızıntı yok</b>: Özellik tablosu, tahmin anından önceki veriden üretilmelidir (burada referans tarih 2024-12-01; Aralık verisi etiket için ayrılır).</li>
+</ul>
+<p>Standart sapma bu uygulamada <code>STDDEV</code> (SQL Server'da <code>STDEV</code>) ile hesaplanabilir; taşınabilir yol <code>SQRT(AVG(x*x) - AVG(x)*AVG(x))</code>.</p>
+<h2>Derinleş: modele hazır veri teslim etmek</h2>
+<div class="note"><b>Brif: Risk ekibi lideri</b>“Ay sonunda dolandırıcılık ve pasifleşme modelleri için bütçe isteyeceğiz. Önce SQL ile ne kadar sinyal olduğunu görelim: şüpheli işlemler gerçekten ayrışıyor mu, özellik tablosu etiketle ilişkili mi? Bana özellik tablosu ve iki sayfalık bulgu notu lazım.”</div>
+<h3>Çalışma planı</h3>
+<ol>
+<li><b>Kesim tarihini sabitle.</b> Özellikler 2024-12-01 öncesinden, etiket Aralık'tan. Aşağıdaki sorgu öncesi dönemi tanır: 18.771 kart harcaması, 477 müşteri, son işlem 2024-11-30.</li>
+<li><b>Dağılıma bak.</b> Ortalama 3.111 TL ama en büyük işlem 93.500 TL: dağılım sağa çarpık; ortalama + 3 standart sapma kaba bir eşiktir, kesin değildir.</li>
+<li><b>Hipotezleri yaz.</b> “Gece işlemleri olağandışı”, “uzun süredir harcamayan müşteri pasifleşir”. Her biri bir sorguyla sınanabilir.</li>
+</ol>
+<pre class="code">SELECT COUNT(*) AS islem, COUNT(DISTINCT a.customer_id) AS musteri,
+       MIN(t.txn_time) AS ilk, MAX(t.txn_time) AS son
+FROM bank_txns t
+JOIN bank_accounts a ON a.account_id = t.account_id
+WHERE t.txn_type = 'kart_harcama' AND t.txn_time &lt; '2024-12-01';</pre>
+<h3>Kontrol listesi</h3>
+<ul>
+<li><b>Bir müşteri = bir satır.</b> Özellik tablosunun satır sayısı tekil müşteri sayısına (477) eşit olmalı; etiket tablosunun toplamı da.</li>
+<li><b>Sızıntı testi.</b> <code>son_gun</code> negatifse kesimden sonraki veri özelliğe girmiş demektir. Sıfır olmalı.</li>
+<li><b>Bölme hatası.</b> z-skoru için standart sapma 0 olan ve az işlemli hesaplar dışarıda bırakılmalı.</li>
+<li><b>Sınıf dengesi.</b> Pasif müşteri yalnızca 13; model başarısını doğruluk (accuracy) ile değil, yakalama oranıyla ölç.</li>
+</ul>
+<h3>Teslim</h3>
+<p>Özellik tablosu (müşteri başına bir satır, sütun sözlüğüyle) ve bulgu notu: işaret sayıları, kesişim, etiketle ilişki tablosu.</p>
+<div class="tip"><b>Yönetici özeti örneği</b>Kasım sonuna kadar harcaması olan 477 müşteri için özellik tablosu hazırlandı; 13 müşteri Aralık'ta pasifleşti. Son harcamasının üzerinden 30 günden fazla geçen 13 müşterinin 12'si pasif kaldı; <code>son_gun</code> tek başına çok güçlü bir sinyal. Kural skoru 25 işlemi işaretledi; bunların 19'u hesap bazında z-skoruyla da olağandışı. Bu 25 işlemin hepsi gece saatlerinde, 45.400 TL üstünde ve her biri farklı bir hesapta: dolandırıcılık ekibine öncelikli inceleme listesi olarak gönderilmeli.</div>
+<h3>Kendini değerlendir</h3>
+<table><tr><th>Ölçüt</th><th>Başlangıç</th><th>İyi</th><th>Mükemmel</th></tr><tr><td>Doğruluk</td><td>Özellikler hesaplanmış</td><td>Kesim tarihi her yerde aynı</td><td>Sızıntı ve satır sayısı testleri sıfır hata</td></tr><tr><td>Analiz</td><td>Tek yöntem</td><td>Kural ve istatistik karşılaştırılmış</td><td>Kesişim ve etiketle ilişki sayıyla gösterilmiş</td></tr><tr><td>Teslim</td><td>Sorgular</td><td>Tablo + sütun sözlüğü</td><td>Tablo, sözlük ve modelin neyi tahmin edeceğine dair net not</td></tr></table></article>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-bilimci">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../proje-bi/">← Bitirme projesi (İş Zekâsı): Anadolu Market yönetim KPI panosu için veri hazırlığı</a><a href="../proje-muhendis/">Bitirme projesi (Veri Mühendisi): ham kayıttan temiz boyut tablosuna ve veri testlerine →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

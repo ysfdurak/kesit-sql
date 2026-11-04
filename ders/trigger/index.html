@@ -1,0 +1,37 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trigger | Kesit SQL</title><meta name="description" content="Bir olay olduğunda otomatik çalışan SQL; satır bazlı ve küme bazlı tetikleyiciler."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/trigger/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Trigger"><meta property="og:description" content="Bir olay olduğunda otomatik çalışan SQL; satır bazlı ve küme bazlı tetikleyiciler."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/trigger/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Trigger","description":"Bir olay olduğunda otomatik çalışan SQL; satır bazlı ve küme bazlı tetikleyiciler.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/trigger/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Veritabanı Tasarımı</span><h1>Trigger</h1><p class="st-l">Bir olay olduğunda otomatik çalışan SQL; satır bazlı ve küme bazlı tetikleyiciler.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-trigger">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Olay → eylem</h2>
+<p>Trigger, bir tabloda INSERT, UPDATE veya DELETE olduğunda otomatik çalışır. Denetim kaydı (audit log), türetilmiş alanları güncel tutma ve karmaşık doğrulamalar için kullanılır. Yazım SQL türünden SQL türüne çok değişir; sekmelerle karşılaştır:</p>
+<pre class="code" data-v="{&quot;tsql&quot;:&quot;CREATE TABLE price_log (\n  product_id INT, old_price DECIMAL(12,2), new_price DECIMAL(12,2)\n);\nGO\nCREATE TRIGGER trg_price_change ON products\nAFTER UPDATE\nAS\nBEGIN\n  SET NOCOUNT ON;\n  INSERT INTO price_log (product_id, old_price, new_price)\n  SELECT d.product_id, d.price, i.price\n  FROM deleted d\n  JOIN inserted i ON i.product_id = d.product_id\n  WHERE d.price &lt;&gt; i.price;\nEND;\nGO\nUPDATE products SET price = price + 10 WHERE category = N'Kitap';\nSELECT product_id, old_price, new_price FROM price_log ORDER BY product_id;&quot;,&quot;pg&quot;:&quot;CREATE TABLE price_log (product_id INTEGER, old_price NUMERIC(12,2), new_price NUMERIC(12,2));\n\nCREATE FUNCTION fn_price_change() RETURNS trigger AS $$\nBEGIN\n  IF OLD.price &lt;&gt; NEW.price THEN\n    INSERT INTO price_log VALUES (OLD.product_id, OLD.price, NEW.price);\n  END IF;\n  RETURN NEW;\nEND;\n$$ LANGUAGE plpgsql;\n\nCREATE TRIGGER trg_price_change\nAFTER UPDATE OF price ON products\nFOR EACH ROW EXECUTE FUNCTION fn_price_change();&quot;,&quot;mysql&quot;:&quot;CREATE TABLE price_log (product_id INT, old_price DECIMAL(12,2), new_price DECIMAL(12,2));\n\nDELIMITER //\nCREATE TRIGGER trg_price_change\nAFTER UPDATE ON products\nFOR EACH ROW\nBEGIN\n  IF OLD.price &lt;&gt; NEW.price THEN\n    INSERT INTO price_log VALUES (OLD.product_id, OLD.price, NEW.price);\n  END IF;\nEND //\nDELIMITER ;&quot;,&quot;oracle&quot;:&quot;CREATE TABLE price_log (product_id NUMBER(10), old_price NUMBER(12,2), new_price NUMBER(12,2));\n\nCREATE OR REPLACE TRIGGER trg_price_change\nAFTER UPDATE OF price ON products\nFOR EACH ROW\nWHEN (OLD.price &lt;&gt; NEW.price)\nBEGIN\n  INSERT INTO price_log VALUES (:OLD.product_id, :OLD.price, :NEW.price);\nEND;\n/&quot;}" data-nr="pg mysql oracle" data-na="bq">CREATE TABLE price_log (
+  product_id INTEGER, old_price REAL, new_price REAL
+);
+
+CREATE TRIGGER trg_price_change
+AFTER UPDATE OF price ON products
+FOR EACH ROW
+WHEN OLD.price &lt;&gt; NEW.price
+BEGIN
+  INSERT INTO price_log (product_id, old_price, new_price)
+  VALUES (OLD.product_id, OLD.price, NEW.price);
+END;
+
+UPDATE products SET price = price + 10 WHERE category = 'Kitap';
+SELECT product_id, old_price, new_price FROM price_log ORDER BY product_id;</pre>
+<table><tr><th>SQL türü</th><th>Önceki / yeni değer</th><th>Çalışma biçimi</th></tr>
+<tr><td>SQL Server</td><td><code>deleted</code> / <code>inserted</code> sanal tabloları</td><td>İfade başına bir kez (küme bazlı)</td></tr>
+<tr><td>PostgreSQL</td><td><code>OLD</code> / <code>NEW</code></td><td>Trigger fonksiyonu + <code>FOR EACH ROW</code> veya <code>STATEMENT</code></td></tr>
+<tr><td>MySQL, SQLite</td><td><code>OLD</code> / <code>NEW</code></td><td>Satır başına</td></tr>
+<tr><td>Oracle</td><td><code>:OLD</code> / <code>:NEW</code></td><td>Satır veya ifade düzeyi</td></tr>
+</table>
+<div class="warn" data-d="tsql"><b>SQL Server'ın en sık yapılan trigger hatası</b>SQL Server trigger'ı her satır için değil, <b>ifade başına bir kez</b> çalışır. 100 satırı güncelleyen bir UPDATE'te <code>inserted</code> tablosunda 100 satır vardır. <code>SELECT @id = product_id FROM inserted</code> gibi tek satır varsayan kod hatalıdır; her zaman küme bazlı yaz.</div>
+<div class="warn"><b>Dikkatli kullan</b>Trigger'lar “görünmez” mantık ekler: Bir UPDATE'in neden yavaş olduğunu veya beklenmedik bir tabloyu neden değiştirdiğini bulmak zorlaşır.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-trigger">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../view-ileri/">← Görünümler ileri: güncellenebilir view, WITH CHECK OPTION, materialized view</a><a href="../performans/">Sorgu optimizasyonu: iyi alışkanlıklar →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

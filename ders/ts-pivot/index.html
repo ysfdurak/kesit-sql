@@ -1,0 +1,71 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PIVOT ve UNPIVOT | Kesit SQL</title><meta name="description" content="SQL Server'ın satırları sütuna çeviren operatörleri."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-pivot/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="PIVOT ve UNPIVOT"><meta property="og:description" content="SQL Server'ın satırları sütuna çeviren operatörleri."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-pivot/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"PIVOT ve UNPIVOT","description":"SQL Server'ın satırları sütuna çeviren operatörleri.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-pivot/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · T-SQL (SQL Server)</span><h1>PIVOT ve UNPIVOT</h1><p class="st-l">SQL Server'ın satırları sütuna çeviren operatörleri.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-pivot">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>PIVOT operatörü</h2>
+<p>Koşullu toplama ile pivot yapmayı “İleri Sorgu Yapıları” bölümünde gördük. SQL Server ve Oracle bunun için ayrı bir <code>PIVOT</code> operatörü sunar. Yapı: <b>kaynak sorgu</b> → <b>toplanacak değer</b> → <b>sütuna dönüşecek değerler</b>.</p>
+<pre class="code" data-v="{&quot;oracle&quot;:&quot;SELECT *\nFROM (\n    SELECT channel, EXTRACT(YEAR FROM order_date) AS yil, order_id\n    FROM orders\n)\nPIVOT (\n    COUNT(order_id) FOR yil IN (2022 AS y2022, 2023 AS y2023, 2024 AS y2024)\n)\nORDER BY channel;&quot;,&quot;pg&quot;:&quot;-- PostgreSQL'de PIVOT yok: koşullu toplama (veya tablefunc eklentisindeki crosstab)\nSELECT channel,\n       COUNT(*) FILTER (WHERE EXTRACT(YEAR FROM order_date) = 2022) AS \&quot;2022\&quot;,\n       COUNT(*) FILTER (WHERE EXTRACT(YEAR FROM order_date) = 2023) AS \&quot;2023\&quot;,\n       COUNT(*) FILTER (WHERE EXTRACT(YEAR FROM order_date) = 2024) AS \&quot;2024\&quot;\nFROM orders\nGROUP BY channel\nORDER BY channel;&quot;,&quot;mysql&quot;:&quot;SELECT channel,\n       SUM(YEAR(order_date) = 2022) AS `2022`,\n       SUM(YEAR(order_date) = 2023) AS `2023`,\n       SUM(YEAR(order_date) = 2024) AS `2024`\nFROM orders\nGROUP BY channel\nORDER BY channel;&quot;,&quot;sqlite&quot;:&quot;SELECT channel,\n       SUM(CASE WHEN strftime('%Y', order_date) = '2022' THEN 1 ELSE 0 END) AS \&quot;2022\&quot;,\n       SUM(CASE WHEN strftime('%Y', order_date) = '2023' THEN 1 ELSE 0 END) AS \&quot;2023\&quot;,\n       SUM(CASE WHEN strftime('%Y', order_date) = '2024' THEN 1 ELSE 0 END) AS \&quot;2024\&quot;\nFROM orders\nGROUP BY channel\nORDER BY channel;&quot;}" data-base="tsql">SELECT *
+FROM (
+    SELECT channel, YEAR(order_date) AS yil, order_id
+    FROM orders
+) AS kaynak
+PIVOT (
+    COUNT(order_id) FOR yil IN ([2022], [2023], [2024])
+) AS p
+ORDER BY channel;</pre>
+<div class="warn"><b>PIVOT tuzağı</b>Kaynak sorgudaki, PIVOT'ta kullanılmayan <b>her sütun</b> gruplama sütunu olur. Kaynağa fazladan bir sütun (ör. customer_id) eklersen sonuç satır sayısı patlar. Kaynak sorguda yalnızca gerekli sütunları seç.</div>
+<p>Sütun değerleri sabit yazılır. Değer listesi değişkense (ör. her yıl yeni sütun) dinamik SQL ile sorgu metni üretilir; bunu ilerideki derste göreceğiz.</p>
+<h2>UNPIVOT: sütunları satıra çevirmek</h2>
+<pre class="code" data-base="tsql">WITH genis AS (
+    SELECT channel,
+           SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) AS teslim,
+           SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS iptal
+    FROM orders
+    GROUP BY channel
+)
+SELECT channel, durum, adet
+FROM genis
+UNPIVOT (adet FOR durum IN (teslim, iptal)) AS u
+ORDER BY channel, durum;</pre>
+<h2>Derinleş: dinamik PIVOT ve NULL hücreler</h2>
+<p>PIVOT'un en büyük kısıtı, sütun listesinin sorgu yazılırken <b>sabit</b> olmasıdır. Lezzet Kurye'ye yarın yeni bir ödeme yöntemi eklenirse <code>IN ([cüzdan], [kart], [nakit])</code> listesi onu göstermez. Çözüm, sütun listesini veriden üretip sorgu metnini dinamik olarak kurmaktır:</p>
+<pre class="code" data-base="tsql">DECLARE @cols NVARCHAR(MAX), @sql NVARCHAR(MAX);
+
+SELECT @cols = STRING_AGG(QUOTENAME(payment), ', ') WITHIN GROUP (ORDER BY payment)
+FROM (SELECT DISTINCT payment FROM lk_orders) AS t;
+
+SET @sql = N'SELECT status, ' + @cols + N'
+FROM (SELECT status, payment, order_id FROM lk_orders) AS k
+PIVOT (COUNT(order_id) FOR payment IN (' + @cols + N')) AS p
+ORDER BY status;';
+
+PRINT @sql;
+EXEC sp_executesql @sql;</pre>
+<ul><li><code>QUOTENAME</code> her değeri köşeli paranteze alır; değerde boşluk, Türkçe karakter ya da <code>]</code> olsa bile sorgu bozulmaz ve enjeksiyon riski azalır.</li>
+<li><code>WITHIN GROUP (ORDER BY ...)</code> sütun sırasını sabitler; yoksa STRING_AGG'in sırası garanti değildir.</li>
+<li><code>PRINT @sql</code> üretilen metni görmenin en kolay yoludur; hata ayıklarken önce metni oku.</li>
+<li>STRING_AGG SQL Server 2017+; daha eski sürümlerde <code>FOR XML PATH('')</code> + <code>STUFF</code> kalıbı kullanılır.</li></ul>
+<h3>NULL hücreler</h3>
+<p>PIVOT içinde <code>COUNT</code> eşleşme yoksa 0 verir, ama <code>SUM</code>, <code>AVG</code>, <code>MAX</code> NULL verir. Raporlarda boş hücre “veri yok” mu, “sıfır” mı karışmasın diye dış SELECT'te <code>ISNULL</code> uygulanır (PIVOT'un içinde uygulanamaz):</p>
+<pre class="code" data-base="tsql">SELECT cuisine,
+       ISNULL([İstanbul], 0) AS [İstanbul],
+       ISNULL([Ankara], 0)   AS Ankara,
+       ISNULL([İzmir], 0)    AS [İzmir]
+FROM (SELECT r.cuisine, r.city, o.tip
+      FROM lk_orders o JOIN lk_restaurants r ON r.restaurant_id = o.restaurant_id) AS k
+PIVOT (SUM(tip) FOR city IN ([İstanbul], [Ankara], [İzmir])) AS p
+ORDER BY cuisine;</pre>
+<table><tr><th>İhtiyaç</th><th>PIVOT</th><th>Koşullu toplama (CASE)</th></tr>
+<tr><td>Tek ölçü, sabit sütunlar</td><td>Uygun</td><td>Uygun</td></tr>
+<tr><td>Birden çok ölçü (adet + tutar)</td><td>Tek PIVOT'ta olmaz</td><td>Kolay</td></tr>
+<tr><td>Farklı koşullar (tarih aralığı gibi)</td><td>Zor</td><td>Kolay</td></tr>
+<tr><td>Taşınabilirlik</td><td>SQL Server, Oracle</td><td>Her SQL türü</td></tr></table>
+<p><b>Kontrol listesi:</b> Kaynak sorguda yalnızca satır anahtarı, pivot sütunu ve ölçü var mı? Sütun listesi sıralı ve QUOTENAME'li mi? Toplam fonksiyonu NULL üretebiliyorsa dışarıda ISNULL var mı? Sonucun satır toplamı, pivotsuz bir GROUP BY toplamıyla aynı mı?</p>
+<div class="warn"><b>Kaynak sorguyu dar tut</b>Yukarıdaki kaynağa <code>o.order_id</code> eklersen her sipariş ayrı bir gruplama anahtarı olur ve sonuç 8 satır yerine binlerce satıra çıkar.</div></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-pivot">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-gecici/">← Geçici tablolar, tablo değişkenleri ve SELECT INTO</a><a href="../ts-apply/">CROSS APPLY ve OUTER APPLY →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

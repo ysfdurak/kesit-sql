@@ -1,0 +1,69 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PostgreSQL'de programlama: PL/pgSQL, DO blokları ve eklentiler | Kesit SQL</title><meta name="description" content="Fonksiyon, prosedür, trigger fonksiyonu; RETURNS TABLE; eklenti ekosistemi."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/plpgsql/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="PostgreSQL'de programlama: PL/pgSQL, DO blokları ve eklentiler"><meta property="og:description" content="Fonksiyon, prosedür, trigger fonksiyonu; RETURNS TABLE; eklenti ekosistemi."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/plpgsql/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"PostgreSQL'de programlama: PL/pgSQL, DO blokları ve eklentiler","description":"Fonksiyon, prosedür, trigger fonksiyonu; RETURNS TABLE; eklenti ekosistemi.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/plpgsql/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · SQL Türlerine Özgü</span><h1>PostgreSQL'de programlama: PL/pgSQL, DO blokları ve eklentiler</h1><p class="st-l">Fonksiyon, prosedür, trigger fonksiyonu; RETURNS TABLE; eklenti ekosistemi.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-plpgsql">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>PL/pgSQL fonksiyonu</h2>
+<pre class="code" data-norun>CREATE OR REPLACE FUNCTION musteri_ciro(p_musteri INT)
+RETURNS NUMERIC
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_ciro NUMERIC;
+BEGIN
+    SELECT COALESCE(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 0)
+      INTO v_ciro
+      FROM orders o JOIN order_items oi ON oi.order_id = o.order_id
+     WHERE o.customer_id = p_musteri AND o.status = 'delivered';
+    RETURN ROUND(v_ciro, 2);
+END;
+$$;
+
+SELECT customer_id, musteri_ciro(customer_id) FROM customers LIMIT 5;</pre>
+<p>Gövde <code>$$ ... $$</code> arasına yazılır (dolar tırnağı); böylece içerideki tek tırnaklar kaçırılmaz.</p>
+<h3>Tablo döndüren fonksiyon</h3>
+<pre class="code" data-norun>CREATE OR REPLACE FUNCTION kategori_urunleri(p_kategori TEXT)
+RETURNS TABLE (urun TEXT, fiyat NUMERIC)
+LANGUAGE sql STABLE
+AS $$
+    SELECT name, price FROM products WHERE category = p_kategori ORDER BY price DESC;
+$$;
+
+SELECT * FROM kategori_urunleri('Kitap');</pre>
+<h3>Anonim blok ve prosedür</h3>
+<pre class="code" data-norun>DO $$
+BEGIN
+    RAISE NOTICE 'Toplam sipariş: %', (SELECT COUNT(*) FROM orders);
+END;
+$$;
+
+-- Prosedürler (PostgreSQL 11+) içinde COMMIT yapılabilir
+CREATE PROCEDURE arsivle(p_tarih DATE)
+LANGUAGE plpgsql AS $$
+BEGIN
+    INSERT INTO orders_arsiv SELECT * FROM orders WHERE order_date &lt; p_tarih;
+    DELETE FROM orders WHERE order_date &lt; p_tarih;
+    COMMIT;
+END;
+$$;
+CALL arsivle('2023-01-01');</pre>
+<h3>Trigger fonksiyonu</h3>
+<pre class="code" data-norun>CREATE FUNCTION guncelleme_zamani() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+    NEW.updated_at := now();
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_products_guncelle
+BEFORE UPDATE ON products
+FOR EACH ROW EXECUTE FUNCTION guncelleme_zamani();</pre>
+<h2>Eklentiler</h2>
+<p>PostgreSQL'in gücü eklentilerinden gelir: <b>pgvector</b> (vektör arama), <b>PostGIS</b> (coğrafi veri), <b>pg_stat_statements</b> (sorgu istatistikleri), <b>pg_cron</b> (zamanlanmış görev), <b>pg_trgm</b> (benzer metin araması), <b>fuzzystrmatch</b> (soundex, levenshtein), <b>TimescaleDB</b> (zaman serisi). <code>CREATE EXTENSION ad;</code> ile etkinleştirilir.</p>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-plpgsql">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../plsql/">← Oracle PL/SQL ile programlama: blok, imleç, prosedür, paket</a><a href="../an-kpi/">İş metrikleri: ciro, sipariş, ortalama sepet →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

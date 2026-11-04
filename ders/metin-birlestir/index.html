@@ -1,0 +1,41 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Satırları tek metinde toplamak: STRING_AGG, LISTAGG, GROUP_CONCAT | Kesit SQL</title><meta name="description" content="Bir gruptaki değerleri virgülle ayrılmış tek bir metinde birleştirmek; sıralama, tekrarsızlık ve uzunluk sınırları."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/metin-birlestir/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Satırları tek metinde toplamak: STRING_AGG, LISTAGG, GROUP_CONCAT"><meta property="og:description" content="Bir gruptaki değerleri virgülle ayrılmış tek bir metinde birleştirmek; sıralama, tekrarsızlık ve uzunluk sınırları."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/metin-birlestir/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Satırları tek metinde toplamak: STRING_AGG, LISTAGG, GROUP_CONCAT","description":"Bir gruptaki değerleri virgülle ayrılmış tek bir metinde birleştirmek; sıralama, tekrarsızlık ve uzunluk sınırları.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/metin-birlestir/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Özetleme</span><h1>Satırları tek metinde toplamak: STRING_AGG, LISTAGG, GROUP_CONCAT</h1><p class="st-l">Bir gruptaki değerleri virgülle ayrılmış tek bir metinde birleştirmek; sıralama, tekrarsızlık ve uzunluk sınırları.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-metin-birlestir">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Ne işe yarar?</h2>
+<p>“Her departmanın çalışanlarını tek satırda listele” gibi raporlarda, gruptaki değerleri bir metinde birleştiren toplama fonksiyonu kullanılır. COUNT veya SUM gibi çalışır; yalnızca sonuç sayı değil metindir.</p>
+<table>
+<tr><th>SQL türü</th><th>Fonksiyon</th><th>Sıralı yazım</th></tr>
+<tr><td>SQL Server 2017+</td><td><code>STRING_AGG(ad, ', ')</code></td><td><code>STRING_AGG(ad, ', ') WITHIN GROUP (ORDER BY ad)</code></td></tr>
+<tr><td>PostgreSQL, BigQuery</td><td><code>STRING_AGG(ad, ', ')</code></td><td><code>STRING_AGG(ad, ', ' ORDER BY ad)</code></td></tr>
+<tr><td>MySQL</td><td><code>GROUP_CONCAT(ad SEPARATOR ', ')</code></td><td><code>GROUP_CONCAT(ad ORDER BY ad SEPARATOR ', ')</code></td></tr>
+<tr><td>Oracle</td><td><code>LISTAGG(ad, ', ')</code></td><td><code>LISTAGG(ad, ', ') WITHIN GROUP (ORDER BY ad)</code></td></tr>
+<tr><td>SQLite</td><td><code>GROUP_CONCAT(ad, ', ')</code></td><td><code>GROUP_CONCAT(ad, ', ' ORDER BY ad)</code> (3.44+)</td></tr>
+</table>
+<h2>Temel kullanım</h2>
+<pre class="code" data-v="{&quot;tsql&quot;:&quot;SELECT d.name AS departman, STRING_AGG(e.first_name, ', ') WITHIN GROUP (ORDER BY e.hire_date) AS calisanlar\nFROM departments d\nJOIN employees e ON e.dept_id = d.dept_id\nGROUP BY d.name;&quot;,&quot;pg&quot;:&quot;SELECT d.name AS departman, STRING_AGG(e.first_name, ', ' ORDER BY e.hire_date) AS calisanlar\nFROM departments d\nJOIN employees e ON e.dept_id = d.dept_id\nGROUP BY d.name;&quot;,&quot;mysql&quot;:&quot;SELECT d.name AS departman, GROUP_CONCAT(e.first_name ORDER BY e.hire_date SEPARATOR ', ') AS calisanlar\nFROM departments d\nJOIN employees e ON e.dept_id = d.dept_id\nGROUP BY d.name;&quot;,&quot;oracle&quot;:&quot;SELECT d.name AS departman, LISTAGG(e.first_name, ', ') WITHIN GROUP (ORDER BY e.hire_date) AS calisanlar\nFROM departments d\nJOIN employees e ON e.dept_id = d.dept_id\nGROUP BY d.name;&quot;,&quot;bq&quot;:&quot;SELECT d.name AS departman, STRING_AGG(e.first_name, ', ' ORDER BY e.hire_date) AS calisanlar\nFROM departments d\nJOIN employees e ON e.dept_id = d.dept_id\nGROUP BY d.name;&quot;}">SELECT d.name AS departman, GROUP_CONCAT(e.first_name, ', ' ORDER BY e.hire_date) AS calisanlar
+FROM departments d
+JOIN employees e ON e.dept_id = d.dept_id
+GROUP BY d.name;</pre>
+<div class="warn"><b>Sırayı belirt</b>ORDER BY yazmazsan birleştirme sırası garanti değildir; aynı sorgu farklı günlerde farklı sırayla dönebilir. Raporda sıra önemliyse her zaman sıralı yazımı kullan.</div>
+<h2>NULL ve tekrarlar</h2>
+<ul>
+<li>NULL değerler atlanır; ayraç da eklenmez.</li>
+<li>Tekrarsız liste için PostgreSQL ve MySQL'de <code>DISTINCT</code> yazılır: <code>STRING_AGG(DISTINCT city, ', ')</code>. SQL Server'da STRING_AGG içinde DISTINCT yoktur; önce alt sorguda tekrarları temizle.</li>
+</ul>
+<h2>Uzunluk sınırları</h2>
+<table>
+<tr><th>SQL türü</th><th>Sınır</th><th>Çözüm</th></tr>
+<tr><td>MySQL</td><td><code>group_concat_max_len</code> varsayılan 1024 bayt; aşan kısım <b>sessizce kesilir</b></td><td><code>SET SESSION group_concat_max_len = 100000;</code></td></tr>
+<tr><td>Oracle</td><td>VARCHAR2 sınırı (4000 bayt) aşılırsa hata</td><td><code>LISTAGG(ad, ', ' ON OVERFLOW TRUNCATE)</code> (12.2+)</td></tr>
+<tr><td>SQL Server</td><td>Girdi NVARCHAR(4000) ise sonuç 8000 bayta sığmalı</td><td><code>STRING_AGG(CAST(ad AS NVARCHAR(MAX)), ', ')</code></td></tr>
+</table>
+<div class="note"><b>Eski SQL Server sürümleri</b>2017 öncesinde aynı iş <code>STUFF(... FOR XML PATH(''))</code> ile yapılırdı. Bu yöntem T-SQL modülündeki “Listeleri bölmek ve birleştirmek” dersinde anlatılıyor.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-metin-birlestir">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../having/">← HAVING: grupları filtrelemek</a><a href="../metin/">Metin fonksiyonları →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,50 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sık yapılan SQL hataları: düzelt ve öğren | Kesit SQL</title><meta name="description" content="Hatalı sorguları bulup düzelterek en yaygın tuzakları pekiştir."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/sik-hatalar/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Sık yapılan SQL hataları: düzelt ve öğren"><meta property="og:description" content="Hatalı sorguları bulup düzelterek en yaygın tuzakları pekiştir."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/sik-hatalar/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Sık yapılan SQL hataları: düzelt ve öğren","description":"Hatalı sorguları bulup düzelterek en yaygın tuzakları pekiştir.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/sik-hatalar/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Küme ve Alt Sorgular</span><h1>Sık yapılan SQL hataları: düzelt ve öğren</h1><p class="st-l">Hatalı sorguları bulup düzelterek en yaygın tuzakları pekiştir.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-sik-hatalar">Uygulamada aç, 10 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Sessiz hatalar en tehlikelisidir</h2>
+<p>Hata veren sorgu kolay düzeltilir. Asıl tehlike, <b>çalışan ama yanlış sonuç döndüren</b> sorgulardır. Bu derste her alıştırma hatalı bir sorguyla başlar; hatayı bul ve düzelt.</p>
+<table><tr><th>Tuzak</th><th>Belirti</th><th>Çözüm</th></tr>
+<tr><td><code>= NULL</code></td><td>Hiç satır gelmez</td><td><code>IS NULL</code></td></tr>
+<tr><td><code>NOT IN</code> + NULL</td><td>Hiç satır gelmez</td><td><code>NOT EXISTS</code> veya alt sorguda <code>IS NOT NULL</code></td></tr>
+<tr><td>LEFT JOIN + WHERE sağ tablo</td><td>LEFT JOIN, INNER'a dönüşür</td><td>Koşulu ON'a taşı</td></tr>
+<tr><td>LEFT JOIN + <code>COUNT(*)</code></td><td>Eşi olmayanlar 1 sayılır</td><td><code>COUNT(sağ_tablo.id)</code></td></tr>
+<tr><td>Tam sayı bölmesi</td><td>Oranlar 0 çıkar</td><td><code>100.0 * pay / payda</code></td></tr>
+<tr><td>JOIN sonrası toplam</td><td>Toplamlar şişer (fan-out)</td><td>Önce topla, sonra birleştir</td></tr>
+<tr><td>AND/OR önceliği</td><td>Fazla satır gelir</td><td>Parantez</td></tr>
+</table>
+<h2>Derinleş: hata ayıklama listesi</h2><p>Bir sonuç “yanlış gibi” görünüyorsa sırayla şunlara bak:</p><ol><li>Her JOIN'den sonra satır sayısı değişti mi?</li><li>LEFT JOIN'in sağ tablosuna WHERE ile koşul yazdın mı?</li><li>Oranlarda pay ve payda aynı grain düzeyinde mi; tam sayı bölmesi var mı?</li><li>NULL içeren sütunlarda <code>=</code>, <code>&lt;&gt;</code> ya da NOT IN kullandın mı?</li><li>Tarih aralığının üst sınırı saatli kayıtları dışarıda bırakıyor mu?</li><li>Eşitlikte sıralama belirsiz mi (ORDER BY'a ikinci anahtar eklendi mi)?</li></ol><p>Bu listenin tamamını uygulamalı görmek için <b>Sorgu hata ayıklama</b> dersine geç.</p><h2>Derinleş: tarih aralığı, NOT IN ve AND/OR tuzakları</h2>
+<p>Aşağıdaki üç hata, sorgu hiç hata vermediği için en uzun süre fark edilmeyenlerdir. Üçü de Lezzet Kurye verisinde gerçek sayı farkı yaratıyor.</p>
+<h3>1. BETWEEN ve saatli tarih</h3>
+<p><code>placed_at</code> saat içerir. <code>BETWEEN '2024-12-01' AND '2024-12-31'</code> üst sınırı <code>2024-12-31 00:00:00</code> olarak yorumlar ve 31 Aralık'ın neredeyse tamamını dışarıda bırakır:</p>
+<pre class="code">SELECT
+  (SELECT COUNT(*) FROM lk_orders
+   WHERE placed_at BETWEEN '2024-12-01' AND '2024-12-31') AS between_ile,
+  (SELECT COUNT(*) FROM lk_orders
+   WHERE placed_at >= '2024-12-01' AND placed_at &lt; '2025-01-01') AS aralik_ile;</pre>
+<p>Fark 74 sipariş: tam olarak 31 Aralık'ın siparişleri. Kural: tarih aralıklarını her zaman <b>yarı açık</b> yaz (<code>&gt;= başlangıç AND &lt; bitişten sonraki gün</code>).</p>
+<h3>2. NOT IN ve alt sorgudaki NULL</h3>
+<p>İptal edilen siparişlerin bir kısmında kurye atanmamış (<code>courier_id</code> NULL). “Hiç iptal siparişi olmayan kuryeler” sorusu NOT IN ile sorulursa:</p>
+<pre class="code">SELECT
+  (SELECT COUNT(*) FROM lk_couriers
+   WHERE courier_id NOT IN (SELECT courier_id FROM lk_orders WHERE status = 'iptal')) AS not_in_ile,
+  (SELECT COUNT(*) FROM lk_couriers c
+   WHERE NOT EXISTS (SELECT 1 FROM lk_orders o
+                     WHERE o.courier_id = c.courier_id AND o.status = 'iptal')) AS not_exists_ile;</pre>
+<p>NOT IN 0 döndürür, doğru cevap 6'dır. Listede bir NULL varsa <code>x NOT IN (…, NULL)</code> hiçbir zaman TRUE olamaz (sonuç UNKNOWN), bu yüzden hiçbir satır geçmez.</p>
+<h3>3. AND, OR'dan önce gelir</h3>
+<p><code>WHERE status = 'iptal' AND payment = 'nakit' OR payment = 'cüzdan'</code>, motor tarafından <code>(status = 'iptal' AND payment = 'nakit') OR payment = 'cüzdan'</code> olarak okunur ve durumu ne olursa olsun tüm cüzdan siparişlerini getirir: 130 yerine 1.487 satır. OR içeren her koşulu parantezle.</p>
+<h3>4. AVG ve NULL</h3>
+<p>Lezzet Kurye'de 60 kuryenin 59'unun puanı var. <code>AVG(rating)</code> NULL'u atlayıp 4,22 verir; <code>AVG(COALESCE(rating, 0))</code> ise puansız kuryeyi 0 sayıp ortalamayı 4,14'e düşürür. Hangisinin doğru olduğu sorunun tanımına bağlıdır, ama sessizce değişmemelidir.</p>
+<table><tr><th>Tuzak</th><th>Kontrol sorusu</th></tr>
+<tr><td>BETWEEN + saat</td><td>Sütun saat içeriyor mu? Son günün kayıtları geliyor mu?</td></tr>
+<tr><td>NOT IN + NULL</td><td>Alt sorgunun sütununda NULL olabilir mi?</td></tr>
+<tr><td>AND/OR</td><td>OR'un iki yanı parantez içinde mi?</td></tr>
+<tr><td><code>AVG</code> + NULL</td><td>NULL'lar hesaba katılmalı mı? (<code>AVG</code> onları atlar)</td></tr></table></article>
+<div class="st-c"><a class="st-p" href="../../#ders-sik-hatalar">Alıştırmalara geç (10)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../join-ozet/">← JOIN ile özetleme: satır çoğalması ve önce özetle sonra birleştir</a><a href="../hata-ayiklama/">Sorgu hata ayıklama: yanlış sonucu adım adım bulmak →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

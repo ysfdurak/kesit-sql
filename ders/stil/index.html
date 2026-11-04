@@ -1,0 +1,45 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Okunabilir SQL yazmak | Kesit SQL</title><meta name="description" content="Ekip içinde kabul gören yazım kuralları."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/stil/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Okunabilir SQL yazmak"><meta property="og:description" content="Ekip içinde kabul gören yazım kuralları."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/stil/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Okunabilir SQL yazmak","description":"Ekip içinde kabul gören yazım kuralları.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/stil/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Özetleme</span><h1>Okunabilir SQL yazmak</h1><p class="st-l">Ekip içinde kabul gören yazım kuralları.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-stil">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Kod bir kez yazılır, çok kez okunur</h2>
+<p>SQL motoru biçimlendirmeyi umursamaz ama ekibin umursar. Yaygın kabul gören kurallar:</p>
+<ol>
+<li>Anahtar kelimeleri <b>büyük</b>, tablo ve sütun adlarını <b>küçük</b> yaz.</li>
+<li>Her ana bölüm (SELECT, FROM, WHERE, GROUP BY…) <b>yeni satırda</b> başlasın.</li>
+<li>Anlamlı takma adlar kullan: <code>o</code> (orders), <code>c</code> (customers); <code>a</code>, <code>b</code>, <code>t1</code> değil.</li>
+<li>JOIN'lerde her zaman <code>ON</code> koşulu ve tablo öneki yaz: <code>o.customer_id</code>.</li>
+<li>İç içe alt sorgular yerine <b>CTE</b> kullan; her CTE tek bir iş yapsın.</li>
+<li>Hesaplanan sütunlara <b>açıklayıcı takma ad</b> ver: <code>AS net_ciro</code>.</li>
+<li>Neden yapıldığı belli olmayan kısımlara <b>yorum</b> ekle.</li>
+<li>Adlandırmada tek bir kuralı izle: <code>snake_case</code> (order_date) yaygındır; SQL Server ekiplerinde <code>PascalCase</code> (OrderDate) da sık görülür.</li>
+</ol>
+<pre class="code">-- Teslim edilen siparişlerden kanal bazında net ciro
+WITH teslim AS (
+    SELECT o.order_id, o.channel
+    FROM orders AS o
+    WHERE o.status = 'delivered'
+)
+SELECT t.channel,
+       ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 2) AS net_ciro
+FROM teslim AS t
+JOIN order_items AS oi ON oi.order_id = t.order_id
+GROUP BY t.channel
+ORDER BY net_ciro DESC;</pre>
+<h2>Derinleş: aynı sorgu, iki yazım</h2><p>Okunabilir yazım hataları da görünür kılar. Karşılaştır:</p><pre class="code">select r.name,count(*) from lk_orders o,lk_restaurants r where o.restaurant_id=r.restaurant_id and o.status='teslim' group by r.name order by 2 desc</pre>
+<pre class="code">SELECT r.name   AS restoran,
+       COUNT(*) AS teslim
+FROM lk_orders o
+JOIN lk_restaurants r
+  ON r.restaurant_id = o.restaurant_id
+WHERE o.status = 'teslim'
+GROUP BY r.name
+ORDER BY teslim DESC;</pre>
+<p>İkincisinde birleştirme koşulu ile filtre ayrıdır, çıktı sütunlarının adı vardır ve sıralama sütun numarası yerine adla yapılır. Aynı adlı iki restoran olursa GROUP BY r.name onları birleştirir; restoran numarasını da gruplamaya eklemek daha güvenlidir.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-stil">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../sorgu-sirasi/">← Bir sorgu hangi sırayla çalışır?</a><a href="../proje-temel/">Bitirme projesi (Temeller): Anadolu Market için ilk raporun →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,40 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Alt sorgular (subquery) | Kesit SQL</title><meta name="description" content="Skaler alt sorgu, IN ile alt sorgu ve FROM içinde türetilmiş tablo."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/subquery/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Alt sorgular (subquery)"><meta property="og:description" content="Skaler alt sorgu, IN ile alt sorgu ve FROM içinde türetilmiş tablo."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/subquery/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Alt sorgular (subquery)","description":"Skaler alt sorgu, IN ile alt sorgu ve FROM içinde türetilmiş tablo.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/subquery/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Küme ve Alt Sorgular</span><h1>Alt sorgular (subquery)</h1><p class="st-l">Skaler alt sorgu, IN ile alt sorgu ve FROM içinde türetilmiş tablo.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-subquery">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Sorgu içinde sorgu</h2>
+<p>Alt sorgu, parantez içindeki bir SELECT'tir. Üç yaygın yerde kullanılır.</p>
+<h3>1. Skaler alt sorgu: tek değer</h3>
+<pre class="code">-- Ortalamanın üzerindeki ürünler
+SELECT name, price
+FROM products
+WHERE price > (SELECT AVG(price) FROM products)
+ORDER BY price;</pre>
+<h3>2. IN ile liste</h3>
+<pre class="code">-- Elektronik ürün almış müşteriler
+SELECT first_name, last_name
+FROM customers
+WHERE customer_id IN (
+  SELECT o.customer_id
+  FROM orders o
+  JOIN order_items oi ON oi.order_id = o.order_id
+  JOIN products p ON p.product_id = oi.product_id
+  WHERE p.category = 'Elektronik'
+);</pre>
+<h3>3. FROM içinde: türetilmiş tablo</h3>
+<p>Önce özetle, sonra özet üzerinden sorgula:</p>
+<pre class="code">SELECT ROUND(AVG(siparis_sayisi), 2) AS musteri_basina_ort_siparis
+FROM (
+  SELECT customer_id, COUNT(*) AS siparis_sayisi
+  FROM orders
+  GROUP BY customer_id
+) AS t;</pre>
+<div class="warn"><b>NOT IN ve NULL</b>Alt sorgu tek bir NULL döndürürse <code>NOT IN</code> hiç satır döndürmez (çünkü <code>x &lt;&gt; NULL</code> bilinmeyendir). NOT IN kullanırken alt sorguya <code>WHERE ... IS NOT NULL</code> ekle veya <code>NOT EXISTS</code> tercih et.</div>
+<h2>Derinleş: alt sorgu nerede ne döndürmeli?</h2><table><tr><th>Yer</th><th>Döndürmesi gereken</th><th>Yanlışsa</th></tr><tr><td><code>WHERE x &gt; (SELECT ...)</code></td><td>Tek değer</td><td>Birden çok satır gelirse hata</td></tr><tr><td><code>WHERE x IN (SELECT ...)</code></td><td>Tek sütun, çok satır</td><td>NOT IN + NULL tuzağı</td></tr><tr><td><code>FROM (SELECT ...) t</code></td><td>Tablo</td><td>Takma ad zorunlu (çoğu SQL türünde)</td></tr><tr><td><code>SELECT (SELECT ...)</code></td><td>Satır başına tek değer</td><td>Büyük tablolarda yavaş olabilir</td></tr></table></article>
+<div class="st-c"><a class="st-p" href="../../#ders-subquery">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../set-ops/">← UNION, INTERSECT, EXCEPT</a><a href="../correlated/">İlişkili alt sorgular (correlated subquery) ve EXISTS →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

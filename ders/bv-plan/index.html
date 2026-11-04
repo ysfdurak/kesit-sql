@@ -1,0 +1,38 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sorgu planı ve indeks: büyük tabloda hız farkı | Kesit SQL</title><meta name="description" content="EXPLAIN QUERY PLAN ile tam tarama ve indeks aramasını ayırt etmek, indeks oluşturup süre farkını ölçmek, sütuna fonksiyon uygulamanın indeksi nasıl devre…"><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/bv-plan/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Sorgu planı ve indeks: büyük tabloda hız farkı"><meta property="og:description" content="EXPLAIN QUERY PLAN ile tam tarama ve indeks aramasını ayırt etmek, indeks oluşturup süre farkını ölçmek, sütuna fonksiyon uygulamanın indeksi nasıl devre…"><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/bv-plan/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Sorgu planı ve indeks: büyük tabloda hız farkı","description":"EXPLAIN QUERY PLAN ile tam tarama ve indeks aramasını ayırt etmek, indeks oluşturup süre farkını ölçmek, sütuna fonksiyon uygulamanın indeksi nasıl devre…","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/bv-plan/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Büyük Veriyle Çalışmak</span><h1>Sorgu planı ve indeks: büyük tabloda hız farkı</h1><p class="st-l">EXPLAIN QUERY PLAN ile tam tarama ve indeks aramasını ayırt etmek, indeks oluşturup süre farkını ölçmek, sütuna fonksiyon uygulamanın indeksi nasıl devre dışı bıraktığını görmek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-bv-plan">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Plan neyi söyler?</h2>
+<p>Veritabanı bir sorguyu çalıştırmadan önce bir <b>plan</b> yapar: tabloyu baştan sona mı tarayacak (SCAN), yoksa bir indeksle doğrudan ilgili satırlara mı gidecek (SEARCH)? SQLite'ta planı <code>EXPLAIN QUERY PLAN</code> gösterir. Diğer SQL türlerinde karşılığı <code>EXPLAIN</code> (PostgreSQL, MySQL), tahmini yürütme planı (SQL Server) ve <code>EXPLAIN PLAN FOR</code> (Oracle) ifadeleridir.</p>
+<pre class="code" data-na="tsql pg mysql oracle bq">EXPLAIN QUERY PLAN
+SELECT COUNT(*) FROM bk_trips WHERE start_station = 5;</pre>
+<p><code>bk_trips</code> tablosunda yalnızca <code>started_at</code> ve <code>user_id</code> üzerinde indeks var; istasyon sütunlarında yok. Bu yüzden <code>start_station</code> filtresi <b>SCAN bk_trips</b> (tam tarama) üretir. Sonuç kutusunun altındaki süreye dikkat et.</p>
+<h2>İndeks oluştur, tekrar ölç</h2>
+<pre class="code" data-na="tsql pg mysql oracle bq">CREATE INDEX ix_trips_start ON bk_trips (start_station);
+EXPLAIN QUERY PLAN
+SELECT COUNT(*) FROM bk_trips WHERE start_station = 5;</pre>
+<p>Plan artık <b>SEARCH bk_trips USING COVERING INDEX ix_trips_start</b> der: motor yalnızca indeksi okur. Ders kutuları her çalıştırmada temiz bir veritabanıyla başlar; indeks yalnızca o çalıştırma boyunca vardır.</p>
+<h2>İndeksi bozan yazımlar</h2>
+<table><tr><th>Yavaş (indeks kullanılamaz)</th><th>Hızlı (indeks kullanılır)</th></tr>
+<tr><td><code>WHERE date(started_at) = '2024-07-01'</code></td><td><code>WHERE started_at &gt;= '2024-07-01' AND started_at &lt; '2024-07-02'</code></td></tr>
+<tr><td><code>WHERE strftime('%m', started_at) = '07'</code></td><td><code>WHERE started_at &gt;= '2024-07-01' AND started_at &lt; '2024-08-01'</code></td></tr>
+<tr><td><code>WHERE start_station + 0 = 5</code></td><td><code>WHERE start_station = 5</code></td></tr></table>
+<p>Sütuna fonksiyon uygulamak, motorun indeksteki sıralı değerleri kullanmasını engeller (sargable olmayan koşul).</p>
+<pre class="code" data-na="tsql pg mysql oracle bq">EXPLAIN QUERY PLAN SELECT COUNT(*) FROM bk_trips WHERE date(started_at) = '2024-07-01';
+EXPLAIN QUERY PLAN SELECT COUNT(*) FROM bk_trips WHERE started_at &gt;= '2024-07-01' AND started_at &lt; '2024-07-02';</pre>
+<h2>Birleştirmede indeks</h2>
+<p>Büyük bir tabloyu küçük bir tabloyla birleştirirken eşleşme koşulu küçük tablonun <b>anahtarı</b> üzerindeyse her satır için hızlı bir arama yapılır. Saatlik hava durumunu yolculuklarla birleştirmenin hızlı yolu, yolculuk tarafında saati hesaplayıp hava tablosunun birincil anahtarında aramaktır:</p>
+<pre class="code">SELECT CASE WHEN w.rain_mm &gt; 0 THEN 'yağmurlu' ELSE 'kuru' END AS hava, COUNT(*) AS yolculuk
+FROM bk_trips t
+JOIN bk_weather w ON w.obs_hour = strftime('%Y-%m-%d %H:00:00', t.started_at)
+GROUP BY CASE WHEN w.rain_mm &gt; 0 THEN 'yağmurlu' ELSE 'kuru' END;</pre>
+<p>Tersini yapmak, yani hava tablosundan başlayıp her saat için tüm yolculukları taramak, aynı sonucu çok daha uzun sürede verir.</p>
+<div class="note"><b>İndeksin bedeli</b>İndeks okumayı hızlandırır ama her INSERT ve UPDATE'te güncellenmesi gerekir ve yer kaplar. Sık filtrelenen ve birleştirilen sütunlara indeks koy; her sütuna değil.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-bv-plan">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../bv-giris/">← Büyük tabloyla tanışma: profil çıkarmak ve örneklemek</a><a href="../bv-zaman/">Zaman desenleri ve hava durumu: ne zaman, neden binilir? →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

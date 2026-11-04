@@ -1,0 +1,36 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SQL mülakatı: nasıl düşünülür, nasıl anlatılır? | Kesit SQL</title><meta name="description" content="Canlı kodlama mülakatında beş adımlık çalışma düzeni, sesli düşünme ve sık yapılan hatalar."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/mk-yontem/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="SQL mülakatı: nasıl düşünülür, nasıl anlatılır?"><meta property="og:description" content="Canlı kodlama mülakatında beş adımlık çalışma düzeni, sesli düşünme ve sık yapılan hatalar."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/mk-yontem/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"SQL mülakatı: nasıl düşünülür, nasıl anlatılır?","description":"Canlı kodlama mülakatında beş adımlık çalışma düzeni, sesli düşünme ve sık yapılan hatalar.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/mk-yontem/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Mülakat Hazırlığı</span><h1>SQL mülakatı: nasıl düşünülür, nasıl anlatılır?</h1><p class="st-l">Canlı kodlama mülakatında beş adımlık çalışma düzeni, sesli düşünme ve sık yapılan hatalar.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-mk-yontem">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Mülakatta değerlendirilen dört şey</h2>
+<table><tr><th>Ölçüt</th><th>Görüşmecinin aradığı</th></tr>
+<tr><td>Doğruluk</td><td>Sorgunun doğru sonucu vermesi; sınır durumlarını (NULL, eşitlik, boş grup) düşünmüş olmak</td></tr>
+<tr><td>Yaklaşım</td><td>Problemi adımlara bölmek, taneciği doğru seçmek</td></tr>
+<tr><td>İletişim</td><td>Varsayımları söylemek, netleştirme soruları sormak, yaptığını anlatmak</td></tr>
+<tr><td>Okunabilirlik</td><td>CTE ve anlamlı adlarla okunur kod; gereksiz karmaşıklıktan kaçınmak</td></tr>
+</table>
+<h2>Beş adım</h2>
+<ol>
+<li><b>Tekrar et:</b> Soruyu kendi cümlelerinle tekrar et. “Her departmanın en yüksek maaşlı çalışanını, eşitlik varsa hepsini istiyorsunuz, doğru mu?”</li>
+<li><b>Netleştir:</b> Tanımları sor. İptal edilen siparişler dahil mi? “Ay” takvim ayı mı, son 30 gün mü? Aynı değerde iki satır varsa ne olsun?</li>
+<li><b>Örnek kur:</b> Üç–dört satırlık küçük bir örnek üzerinde beklenen çıktıyı söyle. Bu, yanlış anlamayı kod yazmadan yakalar.</li>
+<li><b>Adım adım yaz:</b> Önce iskelet (CTE adları), sonra her adım. Her adımda “bu adımın çıktısında bir satır şudur” de.</li>
+<li><b>Test et ve iyileştir:</b> Sınır durumlarını sesli kontrol et, sonra performans ve alternatif çözümden bahset.</li>
+</ol>
+<h2>Sık hatalar</h2>
+<ul>
+<li>WHERE içinde pencere fonksiyonu ya da takma ad kullanmak.</li>
+<li>JOIN sonrası satır çoğalmasını fark etmeden SUM veya COUNT almak.</li>
+<li>Eşitlik durumunu düşünmeden ROW_NUMBER kullanmak (ya da tersine, tek satır istenirken RANK kullanmak).</li>
+<li>Oranlarda tam sayı bölmesi: <code>5 / 10 = 0</code>. <code>100.0 *</code> ile başla.</li>
+<li>LEFT JOIN'in sağ tablosuna WHERE ile koşul yazıp onu INNER JOIN'e çevirmek.</li>
+</ul>
+<div class="note"><b>Bu modülün yapısı</b>Sonraki derslerin her biri bir soru kalıbını işler: soru, netleştirme soruları, yaklaşım, iki çözüm ve karşılaştırması, sınır durumları ve takip soruları. Alıştırmalar aynı kalıbı üç farklı veri setinde uygular. Kendini denemek için <b>SQL Arena</b>'ndaki süreli <b>Mülakat simülasyonu</b>'nu kullan.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-mk-yontem">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../mulakat-2/">← Mülakat soruları 2: analitik vakalar</a><a href="../mk-topn/">Mülakat kalıbı: grup başına ilk N ve N'inci en yüksek değer →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

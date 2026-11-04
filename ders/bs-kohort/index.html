@@ -1,0 +1,58 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Büyük sorgu 1: aylık kohort elde tutma matrisi | Kesit SQL</title><meta name="description" content="İlk sipariş ayına göre kohortlar, ay numarası hesabı ve M1–M3 elde tutma oranlarını tek bir matriste toplamak."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/bs-kohort/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Büyük sorgu 1: aylık kohort elde tutma matrisi"><meta property="og:description" content="İlk sipariş ayına göre kohortlar, ay numarası hesabı ve M1–M3 elde tutma oranlarını tek bir matriste toplamak."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/bs-kohort/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Büyük sorgu 1: aylık kohort elde tutma matrisi","description":"İlk sipariş ayına göre kohortlar, ay numarası hesabı ve M1–M3 elde tutma oranlarını tek bir matriste toplamak.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/bs-kohort/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Büyük Sorgular</span><h1>Büyük sorgu 1: aylık kohort elde tutma matrisi</h1><p class="st-l">İlk sipariş ayına göre kohortlar, ay numarası hesabı ve M1–M3 elde tutma oranlarını tek bir matriste toplamak.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-bs-kohort">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Soru</h2>
+<p>Pazarlama direktörü soruyor: “2023'te ilk siparişini veren müşterilerin kaçta kaçı sonraki aylarda geri geldi? Hangi ayın müşterileri daha sadık?” Cevap bir <b>kohort matrisi</b>: her satır bir başlangıç ayı, her sütun “kaç ay sonra” sorusu.</p>
+<h2>Sorgu</h2>
+<div class="note"><b>Büyük sorgu nasıl okunur?</b>Yukarıdan aşağı, her CTE'yi ayrı bir tablo gibi düşün. Bir adımı anlamadıysan o CTE'nin adını en sondaki SELECT'e yazıp yalnızca onu çalıştır: <code>SELECT * FROM adim_adi LIMIT 20;</code></div>
+<pre class="code">WITH ilk AS (            -- 1) Müşterinin kohortu: ilk sipariş ayı
+  SELECT customer_id, MIN((CAST(strftime('%Y', order_date) AS INTEGER) * 12 + CAST(strftime('%m', order_date) AS INTEGER))) AS kohort_no
+  FROM orders
+  GROUP BY customer_id
+),
+aktif AS (              -- 2) Müşterinin sipariş verdiği her ay (tekrarsız)
+  SELECT DISTINCT customer_id, (CAST(strftime('%Y', order_date) AS INTEGER) * 12 + CAST(strftime('%m', order_date) AS INTEGER)) AS ay_no
+  FROM orders
+),
+fark AS (               -- 3) Kohorttan bu yana geçen ay sayısı
+  SELECT i.kohort_no, a.ay_no - i.kohort_no AS ay_farki, a.customer_id
+  FROM aktif a
+  JOIN ilk i ON i.customer_id = a.customer_id
+),
+boyut AS (              -- 4) Her kohortun büyüklüğü
+  SELECT kohort_no, COUNT(*) AS musteri
+  FROM ilk
+  GROUP BY kohort_no
+)
+SELECT                   -- 5) Matris: kohort satırda, ay farkı sütunda
+  FLOOR((b.kohort_no - 1) / 12) AS yil,
+  (b.kohort_no - 1) % 12 + 1 AS ay,
+  b.musteri,
+  ROUND(100.0 * COUNT(DISTINCT CASE WHEN f.ay_farki = 1 THEN f.customer_id END) / b.musteri, 1) AS m1,
+  ROUND(100.0 * COUNT(DISTINCT CASE WHEN f.ay_farki = 2 THEN f.customer_id END) / b.musteri, 1) AS m2,
+  ROUND(100.0 * COUNT(DISTINCT CASE WHEN f.ay_farki = 3 THEN f.customer_id END) / b.musteri, 1) AS m3,
+  ROUND(100.0 * COUNT(DISTINCT CASE WHEN f.ay_farki BETWEEN 1 AND 6 THEN f.customer_id END) / b.musteri, 1) AS ilk6ay
+FROM boyut b
+JOIN fark f ON f.kohort_no = b.kohort_no
+WHERE b.kohort_no >= 2023 * 12 + 1 AND b.kohort_no <= 2023 * 12 + 12
+GROUP BY b.kohort_no, b.musteri
+ORDER BY b.kohort_no;</pre>
+<h2>Adım adım</h2>
+<table><tr><th>Adım</th><th>Ne yapar?</th><th>Çıktının bir satırı</th></tr><tr><td><code>ilk</code></td><td>Müşterinin ilk sipariş ayını “ay numarası” (yıl × 12 + ay) olarak bulur</td><td>müşteri 17 → 24282 (2023 Haziran)</td></tr><tr><td><code>aktif</code></td><td>Müşterinin sipariş verdiği her ayı bir kez listeler</td><td>müşteri 17 → 24282, 24284, 24290</td></tr><tr><td><code>fark</code></td><td>Her aktif ay için kohorttan bu yana geçen ay sayısı</td><td>24284 − 24282 = 2</td></tr><tr><td><code>boyut</code></td><td>Kohort başına müşteri sayısı (oranların paydası)</td><td>24282 → 9 müşteri</td></tr><tr><td><code>son SELECT</code></td><td>Koşullu sayımla matrisi kurar, oranı kohort büyüklüğüne böler</td><td>2023, 6, 9, m1, m2, m3, ilk6ay</td></tr></table>
+<h2>Neden ay numarası?</h2>
+<p>İki tarih arasındaki “ay farkı” SQL türüne göre farklı hesaplanır (SQL Server <code>DATEDIFF(month)</code> ay sınırlarını sayar, PostgreSQL <code>AGE</code> gün hassasiyetinde çalışır). Yıl × 12 + ay dönüşümü her SQL türünde aynı sonucu verir ve aritmetiği basitleştirir. Geri dönüşüm: yıl = FLOOR((no − 1) / 12), ay = (no − 1) % 12 + 1. FLOOR gerekir; çünkü MySQL, Oracle ve BigQuery tam sayıları da ondalıklı böler.</p>
+<h2>Sık hatalar</h2>
+<ul>
+<li><b>Aynı ayda iki sipariş:</b> <code>aktif</code> adımında DISTINCT olmazsa müşteri aynı ay için iki kez sayılır; COUNT(DISTINCT) son adımda bunu kurtarır ama ara adımlar şişer.</li>
+<li><b>Payda:</b> Oran, o ay aktif olanların sayısına değil kohortun başlangıç büyüklüğüne bölünür.</li>
+<li><b>Sağdan kesilme:</b> 2024 Aralık kohortunun M3 değeri henüz oluşmamıştır. Bu yüzden sorgu 2023 kohortlarıyla sınırlı.</li>
+</ul>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-bs-kohort">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../bs-giris/">← Büyük sorgularla çalışmak: okuma, yazma ve hata ayıklama yöntemi</a><a href="../bs-oturum/">Büyük sorgu 2: olaylardan oturum ve oturum hunisi →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

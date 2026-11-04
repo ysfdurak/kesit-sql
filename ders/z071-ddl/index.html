@@ -1,0 +1,57 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>1Z0-071: Oracle veri tipleri, tablo oluşturma ve değiştirme | Kesit SQL</title><meta name="description" content="VARCHAR2, NUMBER(p,s), DATE/TIMESTAMP/INTERVAL, LOB; CTAS, ALTER TABLE, DROP ... PURGE, geçici tablolar."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/z071-ddl/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="1Z0-071: Oracle veri tipleri, tablo oluşturma ve değiştirme"><meta property="og:description" content="VARCHAR2, NUMBER(p,s), DATE/TIMESTAMP/INTERVAL, LOB; CTAS, ALTER TABLE, DROP ... PURGE, geçici tablolar."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/z071-ddl/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"1Z0-071: Oracle veri tipleri, tablo oluşturma ve değiştirme","description":"VARCHAR2, NUMBER(p,s), DATE/TIMESTAMP/INTERVAL, LOB; CTAS, ALTER TABLE, DROP ... PURGE, geçici tablolar.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/z071-ddl/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Sertifika Hazırlık</span><h1>1Z0-071: Oracle veri tipleri, tablo oluşturma ve değiştirme</h1><p class="st-l">VARCHAR2, NUMBER(p,s), DATE/TIMESTAMP/INTERVAL, LOB; CTAS, ALTER TABLE, DROP ... PURGE, geçici tablolar.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-z071-ddl">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Veri tipleri</h2>
+<table>
+<tr><th>Tip</th><th>Not</th></tr>
+<tr><td><code>VARCHAR2(n [BYTE|CHAR])</code></td><td>Değişken uzunluklu metin; Oracle'da önerilen metin tipi</td></tr>
+<tr><td><code>CHAR(n)</code></td><td>Sabit uzunluk, boşlukla doldurulur</td></tr>
+<tr><td><code>NUMBER(p, s)</code></td><td>p toplam basamak, s ondalık basamak. <code>NUMBER(5,2)</code> en fazla 999.99. s negatifse sola yuvarlar.</td></tr>
+<tr><td><code>DATE</code></td><td>Tarih <b>ve saat</b> (saniyeye kadar)</td></tr>
+<tr><td><code>TIMESTAMP [WITH [LOCAL] TIME ZONE]</code></td><td>Kesirli saniye, saat dilimi</td></tr>
+<tr><td><code>INTERVAL YEAR TO MONTH</code>, <code>INTERVAL DAY TO SECOND</code></td><td>Süre</td></tr>
+<tr><td><code>CLOB</code>, <code>BLOB</code>, <code>NCLOB</code></td><td>Büyük metin / ikili veri (eski <code>LONG</code> yerine)</td></tr>
+<tr><td><code>RAW</code>, <code>ROWID</code></td><td>İkili, satır adresi</td></tr>
+</table>
+<h2>Oluşturma</h2>
+<pre class="code" data-norun>CREATE TABLE kampanya (
+  kampanya_id NUMBER(6)      CONSTRAINT pk_kampanya PRIMARY KEY,
+  kod         VARCHAR2(20)   NOT NULL CONSTRAINT uq_kampanya_kod UNIQUE,
+  indirim     NUMBER(3,2)    CONSTRAINT ck_indirim CHECK (indirim BETWEEN 0 AND 0.5),
+  baslangic   DATE DEFAULT SYSDATE,
+  urun_id     NUMBER(6),
+  CONSTRAINT fk_kampanya_urun FOREIGN KEY (urun_id) REFERENCES products (product_id) ON DELETE SET NULL
+);
+
+-- Sorgudan tablo (CTAS): NOT NULL dışındaki kısıtlar kopyalanmaz
+CREATE TABLE kitaplar AS SELECT product_id, name, price FROM products WHERE category = 'Kitap';
+
+-- Yalnızca yapı (satırsız)
+CREATE TABLE bos_kopya AS SELECT * FROM products WHERE 1 = 0;</pre>
+<h2>Değiştirme</h2>
+<pre class="code" data-norun>ALTER TABLE kampanya ADD (aciklama VARCHAR2(200));
+ALTER TABLE kampanya MODIFY (aciklama VARCHAR2(500));
+ALTER TABLE kampanya RENAME COLUMN aciklama TO notlar;
+ALTER TABLE kampanya DROP COLUMN notlar;
+ALTER TABLE kampanya SET UNUSED (kod);         -- anında gizle, sonra DROP UNUSED COLUMNS
+ALTER TABLE kampanya READ ONLY;                -- DML engellenir
+ALTER TABLE kampanya READ WRITE;
+RENAME kampanya TO kampanyalar;
+
+DROP TABLE kampanyalar;                        -- geri dönüşüm kutusuna gider
+FLASHBACK TABLE kampanyalar TO BEFORE DROP;     -- geri getir
+DROP TABLE kampanyalar PURGE;                  -- kalıcı sil</pre>
+<ul>
+<li>Bir sütunu küçültmek veya tipini değiştirmek için sütun boş olmalı ya da veri yeni tipe sığmalı.</li>
+<li>NOT NULL eklemek için mevcut satırlarda NULL olmamalı (veya DEFAULT ile birlikte eklenmeli).</li>
+<li><b>Geçici tablo</b>: <code>CREATE GLOBAL TEMPORARY TABLE ... ON COMMIT DELETE ROWS | PRESERVE ROWS</code>; yapı kalıcı, veri oturuma/işleme özel. Oracle 18c'den itibaren <code>PRIVATE TEMPORARY TABLE</code> (ad <code>ORA$PTT_</code> ile başlar).</li>
+</ul>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-z071-ddl">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../z071-dml-tcl/">← 1Z0-071: DML ve işlem kontrolü (INSERT/UPDATE/DELETE, COMMIT, SAVEPOINT, TRUNCATE)</a><a href="../z071-nesneler/">1Z0-071: Şema nesneleri: view, sequence, synonym, index →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

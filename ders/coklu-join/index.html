@@ -1,0 +1,31 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Çoklu JOIN ve satır çoğalması tuzağı | Kesit SQL</title><meta name="description" content="Üç-dört tabloyu zincirlemek ve yanlış toplamları önlemek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/coklu-join/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Çoklu JOIN ve satır çoğalması tuzağı"><meta property="og:description" content="Üç-dört tabloyu zincirlemek ve yanlış toplamları önlemek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/coklu-join/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Çoklu JOIN ve satır çoğalması tuzağı","description":"Üç-dört tabloyu zincirlemek ve yanlış toplamları önlemek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/coklu-join/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Tabloları Birleştirme</span><h1>Çoklu JOIN ve satır çoğalması tuzağı</h1><p class="st-l">Üç-dört tabloyu zincirlemek ve yanlış toplamları önlemek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-coklu-join">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Zincirleme JOIN</h2>
+<p>Müşteri → sipariş → sipariş satırı → ürün yolunu takip edelim:</p>
+<pre class="code">SELECT c.city,
+       p.category,
+       ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 2) AS ciro
+FROM customers c
+JOIN orders o       ON o.customer_id = c.customer_id
+JOIN order_items oi ON oi.order_id = o.order_id
+JOIN products p     ON p.product_id = oi.product_id
+WHERE o.status = 'delivered'
+GROUP BY c.city, p.category
+ORDER BY ciro DESC
+LIMIT 10;</pre>
+<h2>Fan-out: satırların çoğalması</h2>
+<p>Bire-çok ilişkide JOIN yaptığında “bir” tarafındaki satır “çok” tarafındaki her satır için <b>tekrarlanır</b>. Sipariş tablosunu satırlarıyla birleştirip sipariş sayısını <code>COUNT(*)</code> ile sayarsan, sipariş satırı sayısını bulursun:</p>
+<pre class="code">SELECT COUNT(*) AS yanlis, COUNT(DISTINCT o.order_id) AS dogru
+FROM orders o
+JOIN order_items oi ON oi.order_id = o.order_id;</pre>
+<div class="warn"><b>Altın kural</b>JOIN'den sonra toplam alırken, sonuç tablonun <b>grain düzeyini</b> (tanecik) bil: Her satır neyi temsil ediyor? Bir sipariş mi, bir sipariş satırı mı? Farklı grain düzeyindeki iki tabloyu birleştirmeden önce birini önce özetlemek (alt sorgu/CTE) çoğu zaman doğru yoldur.</div>
+<h2>Derinleş: grain tablosu</h2><p>Birleştirdiğin her tablonun bir satırının neyi temsil ettiğini yaz:</p><table><tr><th>Tablo</th><th>Bir satır</th></tr><tr><td>lk_orders</td><td>bir sipariş</td></tr><tr><td>lk_order_lines</td><td>bir siparişteki bir ürün</td></tr><tr><td>lk_ratings</td><td>bir siparişin değerlendirmesi (0 ya da 1)</td></tr></table><p>Siparişleri satırlarla birleştirince tanecik “sipariş satırı” olur; siparişe ait tutarlar (bahşiş, teslimat ücreti) satır sayısı kadar tekrarlanır. Ya önce satırları sipariş düzeyine topla, ya da siparişe ait tutarları ayrı bir sorguda hesapla.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-coklu-join">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../self-cross-join/">← Self JOIN ve CROSS JOIN</a><a href="../non-equi/">Eşit olmayan JOIN ve aralık eşleştirme →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

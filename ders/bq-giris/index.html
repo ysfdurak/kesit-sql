@@ -1,0 +1,50 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BigQuery'ye giriş: proje, veri seti ve maliyet mantığı | Kesit SQL</title><meta name="description" content="Sunucusuz veri ambarı, GoogleSQL farkları, taranan bayta göre ücret."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/bq-giris/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="BigQuery'ye giriş: proje, veri seti ve maliyet mantığı"><meta property="og:description" content="Sunucusuz veri ambarı, GoogleSQL farkları, taranan bayta göre ücret."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/bq-giris/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"BigQuery'ye giriş: proje, veri seti ve maliyet mantığı","description":"Sunucusuz veri ambarı, GoogleSQL farkları, taranan bayta göre ücret.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/bq-giris/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · BigQuery ve Bulut Veri Ambarları</span><h1>BigQuery'ye giriş: proje, veri seti ve maliyet mantığı</h1><p class="st-l">Sunucusuz veri ambarı, GoogleSQL farkları, taranan bayta göre ücret.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-bq-giris">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>BigQuery nedir?</h2>
+<p>BigQuery, Google Cloud'un <b>sunucusuz</b> (serverless) veri ambarıdır: sunucu kurmaz, indeks oluşturmazsın; terabaytlarca veriyi saniyeler içinde tarayan sorgular yazarsın. Google Analytics 4 ve Google Ads verilerinin doğrudan aktarıldığı yer olduğu için pazarlama ve ürün analitiğinde çok yaygındır. Dili <b>GoogleSQL</b>'dir (standart SQL'e yakın).</p>
+<p>Varsayılan SQL türü <b>BigQuery</b> yaparsan tüm derslerdeki sorgular BigQuery yazımıyla gösterilir; her kod kutusunda BigQuery sekmesi de vardır.</p>
+<h2>Adlandırma: proje.veri_seti.tablo</h2>
+<pre class="code" data-norun>SELECT order_id, order_date
+FROM `sirket-proje.anadolu.orders`
+WHERE order_date &gt;= '2024-12-01';</pre>
+<p>Gerçek BigQuery'de tablo adı veri setiyle (çoğu zaman projeyle de) yazılır ve ters tırnak kullanılır. Bu uygulamada <code>anadolu</code> veri seti varsayılan olduğu için kısaca <code>orders</code> yazabilirsin; <code>anadolu.orders</code> da çalışır.</p>
+<h2>Maliyet: taranan veri kadar öde</h2>
+<p>İsteğe bağlı (on-demand) fiyatlandırmada ödediğin tutar, sorgunun <b>taradığı bayt</b> miktarına göre hesaplanır. BigQuery sütun tabanlı sakladığı için:</p>
+<ul>
+<li><code>SELECT *</code> tüm sütunları okur, pahalıdır. Yalnızca gereken sütunları seç.</li>
+<li><code>LIMIT</code> taranan veriyi <b>azaltmaz</b>; tüm sütunu okur, sonra keser.</li>
+<li>Bölümlenmiş (partitioned) tabloda tarih filtresi okunan bölümleri azaltır.</li>
+<li>Sorguyu çalıştırmadan önce editör “bu sorgu X GB işleyecek” diye tahmini gösterir (dry run).</li>
+</ul>
+<h2>Diğer SQL türlerinden farklar</h2>
+<table>
+<tr><th>Konu</th><th>BigQuery</th></tr>
+<tr><td>Küme işlemleri</td><td><code>UNION ALL</code> veya <code>UNION DISTINCT</code>; çıplak <code>UNION</code> hata verir</td></tr>
+<tr><td>Bölme</td><td><code>/</code> her zaman ondalıklı; tam sayı bölmesi <code>DIV(a, b)</code>, sıfıra güvenli bölme <code>SAFE_DIVIDE(a, b)</code></td></tr>
+<tr><td>Kalan</td><td><code>%</code> yok, <code>MOD(a, b)</code></td></tr>
+<tr><td>Tarih</td><td><code>DATE_ADD(d, INTERVAL 1 MONTH)</code>, <code>DATE_DIFF(bitis, baslangic, DAY)</code>, <code>DATE_TRUNC(d, MONTH)</code>, <code>FORMAT_DATE('%Y-%m', d)</code></td></tr>
+<tr><td>Tipler</td><td><code>INT64</code>, <code>FLOAT64</code>, <code>NUMERIC</code>, <code>STRING</code>, <code>DATE</code>, <code>DATETIME</code>, <code>TIMESTAMP</code>, <code>BOOL</code>, <code>ARRAY</code>, <code>STRUCT</code></td></tr>
+<tr><td>Hata yerine NULL</td><td><code>SAFE_CAST</code>, <code>SAFE_DIVIDE</code>, <code>SAFE.PARSE_DATE</code></td></tr>
+<tr><td>Koşullu</td><td><code>IF(koşul, a, b)</code>, <code>COUNTIF(koşul)</code></td></tr>
+<tr><td>Kısıtlar</td><td>PRIMARY KEY / FOREIGN KEY yalnızca <code>NOT ENFORCED</code>; UNIQUE, CHECK, indeks ve trigger yok</td></tr>
+<tr><td>DML</td><td>UPDATE ve DELETE her zaman WHERE ister (<code>WHERE true</code>)</td></tr>
+</table>
+<h3>Tipik bir BigQuery sorgusu</h3>
+<pre class="code" data-v="{&quot;tsql&quot;:&quot;SELECT FORMAT(order_date, 'yyyy-MM') AS ay,\n       COUNT(*) AS siparis,\n       SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS iptal,\n       ROUND(100.0 * SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) AS iptal_orani\nFROM orders\nWHERE order_date &gt;= '2024-07-01'\nGROUP BY FORMAT(order_date, 'yyyy-MM')\nORDER BY ay;&quot;,&quot;pg&quot;:&quot;SELECT TO_CHAR(order_date, 'YYYY-MM') AS ay,\n       COUNT(*) AS siparis,\n       COUNT(*) FILTER (WHERE status = 'cancelled') AS iptal,\n       ROUND(100.0 * COUNT(*) FILTER (WHERE status = 'cancelled') / NULLIF(COUNT(*), 0), 1) AS iptal_orani\nFROM orders\nWHERE order_date &gt;= '2024-07-01'\nGROUP BY ay\nORDER BY ay;&quot;,&quot;sqlite&quot;:&quot;SELECT strftime('%Y-%m', order_date) AS ay,\n       COUNT(*) AS siparis,\n       SUM(status = 'cancelled') AS iptal,\n       ROUND(100.0 * SUM(status = 'cancelled') / COUNT(*), 1) AS iptal_orani\nFROM orders\nWHERE order_date &gt;= '2024-07-01'\nGROUP BY ay\nORDER BY ay;&quot;}" data-base="bq">SELECT FORMAT_DATE('%Y-%m', order_date) AS ay,
+       COUNT(*) AS siparis,
+       COUNTIF(status = 'cancelled') AS iptal,
+       ROUND(SAFE_DIVIDE(COUNTIF(status = 'cancelled'), COUNT(*)) * 100, 1) AS iptal_orani
+FROM anadolu.orders
+WHERE order_date &gt;= '2024-07-01'
+GROUP BY ay
+ORDER BY ay;</pre>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-bq-giris">Alıştırmalara geç (4)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ai-guvenli/">← Doğal dilden SQL asistanı kurmak: semantik katman ve güvenlik</a><a href="../bq-dizi/">BigQuery'de diziler ve iç içe veri: ARRAY, STRUCT, UNNEST →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

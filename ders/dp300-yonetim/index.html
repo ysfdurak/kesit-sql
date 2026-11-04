@@ -1,0 +1,74 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DP-300: Azure SQL'de güvenlik, izleme ve otomasyon | Kesit SQL</title><meta name="description" content="Entra kimlik doğrulama, denetim, Query Store, DMV'ler, otomatik ayar, elastic jobs, Agent."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/dp300-yonetim/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="DP-300: Azure SQL'de güvenlik, izleme ve otomasyon"><meta property="og:description" content="Entra kimlik doğrulama, denetim, Query Store, DMV'ler, otomatik ayar, elastic jobs, Agent."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/dp300-yonetim/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"DP-300: Azure SQL'de güvenlik, izleme ve otomasyon","description":"Entra kimlik doğrulama, denetim, Query Store, DMV'ler, otomatik ayar, elastic jobs, Agent.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/dp300-yonetim/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Sertifika Hazırlık</span><h1>DP-300: Azure SQL'de güvenlik, izleme ve otomasyon</h1><p class="st-l">Entra kimlik doğrulama, denetim, Query Store, DMV'ler, otomatik ayar, elastic jobs, Agent.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-dp300-yonetim">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Sınavın konu alanları</h2>
+<p>Microsoft'un çalışma rehberine göre DP-300 kabaca şu alanlardan oluşur: veri platformu kaynaklarını planlama ve uygulama, güvenli ortam uygulama, veritabanı performansını izleme/yapılandırma/optimize etme, otomasyon ve yüksek erişilebilirlik ile felaket kurtarma. Oranlar dönem dönem güncellenir; resmi sayfayı kontrol et.</p>
+<h2>Güvenlik</h2>
+<pre class="code" data-norun>-- Entra ID (Azure AD) kullanıcısını veritabanına ekle (contained user)
+CREATE USER [ayse@sirket.com] FROM EXTERNAL PROVIDER;
+ALTER ROLE db_datareader ADD MEMBER [ayse@sirket.com];
+
+-- Dinamik veri maskeleme
+ALTER TABLE dbo.customers ALTER COLUMN email
+  ADD MASKED WITH (FUNCTION = 'email()');
+
+-- Satır düzeyinde güvenlik: kullanıcı yalnızca kendi bölgesini görür
+CREATE FUNCTION sec.fn_bolge(@bolge NVARCHAR(50))
+RETURNS TABLE WITH SCHEMABINDING AS
+RETURN SELECT 1 AS izin WHERE @bolge = CAST(SESSION_CONTEXT(N'bolge') AS NVARCHAR(50));
+CREATE SECURITY POLICY sec.bolge_filtresi
+  ADD FILTER PREDICATE sec.fn_bolge(city) ON dbo.customers WITH (STATE = ON);</pre>
+<table>
+<tr><th>Özellik</th><th>Korur</th></tr>
+<tr><td>TDE</td><td>Diskteki veri (varsayılan açık)</td></tr>
+<tr><td>Always Encrypted</td><td>Hassas sütunlar; sunucu bile düz metni görmez</td></tr>
+<tr><td>Dinamik veri maskeleme</td><td>Yetkisiz kullanıcının gördüğü değer (veri değişmez)</td></tr>
+<tr><td>RLS</td><td>Hangi satırların görüleceği</td></tr>
+<tr><td>Denetim (Auditing), Defender for SQL</td><td>Kim ne yaptı, şüpheli etkinlik ve zafiyet değerlendirmesi</td></tr>
+<tr><td>Veri keşfi ve sınıflandırma</td><td>Hassas sütunların etiketlenmesi</td></tr>
+</table>
+<h2>İzleme ve performans</h2>
+<pre class="code" data-norun>-- En çok CPU kullanan sorgular (Query Store)
+SELECT TOP (10) q.query_id, t.query_sql_text,
+       SUM(rs.count_executions) AS calisma,
+       SUM(rs.avg_cpu_time * rs.count_executions) / 1000 AS toplam_cpu_ms
+FROM sys.query_store_query q
+JOIN sys.query_store_query_text t ON t.query_text_id = q.query_text_id
+JOIN sys.query_store_plan p ON p.query_id = q.query_id
+JOIN sys.query_store_runtime_stats rs ON rs.plan_id = p.plan_id
+GROUP BY q.query_id, t.query_sql_text
+ORDER BY toplam_cpu_ms DESC;
+
+-- Kaynak kullanımı (Azure SQL Database)
+SELECT TOP (20) end_time, avg_cpu_percent, avg_data_io_percent, avg_log_write_percent
+FROM sys.dm_db_resource_stats ORDER BY end_time DESC;
+
+-- Bekleme türleri
+SELECT TOP (10) wait_type, wait_time_ms FROM sys.dm_db_wait_stats ORDER BY wait_time_ms DESC;
+
+-- Otomatik ayar
+ALTER DATABASE CURRENT SET AUTOMATIC_TUNING (FORCE_LAST_GOOD_PLAN = ON, CREATE_INDEX = ON);</pre>
+<ul>
+<li><b>Query Store</b>: Planları ve çalışma istatistiklerini saklar; plan zorlama (force plan) ile kötüleşen sorguyu eski plana döndürür.</li>
+<li><b>Intelligent Query Processing</b>: uyarlanabilir join, bellek geri bildirimi, parametreye duyarlı plan (PSP) gibi otomatik iyileştirmeler; uyumluluk düzeyine bağlıdır.</li>
+<li>İndeks bakımı: parçalanma (<code>sys.dm_db_index_physical_stats</code>), istatistik güncelleme.</li>
+<li>Azure Monitor, Log Analytics, <b>Database Watcher</b> ve uyarılar.</li>
+</ul>
+<h2>Otomasyon</h2>
+<table>
+<tr><th>Ortam</th><th>Zamanlanmış görev</th></tr>
+<tr><td>SQL Server / Managed Instance / VM</td><td>SQL Server Agent işleri, bakım planları</td></tr>
+<tr><td>Azure SQL Database</td><td>Elastic jobs, Azure Automation, Logic Apps, Azure Functions</td></tr>
+<tr><td>Dağıtım</td><td>ARM/Bicep şablonları, PowerShell, Azure CLI, DACPAC ile şema dağıtımı</td></tr>
+</table>
+<h2>HA/DR</h2>
+<p>Geo-replication ve failover groups (Azure SQL), Always On availability groups ve failover cluster instance (VM), log shipping, otomatik yedeklemeler, belirli bir ana geri yükleme (PITR) ve uzun süreli saklama (LTR). RPO (ne kadar veri kaybı göze alınır) ve RTO (ne kadar sürede geri dönülür) hedeflerine göre seçilir.</p>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-dp300-yonetim">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../z071-nesneler/">← 1Z0-071: Şema nesneleri: view, sequence, synonym, index</a><a href="../cert-gda/">Google Data Analytics sertifikasındaki SQL: BigQuery ile analiz adımları →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

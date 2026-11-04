@@ -1,0 +1,43 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mülakat soruları 2: analitik vakalar | Kesit SQL</title><meta name="description" content="Kümülatif toplam, aydan aya değişim, ardışık aylar, elde tutma ve medyan."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/mulakat-2/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Mülakat soruları 2: analitik vakalar"><meta property="og:description" content="Kümülatif toplam, aydan aya değişim, ardışık aylar, elde tutma ve medyan."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/mulakat-2/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Mülakat soruları 2: analitik vakalar","description":"Kümülatif toplam, aydan aya değişim, ardışık aylar, elde tutma ve medyan.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/mulakat-2/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Mülakat Hazırlığı</span><h1>Mülakat soruları 2: analitik vakalar</h1><p class="st-l">Kümülatif toplam, aydan aya değişim, ardışık aylar, elde tutma ve medyan.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-mulakat-2">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>İleri seviye vaka soruları</h2>
+<p>Kıdemli analist ve veri bilimci mülakatlarında pencere fonksiyonları ve CTE ile çözülen çok adımlı sorular gelir. Her soruda önce adımları kâğıda yaz: “Önce müşteri bazında topla, sonra sırala, sonra filtrele” gibi.</p>
+<div class="tip"><b>Kontrol sorusu</b>Sonucun satır sayısı beklediğin gibi mi? Her müşteri için bir satır bekliyorsan <code>COUNT(DISTINCT customer_id)</code> ile karşılaştır.</div>
+
+<h2>Çözüm şablonu: dört adım</h2>
+<ol>
+<li><b>Tanecik:</b> Sonuçta bir satır neyi temsil edecek? (müşteri, ay, müşteri × ay)</li>
+<li><b>Ara tablo:</b> O taneciğe indiren CTE'yi yaz ve tek başına çalıştırıp satır sayısını kontrol et.</li>
+<li><b>Pencere veya birleştirme:</b> Karşılaştırma (önceki ay, ilk sipariş, sıra) gerekiyorsa pencere fonksiyonu ya da self join ekle.</li>
+<li><b>Son filtre ve biçim:</b> WHERE, yuvarlama, sıralama ve sütun adları en sonda.</li>
+</ol>
+<h2>Bu derste geçen kalıplar</h2>
+<table>
+<tr><th>Soru tipi</th><th>Kalıp</th><th>Tuzak</th></tr>
+<tr><td>Kümülatif toplam</td><td><code>SUM(x) OVER (ORDER BY tarih ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)</code></td><td>Aynı tarihte birden çok satır varsa varsayılan RANGE çerçevesi eşit satırları birlikte toplar; ROWS yaz ve sıralamaya benzersiz bir sütun ekle.</td></tr>
+<tr><td>Aydan aya değişim</td><td>Aylık CTE + <code>LAG(n) OVER (ORDER BY ay)</code></td><td>Sipariş olmayan ay atlanırsa LAG bir önceki <b>dolu</b> aya bakar. Gerekirse takvim tablosuyla boşlukları doldur.</td></tr>
+<tr><td>Ardışık dönemler</td><td>Dönem numarası − <code>ROW_NUMBER()</code> = grup anahtarı</td><td>Aynı ay iki kez sayılmasın diye önce <code>DISTINCT</code> ile müşteri × ay tekilleştir.</td></tr>
+<tr><td>Elde tutma</td><td>İlk sipariş CTE'si + sonraki dönemle eşleştirme</td><td>Payda “ilk siparişi o dönemde olanlar”dır, tüm müşteriler değil.</td></tr>
+<tr><td>Ortalama sepet</td><td>Önce sipariş düzeyinde topla, sonra ortalama al</td><td>Satır düzeyinde AVG almak çok kalemli siparişleri fazla ağırlıklandırır.</td></tr>
+</table>
+<h2>Örnek: satır ortalaması ile sipariş ortalaması farkı</h2>
+<pre class="code">WITH s AS (
+  SELECT order_id, SUM(quantity) AS adet
+  FROM order_items
+  GROUP BY order_id
+)
+SELECT ROUND(AVG(adet), 2) AS siparis_basina_adet,
+       (SELECT ROUND(AVG(quantity), 2) FROM order_items) AS satir_basina_adet
+FROM s;</pre>
+<p>İki sayı farklıdır; mülakatta “ortalama sepet büyüklüğü” sorulduğunda beklenen birincisidir. Hangisini hesapladığını sesli söylemek, görüşmecinin en çok dikkat ettiği şeylerden biridir.</p>
+<div class="note"><b>Sınır durumları sor</b>Sorgu yazmadan önce sor: iptal edilen siparişler dahil mi? Aynı gün iki sipariş varsa ne olur? Sipariş olmayan ay 0 mı görünmeli, hiç mi görünmemeli? Bu sorular çözümün kendisi kadar puan getirir.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-mulakat-2">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../mulakat-1/">← Mülakat soruları 1: klasikler</a><a href="../mk-yontem/">SQL mülakatı: nasıl düşünülür, nasıl anlatılır? →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

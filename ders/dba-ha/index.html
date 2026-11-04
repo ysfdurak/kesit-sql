@@ -1,0 +1,40 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Yüksek erişilebilirlik ve ölçekleme: Always On, replikasyon, sharding | Kesit SQL</title><meta name="description" content="Sunucu çökünce ne olur? HA ve DR çözümleri, okuma ölçekleme."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/dba-ha/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Yüksek erişilebilirlik ve ölçekleme: Always On, replikasyon, sharding"><meta property="og:description" content="Sunucu çökünce ne olur? HA ve DR çözümleri, okuma ölçekleme."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/dba-ha/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Yüksek erişilebilirlik ve ölçekleme: Always On, replikasyon, sharding","description":"Sunucu çökünce ne olur? HA ve DR çözümleri, okuma ölçekleme.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/dba-ha/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Veritabanı Yönetimi (DBA)</span><h1>Yüksek erişilebilirlik ve ölçekleme: Always On, replikasyon, sharding</h1><p class="st-l">Sunucu çökünce ne olur? HA ve DR çözümleri, okuma ölçekleme.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-dba-ha">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>HA ve DR</h2>
+<ul>
+<li><b>Yüksek erişilebilirlik</b> (HA): Bir sunucu çöktüğünde saniyeler/dakikalar içinde başka bir sunucunun devralması. Genellikle aynı veri merkezinde, eşzamanlı.</li>
+<li><b>Felaket kurtarma</b> (DR): Tüm veri merkezi kaybedildiğinde başka bir bölgede ayağa kalkmak. Genellikle eşzamansız.</li>
+</ul>
+<h2>SQL Server seçenekleri</h2>
+<table>
+<tr><th>Çözüm</th><th>Ne kopyalanır?</th><th>Not</th></tr>
+<tr><td><b>Always On Availability Groups</b></td><td>Bir grup veritabanı, birincilden ikincillere</td><td>Eşzamanlı (veri kaybı yok) veya eşzamansız. İkinciller okuma ve yedek için kullanılabilir.</td></tr>
+<tr><td><b>Failover Cluster Instance</b></td><td>Instance'ın tamamı, paylaşımlı disk</td><td>Disk tek nokta olarak kalır.</td></tr>
+<tr><td><b>Log Shipping</b></td><td>Günlük yedekleri başka sunucuya taşınıp geri yüklenir</td><td>Basit ve ucuz DR; dakikalar düzeyinde gecikme.</td></tr>
+<tr><td><b>Replikasyon</b></td><td>Seçilen tablolar veya satırlar</td><td>Raporlama sunucusu besleme, dağıtık sistemler.</td></tr>
+</table>
+<h2>Diğer SQL türleri</h2>
+<table>
+<tr><th>SQL türü</th><th>Yaygın çözümler</th></tr>
+<tr><td>PostgreSQL</td><td>Akış replikasyonu (streaming replication), mantıksal replikasyon, otomatik devralma için Patroni</td></tr>
+<tr><td>MySQL</td><td>Kaynak–kopya replikasyonu, Group Replication / InnoDB Cluster</td></tr>
+<tr><td>Oracle</td><td>Data Guard (DR), RAC (aynı veritabanına birden çok sunucu)</td></tr>
+</table>
+<h2>Ölçekleme</h2>
+<ul>
+<li><b>Dikey ölçekleme</b>: Daha güçlü sunucu. Basit ama sınırlı.</li>
+<li><b>Okuma kopyaları</b>: Raporlar ve okumalar ikincil sunuculara yönlendirilir.</li>
+<li><b>Bölümleme</b> (partitioning): Büyük tablo tek veritabanında parçalara ayrılır (ör. yıla göre). Bakım ve arşivlemeyi kolaylaştırır.</li>
+<li><b>Sharding</b>: Veri birden çok veritabanına anahtara göre dağıtılır (ör. müşteri numarasına göre). Yazma ölçeklenir ama sorgular ve işlemler karmaşıklaşır.</li>
+</ul>
+<div class="tip"><b>Bulut</b>Azure SQL, Amazon RDS / Aurora, Google Cloud SQL gibi yönetilen hizmetler yedekleme, yama ve yüksek erişilebilirliği büyük ölçüde üstlenir. DBA'nın işi performans, maliyet, güvenlik ve mimari kararlara kayar.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-dba-ha">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../dba-izleme/">← İzleme: DMV'ler, bekleme istatistikleri, engelleme ve deadlock</a><a href="../veri-aktarim/">Veri içe ve dışa aktarma: BULK INSERT, COPY, linked server, OPENROWSET →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

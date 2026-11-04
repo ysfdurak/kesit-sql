@@ -1,0 +1,65 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Büyük sorgu 3: RFM puanlama ve müşteri segmentleri | Kesit SQL</title><meta name="description" content="Yakınlık, sıklık ve parasal değer için NTILE ile 1–5 puan, puan birleşimlerinden iş segmentleri ve segment raporu."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/bs-rfm/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Büyük sorgu 3: RFM puanlama ve müşteri segmentleri"><meta property="og:description" content="Yakınlık, sıklık ve parasal değer için NTILE ile 1–5 puan, puan birleşimlerinden iş segmentleri ve segment raporu."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/bs-rfm/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Büyük sorgu 3: RFM puanlama ve müşteri segmentleri","description":"Yakınlık, sıklık ve parasal değer için NTILE ile 1–5 puan, puan birleşimlerinden iş segmentleri ve segment raporu.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/bs-rfm/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Büyük Sorgular</span><h1>Büyük sorgu 3: RFM puanlama ve müşteri segmentleri</h1><p class="st-l">Yakınlık, sıklık ve parasal değer için NTILE ile 1–5 puan, puan birleşimlerinden iş segmentleri ve segment raporu.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-bs-rfm">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Soru</h2>
+<p>CRM ekibi kampanya listeleri hazırlayacak: kimler en değerli, kimler kaybedilmek üzere? Cevap RFM: <b>R</b>ecency (son siparişten bu yana gün), <b>F</b>requency (sipariş sayısı), <b>M</b>onetary (toplam harcama).</p>
+<h2>Sorgu</h2>
+<div class="note"><b>Büyük sorgu nasıl okunur?</b>Yukarıdan aşağı, her CTE'yi ayrı bir tablo gibi düşün. Bir adımı anlamadıysan o CTE'nin adını en sondaki SELECT'e yazıp yalnızca onu çalıştır: <code>SELECT * FROM adim_adi LIMIT 20;</code></div>
+<pre class="code">WITH teslim AS (          -- 1) Yalnızca teslim edilmiş siparişler, sipariş tutarıyla
+  SELECT o.customer_id, o.order_id, o.order_date, SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) AS tutar
+  FROM orders o
+  JOIN order_items oi ON oi.order_id = o.order_id
+  WHERE o.status = 'delivered'
+  GROUP BY o.customer_id, o.order_id, o.order_date
+),
+ham AS (                 -- 2) Müşteri başına R, F, M ham değerleri (referans: 2025-01-01)
+  SELECT customer_id,
+         julianday('2025-01-01') - julianday(MAX(order_date)) AS r_gun,
+         COUNT(*) AS f_siparis,
+         SUM(tutar) AS m_tutar
+  FROM teslim
+  GROUP BY customer_id
+),
+puan AS (                -- 3) Her boyut 1–5 puan (5 en iyi); NTILE eşit dilimler üretir
+  SELECT customer_id, r_gun, f_siparis, m_tutar,
+         NTILE(5) OVER (ORDER BY r_gun DESC, customer_id) AS r,
+         NTILE(5) OVER (ORDER BY f_siparis, customer_id) AS f,
+         NTILE(5) OVER (ORDER BY m_tutar, customer_id) AS m
+  FROM ham
+),
+segment AS (             -- 4) Puan birleşimlerini iş segmentlerine eşle
+  SELECT *,
+         CASE WHEN r >= 4 AND f >= 4 THEN 'Şampiyon'
+              WHEN r >= 3 AND f >= 3 THEN 'Sadık'
+              WHEN r >= 4 AND f <= 2 THEN 'Yeni ve umut vadeden'
+              WHEN r <= 2 AND f >= 3 THEN 'Kaybedilmek üzere'
+              WHEN r <= 2 THEN 'Uykuda'
+              ELSE 'Gelişmeye açık' END AS segment
+  FROM puan
+)
+SELECT segment,              -- 5) Segment özeti
+       COUNT(*) AS musteri,
+       ROUND(AVG(r_gun)) AS ort_gun,
+       ROUND(AVG(f_siparis), 1) AS ort_siparis,
+       ROUND(SUM(m_tutar)) AS ciro,
+       ROUND(100.0 * SUM(m_tutar) / SUM(SUM(m_tutar)) OVER (), 1) AS ciro_payi
+FROM segment
+GROUP BY segment
+ORDER BY ciro DESC;</pre>
+<h2>Adım adım</h2>
+<table><tr><th>Adım</th><th>Ne yapar?</th><th>Çıktının bir satırı</th></tr><tr><td><code>teslim</code></td><td>Sipariş düzeyinde net tutar (satır çoğalması burada çözülür)</td><td>müşteri 5, sipariş 31, 2024-11-02, 1840.5</td></tr><tr><td><code>ham</code></td><td>Müşteri başına gün, sipariş sayısı, toplam tutar</td><td>müşteri 5, 59 gün, 4 sipariş, 6120</td></tr><tr><td><code>puan</code></td><td>Her boyutu NTILE(5) ile 1–5 arasında puanlar</td><td>r 4, f 4, m 5</td></tr><tr><td><code>segment</code></td><td>Puan birleşimlerini kurallara göre adlandırır</td><td>Şampiyon</td></tr><tr><td><code>son SELECT</code></td><td>Segment başına sayı, ortalamalar ve ciro payı</td><td>Şampiyon, 36 müşteri, …, %31,4</td></tr></table>
+<h2>Tasarım kararları</h2>
+<ul>
+<li><b>R yönü:</b> Az gün iyidir; bu yüzden r için sıralama azalan (<code>ORDER BY r_gun DESC</code>): en çok gün en düşük dilime düşer.</li>
+<li><b>NTILE ve eşitlik:</b> Aynı değerli müşteriler farklı dilimlere düşebilir; sıralamaya customer_id eklemek sonucu her çalıştırmada aynı tutar.</li>
+<li><b>Kuralların sırası:</b> CASE ilk doğru koşulda durur; en seçici kural (Şampiyon) en üstte olmalıdır.</li>
+</ul>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-bs-rfm">Alıştırmalara geç (4)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../bs-oturum/">← Büyük sorgu 2: olaylardan oturum ve oturum hunisi</a><a href="../bs-ops/">Büyük sorgu 4: havayolu günlük operasyon panosu →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

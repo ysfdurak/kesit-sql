@@ -1,0 +1,47 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Alıştırma Kampı: E-ticaret (10 soru) | Kesit SQL</title><meta name="description" content="Sipariş, ürün ve müşteri tablolarıyla çok tablolu analiz pratiği."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/kamp-eticaret/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Alıştırma Kampı: E-ticaret (10 soru)"><meta property="og:description" content="Sipariş, ürün ve müşteri tablolarıyla çok tablolu analiz pratiği."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/kamp-eticaret/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Alıştırma Kampı: E-ticaret (10 soru)","description":"Sipariş, ürün ve müşteri tablolarıyla çok tablolu analiz pratiği.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/kamp-eticaret/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Alıştırma Kampı</span><h1>Alıştırma Kampı: E-ticaret (10 soru)</h1><p class="st-l">Sipariş, ürün ve müşteri tablolarıyla çok tablolu analiz pratiği.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-kamp-eticaret">Uygulamada aç, 12 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Anadolu Market'in satış verisi</h2>
+<p>Dört tablo birlikte: <code>customers</code>, <code>orders</code>, <code>order_items</code>, <code>products</code>. Sorular gerçek iş sorularına benziyor. Net tutar her yerde <b>adet × birim fiyat × (1 − indirim)</b>.</p>
+
+<h2>Nasıl çalışmalı?</h2>
+<ol>
+<li>Soruyu oku ve sonuçta hangi sütunların, kaç satırın bekleneceğini tahmin et.</li>
+<li>Önce <code>SELECT *</code> ile ilgili satırlara bak; sonra sütunları ve koşulları ekle.</li>
+<li><b>Kontrol et</b>'e basmadan önce <b>Sadece çalıştır</b> ile sonucu incele.</li>
+<li>İki denemede çözemezsen ipucuna bak; çözümü görmek XP'yi azaltır ama soruyu Tekrar listesine ekler.</li>
+</ol>
+<h2>Bu kampta en çok kullanacağın kalıplar</h2>
+<table><tr><th>İhtiyaç</th><th>Kalıp</th></tr><tr><td>Net tutar</td><td><code>SUM(oi.quantity * oi.unit_price * (1 - oi.discount))</code></td></tr><tr><td>Teslim edilenler</td><td><code>WHERE o.status = 'delivered'</code></td></tr><tr><td>Hiç satılmamış</td><td><code>LEFT JOIN order_items oi ... WHERE oi.product_id IS NULL</code></td></tr><tr><td>Sipariş sayısı şişmesin</td><td><code>COUNT(DISTINCT o.order_id)</code></td></tr><tr><td>Müşterinin ilk siparişi</td><td><code>ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date, order_id)</code></td></tr><tr><td>Önceki ay</td><td><code>LAG(ciro) OVER (ORDER BY ay)</code></td></tr></table>
+<div class="note"><b>Tablolar</b><code>customers</code>, <code>orders</code>, <code>order_items</code>, <code>products</code>. Sipariş satırları <code>order_items</code>'tadır; ciro her zaman satır düzeyinde hesaplanıp toplanır. Sütunların açıklamaları ve örnek satırlar Veri setleri sayfasında.</div>
+<h2>Derinleş: dört tabloyla güvenli çalışmak</h2>
+<div class="note"><b>Brif: Kategori müdürü</b>“Gelecek yılın bütçesini kategorilere ve segmentlere dağıtacağız. Hangi kategori ciro getiriyor, hangi müşteri grubu daha değerli? Sayılarının doğru olduğundan emin olmak istiyorum; bütçe buna göre bölünecek.”</div>
+<h3>Çalışma planı</h3>
+<ol>
+<li><b>Tanecikliği belirle.</b> <code>orders</code>'ta bir satır bir sipariş, <code>order_items</code>'ta bir satır bir sipariş kalemidir. JOIN'den sonra satır sayısı kalem sayısına çıkar. Aşağıdaki sorgu bunu gösterir: teslim edilen 712 sipariş, birleşince 1.269 satır olur.</li>
+<li><b>Ölçüyü doğru düzeyde hesapla.</b> Ciro kalem düzeyinde toplanır; sipariş sayısı <code>COUNT(DISTINCT o.order_id)</code> ile sayılır; müşteri başı ciro için önce müşteri düzeyine toplanır.</li>
+<li><b>Durumu sabitle.</b> Ciro = yalnızca <code>delivered</code>. Sipariş sayısında iptaller dahil mi? Soruda yazmıyorsa varsayımını not et.</li>
+</ol>
+<pre class="code">SELECT COUNT(*) AS satir, COUNT(DISTINCT o.order_id) AS siparis
+FROM orders o
+JOIN order_items oi ON oi.order_id = o.order_id
+WHERE o.status = 'delivered';</pre>
+<h3>Kontrol listesi</h3>
+<ul>
+<li><b>Mutabakat.</b> Kategori cirolarının toplamı, kategorisiz hesaplanan toplam teslim cirosuna eşit olmalı. Eşit değilse ürünü eşleşmeyen satır var demektir.</li>
+<li><b>Satır sayısı.</b> Her JOIN'den sonra <code>COUNT(*)</code> ile <code>COUNT(DISTINCT anahtar)</code> karşılaştır. Beklenmeyen artış = çoğalma.</li>
+<li><b>Kayıp satırlar.</b> INNER JOIN, hiç siparişi olmayan 14 müşteriyi sessizce düşürür. “Müşterilerin yüzde kaçı” gibi sorularda LEFT JOIN gerekir.</li>
+<li><b>Uç değer.</b> İndirim 0 ile 0,2 arasında, adet 1–3. Bunların dışında bir değer görürsen veri hatasıdır.</li>
+</ul>
+<h3>Teslim</h3>
+<div class="tip"><b>Yönetici özeti örneği</b>2024'te teslim edilen net ciro 636.316 TL. Sipariş başına sepet segmentler arasında birbirine yakın (1.364–1.625 TL), ama müşteri başına ciro Premium'da 10.833 TL, Bireysel'de 3.028 TL. Fark sepet büyüklüğünden değil alışveriş sıklığından geliyor; bütçe sadakat ve tekrar satın alma programlarına kaydırılmalı.</div>
+<h3>Kendini değerlendir</h3>
+<table><tr><th>Ölçüt</th><th>Başlangıç</th><th>İyi</th><th>Mükemmel</th></tr><tr><td>Doğruluk</td><td>Sorgular çalışıyor</td><td>Ciro satır düzeyinde, DISTINCT doğru yerde</td><td>Her sonuç bir mutabakatla doğrulanmış</td></tr><tr><td>JOIN seçimi</td><td>Hep INNER JOIN</td><td>LEFT JOIN gerektiğinde fark ediliyor</td><td>Kaybolan ve çoğalan satırlar sayıyla gösteriliyor</td></tr><tr><td>Yorum</td><td>Tablo</td><td>Tabloya bir cümle</td><td>Ölçüler arasındaki farkın nedeni açıklanmış</td></tr></table></article>
+<div class="st-c"><a class="st-p" href="../../#ders-kamp-eticaret">Alıştırmalara geç (12)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../kamp-ik/">← Alıştırma Kampı: İnsan kaynakları (10 soru)</a><a href="../proje-analist/">Bitirme projesi (Veri Analisti): Ilgaz Bank müşteri ve harcama analizi →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

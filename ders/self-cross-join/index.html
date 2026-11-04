@@ -1,0 +1,31 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Self JOIN ve CROSS JOIN | Kesit SQL</title><meta name="description" content="Tabloyu kendisiyle birleştirmek ve tüm kombinasyonları üretmek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/self-cross-join/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Self JOIN ve CROSS JOIN"><meta property="og:description" content="Tabloyu kendisiyle birleştirmek ve tüm kombinasyonları üretmek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/self-cross-join/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Self JOIN ve CROSS JOIN","description":"Tabloyu kendisiyle birleştirmek ve tüm kombinasyonları üretmek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/self-cross-join/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Tabloları Birleştirme</span><h1>Self JOIN ve CROSS JOIN</h1><p class="st-l">Tabloyu kendisiyle birleştirmek ve tüm kombinasyonları üretmek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-self-cross-join">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Self join: çalışan ve yöneticisi</h2>
+<p>Aynı tabloyu iki farklı takma adla iki kez kullanırsın:</p>
+<pre class="code" data-diff="oracle">SELECT e.first_name || ' ' || e.last_name AS calisan,
+       m.first_name || ' ' || m.last_name AS yonetici
+FROM employees e
+LEFT JOIN employees m ON e.manager_id = m.emp_id;</pre>
+<p>Self join ayrıca aynı tablodaki satırları karşılaştırmak için de kullanılır: aynı şehirde yaşayan müşteri çiftleri, aynı gün iki sipariş veren müşteriler gibi.</p>
+<h2>CROSS JOIN: kartezyen çarpım</h2>
+<p>Her satırı diğer tablonun her satırıyla eşleştirir. 7 departman × 3 kanal = 21 satır.</p>
+<pre class="code">SELECT d.name, ch.channel
+FROM departments d
+CROSS JOIN (SELECT DISTINCT channel FROM orders) ch;</pre>
+<p>Raporlarda “her ay × her kategori” iskeleti oluşturup boş kombinasyonları 0 ile göstermek için çok kullanılır.</p>
+<div class="warn"><b>Kazara kartezyen</b>JOIN koşulunu unutmak (veya yanlış yazmak) satır sayısını patlatır: 1 milyon × 1 milyon = 1 trilyon satır. Sonuç beklenmedik şekilde büyükse ilk şüphelin bu olsun.</div>
+<h2>Derinleş: kendine birleştirmenin üç kalıbı</h2><ol><li><b>Hiyerarşi:</b> çalışan–yönetici, müşteri–davet eden (<code>lk_customers.referred_by</code>).</li><li><b>Çiftler:</b> aynı ilçedeki restoran çiftleri; tekrarı önlemek için <code>a.id &lt; b.id</code>.</li><li><b>Sıralı olaylar:</b> aynı uçağın art arda uçuşları; bugün çoğunlukla LAG/LEAD ile yazılır.</li></ol><pre class="code">SELECT d.full_name AS davet_eden, COUNT(*) AS davetli
+FROM lk_customers c
+JOIN lk_customers d ON d.customer_id = c.referred_by
+GROUP BY d.customer_id, d.full_name
+ORDER BY davetli DESC
+LIMIT 5;</pre></article>
+<div class="st-c"><a class="st-p" href="../../#ders-self-cross-join">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../right-full-join/">← RIGHT JOIN, FULL OUTER JOIN</a><a href="../coklu-join/">Çoklu JOIN ve satır çoğalması tuzağı →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,56 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>İşe alım analitiği: huni, kaynak etkinliği ve doldurma süresi | Kesit SQL</title><meta name="description" content="Aday hunisinde aşama aşama dönüşüm, kaynaklara göre işe alım oranı ve kalıcılık, kadro talebinin doldurulma süresi ve açık taleplerin yaşı."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ik-alim/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="İşe alım analitiği: huni, kaynak etkinliği ve doldurma süresi"><meta property="og:description" content="Aday hunisinde aşama aşama dönüşüm, kaynaklara göre işe alım oranı ve kalıcılık, kadro talebinin doldurulma süresi ve açık taleplerin yaşı."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ik-alim/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"İşe alım analitiği: huni, kaynak etkinliği ve doldurma süresi","description":"Aday hunisinde aşama aşama dönüşüm, kaynaklara göre işe alım oranı ve kalıcılık, kadro talebinin doldurulma süresi ve açık taleplerin yaşı.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ik-alim/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · İK Analitiği</span><h1>İşe alım analitiği: huni, kaynak etkinliği ve doldurma süresi</h1><p class="st-l">Aday hunisinde aşama aşama dönüşüm, kaynaklara göre işe alım oranı ve kalıcılık, kadro talebinin doldurulma süresi ve açık taleplerin yaşı.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ik-alim">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Huni</h2>
+<p><code>ik_candidates.stage</code> adayın ulaştığı <b>son</b> aşamadır. Bir aşamaya ulaşan sayısı, o aşamada ya da sonrasında kalan herkesin toplamıdır. Bu yüzden aşamalara bir sıra numarası verip “bu sıraya ulaşmış mı?” diye saymak gerekir.</p>
+<pre class="code">WITH a AS (
+  SELECT CASE stage WHEN 'başvuru' THEN 1 WHEN 'ön eleme' THEN 2 WHEN 'mülakat' THEN 3
+                    WHEN 'teklif' THEN 4 WHEN 'teklif reddedildi' THEN 4 WHEN 'işe alındı' THEN 5 END AS sira
+  FROM ik_candidates
+)
+SELECT SUM(CASE WHEN sira &gt;= 1 THEN 1 ELSE 0 END) AS basvuru,
+       SUM(CASE WHEN sira &gt;= 2 THEN 1 ELSE 0 END) AS on_eleme,
+       SUM(CASE WHEN sira &gt;= 3 THEN 1 ELSE 0 END) AS mulakat,
+       SUM(CASE WHEN sira &gt;= 4 THEN 1 ELSE 0 END) AS teklif,
+       SUM(CASE WHEN sira &gt;= 5 THEN 1 ELSE 0 END) AS ise_alim
+FROM a;</pre>
+<h2>Kaynak etkinliği</h2>
+<p>Bir kaynağın değeri yalnızca kaç aday getirdiği değil; <b>işe alınma oranı</b>, <b>doldurma süresi</b> ve işe alınanların <b>kalıcılığı</b> ve <b>performansıdır</b>. Çok aday getiren bir kaynak, düşük dönüşüm ve yüksek ilk yıl devriyle pahalı olabilir.</p>
+<h2>Doldurma süresi (time to fill)</h2>
+<p>Kadro talebinin açılışı ile kapanışı arasındaki gün sayısı. Dağılım çarpık olduğu için ortalama yerine <b>medyan</b> raporlanır.</p>
+<h2>Derinleş: Time-to-fill, kabul oranı ve paydanın seçimi</h2>
+<p>İşe alım metriklerinin neredeyse hepsi bir orandır ve hepsinde asıl soru <b>paydanın kim olduğudur</b>. Sık kullanılan tanımlar:</p>
+<table>
+<tr><th>Metrik</th><th>Başlangıç → bitiş</th><th>Kimi ölçer?</th></tr>
+<tr><td>Time to fill</td><td>Talebin açılışı → kapanışı</td><td>Süreç (onaylar, ilan, mülakat takvimi)</td></tr>
+<tr><td>Time to hire</td><td>Adayın başvurusu → işe alınması</td><td>Adayın deneyimi; iyi adaylar uzun süreçte kaybolur</td></tr>
+<tr><td>Teklif kabul oranı</td><td>Kabul ÷ teklif</td><td>Ücret rekabetçiliği, işveren markası</td></tr>
+<tr><td>Kaynak verimi</td><td>İşe alınan ÷ başvuran (kaynağa göre)</td><td>Kaynağın aday kalitesi</td></tr>
+</table>
+<h3>Kabul oranında iki payda</h3>
+<p><code>stage</code> sütunu adayın <b>son</b> aşamasını tutar. “teklif” aşamasında kalmış 1.907 aday var: teklif almış ama ne kabul ne ret kaydı var (yanıt bekleyen, süresi dolan ya da talebi iptal edilen teklifler). Bunları paydaya katmak oranı yarıdan fazla düşürür:</p>
+<pre class="code">SELECT
+  SUM(CASE WHEN stage IN ('teklif', 'teklif reddedildi', 'işe alındı') THEN 1 ELSE 0 END) AS teklif_alan,
+  SUM(CASE WHEN stage IN ('teklif reddedildi', 'işe alındı') THEN 1 ELSE 0 END) AS sonuclanan,
+  ROUND(100.0 * SUM(CASE WHEN stage = 'işe alındı' THEN 1 ELSE 0 END)
+        / SUM(CASE WHEN stage IN ('teklif', 'teklif reddedildi', 'işe alındı') THEN 1 ELSE 0 END), 1) AS tum_teklif_kabul,
+  ROUND(100.0 * SUM(CASE WHEN stage = 'işe alındı' THEN 1 ELSE 0 END)
+        / SUM(CASE WHEN stage IN ('teklif reddedildi', 'işe alındı') THEN 1 ELSE 0 END), 1) AS sonuclanan_kabul
+FROM ik_candidates;</pre>
+<p>Tüm tekliflere göre kabul %22,8, yalnızca sonuçlanan tekliflere göre %54,8. İkisi de “doğru” olabilir ama farklı sorulara cevap verir. Sonuçlanan teklif oranı “teklif verdiğimizde aday ne der?” sorusunu cevaplar. Tüm teklif oranı ise süreçteki kaybı da içerir. Raporda hangisini kullandığını yaz.</p>
+<h3>Time to fill'de üç hata</h3>
+<ul>
+<li><b>Açık talepleri unutmak:</b> Yalnızca kapanmış talepleri ölçersen en uzun bekleyenler hesaba girmez ve süre olduğundan kısa görünür. Açık taleplerin yaşını ayrıca raporla.</li>
+<li><b>İptalleri karıştırmak:</b> İptal edilen bir talebin “kapanış” tarihi doldurma süresi değildir. <code>status = 'dolduruldu'</code> filtresi şarttır.</li>
+<li><b>Ortalama yerine medyan:</b> Birkaç zor pozisyon ortalamayı yukarı çeker. Bölüm karşılaştırmasında ortalama kullanıyorsan medyanı da göster.</li>
+</ul>
+<p>Bölüm farkları çoğu zaman beklenen yerde çıkar. Doldurulan taleplerde ortalama süre Veri ve Analitik'te yaklaşık 52 gün, Kurumsal Satış'ta 34 gün. Teknik roller için daha erken ilan açmak, bu tür bir bulgudan çıkan somut aksiyondur.</p>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ik-alim">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ik-performans/">← Performans analitiği: dağılım, kalibrasyon ve 9-kutu</a><a href="../ik-devamsizlik/">Devamsızlık ve izin analitiği: Bradford faktörü ve Pazartesi etkisi →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

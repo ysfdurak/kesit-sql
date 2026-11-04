@@ -1,0 +1,70 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Yavaş değişen boyutlar (SCD Tip 1 ve 2) | Kesit SQL</title><meta name="description" content="Değişen nitelikleri ezmek mi, tarihçesini tutmak mı?"><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/de-scd/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Yavaş değişen boyutlar (SCD Tip 1 ve 2)"><meta property="og:description" content="Değişen nitelikleri ezmek mi, tarihçesini tutmak mı?"><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/de-scd/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Yavaş değişen boyutlar (SCD Tip 1 ve 2)","description":"Değişen nitelikleri ezmek mi, tarihçesini tutmak mı?","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/de-scd/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Veri Mühendisliği</span><h1>Yavaş değişen boyutlar (SCD Tip 1 ve 2)</h1><p class="st-l">Değişen nitelikleri ezmek mi, tarihçesini tutmak mı?</p>
+<div class="st-c"><a class="st-p" href="../../#ders-de-scd">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Sorun</h2>
+<p>Bir ürünün fiyatı veya bir müşterinin şehri değişir. Geçmiş raporlar eski değeri mi, yeni değeri mi göstermeli?</p>
+<table><tr><th>Tip</th><th>Davranış</th><th>Kullanım</th></tr>
+<tr><td><b>SCD 1</b></td><td>Eski değerin üzerine yazılır, tarihçe yok.</td><td>Yazım hatası düzeltme, önemsiz nitelikler</td></tr>
+<tr><td><b>SCD 2</b></td><td>Her değişiklik yeni satır; <code>valid_from</code>, <code>valid_to</code>, <code>is_current</code>.</td><td>Fiyat, adres, segment gibi analizde önemli nitelikler</td></tr>
+<tr><td>SCD 3</td><td>Önceki değer ayrı sütunda (<code>previous_city</code>).</td><td>Sadece bir önceki değer yeterliyse</td></tr>
+</table>
+<h2>SCD 2'yi LEAD ile kurmak</h2>
+<pre class="code">WITH surumler AS (
+  SELECT product_id, price AS fiyat, '2000-01-01 00:00:00' AS gecerlilik FROM products
+  UNION ALL
+  SELECT product_id, new_price, updated_at FROM price_updates
+)
+SELECT product_id, fiyat,
+       gecerlilik AS valid_from,
+       COALESCE(LEAD(gecerlilik) OVER (PARTITION BY product_id ORDER BY gecerlilik), '9999-12-31') AS valid_to,
+       CASE WHEN LEAD(gecerlilik) OVER (PARTITION BY product_id ORDER BY gecerlilik) IS NULL THEN 1 ELSE 0 END AS is_current
+FROM surumler
+WHERE product_id IN (SELECT product_id FROM price_updates)
+ORDER BY product_id, valid_from;</pre>
+<p>Belirli bir tarihteki fiyatı bulmak: <code>WHERE :tarih &gt;= valid_from AND :tarih &lt; valid_to</code>.</p>
+<h2>Derinleş: SCD tiplerini seçmek ve zaman noktasına göre birleştirmek</h2>
+<p>Boyut tablosundaki bir nitelik değiştiğinde ne olacağı bir <b>iş sorusudur</b>: “Geçen yılın raporu, geçen yılki değeri mi göstermeli?” Cevaba göre tip seçilir:</p>
+<table><tr><th>Tip</th><th>Değişiklikte</th><th>Tarihçe</th><th>Artı / eksi</th></tr>
+<tr><td>0</td><td>Hiç değişmez</td><td>—</td><td>Doğum tarihi gibi sabit nitelikler</td></tr>
+<tr><td>1</td><td>Üzerine yazılır</td><td>Yok</td><td>Basit; geçmiş raporlar sessizce değişir</td></tr>
+<tr><td>2</td><td>Eski satır kapanır, yeni satır açılır</td><td>Tam</td><td>Doğru geçmiş; tablo büyür, birleştirme tarih aralığı ister</td></tr>
+<tr><td>3</td><td>Önceki değer ayrı sütuna taşınır</td><td>Yalnızca bir önceki</td><td>“Eski bölge / yeni bölge” karşılaştırmaları için yeterli</td></tr></table>
+<p>Uygulamada aynı boyutta tipler karışır: müşterinin adı yazım düzeltmesinde Tip 1, segmenti Tip 2 olabilir.</p>
+<h3>Zaman noktasına göre birleştirme (point-in-time join)</h3>
+<p>SCD 2'nin değeri, olay tablosunu <b>olay anında geçerli</b> satırla birleştirince ortaya çıkar. Ekim–Aralık 2024'te fiyatı değişen ürünlerin satışlarını, sipariş günündeki liste fiyatıyla ve bugünkü (güncel) fiyatla ayrı ayrı değerleyelim:</p>
+<pre class="code">WITH s AS (
+  SELECT product_id, price AS fiyat, '2000-01-01 00:00:00' AS g FROM products
+  UNION ALL
+  SELECT product_id, new_price, updated_at FROM price_updates
+),
+dim AS (
+  SELECT product_id, fiyat, g AS valid_from,
+         COALESCE(LEAD(g) OVER (PARTITION BY product_id ORDER BY g), '9999-12-31') AS valid_to,
+         CASE WHEN LEAD(g) OVER (PARTITION BY product_id ORDER BY g) IS NULL THEN 1 ELSE 0 END AS is_current
+  FROM s
+)
+SELECT ROUND(SUM(oi.quantity * d.fiyat)) AS o_gunku_fiyatla,
+       ROUND(SUM(oi.quantity * c.fiyat)) AS guncel_fiyatla,
+       COUNT(*) AS satir
+FROM orders o
+JOIN order_items oi ON oi.order_id = o.order_id
+JOIN dim d ON d.product_id = oi.product_id
+          AND o.order_date >= d.valid_from AND o.order_date &lt; d.valid_to
+JOIN dim c ON c.product_id = oi.product_id AND c.is_current = 1
+WHERE o.order_date >= '2024-10-01'
+  AND oi.product_id IN (SELECT product_id FROM price_updates);</pre>
+<p>Aynı 112 satış satırı, o günkü fiyatla 105.688 TL, güncel fiyatla 108.502 TL ediyor. Tip 1 kullansaydın geçmiş dönemin değeri sessizce 2.814 TL değişirdi.</p>
+<div class="warn"><b>Aralık sınırı hatası</b>SCD 2'de aralıklar <b>yarı açık</b> olmalı: <code>valid_from &lt;= t &lt; valid_to</code>. Hem başlangıç hem bitişi dahil eden <code>BETWEEN</code> kullanırsan değişiklik anındaki olay iki satırla eşleşir ve satış iki kez sayılır.</div>
+<h3>SCD 2 güncelleme adımları</h3>
+<ol><li>Kaynaktaki değeri hedefteki güncel satırla karşılaştır (çok sütunda <code>hash</code> ile).</li>
+<li>Değişenlerde güncel satırı kapat: <code>valid_to = değişiklik anı</code>, <code>is_current = 0</code>.</li>
+<li>Yeni değerle <code>valid_to = '9999-12-31'</code>, <code>is_current = 1</code> satırı ekle.</li>
+<li>Test: her anahtar için tam olarak bir güncel satır var mı, aralıklar çakışıyor mu?</li></ol></article>
+<div class="st-c"><a class="st-p" href="../../#ders-de-scd">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../de-cdc/">← Değişen veriyi yakalamak (CDC, change data capture)</a><a href="../de-dbt/">dbt ile SQL dönüşüm katmanı: modeller ve testler →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

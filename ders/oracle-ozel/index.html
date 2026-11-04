@@ -1,0 +1,42 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Oracle'a özgü yazımlar | Kesit SQL</title><meta name="description" content="DUAL, NVL/NVL2/DECODE, ROWNUM, TO_CHAR, boş metin = NULL, MINUS, CONNECT BY."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/oracle-ozel/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Oracle'a özgü yazımlar"><meta property="og:description" content="DUAL, NVL/NVL2/DECODE, ROWNUM, TO_CHAR, boş metin = NULL, MINUS, CONNECT BY."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/oracle-ozel/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Oracle'a özgü yazımlar","description":"DUAL, NVL/NVL2/DECODE, ROWNUM, TO_CHAR, boş metin = NULL, MINUS, CONNECT BY.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/oracle-ozel/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · SQL Türlerine Özgü</span><h1>Oracle'a özgü yazımlar</h1><p class="st-l">DUAL, NVL/NVL2/DECODE, ROWNUM, TO_CHAR, boş metin = NULL, MINUS, CONNECT BY.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-oracle-ozel">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Oracle'ın temel farkları</h2>
+<pre class="code" data-base="oracle">SELECT SYSDATE AS simdi,
+       TO_CHAR(DATE '2024-05-17', 'DD.MM.YYYY') AS tr_tarih,
+       NVL(NULL, 'yok') AS nvl_ornek,
+       NVL2('x', 'dolu', 'bos') AS nvl2_ornek,
+       DECODE('B', 'A', 'Elma', 'B', 'Armut', 'Diğer') AS decode_ornek
+FROM dual;</pre>
+<ul>
+<li><b>DUAL</b>: Oracle'da her SELECT bir FROM ister; tek satırlık yardımcı tablo <code>dual</code>'dır.</li>
+<li><b>NVL / NVL2 / DECODE</b>: ISNULL, CASE benzeri Oracle fonksiyonları.</li>
+<li><b>DATE tipi saat de içerir</b>; sabit tarihler için <code>DATE '2024-05-17'</code> veya <code>TO_DATE('17.05.2024', 'DD.MM.YYYY')</code>.</li>
+</ul>
+<h2>Boş metin NULL'dır</h2>
+<pre class="code" data-base="oracle">SELECT CASE WHEN '' IS NULL THEN 'Boş metin NULL sayılır' ELSE 'Değil' END AS sonuc,
+       'Ad' || NULL || 'Soyad' AS birlestirme
+FROM dual;</pre>
+<p>Oracle'da <code>''</code> ile NULL aynıdır ve <code>||</code> NULL'ı yok sayar. Diğer SQL türlerinden taşınan kodlarda sık hata kaynağıdır.</p>
+<h2>ROWNUM ve FETCH FIRST</h2>
+<pre class="code" data-base="oracle">-- Eski yöntem: önce sırala, sonra ROWNUM ile kes
+SELECT * FROM (
+  SELECT name, price FROM products ORDER BY price DESC
+)
+WHERE ROWNUM &lt;= 3;</pre>
+<p>ROWNUM, ORDER BY'dan <b>önce</b> atanır; bu yüzden sıralı ilk N için alt sorgu gerekir. 12c ve sonrasında <code>FETCH FIRST 3 ROWS ONLY</code> kullan.</p>
+<h2>Hiyerarşik sorgu: CONNECT BY</h2>
+<pre class="code" data-norun>SELECT LEVEL AS seviye, LPAD(' ', 2 * (LEVEL - 1)) || first_name AS calisan
+FROM employees
+START WITH manager_id IS NULL
+CONNECT BY PRIOR emp_id = manager_id;</pre>
+<p>Oracle'ın özyinelemeli CTE'den önceki hiyerarşi sözdizimidir; hâlâ çok yaygındır. Bu taklitte çalıştırılamaz; aynı sonucu özyinelemeli WITH ile alabilirsin.</p>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-oracle-ozel">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../tam-metin/">← Tam metin arama: LIKE yerine dizinli kelime araması</a><a href="../plsql/">Oracle PL/SQL ile programlama: blok, imleç, prosedür, paket →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

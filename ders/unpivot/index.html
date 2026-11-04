@@ -1,0 +1,31 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Geniş tablodan uzun tabloya: UNPIVOT | Kesit SQL</title><meta name="description" content="Sütunlara yayılmış ölçümleri satırlara çevirmek: UNION ALL, sabit liste ile CROSS JOIN, SQL türlerine özgü UNPIVOT ve uzun formatın analizdeki faydası."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/unpivot/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Geniş tablodan uzun tabloya: UNPIVOT"><meta property="og:description" content="Sütunlara yayılmış ölçümleri satırlara çevirmek: UNION ALL, sabit liste ile CROSS JOIN, SQL türlerine özgü UNPIVOT ve uzun formatın analizdeki faydası."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/unpivot/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Geniş tablodan uzun tabloya: UNPIVOT","description":"Sütunlara yayılmış ölçümleri satırlara çevirmek: UNION ALL, sabit liste ile CROSS JOIN, SQL türlerine özgü UNPIVOT ve uzun formatın analizdeki faydası.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/unpivot/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · İleri Sorgu Yapıları</span><h1>Geniş tablodan uzun tabloya: UNPIVOT</h1><p class="st-l">Sütunlara yayılmış ölçümleri satırlara çevirmek: UNION ALL, sabit liste ile CROSS JOIN, SQL türlerine özgü UNPIVOT ve uzun formatın analizdeki faydası.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-unpivot">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Neden uzun format?</h2>
+<p>Lezzet Kurye değerlendirmelerinde iki puan iki ayrı sütunda durur: <code>food_score</code> ve <code>courier_score</code>. “Hangi puan türünün ortalaması daha düşük?”, “Her puan türünde 1 verenlerin oranı?” gibi sorular, puanlar <b>tek sütunda</b> ve türü ayrı bir sütunda olduğunda tek bir GROUP BY ile cevaplanır. Görselleştirme araçları da çoğunlukla uzun format ister.</p>
+<table><tr><th>order_id</th><th>food_score</th><th>courier_score</th></tr><tr><td>12</td><td>5</td><td>4</td></tr></table>
+<p>↓</p>
+<table><tr><th>order_id</th><th>tur</th><th>puan</th></tr><tr><td>12</td><td>yemek</td><td>5</td></tr><tr><td>12</td><td>kurye</td><td>4</td></tr></table>
+<h2>Yol 1: UNION ALL (her yerde çalışır)</h2>
+<pre class="code">SELECT order_id, 'yemek' AS tur, food_score AS puan FROM lk_ratings
+UNION ALL
+SELECT order_id, 'kurye', courier_score FROM lk_ratings;</pre>
+<p>Tabloyu her sütun için bir kez okur. Sütun sayısı azsa en okunur yoldur.</p>
+<h2>Yol 2: sabit listeyle CROSS JOIN</h2>
+<pre class="code">SELECT r.order_id, t.tur,
+       CASE t.tur WHEN 'yemek' THEN r.food_score ELSE r.courier_score END AS puan
+FROM lk_ratings r
+CROSS JOIN (SELECT 'yemek' AS tur UNION ALL SELECT 'kurye') t;</pre>
+<p>Tabloyu bir kez okur; her satırı tür sayısı kadar çoğaltıp CASE ile doğru sütunu seçer.</p>
+<h2>Yol 3: SQL türüne özgü operatörler</h2>
+<ul><li>SQL Server ve Oracle: <code>UNPIVOT (puan FOR tur IN (food_score, courier_score))</code></li><li>BigQuery: <code>UNPIVOT (puan FOR tur IN (food_score, courier_score))</code></li><li>PostgreSQL: <code>CROSS JOIN LATERAL (VALUES ('yemek', food_score), ('kurye', courier_score)) v(tur, puan)</code></li></ul>
+<div class="note"><b>NULL'lara dikkat</b>SQL Server ve Oracle UNPIVOT, değeri NULL olan satırları varsayılan olarak atar; UNION ALL yöntemi ise korur. Sayımlar bu yüzden farklı çıkabilir.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-unpivot">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../pivot/">← Pivot: satırları sütuna çevirmek</a><a href="../rollup/">ROLLUP, CUBE ve GROUPING SETS: ara toplamlar →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

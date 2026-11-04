@@ -1,0 +1,77 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Talebi anlamak: asıl sorun, görüşme soruları ve sorunu SQL ile boyutlandırmak | Kesit SQL</title><meta name="description" content="İstenen çözümün arkasındaki sorun, paydaş görüşmesi, geç teslimin sayısı ve maliyeti, kapsam içi ve dışı."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ba-talep/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Talebi anlamak: asıl sorun, görüşme soruları ve sorunu SQL ile boyutlandırmak"><meta property="og:description" content="İstenen çözümün arkasındaki sorun, paydaş görüşmesi, geç teslimin sayısı ve maliyeti, kapsam içi ve dışı."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ba-talep/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Talebi anlamak: asıl sorun, görüşme soruları ve sorunu SQL ile boyutlandırmak","description":"İstenen çözümün arkasındaki sorun, paydaş görüşmesi, geç teslimin sayısı ve maliyeti, kapsam içi ve dışı.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ba-talep/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · BT İş Analizi</span><h1>Talebi anlamak: asıl sorun, görüşme soruları ve sorunu SQL ile boyutlandırmak</h1><p class="st-l">İstenen çözümün arkasındaki sorun, paydaş görüşmesi, geç teslimin sayısı ve maliyeti, kapsam içi ve dışı.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ba-talep">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory"><p>Talep elimizde: <i>“Geç teslim edilen siparişlerde müşteriye otomatik telafi kuponu verelim.”</i> Bu cümle bir sorun değil, bir <b>çözüm önerisidir</b>. Kupon geç teslimi azaltmaz; olsa olsa sonucunu yumuşatır. İş analisti önce şunu sorar: hangi sorunu çözmeye çalışıyoruz?</p>
+<h2>Görüşmede ne sorulur?</h2>
+<p>Paydaş (stakeholder), işten etkilenen ya da işe karar veren kişidir. Burada müşteri hizmetleri, operasyon, finans ve pazarlama. Soruları açık uçlu sor, cevabı kendi önerinle kapatma.</p>
+<table><tr><th>Amaç</th><th>Soru</th><th>Neden?</th></tr>
+<tr><td>Sorun</td><td>Bunu şimdi istemenize ne yol açtı? Son olarak hangi şikâyet geldi?</td><td>Gerçek olayı anlatır, varsayımı ayıklar</td></tr>
+<tr><td>Ölçü</td><td>Bu iş başarılı olursa hangi sayı nasıl değişir?</td><td>Sonradan “işe yaradı mı?” sorusunu cevaplanabilir kılar</td></tr>
+<tr><td>Tanım</td><td>Sizin için “geç” kaç dakika? Saat ne zaman başlar?</td><td>Ekipler aynı kelimeyle farklı şeyi kastedebilir</td></tr>
+<tr><td>Sınır</td><td>Kim kupon almamalı? Toplam bütçe nedir?</td><td>İstisnaları ve kötüye kullanımı ortaya çıkarır</td></tr>
+<tr><td>Bugün</td><td>Şu anda bu durumda ne yapıyorsunuz?</td><td>Mevcut süreci ve elle yapılan işi gösterir</td></tr>
+<tr><td>Bedel</td><td>Hiç yapılmazsa ne olur?</td><td>Önceliği dürüst tartışmayı sağlar</td></tr></table>
+<div class="warn"><b>Yönlendirici soru sorma</b>“45 dakika geç sayılır, değil mi?” sorusu cevabı sana verdirir. “Müşteri kaç dakikadan sonra geç kaldı der?” sorusu bilgi getirir.</div>
+<h2>Sorunu veriyle boyutlandır</h2>
+<p>Müşteri hizmetleri “çok şikâyet var” diyor. “Çok” bir sayı değil. Geçici bir çalışma tanımı alalım: <b>sipariş verildikten teslime kadar 45 dakikayı (2.700 saniye) aşan teslimat geçtir.</b> Bu tanım henüz karar değil, görüşmede sınanacak bir varsayım. Dönemi Ekim-Aralık 2024 olarak sabitleyelim. Süreyi saniyeyle hesaplıyoruz; nedenini bir sonraki derste göreceksin.</p>
+<pre class="code">WITH t AS (
+  SELECT order_id, customer_id, restaurant_id, courier_id, status, placed_at,
+         ROUND((julianday(delivered_at) - julianday(placed_at)) * 86400) AS sure_sn
+  FROM lk_orders
+  WHERE placed_at >= '2024-10-01' AND placed_at &lt; '2025-01-01'
+)
+SELECT status, COUNT(*) AS siparis,
+       SUM(CASE WHEN sure_sn > 2700 THEN 1 ELSE 0 END) AS gec
+FROM t
+GROUP BY status
+ORDER BY status;</pre>
+<p>Teslim edilen 6.637 siparişin 1.508 tanesi (%22,7) bu tanıma göre geç. Sayının yanında şunlar da çıktı: 356 iptal siparişin teslim zamanı yok, 35 iade edilmiş sipariş de 45 dakikayı aşmış. Bunlar birazdan gereksinim sorusu olacak.</p>
+<h3>Sorun nerede oluşuyor?</h3>
+<p>Kupon kararı vermeden önce gecikmenin kaynağına bak. Süreyi ikiye böl: hazırlık (sipariş → kuryenin alışı) ve yol (alış → teslim).</p>
+<pre class="code">SELECT CASE WHEN ROUND((julianday(delivered_at) - julianday(placed_at)) * 86400) > 2700 THEN 'geç' ELSE 'zamanında' END AS durum,
+       COUNT(*) AS siparis,
+       ROUND(AVG((julianday(picked_at) - julianday(placed_at)) * 86400) / 60.0, 1) AS hazirlik_dk,
+       ROUND(AVG((julianday(delivered_at) - julianday(picked_at)) * 86400) / 60.0, 1) AS yol_dk
+FROM lk_orders
+WHERE status = 'teslim' AND placed_at >= '2024-10-01' AND placed_at &lt; '2025-01-01'
+GROUP BY CASE WHEN ROUND((julianday(delivered_at) - julianday(placed_at)) * 86400) > 2700 THEN 'geç' ELSE 'zamanında' END;</pre>
+<p>Geç siparişlerde hazırlık 19,8, yol 33,2 dakika; zamanında olanlarda 14,1 ve 19,2. Fark en çok yolda. Araç türüne bakınca geç oranı bisiklette %48,6, arabada %34,1, motosiklette %21,0. Fırın Pizza'da oran %50,0. Bunu alıştırmalarda kendin hesaplayacaksın.</p>
+<div class="note"><b>Sayının söylemediği</b>Veride mesafe yok. Bisikletin gecikmesi araçtan değil, bisikletlerin daha uzak ya da daha yoğun bölgede çalışmasından da gelebilir. Bu yüzden toplantıya “bisiklet yavaş” diye değil, “bisikletli teslimatlarda geç oranı iki kattan fazla, nedeni için mesafe verisine ihtiyacımız var” diye gidersin.</div>
+<h3>Kupon gerçekten ne sağlar?</h3>
+<p>Talebin varsayımı şu: geç teslim alan müşteri kaçıyor. Veride bunun izine bak. Ekim-Kasım teslimatlarından sonraki 30 gün içinde yeniden sipariş veren müşteri payı, geç teslimlerde %84,9, zamanında olanlarda %86,4.</p>
+<pre class="code">WITH s AS (
+  SELECT order_id, customer_id, placed_at,
+         CASE WHEN ROUND((julianday(delivered_at) - julianday(placed_at)) * 86400) > 2700 THEN 'geç' ELSE 'zamanında' END AS durum
+  FROM lk_orders
+  WHERE status = 'teslim' AND placed_at >= '2024-10-01' AND placed_at &lt; '2024-12-01'
+)
+SELECT durum, COUNT(*) AS teslimat,
+       ROUND(100.0 * SUM(CASE WHEN EXISTS (
+         SELECT 1 FROM lk_orders n
+         WHERE n.customer_id = s.customer_id AND n.placed_at > s.placed_at
+           AND (julianday(n.placed_at) - julianday(s.placed_at)) * 86400 &lt;= 2592000
+       ) THEN 1 ELSE 0 END) / COUNT(*), 1) AS donus_yuzde
+FROM s
+GROUP BY durum;</pre>
+<p>Fark küçük. Müşteri puanı ise belirgin düşüyor: geç teslimlerde kurye puanı ortalaması 3,86, diğerlerinde 4,41. Dürüst özet: <i>geç teslim memnuniyeti düşürüyor; yeniden siparişe etkisi bu veride küçük görünüyor.</i> Bu gözlemdir, neden-sonuç kanıtı değildir ve kuponun getirisini garanti etmez. Bunu talep sahibine söylemek senin işindir. Kupon yine yapılabilir, ama başarı ölçüsü buna göre yazılır.</p>
+<h3>Başarı ölçüsü: sayı, kaynak, hedef, süre</h3>
+<p>“Şikâyetler azalsın” ölçü değildir. Ölçü dört şeyi söylemeli: nereden başlıyoruz, başlangıç sayısı nereden geliyor, hedef kaç, ne zaman bakacağız.</p>
+<table><tr><th>Ölçü</th><th>Başlangıç değeri ve kaynağı</th><th>Hedef</th><th>Süre</th><th>Sahibi</th></tr>
+<tr><td><b>Ana ölçü:</b> pilot grupta geç teslim şikâyeti sayısı</td><td>Geçişten önceki 8 haftanın sayısı; müşteri hizmetleri kayıtlarından alınacak. Bu veri uygulamada yok.</td><td>%20 azalma</td><td>Geçişten sonraki 8 hafta, pilot dışı grupla karşılaştırmalı</td><td>Müşteri hizmetleri</td></tr>
+<tr><td><b>Yan ölçü:</b> geç teslimlerde ortalama kurye puanı</td><td>3,86; Ekim-Aralık 2024, bu uygulamadaki veri</td><td>Düşmemesi yeterli</td><td>Aynı 8 hafta</td><td>Operasyon</td></tr></table>
+<p>%20 hedefi veriden çıkmadı: talep sahibiyle konuşulup yazılan bir hedeftir ve başlangıç sayısı gelince gözden geçirilir. Başlangıç değeri olmayan ölçüyü kabul etme: açık soru olarak yaz, sahibini ve tarihini koy.</p>
+<h3>Bedeli ne kadar?</h3>
+<p>Görüşmeden çıkan tutar önerisi: 45-60 dakika arası 30 TL, 60 dakikayı aşan 60 TL. Bu kuralla dönemin kupon bedeli üst sınırda 51.900 TL. Karşılaştırma için aynı dönemde teslim edilen siparişlerin sepet toplamı 3.391.530 TL. Üst sınır diyoruz, çünkü her kupon kullanılmayabilir ve bir aylık sınır gelebilir.</p>
+<h2>Kapsamı çiz</h2>
+<table><tr><th>Kapsam içi</th><th>Kapsam dışı (bu sürümde)</th></tr>
+<tr><td>Teslim edilmiş siparişte süre hesabı ve kupon üretimi</td><td>Geç teslimi azaltacak kurye ve restoran iyileştirmeleri</td></tr>
+<tr><td>Kuponun müşteriye bildirilmesi</td><td>Kuponu ödeme ekranında kullanma ekranının yeniden tasarımı</td></tr>
+<tr><td>Operasyon için kupon raporu</td><td>Restoranı kupon bedeline ortak etme (ayrı talep)</td></tr></table>
+<p>Kapsam dışı listesi en az kapsam içi kadar değerlidir. “Bunu kastetmemiştik” tartışmasını baştan keser. Çıktın tek sayfalık <b>talep özetidir</b>: sorun, kanıt sayıları, başarı ölçüsü, kapsam, açık sorular.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ba-talep">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ba-rol/">← BT iş analisti (IT business analyst) ne yapar?</a><a href="../ba-gereksinim/">Gereksinim yazmak (requirements): iş kuralı, kullanıcı hikâyesi, kabul kriteri, kenar durumlar →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

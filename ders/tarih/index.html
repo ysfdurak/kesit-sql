@@ -1,0 +1,39 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SQL'in tarihi: bir makaleden dünya standardına (isteğe bağlı okuma) | Kesit SQL</title><meta name="description" content="Codd'un ilişkisel modeli, System R, SEQUEL, Oracle ve ANSI standartları."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/tarih/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="SQL'in tarihi: bir makaleden dünya standardına (isteğe bağlı okuma)"><meta property="og:description" content="Codd'un ilişkisel modeli, System R, SEQUEL, Oracle ve ANSI standartları."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/tarih/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"SQL'in tarihi: bir makaleden dünya standardına (isteğe bağlı okuma)","description":"Codd'un ilişkisel modeli, System R, SEQUEL, Oracle ve ANSI standartları.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/tarih/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · SQL'in Hikayesi</span><h1>SQL'in tarihi: bir makaleden dünya standardına (isteğe bağlı okuma)</h1><p class="st-l">Codd'un ilişkisel modeli, System R, SEQUEL, Oracle ve ANSI standartları.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-tarih">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Her şey bir makaleyle başladı</h2>
+<p>1970'te IBM'de çalışan matematikçi <b>Edgar F. Codd</b>, <i>"A Relational Model of Data for Large Shared Data Banks"</i> başlıklı makalesini yayımladı. O güne kadar veriler hiyerarşik (ağaç) veya ağ yapılı veritabanlarında tutuluyordu ve bir veriye ulaşmak için programcının verinin fiziksel olarak nerede durduğunu bilmesi gerekiyordu.</p>
+<p>Codd'un fikri basit ama devrimciydi: Veriyi <b>tablolar</b> (matematikteki adıyla <i>ilişkiler / relations</i>) halinde düşün, kullanıcı <b>ne istediğini</b> söylesin, <b>nasıl</b> bulunacağına sistem karar versin. Bugün SQL'in “bildirimsel” (declarative) dil olmasının kökü budur.</p>
+
+<h2>Zaman çizelgesi</h2>
+<ul class="timeline">
+<li><b>1970</b> · Codd ilişkisel modeli yayımlar. İlişkisel cebir ve ilişkisel hesap kavramlarını tanımlar.</li>
+<li><b>1974</b> · IBM'den Donald Chamberlin ve Raymond Boyce, <b>SEQUEL</b> (Structured English Query Language) dilini tanıtır. Amaç, matematik bilmeyen kullanıcıların da sorgu yazabilmesiydi.</li>
+<li><b>1974–1979</b> · IBM'in <b>System R</b> projesi, ilişkisel modelin pratikte hızlı çalışabileceğini kanıtlar. Maliyet tabanlı sorgu optimizasyonu burada doğar.</li>
+<li><b>1977</b> · SEQUEL adı, bir İngiliz havacılık şirketinin ticari markasıyla çakıştığı için <b>SQL</b> olarak kısaltılır. Bu yüzden bugün hem “es-kyu-el” hem “sikuel” okunuşu yaygındır.</li>
+<li><b>1979</b> · Relational Software Inc. (bugünkü <b>Oracle</b>), ilk ticari SQL veritabanını piyasaya sürer. IBM'den önce davranır.</li>
+<li><b>1981–1983</b> · IBM SQL/DS ve <b>DB2</b>'yi çıkarır. UC Berkeley'de Ingres projesi (PostgreSQL'in atası) yükselir.</li>
+<li><b>1986</b> · SQL, <b>ANSI</b> tarafından, 1987'de <b>ISO</b> tarafından standart kabul edilir (SQL-86).</li>
+<li><b>1989 / 1992</b> · SQL-89 ve büyük revizyon <b>SQL-92</b>: JOIN sözdizimi, CASE, CAST ve bugün temel saydığımız pek çok özellik.</li>
+<li><b>1995–1996</b> · <b>MySQL</b> ve <b>PostgreSQL</b> doğar; açık kaynak veritabanları web'in omurgası olur.</li>
+<li><b>1999</b> · SQL:1999: Özyinelemeli sorgular (WITH RECURSIVE), trigger'lar, boolean tipi.</li>
+<li><b>2000</b> · D. Richard Hipp <b>SQLite</b>'ı yazar. Bugün telefonlarda, tarayıcılarda, uçaklarda çalışan, dünyanın en yaygın veritabanıdır. Bu uygulama da SQLite kullanır.</li>
+<li><b>2003</b> · SQL:2003: <b>Pencere fonksiyonları</b> (OVER, PARTITION BY), MERGE, XML desteği.</li>
+<li><b>2006–2010</b> · Büyük veri ve NoSQL dalgası: Hadoop, MongoDB, Cassandra. “SQL ölüyor mu?” tartışmaları.</li>
+<li><b>2010'lar</b> · Hive, Spark SQL, Presto, BigQuery, Redshift, Snowflake: Büyük veri dünyası SQL'e geri döner.</li>
+<li><b>2011 / 2016</b> · SQL:2011 zamansal (temporal) tablolar; SQL:2016 <b>JSON</b> desteği ve satır deseni eşleme.</li>
+<li><b>2023</b> · SQL:2023: Özellik grafikleri için <b>SQL/PGQ</b> ve JSON veri tipi.</li>
+</ul>
+
+<h2>Neden hâlâ SQL?</h2>
+<p>50 yılı aşkın sürede programlama dilleri gelip geçti; SQL kaldı. Sebebi, “neyi istediğini söyle” yaklaşımının veriyle çalışmak için çok doğal olması ve tüm büyük veri platformlarının ortak dili haline gelmesi. Bir veri analisti, veri bilimci ya da veri mühendisi için SQL bugün hâlâ iş ilanlarında en sık istenen teknik beceridir.</p>
+<div class="note"><b>Lehçe meselesi</b>SQL bir standarttır ama her veritabanı onu kendi “lehçesiyle” konuşur: PostgreSQL, MySQL, SQL Server (T-SQL), Oracle (PL/SQL), SQLite, BigQuery… Temel %90 aynıdır. Farkları ileride ayrı bir derste göreceğiz.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-tarih">Alıştırmalara geç (4)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../araclar/">← SQL nerede yazılır? Araçlar ve komut grupları</a><a href="../aggregate/">Toplama fonksiyonları: COUNT, SUM, AVG, MIN, MAX →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

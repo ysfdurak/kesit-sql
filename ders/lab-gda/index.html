@@ -1,0 +1,46 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BigQuery laboratuvarı: Google veri analitiği yazımıyla uygulama | Kesit SQL</title><meta name="description" content="Google Data Analytics ve BigQuery tabanlı işlerde sık kullanılan yapılar: QUALIFY, COUNTIF, SAFE_DIVIDE, DATE_TRUNC, EXCEPT DISTINCT, SELECT * EXCEPT ve…"><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/lab-gda/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="BigQuery laboratuvarı: Google veri analitiği yazımıyla uygulama"><meta property="og:description" content="Google Data Analytics ve BigQuery tabanlı işlerde sık kullanılan yapılar: QUALIFY, COUNTIF, SAFE_DIVIDE, DATE_TRUNC, EXCEPT DISTINCT, SELECT * EXCEPT ve…"><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/lab-gda/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"BigQuery laboratuvarı: Google veri analitiği yazımıyla uygulama","description":"Google Data Analytics ve BigQuery tabanlı işlerde sık kullanılan yapılar: QUALIFY, COUNTIF, SAFE_DIVIDE, DATE_TRUNC, EXCEPT DISTINCT, SELECT * EXCEPT ve…","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/lab-gda/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Sertifika Hazırlık</span><h1>BigQuery laboratuvarı: Google veri analitiği yazımıyla uygulama</h1><p class="st-l">Google Data Analytics ve BigQuery tabanlı işlerde sık kullanılan yapılar: QUALIFY, COUNTIF, SAFE_DIVIDE, DATE_TRUNC, EXCEPT DISTINCT, SELECT * EXCEPT ve takvim üretme.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-lab-gda">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<p>Google'ın veri analitiği programı ve bulut veri sertifikaları SQL'i BigQuery üzerinde öğretir. Bu laboratuvardaki her şey <b>BigQuery</b> yazımıyla çalışır.</p>
+<div class="note"><b>Sınav bilgisi</b>Soru sayısı, süre, geçme notu ve kayıt koşulları zaman zaman değişir. Kayıt olmadan önce sınav sağlayıcısının sayfasındaki güncel konu listesini ve bilgileri kontrol et. Buradaki denemeler resmi soruların kopyası değildir; aynı konu alanlarını ölçer.</div>
+<h2>1. Pencere sonucuna göre filtre: QUALIFY</h2>
+<pre class="code" data-base="bq">SELECT category, name, price
+FROM products
+WHERE TRUE
+QUALIFY ROW_NUMBER() OVER (PARTITION BY category ORDER BY price DESC) = 1;</pre>
+<h2>2. Koşullu sayım ve güvenli bölme</h2>
+<pre class="code" data-base="bq">SELECT device,
+       COUNT(DISTINCT user_id) AS kullanici,
+       COUNTIF(event_type = 'purchase') AS satin_alma,
+       ROUND(SAFE_DIVIDE(COUNTIF(event_type = 'purchase'), COUNT(*)) * 100, 2) AS olay_orani
+FROM web_events
+GROUP BY device;</pre>
+<h2>3. Tarihler</h2>
+<pre class="code" data-base="bq">SELECT DATE_TRUNC(DATE '2024-05-17', MONTH) AS ay_basi,
+       DATE_DIFF(DATE '2024-12-31', DATE '2024-12-01', DAY) AS gun,
+       FORMAT_DATE('%Y-%m', DATE '2024-05-17') AS ay,
+       EXTRACT(DAYOFWEEK FROM DATE '2024-05-19') AS haftanin_gunu,
+       LAST_DAY(DATE '2024-02-10') AS ay_sonu;</pre>
+<p><code>DAYOFWEEK</code> pazar için 1, cumartesi için 7 döndürür.</p>
+<h2>4. Takvim üretme: GENERATE_DATE_ARRAY</h2>
+<p>Boş günleri de göstermek için önce tarih dizisi üret, UNNEST ile satırlara aç, sonra LEFT JOIN yap.</p>
+<pre class="code" data-base="bq">SELECT gun, COUNT(o.order_id) AS siparis
+FROM UNNEST(GENERATE_DATE_ARRAY(DATE '2024-12-01', DATE '2024-12-07')) AS gun
+LEFT JOIN orders o ON o.order_date = gun
+GROUP BY gun
+ORDER BY gun;</pre>
+<h2>5. Kısayollar</h2>
+<pre class="code" data-base="bq">SELECT * EXCEPT (email) FROM customers ORDER BY customer_id LIMIT 3;</pre>
+<pre class="code" data-base="bq">SELECT customer_id FROM customers
+EXCEPT DISTINCT
+SELECT customer_id FROM orders;</pre>
+<div class="tip"><b>Maliyet hatırlatması</b>İsteğe bağlı fiyatlandırmada taranan bayt ücretlendirilir. <code>SELECT *</code> yerine gereken sütunları seçmek ve bölüm sütununa filtre koymak taramayı azaltır; <code>LIMIT</code> ise kümelenmemiş tabloda taramayı azaltmaz.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-lab-gda">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../lab-tsql/">← T-SQL laboratuvarı: SQL Server yazımıyla uygulama</a><a href="../kamp-musteri/">Alıştırma Kampı: Müşteri verisi (10 soru) →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

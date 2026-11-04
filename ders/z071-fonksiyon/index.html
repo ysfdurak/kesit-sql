@@ -1,0 +1,67 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>1Z0-071: Oracle tek satır fonksiyonları (karakter, sayı, tarih, genel) | Kesit SQL</title><meta name="description" content="INITCAP, LPAD, INSTR, SUBSTR; ROUND/TRUNC/MOD; MONTHS_BETWEEN, ADD_MONTHS, NEXT_DAY; NVL ailesi."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/z071-fonksiyon/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="1Z0-071: Oracle tek satır fonksiyonları (karakter, sayı, tarih, genel)"><meta property="og:description" content="INITCAP, LPAD, INSTR, SUBSTR; ROUND/TRUNC/MOD; MONTHS_BETWEEN, ADD_MONTHS, NEXT_DAY; NVL ailesi."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/z071-fonksiyon/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"1Z0-071: Oracle tek satır fonksiyonları (karakter, sayı, tarih, genel)","description":"INITCAP, LPAD, INSTR, SUBSTR; ROUND/TRUNC/MOD; MONTHS_BETWEEN, ADD_MONTHS, NEXT_DAY; NVL ailesi.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/z071-fonksiyon/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Sertifika Hazırlık</span><h1>1Z0-071: Oracle tek satır fonksiyonları (karakter, sayı, tarih, genel)</h1><p class="st-l">INITCAP, LPAD, INSTR, SUBSTR; ROUND/TRUNC/MOD; MONTHS_BETWEEN, ADD_MONTHS, NEXT_DAY; NVL ailesi.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-z071-fonksiyon">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Karakter fonksiyonları</h2>
+<pre class="code" data-base="oracle">SELECT INITCAP('ankara merkez')      AS initcap_,
+       LPAD('42', 5, '0')              AS lpad_,
+       RPAD('SQL', 6, '*')             AS rpad_,
+       SUBSTR('Kesit', 2, 3)          AS substr_,
+       SUBSTR('Kesit', -3)            AS sondan_3,
+       INSTR('banana', 'a', 1, 2)      AS ikinci_a,
+       LENGTH('Merhaba')               AS uzunluk,
+       TRIM('  x  ')                   AS trim_,
+       REPLACE('2024-12-31', '-', '/') AS replace_
+FROM dual;</pre>
+<ul>
+<li><code>SUBSTR(s, -3)</code> negatif başlangıçta sondan sayar.</li>
+<li><code>INSTR(s, aranan, başlangıç, kaçıncı)</code>: başlangıç negatifse sondan geriye arar; bulamazsa 0.</li>
+<li><code>CONCAT</code> Oracle'da <b>yalnızca iki</b> argüman alır; fazlası için <code>||</code> kullanılır.</li>
+<li><code>TRIM(LEADING '0' FROM s)</code>, <code>LTRIM</code>, <code>RTRIM</code>.</li>
+</ul>
+<h2>Sayı fonksiyonları</h2>
+<pre class="code" data-base="oracle">SELECT ROUND(15.567, 1)   AS r1,
+       ROUND(15.567, -1)  AS r_onlar,
+       TRUNC(15.567, 1)   AS t1,
+       MOD(17, 5)         AS kalan,
+       CEIL(4.1)          AS tavan,
+       FLOOR(4.9)         AS taban
+FROM dual;</pre>
+<p>Negatif basamak sayısı virgülün soluna yuvarlar: <code>ROUND(15.567, -1) = 20</code>.</p>
+<h2>Tarih fonksiyonları</h2>
+<pre class="code" data-base="oracle">SELECT MONTHS_BETWEEN(DATE '2024-12-31', DATE '2024-06-30') AS ay_farki,
+       ADD_MONTHS(DATE '2024-01-31', 1)                     AS ay_ekle,
+       NEXT_DAY(DATE '2024-12-25', 'MONDAY')                AS sonraki_pazartesi,
+       LAST_DAY(DATE '2024-02-10')                          AS ay_sonu,
+       TRUNC(DATE '2024-12-25', 'MM')                       AS ay_basi,
+       ROUND(DATE '2024-12-25', 'YEAR')                     AS yila_yuvarla
+FROM dual;</pre>
+<ul>
+<li>Tarih aritmetiği: <code>tarih + 1</code> bir gün ekler, <code>tarih2 - tarih1</code> gün farkını sayı olarak verir, <code>tarih + 1/24</code> bir saat ekler.</li>
+<li><code>ADD_MONTHS</code> ayın son gününden başlarsa sonucun da ayın son günü olduğunu unutma (31 Ocak + 1 ay = 29 Şubat 2024).</li>
+<li><code>ROUND(tarih, 'MONTH')</code> ayın 16'sında ve sonrasında bir sonraki aya yuvarlar; <code>'YEAR'</code> Temmuz'dan itibaren bir sonraki yıla.</li>
+</ul>
+<h2>Genel fonksiyonlar</h2>
+<table>
+<tr><th>Fonksiyon</th><th>Döndürür</th></tr>
+<tr><td><code>NVL(a, b)</code></td><td>a NULL ise b</td></tr>
+<tr><td><code>NVL2(a, b, c)</code></td><td>a NULL değilse b, NULL ise c</td></tr>
+<tr><td><code>NULLIF(a, b)</code></td><td>a = b ise NULL, değilse a</td></tr>
+<tr><td><code>COALESCE(a, b, c, ...)</code></td><td>ilk NULL olmayan</td></tr>
+<tr><td><code>DECODE(x, d1, s1, d2, s2, varsayılan)</code></td><td>Oracle'a özgü CASE kısaltması; NULL'u NULL'a <b>eşit</b> sayar</td></tr>
+</table>
+<pre class="code" data-base="oracle">SELECT first_name,
+       NVL(TO_CHAR(manager_id), 'Yönetici yok') AS yonetici,
+       NVL2(email, 'Var', 'Yok')                  AS email_durumu,
+       DECODE(dept_id, 1, 'Satış', 3, 'Analitik', 'Diğer') AS bolum
+FROM employees
+WHERE emp_id &lt;= 6;</pre>
+<div class="warn"><b>Sınav tuzağı</b>NVL'nin iki argümanı uyumlu tipte olmalı: <code>NVL(manager_id, 'Yok')</code> sayı sütununa metin verdiği için hata verir; önce <code>TO_CHAR</code>.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-z071-fonksiyon">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../oracle-1z0/">← Oracle 1Z0-071 konuları: veri sözlüğü, INSERT ALL, flashback, ayrıcalıklar</a><a href="../z071-donusum/">1Z0-071: Dönüşüm fonksiyonları ve biçim modelleri (TO_CHAR, TO_DATE, TO_NUMBER) →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

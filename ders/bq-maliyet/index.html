@@ -1,0 +1,48 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BigQuery'de bölümleme, kümeleme ve maliyet optimizasyonu | Kesit SQL</title><meta name="description" content="PARTITION BY, CLUSTER BY, materialized view ve sorgu maliyetini izlemek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/bq-maliyet/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="BigQuery'de bölümleme, kümeleme ve maliyet optimizasyonu"><meta property="og:description" content="PARTITION BY, CLUSTER BY, materialized view ve sorgu maliyetini izlemek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/bq-maliyet/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"BigQuery'de bölümleme, kümeleme ve maliyet optimizasyonu","description":"PARTITION BY, CLUSTER BY, materialized view ve sorgu maliyetini izlemek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/bq-maliyet/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · BigQuery ve Bulut Veri Ambarları</span><h1>BigQuery'de bölümleme, kümeleme ve maliyet optimizasyonu</h1><p class="st-l">PARTITION BY, CLUSTER BY, materialized view ve sorgu maliyetini izlemek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-bq-maliyet">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>İndeks yerine bölümleme ve kümeleme</h2>
+<p>BigQuery'de klasik indeks yoktur. Büyük tablolarda okunan veriyi azaltmanın iki aracı vardır:</p>
+<ul>
+<li><b>Bölümleme</b> (partitioning): Tablo tarih (veya tam sayı aralığı) sütununa göre bölümlere ayrılır. <code>WHERE order_date &gt;= '2024-12-01'</code> yalnızca ilgili bölümleri okur. <code>require_partition_filter</code> seçeneği, tarih filtresi olmayan sorguları reddeder.</li>
+<li><b>Kümeleme</b> (clustering): Bölüm içinde veri, en fazla 4 sütuna göre sıralı saklanır. Bu sütunlarla filtrelemek okunan bloğu azaltır.</li>
+</ul>
+<pre class="code" data-base="bq">CREATE TABLE siparis_bolumlu
+PARTITION BY order_date
+CLUSTER BY channel, status
+AS SELECT * FROM orders;
+
+SELECT channel, COUNT(*) AS siparis
+FROM siparis_bolumlu
+WHERE order_date &gt;= '2024-12-01' AND status = 'delivered'
+GROUP BY channel;</pre>
+<div class="note"><b>Bu uygulamada</b>PARTITION BY ve CLUSTER BY sözdizimi kabul edilir ama tarayıcıdaki motor fiziksel bölümleme yapmaz; sonuçlar aynıdır.</div>
+<h2>Maliyet kontrol listesi</h2>
+<ol>
+<li><code>SELECT *</code> kullanma; sütunları adıyla seç.</li>
+<li>Bölüm filtresini daima yaz; tarih sütununu fonksiyona sokma (<code>DATE(order_date) = ...</code> yerine aralık).</li>
+<li>Sık çalışan özet sorgular için <b>materialized view</b> kullan; BigQuery değişen kısmı artımlı günceller.</li>
+<li>Aynı sorgu 24 saat içinde tekrar çalışırsa <b>önbellekten</b> ücretsiz döner (tablo değişmediyse).</li>
+<li>Kesin olması gerekmeyen sayımlarda <code>APPROX_COUNT_DISTINCT</code> çok daha ucuzdur.</li>
+<li>Geliştirirken “maximum bytes billed” sınırı koy.</li>
+</ol>
+<pre class="code" data-norun>-- Son 7 günde en çok veri tarayan sorgular
+SELECT user_email,
+       ROUND(total_bytes_billed / POW(1024, 4), 3) AS tb,
+       LEFT(query, 120) AS sorgu
+FROM `region-eu`.INFORMATION_SCHEMA.JOBS
+WHERE creation_time &gt;= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
+  AND job_type = 'QUERY'
+ORDER BY total_bytes_billed DESC
+LIMIT 10;</pre>
+<h2>Fiyatlandırma modelleri</h2>
+<p><b>İsteğe bağlı</b> modelde taranan bayt başına, <b>kapasite</b> (Editions) modelinde ayrılan işlem gücü (slot) başına ödenir. Güncel fiyatlar bölgeye göre değişir; Google Cloud'un fiyat sayfasından kontrol et.</p>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-bq-maliyet">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../bq-kisayol/">← BigQuery kısayolları: QUALIFY, SELECT * EXCEPT ve SAFE_ fonksiyonlar</a><a href="../dwh-bulut/">Bulut veri ambarları: BigQuery, Snowflake, Databricks SQL ve Fabric →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

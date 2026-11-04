@@ -1,0 +1,57 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Korelasyon ve basit doğrusal regresyon | Kesit SQL</title><meta name="description" content="Pearson korelasyonu ve en küçük kareler eğimini SQL ile hesaplamak."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ds-korelasyon/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Korelasyon ve basit doğrusal regresyon"><meta property="og:description" content="Pearson korelasyonu ve en küçük kareler eğimini SQL ile hesaplamak."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ds-korelasyon/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Korelasyon ve basit doğrusal regresyon","description":"Pearson korelasyonu ve en küçük kareler eğimini SQL ile hesaplamak.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/ds-korelasyon/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Veri Bilimi</span><h1>Korelasyon ve basit doğrusal regresyon</h1><p class="st-l">Pearson korelasyonu ve en küçük kareler eğimini SQL ile hesaplamak.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ds-korelasyon">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Pearson korelasyonu</h2>
+<p><code>r = (nΣxy − ΣxΣy) / √[(nΣx² − (Σx)²)(nΣy² − (Σy)²)]</code></p>
+<p>PostgreSQL, Snowflake, BigQuery'de <code>CORR(x, y)</code> hazır gelir. Formülle hesaplamak, mantığını anlamak için iyidir. Soru: Ürün fiyatı ile satılan adet arasında ilişki var mı?</p>
+<pre class="code">WITH d AS (
+  SELECT p.price AS x, COALESCE(SUM(oi.quantity), 0) AS y
+  FROM products p LEFT JOIN order_items oi ON oi.product_id = p.product_id
+  GROUP BY p.product_id, p.price
+)
+SELECT ROUND(
+  (COUNT(*) * SUM(x * y) - SUM(x) * SUM(y)) /
+  (SQRT(COUNT(*) * SUM(x * x) - SUM(x) * SUM(x)) * SQRT(COUNT(*) * SUM(y * y) - SUM(y) * SUM(y)))
+, 3) AS pearson_r
+FROM d;</pre>
+<h2>Doğrusal regresyon (y = a + bx)</h2>
+<p>Eğim <code>b = (nΣxy − ΣxΣy) / (nΣx² − (Σx)²)</code>, kesişim <code>a = ȳ − b·x̄</code>. PostgreSQL'de <code>REGR_SLOPE</code>, <code>REGR_INTERCEPT</code>, <code>REGR_R2</code>.</p>
+<div class="warn"><b>Korelasyon nedensellik değildir</b>Ucuz ürünlerin çok satması, ucuzluğun satışa neden olduğunu kanıtlamaz; ürün türü (kitap vs. monitör) ortak bir etken olabilir.</div>
+<h2>Derinleş: korelasyonu doğru okumak</h2>
+<p><b>Pearson korelasyon katsayısı</b> (r), iki sayısal değişken arasındaki <i>doğrusal</i> ilişkinin yönünü ve gücünü −1 ile +1 arasında ölçer. Formülün eşdeğer bir yazımı ortalamalarla kurulur ve SQL'de daha okunaklıdır:</p>
+<p><code>r = (AVG(xy) − AVG(x)·AVG(y)) / (√(AVG(x²) − AVG(x)²) · √(AVG(y²) − AVG(y)²))</code></p>
+<p>Pedal İzmir'de saatlik yolculuk sayısı ile hava sıcaklığı arasındaki ilişkiye bakalım. Üç aylık 2.208 saatlik gözlemin tamamında r ≈ 0,48 çıkıyor: “sıcak hava bisiklet kullanımını artırıyor” demek cazip. Ama gündüz saatleri hem daha sıcak hem daha kalabalık; asıl ortak etken <b>günün saati</b>. Saati sabitleyince (yalnızca her günün 17:00 gözlemi) tablo değişir:</p>
+<pre class="code">WITH saatlik AS (
+  SELECT strftime('%Y-%m-%d %H:00:00', started_at) AS saat, COUNT(*) AS yolculuk
+  FROM bk_trips
+  WHERE strftime('%H', started_at) = '17'
+  GROUP BY strftime('%Y-%m-%d %H:00:00', started_at)
+),
+d AS (
+  SELECT w.temp_c AS t, w.rain_mm AS r, 1.0 * COALESCE(s.yolculuk, 0) AS y
+  FROM bk_weather w
+  LEFT JOIN saatlik s ON s.saat = w.obs_hour
+  WHERE strftime('%H', w.obs_hour) = '17'
+)
+SELECT COUNT(*) AS gun,
+       ROUND((AVG(t * y) - AVG(t) * AVG(y)) /
+             (SQRT(AVG(t * t) - AVG(t) * AVG(t)) * SQRT(AVG(y * y) - AVG(y) * AVG(y))), 3) AS r_sicaklik,
+       ROUND((AVG(r * y) - AVG(r) * AVG(y)) /
+             (SQRT(AVG(r * r) - AVG(r) * AVG(r)) * SQRT(AVG(y * y) - AVG(y) * AVG(y))), 3) AS r_yagmur
+FROM d;</pre>
+<p>Aynı saat diliminde sıcaklıkla ilişki zayıflar (r ≈ 0,12), yağmurla ilişki ise çok güçlü görünür (r ≈ −0,89). Fakat dikkat: 92 günün yalnızca 4'ünde 17:00'de yağmur var. Bu güçlü katsayıyı birkaç uç gözlem üretiyor; 4 günlük kanıtla “yağmur kullanımı %X düşürür” denmez.</p>
+<div class="warn"><b>Korelasyon nedensellik değildir</b>Ortak bir etken (saat, mevsim, kampanya), ters yönlü etki (çok satılan ürün indirime girer) veya tesadüf güçlü bir r üretebilir. Nedensellik için deney (A/B testi) ya da etkeni sabitleyen bir analiz gerekir.</div>
+<h3>Kontrol listesi</h3>
+<ul><li>Gözlem sayısı yeterli mi; katsayıyı birkaç uç nokta mı belirliyor?</li>
+<li>İlişki doğrusal mı? Pearson, U biçimli bir ilişkide 0'a yakın çıkabilir.</li>
+<li>Ortak bir etken var mı? Grupları (saat, segment) ayrı ayrı hesapla.</li>
+<li>Tam sayı tuzağı: SQL Server'da <code>COUNT(*)</code> ve tam sayı sütunlarının çarpımı taşabilir veya tam sayı bölmesine düşebilir; <code>1.0 *</code> ile ondalığa çevir.</li>
+<li><code>r²</code>, y'deki değişimin ne kadarının x ile doğrusal olarak açıklandığını gösterir: r = 0,5 ise yalnızca %25.</li></ul></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ds-korelasyon">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ds-outlier/">← Aykırı değer tespiti: z-skoru ve IQR</a><a href="../ds-ab/">A/B testi analizi →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,58 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vaka: Anadolu Market 2024 yıl sonu raporu | Kesit SQL</title><meta name="description" content="Yönetim kurulu sunumu için beş adımda baştan sona bir analiz."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/vaka-yilsonu/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Vaka: Anadolu Market 2024 yıl sonu raporu"><meta property="og:description" content="Yönetim kurulu sunumu için beş adımda baştan sona bir analiz."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/vaka-yilsonu/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Vaka: Anadolu Market 2024 yıl sonu raporu","description":"Yönetim kurulu sunumu için beş adımda baştan sona bir analiz.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/vaka-yilsonu/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Vaka Çalışmaları</span><h1>Vaka: Anadolu Market 2024 yıl sonu raporu</h1><p class="st-l">Yönetim kurulu sunumu için beş adımda baştan sona bir analiz.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-vaka-yilsonu">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Durum</h2>
+<p>Anadolu Market'in genel müdürü, yönetim kurulu toplantısı için 2024 yılının özetini istiyor. Senden beş sorunun yanıtını tek tek SQL ile çıkarmanı bekliyor. Her adım bir alıştırma; sırayla ilerle.</p>
+<div class="note"><b>Ortak tanımlar</b><b>Net ciro</b> = adet × birim fiyat × (1 − indirim). Yalnızca <b>teslim edilen</b> (<code>delivered</code>) siparişler sayılır. 2024 = <code>order_date</code> 2024-01-01 ile 2024-12-31 arası.</div>
+<h3>Kurul hangi sorulara yanıt arıyor?</h3>
+<ol>
+<li>Yılı nasıl kapattık? (ciro, sipariş, ortalama sepet)</li>
+<li>Ciro aylara nasıl dağıldı?</li>
+<li>Hangi ürünler öne çıktı?</li>
+<li>Satış kanallarının payı ne?</li>
+<li>Kaç yeni müşteri kazandık ve ne kadar harcadılar?</li>
+</ol>
+<div class="tip"><b>Analist alışkanlığı</b>Her sorgunun sonucunu bir sonraki adıma geçmeden önce sağlama yap: aylık ciroların toplamı yıllık ciroya eşit mi? Kanal paylarının toplamı %100 mü?</div>
+<h2>Derinleş: raporu kurula sunmadan önce</h2>
+<p>Yönetim kuruluna giden bir sayının yanlış çıkması, analizin geri kalanına olan güveni de yok eder. Bu yüzden deneyimli analist, rapor sorgularını yazdıktan sonra üç iş daha yapar: <b>tanımları sabitler</b>, <b>sağlama yapar</b> ve <b>karşılaştırma bağlamı ekler</b>.</p>
+<h3>1. Tanımları sabitle</h3>
+<ul><li><b>Hangi tarih?</b> Sipariş tarihi mi, teslim tarihi mi? Aralık sonunda verilip Ocak'ta teslim edilen sipariş hangi yıla yazılır? Bu vakada sipariş tarihi esas.</li>
+<li><b>Hangi durum?</b> Yalnızca teslim edilenler; iade ve iptaller ciroya girmez.</li>
+<li><b>Hangi tutar?</b> İndirim sonrası net tutar; KDV ve kargo yok.</li></ul>
+<h3>2. Sağlama</h3>
+<p>Aylık ciroların toplamı yıllık ciroya eşit olmalı. Eşit değilse ya ay dışında kalan kayıtlar var ya da bir JOIN satırları çoğaltıyor:</p>
+<pre class="code">WITH t AS (
+  SELECT strftime('%m', o.order_date) AS ay,
+         oi.quantity * oi.unit_price * (1 - oi.discount) AS tutar
+  FROM orders o JOIN order_items oi ON oi.order_id = o.order_id
+  WHERE o.status = 'delivered' AND o.order_date >= '2024-01-01' AND o.order_date &lt; '2025-01-01'
+),
+aylik AS (SELECT ay, SUM(tutar) AS ciro FROM t GROUP BY ay)
+SELECT (SELECT ROUND(SUM(tutar)) FROM t) AS yillik,
+       (SELECT ROUND(SUM(ciro)) FROM aylik) AS aylik_toplam,
+       (SELECT COUNT(*) FROM aylik) AS ay_sayisi;</pre>
+<h3>3. Karşılaştırma bağlamı</h3>
+<p>“2024 cirosu 636 bin TL” tek başına iyi mi kötü mü söylemez. Bir önceki yılla ay ay yan yana koymak kurulun ilk soracağı soruyu baştan yanıtlar:</p>
+<pre class="code">WITH a AS (
+  SELECT strftime('%m', o.order_date) AS ay, strftime('%Y', o.order_date) AS yil,
+         oi.quantity * oi.unit_price * (1 - oi.discount) AS tutar
+  FROM orders o JOIN order_items oi ON oi.order_id = o.order_id
+  WHERE o.status = 'delivered' AND o.order_date >= '2023-01-01' AND o.order_date &lt; '2025-01-01'
+)
+SELECT ay,
+       ROUND(SUM(CASE WHEN yil = '2023' THEN tutar ELSE 0 END)) AS y2023,
+       ROUND(SUM(CASE WHEN yil = '2024' THEN tutar ELSE 0 END)) AS y2024
+FROM a
+GROUP BY ay
+ORDER BY ay;</pre>
+<p>Net ciro 2023'te 335.573 TL, 2024'te 636.316 TL: yaklaşık %89,6 büyüme. Büyümenin müşteri sayısından mı, sepet tutarından mı geldiğini ayırmak bir sonraki doğal sorudur.</p>
+<div class="warn"><b>Kârlılıkta tarihçe tuzağı</b>Brüt kârı <code>products.cost</code> ile hesaplarsan bugünkü maliyeti geçmiş satışlara uygularsın. Maliyet zamanla değiştiyse doğru yöntem, maliyetin de bir SCD 2 tablosunda tutulup satış anındaki değerle birleştirilmesidir. Raporda bu varsayımı açıkça yaz.</div>
+<p><b>Sunum kontrol listesi:</b> her sayının tanımı dipnotta mı, toplamlar sağlandı mı, yüzdeler %100 ediyor mu, önceki dönemle karşılaştırma var mı, tek seferlik etkiler (büyük kurumsal sipariş, kampanya) not edildi mi?</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-vaka-yilsonu">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../mk-vaka/">← Mülakat: açık uçlu ürün analitiği vakası</a><a href="../vaka-kayip/">Vaka: Kayıp müşterilerin izinde →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

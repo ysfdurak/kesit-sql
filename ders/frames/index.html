@@ -1,0 +1,38 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kümülatif toplam ve hareketli ortalama (running total, moving average) | Kesit SQL</title><meta name="description" content="ROWS BETWEEN ile pencere çerçevesi tanımlamak."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/frames/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Kümülatif toplam ve hareketli ortalama (running total, moving average)"><meta property="og:description" content="ROWS BETWEEN ile pencere çerçevesi tanımlamak."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/frames/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Kümülatif toplam ve hareketli ortalama (running total, moving average)","description":"ROWS BETWEEN ile pencere çerçevesi tanımlamak.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/frames/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Pencere Fonksiyonları</span><h1>Kümülatif toplam ve hareketli ortalama (running total, moving average)</h1><p class="st-l">ROWS BETWEEN ile pencere çerçevesi tanımlamak.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-frames">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>ORDER BY eklenince toplam birikir</h2>
+<pre class="code">WITH aylik AS (
+  SELECT strftime('%Y-%m', order_date) AS ay, COUNT(*) AS siparis
+  FROM orders WHERE order_date LIKE '2024%'
+  GROUP BY ay
+)
+SELECT ay, siparis,
+       SUM(siparis) OVER (ORDER BY ay) AS kumulatif
+FROM aylik;</pre>
+<h2>Çerçeve (frame) tanımı</h2>
+<p>Pencerenin hangi satırları kapsayacağını açıkça belirtebilirsin:</p>
+<table><tr><th>İfade</th><th>Anlamı</th></tr>
+<tr><td><code>ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code></td><td>Baştan bu satıra (kümülatif)</td></tr>
+<tr><td><code>ROWS BETWEEN 2 PRECEDING AND CURRENT ROW</code></td><td>Son 3 satır (hareketli pencere)</td></tr>
+<tr><td><code>ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING</code></td><td>Önceki, kendisi, sonraki</td></tr>
+<tr><td><code>ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING</code></td><td>Bu satırdan sona</td></tr>
+</table>
+<pre class="code">WITH gunluk AS (
+  SELECT order_date AS gun, COUNT(*) AS siparis
+  FROM orders WHERE order_date >= '2024-11-01'
+  GROUP BY gun
+)
+SELECT gun, siparis,
+       ROUND(AVG(siparis) OVER (ORDER BY gun ROWS BETWEEN 6 PRECEDING AND CURRENT ROW), 2) AS ort_7
+FROM gunluk;</pre>
+<div class="warn"><b>ROWS ile RANGE farkı</b>ORDER BY olup çerçeve belirtilmediğinde varsayılan <code>RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code>'dur. RANGE, sıralama değeri eşit olan satırları birlikte ele alır; tekrarlı tarihlerde beklenmedik kümülatif değerler görürsün. Emin olmak için ROWS yaz.</div>
+<h2>Derinleş: çerçeveyi sesli oku</h2><p><code>ROWS BETWEEN 6 PRECEDING AND CURRENT ROW</code> “bu satır ve ondan önceki 6 <b>satır</b>” demektir, 6 gün değil. Siparişsiz günler tabloda yoksa pencere 7 günden fazlasına yayılır; önce bir takvimle boş günleri doldur. İlk 6 satırda pencere eksiktir; bunu raporda belirt ya da o satırları dışarıda bırak.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-frames">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../lag-lead/">← LAG ve LEAD: önceki ve sonraki satır</a><a href="../ntile-dist/">NTILE, PERCENT_RANK, FIRST_VALUE →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

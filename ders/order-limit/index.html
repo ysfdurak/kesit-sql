@@ -1,0 +1,49 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ORDER BY ve ilk N satır (LIMIT / TOP / FETCH) | Kesit SQL</title><meta name="description" content="Sıralama, ilk N kaydı almak ve sayfalama; her SQL türünün kendi yazımı."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/order-limit/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="ORDER BY ve ilk N satır (LIMIT / TOP / FETCH)"><meta property="og:description" content="Sıralama, ilk N kaydı almak ve sayfalama; her SQL türünün kendi yazımı."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/order-limit/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"ORDER BY ve ilk N satır (LIMIT / TOP / FETCH)","description":"Sıralama, ilk N kaydı almak ve sayfalama; her SQL türünün kendi yazımı.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/order-limit/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Temeller</span><h1>ORDER BY ve ilk N satır (LIMIT / TOP / FETCH)</h1><p class="st-l">Sıralama, ilk N kaydı almak ve sayfalama; her SQL türünün kendi yazımı.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-order-limit">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Sıralama</h2>
+<p>SQL, ORDER BY yazmadığın sürece sonuçların sırasını <b>garanti etmez</b>. Sıralamak için:</p>
+<pre class="code">SELECT name, price
+FROM products
+ORDER BY price DESC;</pre>
+<ul>
+<li><code>ASC</code> artan (varsayılan), <code>DESC</code> azalan.</li>
+<li>Birden fazla sütunla sıralayabilirsin; ilk sütun eşitse ikinciye bakılır.</li>
+<li>SELECT listesindeki takma adla da sıralayabilirsin.</li>
+</ul>
+<pre class="code">SELECT category, name, price
+FROM products
+ORDER BY category ASC, price DESC;</pre>
+<h2>İlk N satır: her SQL türü farklı yazar</h2>
+<p>Standart SQL'de bu iş <code>FETCH FIRST n ROWS ONLY</code> ile yapılır; ama en yaygın iki yazım <code>LIMIT</code> ve <code>TOP</code>'tur. Aşağıdaki kutunun üstündeki SQL türü sekmelerine tıklayarak farkı gör:</p>
+<pre class="code">SELECT name, price
+FROM products
+ORDER BY price DESC
+LIMIT 5;</pre>
+<table><tr><th>SQL türü</th><th>İlk 5 satır</th><th>6–10. satırlar (sayfalama)</th></tr>
+<tr><td>SQL Server</td><td><code>SELECT TOP 5 ...</code></td><td><code>ORDER BY ... OFFSET 5 ROWS FETCH NEXT 5 ROWS ONLY</code></td></tr>
+<tr><td>PostgreSQL, SQLite</td><td><code>... LIMIT 5</code></td><td><code>LIMIT 5 OFFSET 5</code></td></tr>
+<tr><td>MySQL</td><td><code>... LIMIT 5</code></td><td><code>LIMIT 5 OFFSET 5</code> veya <code>LIMIT 5, 5</code></td></tr>
+<tr><td>Oracle (12c+)</td><td><code>FETCH FIRST 5 ROWS ONLY</code></td><td><code>OFFSET 5 ROWS FETCH NEXT 5 ROWS ONLY</code></td></tr>
+</table>
+<div class="note" data-d="tsql"><b>SQL Server'a özel</b><code>TOP</code>, SELECT'ten hemen sonra yazılır. <code>TOP (5) WITH TIES</code> son sıradaki eşitleri de getirir, <code>TOP 10 PERCENT</code> satırların %10'unu getirir. Bunları T-SQL modülünde ayrıca işliyoruz. OFFSET/FETCH kullanmak için ORDER BY zorunludur.</div>
+<div class="note" data-d="oracle"><b>Oracle'a özel</b>12c öncesi sürümlerde <code>WHERE ROWNUM &lt;= 5</code> kullanılırdı. ROWNUM, sıralamadan <i>önce</i> atandığı için sıralı ilk N için alt sorgu gerekir; FETCH FIRST bu sorunu çözer.</div>
+<pre class="code">-- 2. sayfa (her sayfada 5 ürün)
+SELECT name, price
+FROM products
+ORDER BY price DESC
+LIMIT 5 OFFSET 5;</pre>
+<div class="note"><b>NULL'lar nerede?</b>SQL Server, MySQL ve SQLite'ta NULL'lar artan sıralamada başa gelir; PostgreSQL ve Oracle'da sona. PostgreSQL, Oracle ve SQLite <code>NULLS FIRST / NULLS LAST</code> ile bunu kontrol etmene izin verir. Şehre göre sıralayıp SQL türü sekmesini PostgreSQL'e çevirerek dene:</div>
+<pre class="code" data-diff="pg oracle">SELECT first_name, city
+FROM customers
+ORDER BY city
+LIMIT 8;</pre>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-order-limit">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../null/">← NULL: bilinmeyen değer</a><a href="../sozdizimi/">SQL yazım kuralları: anahtar kelime, noktalı virgül, yorum ve tırnak →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

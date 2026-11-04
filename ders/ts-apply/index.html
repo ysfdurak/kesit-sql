@@ -1,0 +1,37 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CROSS APPLY ve OUTER APPLY | Kesit SQL</title><meta name="description" content="Her satır için çalışan alt sorgu: grup başına ilk N ve satır bazlı hesaplar."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-apply/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="CROSS APPLY ve OUTER APPLY"><meta property="og:description" content="Her satır için çalışan alt sorgu: grup başına ilk N ve satır bazlı hesaplar."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-apply/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"CROSS APPLY ve OUTER APPLY","description":"Her satır için çalışan alt sorgu: grup başına ilk N ve satır bazlı hesaplar.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-apply/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · T-SQL (SQL Server)</span><h1>CROSS APPLY ve OUTER APPLY</h1><p class="st-l">Her satır için çalışan alt sorgu: grup başına ilk N ve satır bazlı hesaplar.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-apply">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>APPLY nedir?</h2>
+<p><code>APPLY</code>, sol taraftaki <b>her satır için</b> sağdaki tablo ifadesini (alt sorgu veya tablo değerli fonksiyon) çalıştırır ve sonuçları birleştirir. Sağ taraf, sol taraftaki sütunlara başvurabilir; normal JOIN'de bu mümkün değildir.</p>
+<ul><li><b>CROSS APPLY</b>: Sağ taraf satır döndürmezse sol satır elenir (INNER JOIN gibi).</li><li><b>OUTER APPLY</b>: Sağ taraf boşsa sol satır NULL'larla korunur (LEFT JOIN gibi).</li></ul>
+<h2>Her müşterinin son 2 siparişi</h2>
+<pre class="code" data-v="{&quot;pg&quot;:&quot;-- PostgreSQL: LATERAL JOIN\nSELECT c.customer_id, c.first_name, s.order_id, s.order_date\nFROM customers c\nCROSS JOIN LATERAL (\n    SELECT o.order_id, o.order_date\n    FROM orders o\n    WHERE o.customer_id = c.customer_id\n    ORDER BY o.order_date DESC\n    LIMIT 2\n) AS s\nWHERE c.city = 'Bursa'\nORDER BY c.customer_id, s.order_date DESC;&quot;,&quot;sqlite&quot;:&quot;-- APPLY/LATERAL olmayan SQL türlerinde: ROW_NUMBER ile\nSELECT c.customer_id, c.first_name, s.order_id, s.order_date\nFROM customers c\nJOIN (\n    SELECT o.customer_id, o.order_id, o.order_date,\n           ROW_NUMBER() OVER (PARTITION BY o.customer_id ORDER BY o.order_date DESC) AS rn\n    FROM orders o\n) AS s ON s.customer_id = c.customer_id AND s.rn &lt;= 2\nWHERE c.city = 'Bursa'\nORDER BY c.customer_id, s.order_date DESC;&quot;,&quot;oracle&quot;:&quot;-- Oracle 12c+: CROSS APPLY desteklenir\nSELECT c.customer_id, c.first_name, s.order_id, s.order_date\nFROM customers c\nCROSS APPLY (\n    SELECT o.order_id, o.order_date\n    FROM orders o\n    WHERE o.customer_id = c.customer_id\n    ORDER BY o.order_date DESC\n    FETCH FIRST 2 ROWS ONLY\n) s\nWHERE c.city = 'Bursa'\nORDER BY c.customer_id, s.order_date DESC;&quot;}" data-base="tsql" data-nr="pg oracle">SELECT c.customer_id, c.first_name, s.order_id, s.order_date
+FROM customers c
+CROSS APPLY (
+    SELECT TOP 2 o.order_id, o.order_date
+    FROM orders o
+    WHERE o.customer_id = c.customer_id
+    ORDER BY o.order_date DESC
+) AS s
+WHERE c.city = N'Bursa'
+ORDER BY c.customer_id, s.order_date DESC;</pre>
+<h2>OUTER APPLY ile satır bazlı özet</h2>
+<pre class="code" data-base="tsql">SELECT d.name, x.calisan_sayisi, x.ort_maas
+FROM departments d
+OUTER APPLY (
+    SELECT COUNT(*) AS calisan_sayisi, AVG(e.salary) AS ort_maas
+    FROM employees e
+    WHERE e.dept_id = d.dept_id
+) AS x
+ORDER BY d.dept_id;</pre>
+<p>Çalışanı olmayan Hukuk departmanı da 0 çalışanla listelenir.</p>
+<div class="note"><b>Diğer kullanımlar</b>APPLY ayrıca tablo değerli fonksiyonları satır satır çağırmak (<code>CROSS APPLY dbo.fn(c.id)</code>), metni parçalamak (<code>CROSS APPLY STRING_SPLIT(etiketler, ',')</code>) ve JSON açmak (<code>CROSS APPLY OPENJSON(...)</code>) için kullanılır. Bu taklitte APPLY alt sorgu ve satır içi tablo fonksiyonlarıyla çalışır.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-apply">Alıştırmalara geç (3)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-pivot/">← PIVOT ve UNPIVOT</a><a href="../ts-liste/">Listeleri bölmek ve birleştirmek: STRING_SPLIT, STRING_AGG, FOR XML PATH →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,42 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NULL güvenli karşılaştırma: IS DISTINCT FROM ve eşdeğerleri | Kesit SQL</title><meta name="description" content="“Eşit değil” koşulu NULL satırları neden kaçırır; iki değeri NULL dahil doğru karşılaştırmanın yolları."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/null-guvenli/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="NULL güvenli karşılaştırma: IS DISTINCT FROM ve eşdeğerleri"><meta property="og:description" content="“Eşit değil” koşulu NULL satırları neden kaçırır; iki değeri NULL dahil doğru karşılaştırmanın yolları."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/null-guvenli/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"NULL güvenli karşılaştırma: IS DISTINCT FROM ve eşdeğerleri","description":"“Eşit değil” koşulu NULL satırları neden kaçırır; iki değeri NULL dahil doğru karşılaştırmanın yolları.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/null-guvenli/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Fonksiyonlar</span><h1>NULL güvenli karşılaştırma: IS DISTINCT FROM ve eşdeğerleri</h1><p class="st-l">“Eşit değil” koşulu NULL satırları neden kaçırır; iki değeri NULL dahil doğru karşılaştırmanın yolları.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-null-guvenli">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Sorun: <code>&lt;&gt;</code> NULL'ı görmez</h2>
+<p><code>raw_signups</code> tablosunda şehri “İstanbul” <b>olmayan</b> kayıtları saymak istiyorsun:</p>
+<pre class="code">SELECT COUNT(*) AS adet
+FROM raw_signups
+WHERE city <> 'İstanbul';</pre>
+<p>Şehri NULL olan iki kayıt bu sayıya girmez. Çünkü <code>NULL &lt;&gt; 'İstanbul'</code> sonucu <b>doğru</b> değil <b>bilinmiyor</b>dur ve WHERE yalnızca doğru olan satırları geçirir. İş kuralı “İstanbul dışındaki herkes” ise NULL satırlar da sayılmalıdır.</p>
+<h2>Taşınabilir çözüm</h2>
+<pre class="code">SELECT COUNT(*) AS adet
+FROM raw_signups
+WHERE city <> 'İstanbul' OR city IS NULL;</pre>
+<p>Her SQL türünde çalışır. İki <b>sütunu</b> karşılaştırırken (örneğin eski ve yeni değer) yazım uzar:</p>
+<pre class="code" data-norun>WHERE (a <> b) OR (a IS NULL AND b IS NOT NULL) OR (a IS NOT NULL AND b IS NULL)</pre>
+<h2>IS DISTINCT FROM</h2>
+<p>SQL standardı bu karşılaştırma için ayrı bir operatör tanımlar. <code>a IS DISTINCT FROM b</code>, NULL'ı sıradan bir değer gibi ele alır:</p>
+<table>
+<tr><th>a</th><th>b</th><th><code>a &lt;&gt; b</code></th><th><code>a IS DISTINCT FROM b</code></th></tr>
+<tr><td>1</td><td>2</td><td>doğru</td><td>doğru</td></tr>
+<tr><td>1</td><td>1</td><td>yanlış</td><td>yanlış</td></tr>
+<tr><td>1</td><td>NULL</td><td><b>bilinmiyor</b></td><td>doğru</td></tr>
+<tr><td>NULL</td><td>NULL</td><td><b>bilinmiyor</b></td><td>yanlış</td></tr>
+</table>
+<p>Tersi <code>IS NOT DISTINCT FROM</code>'dur: iki NULL'ı da “eşit” sayar.</p>
+<table>
+<tr><th>SQL türü</th><th>“Farklı mı?” (NULL dahil)</th><th>“Aynı mı?” (NULL dahil)</th></tr>
+<tr><td>PostgreSQL, BigQuery, SQL Server 2022+</td><td><code>a IS DISTINCT FROM b</code></td><td><code>a IS NOT DISTINCT FROM b</code></td></tr>
+<tr><td>MySQL</td><td><code>NOT (a &lt;=&gt; b)</code></td><td><code>a &lt;=&gt; b</code> (NULL güvenli eşitlik)</td></tr>
+<tr><td>Oracle</td><td><code>DECODE(a, b, 0, 1) = 1</code> (DECODE iki NULL'ı eşit sayar)</td><td><code>DECODE(a, b, 1, 0) = 1</code></td></tr>
+<tr><td>SQLite</td><td><code>a IS NOT b</code></td><td><code>a IS b</code></td></tr>
+</table>
+<div class="tip"><b>Nerede işe yarar?</b>Veri mühendisliğinde “hangi satırlar değişti?” sorusu: kaynak ve hedefteki değerleri karşılaştırırken eski değer NULL, yeni değer dolu ise satır değişmiş sayılmalıdır. <code>&lt;&gt;</code> bu değişikliği kaçırır.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-null-guvenli">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../coalesce/">← COALESCE, NULLIF ve NULL ile hesap</a><a href="../kosullu/">Koşullu sayım ve oranlar: SUM(CASE WHEN …) →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

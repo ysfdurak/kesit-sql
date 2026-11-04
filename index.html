@@ -1,5 +1,5 @@
 <!doctype html><html lang="tr"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Kesit SQL: sıfırdan ileri seviyeye ücretsiz, Türkçe SQL eğitimi. Kurulum ve hesap yok; tarayıcında çalışan bir SQL veritabanıyla 258 ders, 1.620 otomatik denetlenen alıştırma, 6 SQL türü.">
+<meta name="description" content="Kesit SQL: sıfırdan ileri seviyeye ücretsiz, Türkçe SQL eğitimi. Kurulum ve hesap yok; tarayıcında çalışan bir SQL veritabanıyla 271 ders, 1.747 otomatik denetlenen alıştırma, 6 SQL türü.">
 <meta name="theme-color" content="#D3352C">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
@@ -9,7 +9,7 @@
 <meta property="og:locale" content="tr_TR">
 <meta property="og:site_name" content="Kesit SQL">
 <meta property="og:title" content="Kesit SQL: sıfırdan ileri seviyeye Türkçe SQL">
-<meta property="og:description" content="Kurulum yok, hesap yok. Tarayıcında çalışan bir SQL veritabanıyla 258 ders, 1.620 alıştırma ve 6 SQL türü.">
+<meta property="og:description" content="Kurulum yok, hesap yok. Tarayıcında çalışan bir SQL veritabanıyla 271 ders, 1.747 alıştırma ve 6 SQL türü.">
 <meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png">
 <meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/">
 <meta name="twitter:card" content="summary_large_image"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}.doors{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
@@ -26,7 +26,9 @@
 .cert-panel{padding:20px;display:flex;flex-direction:column;gap:12px;border-top:4px solid var(--accent)}
 .cert-form{display:flex;gap:8px;flex-wrap:wrap}.cert-form .input{flex:1;min-width:200px;max-width:420px}
 .cert-out{display:flex;flex-direction:column;gap:10px}.cert-out canvas{width:100%;max-width:900px;height:auto;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.12);background:#FBFAF7}
-</style></head><body>
+
+.skip{position:absolute;left:-999px;top:8px;z-index:999;background:var(--ink);color:var(--surface);padding:8px 14px;border-radius:6px}.skip:focus{left:8px}
+</style></head><body><a class="skip" href="#main" onclick="document.getElementById('main').focus();return false;">İçeriğe geç</a><noscript><p><a href="ders/">Ders metinlerini JavaScript olmadan oku</a></p></noscript>
 <title>Kesit SQL</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="vendor/fonts.css">
@@ -224,6 +226,8 @@ button.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink);
 .theory th{background:var(--surface-2)}
 .tbl-wrap{overflow-x:auto; max-width:100% !important}
 .note,.tip,.warn{border-radius:8px; padding:12px 14px; margin:14px 0; font-size:.94rem; border:1px solid}
+.plan-cikti{font-variant-ligatures:none; font-family:var(--f-mono); font-size:.76rem; line-height:1.5; background:var(--surface-2); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin:6px 0 14px; overflow-x:auto; white-space:pre; max-width:100%}
+.plan-etiket{font-size:.78rem; color:var(--muted); margin:10px 0 -2px}
 .note{background:var(--surface-2); border-color:var(--line)}
 .tip{background:var(--ok-soft); border-color:color-mix(in srgb, var(--ok) 35%, transparent)}
 .warn{background:var(--warn-soft); border-color:color-mix(in srgb, var(--warn) 35%, transparent)}
@@ -577,6 +581,9 @@ button.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink);
 <script src="c34.js"></script>
 <script src="c35.js"></script>
 <script src="c36.js"></script>
+<script src="plan-ciktilari.js"></script>
+<script src="c37.js"></script>
+<script src="c38.js"></script>
 <script src="ipuclari.js"></script>
 <script src="arena-data.js"></script>
 <script src="config.js"></script>
@@ -607,7 +614,7 @@ const COLMETA = window.SQLP_COLMETA || {}; const TABLES = Object.keys(COLMETA);
 const lvOrder = id => LEVELS.findIndex(l=>l.id===id);
 const lvName = id => (LEVELS[lvOrder(id)]||{}).name || id;
 const lvBadge = id => '<span class="lv lv-'+id+'">'+lvName(id)+'</span>';
-const EXTRA_MODS = ['Veri Analisti','BT İş Analizi','Veri Bilimi','Veri Mühendisliği','Mülakat Hazırlığı','SQL Türlerine Özgü','İş Zekâsı ve Raporlama','Veritabanı Yönetimi (DBA)','Uygulama Geliştirme','Vaka Çalışmaları','Yapay Zekâ ile SQL','BigQuery ve Bulut Veri Ambarları','Sertifika Hazırlık','Alıştırma Kampı','Bitirme Projeleri','Kanat Havayolları','Büyük Sorgular','İK Analitiği','Büyük Veriyle Çalışmak'];
+const EXTRA_MODS = ['Veri Analisti','BT İş Analizi','Veri Bilimi','Veri Mühendisliği','Mülakat Hazırlığı','SQL Türlerine Özgü','İş Zekâsı ve Raporlama','Veritabanı Yönetimi (DBA)','Uygulama Geliştirme','Vaka Çalışmaları','Yapay Zekâ ile SQL','BigQuery ve Bulut Veri Ambarları','Sertifika Hazırlık','Alıştırma Kampı','Bitirme Projeleri','Kanat Havayolları','Büyük Sorgular','İK Analitiği','Büyük Veriyle Çalışmak','Sorgu Optimizasyonu'];
 (function hints(){ const dc=[], tc=[], all=[], dt=[]; for(const t of TABLES) for(const [c,ty] of COLMETA[t]){ all.push(c); if(/date/.test(ty)) dc.push(c); if(ty==='datetime') dt.push(c); if(/^text/.test(ty)) tc.push(c); } DX.setSchemaHints(dc, tc, all, dt); })();
 
 /* ---------- Depolama ---------- */
@@ -912,9 +919,9 @@ function pathCard(p){
   return '<button class="pcard" data-go="path" data-id="'+p.id+'"><span class="row" style="justify-content:space-between"><span class="ic" style="background:'+p.color+'">'+p.short+'</span><span class="chip">'+ids.length+' ders</span></span><h3>'+esc(p.name)+'</h3><p>'+esc(p.desc)+'</p><span class="bar"><i style="width:'+pc+'%;background:'+p.color+'"></i></span><span class="foot"><span>%'+pc+' tamamlandı</span><span title="Tahmin: okuma ve alıştırmalar dahil">'+saatAralik(ids.map(id=>LMAP[id]))+'</span></span></button>';
 }
 function viewPaths(){
-  const ANA=['temel','analist','is-analisti','muhendis'], ana=ANA.map(id=>PMAP[id]).filter(Boolean), diger=k=>PATHS.filter(p=>p.kind===k&&!ANA.includes(p.id)), roles=diger('rol'), rest=diger('konu'), certs=diger('sertifika'), nDiger=roles.length+rest.length+certs.length;
+  const ANA=['temel','analist','bi','is-analisti','muhendis'], ana=ANA.map(id=>PMAP[id]).filter(Boolean), diger=k=>PATHS.filter(p=>p.kind===k&&!ANA.includes(p.id)), roles=diger('rol'), rest=diger('konu'), certs=diger('sertifika'), nDiger=roles.length+rest.length+certs.length;
   const sec=(t,d,list)=>list.length?'<section class="path-sec"><div><h2>'+t+'</h2><p class="muted" style="margin:4px 0 0;max-width:70ch">'+d+'</p></div><div class="paths">'+list.map(pathCard).join('')+'</div></section>':'';
-  return '<div class="wrap" style="gap:24px"><div><h1>Öğrenme yolları</h1><p class="muted" style="max-width:66ch;margin:6px 0 0">Her yol, dersleri önkoşul sırasına göre dizer. Ortak bir dersi bir kez bitirdiğinde bütün yollarda tamamlanmış sayılır.</p></div>'+sec('Buradan başla','Çoğu kişi için doğru başlangıç bu dört yoldan biridir.',ana)+'<details class="path-more"><summary style="cursor:pointer;font-weight:600">Diğer yollar ('+nDiger+')</summary><div style="display:flex;flex-direction:column;gap:24px;margin-top:16px">'+sec('Rol yolları','Daha özel roller için SQL: başlangıçtan bitirme projesine.',roles)+sec('Konu yolları','Belirli bir konu ya da veri seti üzerine kısa yollar. Temelleri bildiğini varsayar.',rest)+sec('Sertifika yolları','Gerçek sertifika sınavlarının konu alanlarına hazırlık. Resmî sınav değildir.',certs)+'</div></details></div>';
+  return '<div class="wrap" style="gap:24px"><div><h1>Öğrenme yolları</h1><p class="muted" style="max-width:66ch;margin:6px 0 0">Her yol, dersleri önkoşul sırasına göre dizer. Ortak bir dersi bir kez bitirdiğinde bütün yollarda tamamlanmış sayılır.</p></div>'+sec('Buradan başla','Çoğu kişi için doğru başlangıç bu beş yoldan biridir.',ana)+'<details class="path-more"><summary style="cursor:pointer;font-weight:600">Diğer yollar ('+nDiger+')</summary><div style="display:flex;flex-direction:column;gap:24px;margin-top:16px">'+sec('Rol yolları','Daha özel roller için SQL: başlangıçtan bitirme projesine.',roles)+sec('Konu yolları','Belirli bir konu ya da veri seti üzerine kısa yollar. Temelleri bildiğini varsayar.',rest)+sec('Sertifika yolları','Gerçek sertifika sınavlarının konu alanlarına hazırlık. Resmî sınav değildir.',certs)+'</div></details></div>';
 }
 function viewPath(id){
   const p=PMAP[id]; if(!p) return viewPaths();
@@ -924,6 +931,7 @@ function viewPath(id){
   if(p.skills) h+='<div class="row" style="gap:6px">'+p.skills.map(s=>'<span class="chip">'+esc(s)+'</span>').join('')+'</div>';
   if(p.id==='tsql' && P.dialect!=='tsql') h+='<div class="msg info"><b>Öneri</b>Bu yolda SQL türünü SQL Server yapmak örnekleri tutarlı gösterir. <button class="btn sm" data-setd="tsql" style="margin-top:6px">SQL Server\'ı seç</button></div>';
   h+='<div class="bar"><i style="width:'+pct(p.lessons)+'%;background:'+p.color+'"></i></div><div class="row">'+(nx?'<button class="btn pri" data-lesson="'+nx.id+'" data-ctx="'+p.id+'">'+(pct(p.lessons)||P.placement?'Devam et':'Yola başla')+(nx?': '+esc(nx.title):'')+'</button>':'<span class="chip">Yol tamamlandı</span>')+'<span class="muted num">'+ls.filter(l=>P.done[l.id]).length+'/'+ls.length+' ders · %'+pct(p.lessons)+'</span>'+(P.goal===p.id?'<span class="chip">Hedefin</span>':'<button class="btn sm ghost" data-goal="'+p.id+'">Hedefim yap</button>')+'</div></section>';
+  if(p.kind==='sertifika'){ const GU={ 'sert-mssql':[['DP-300','Microsoft kılavuzu; beceri listesi 27 Ekim 2026 tarihli.','https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/dp-300']], 'sert-bulut':[['Databricks Data Analyst','Resmî sayfa 28 Ekim 2026 tarihli; 45 soru, 90 dakika, AI/BI Genie de kapsamda.','https://www.databricks.com/learn/certification/data-analyst-associate'],['SnowPro Core','Güncel sürüm COF-C03; COF-C02\'nin yerini alıyor.','https://learn.snowflake.com/en/certifications/snowpro-core-c03'],['Google Data Analytics','Bu bir sınav değil, kurs programı; içerik karşılaştırması yapılmadı.','https://grow.google/certificates/data-analytics/']], 'sertifika':[['Oracle 1Z0-071','Resmî sayfa bu kontrolde açılamadı. Oracle\'ın 1Z0-171 adlı bir SQL sınavı da var; başvurmadan önce Oracle\'dan doğrula.','https://mylearn.oracle.com/ou/exam/oracle-database-sql-1z0-071/105037/110647/170369'],['DP-300','Microsoft kılavuzu; beceri listesi 27 Ekim 2026 tarihli.','https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/dp-300'],['Databricks Data Analyst','Resmî sayfa 28 Ekim 2026 tarihli; 45 soru, 90 dakika, AI/BI Genie de kapsamda.','https://www.databricks.com/learn/certification/data-analyst-associate'],['SnowPro Core','Güncel sürüm COF-C03; COF-C02\'nin yerini alıyor.','https://learn.snowflake.com/en/certifications/snowpro-core-c03']] }[p.id]; if(GU) h+='<div class="note"><b>Güncellik</b>Resmî sayfalar 3 Kasım 2026\'da kontrol edildi. Bu hazırlık resmî değildir ve kapsamın tamamını karşıladığını garanti etmez.<ul style="margin:6px 0 0">'+GU.map(g=>'<li><a href="'+g[2]+'" target="_blank" rel="noopener">'+g[0]+'</a>: '+g[1]+'</li>').join('')+'</ul></div>'; }
   if(!nx && window.KESIT_CERT) h+=window.KESIT_CERT.panelHTML(p.id);
   if(p.comp){
     h+='<section class="lvl-block"><div class="sec-head"><div><span class="eyebrow">Yetkinlik haritası</span><h2>Bu rolde bilmen gerekenler</h2></div><span class="muted" style="font-size:.85rem">Her yetkinlik, onu karşılayan derslerle eşleştirildi</span></div><div class="comp">';
@@ -983,7 +991,7 @@ function previewHTML(t, n){
   const cols=COLMETA[t].map(c=>c[0]);
   const r=pgFreshForSchema().exec('SELECT '+cols.map(c=>'"'+c+'"').join(', ')+' FROM '+t+' LIMIT '+(n||6))[0];
   const cnt=pgFreshForSchema().exec('SELECT COUNT(*) FROM '+t)[0].values[0][0];
-  let h='<div class="preview"><div class="cap"><b style="font-family:var(--f-mono);color:var(--ink)">'+t+'</b> · '+num(cnt)+' satır · ilk '+(n||6)+' satır · '+esc(window.SQLP_SCHEMA_NOTES[t]||'')+'</div><table><thead><tr>'+COLMETA[t].map(c=>'<th title="'+esc(c[2])+'">'+c[0]+(c[3]==='pk'?' <span class="pk">PK</span>':c[3]?' <span class="fk">FK</span>':'')+'</th>').join('')+'</tr></thead><tbody>';
+  let h='<div class="preview" tabindex="0"><div class="cap"><b style="font-family:var(--f-mono);color:var(--ink)">'+t+'</b> · '+num(cnt)+' satır · ilk '+(n||6)+' satır · '+esc(window.SQLP_SCHEMA_NOTES[t]||'')+'</div><table><thead><tr>'+COLMETA[t].map(c=>'<th title="'+esc(c[2])+'">'+c[0]+(c[3]==='pk'?' <span class="pk">PK</span>':c[3]?' <span class="fk">FK</span>':'')+'</th>').join('')+'</tr></thead><tbody>';
   (r?r.values:[]).forEach(row=>{ h+='<tr>'+row.map(v=>'<td>'+(v===null?'<i class="muted">NULL</i>':esc(v))+'</td>').join('')+'</tr>'; });
   return h+'</tbody></table></div>';
 }
@@ -1045,11 +1053,11 @@ function aiCopySQL(){ const e=LS.e; let ek='SQL türü: '+DNAME[LS.d]; try{ if(e
 function sqlView(e,k){
   const solved=P.ex[k] && !S.review, d=exDialect(e,k), al=exAllowed(e);
   const used=tablesIn((e.sol||'')+' '+(e.start||'')+' '+e.q);
-  let h='<div class="ex-grid"><div class="panel brief"><div class="row" style="justify-content:space-between"><span class="eyebrow">Görev'+(solved?' · çözüldü':'')+'</span>'+(e.check?'<span class="chip">Veriyi değiştiren görev</span>':'')+(al.length<5?'<span class="chip">'+al.map(x=>DNAME[x]).join(' / ')+' yazımıyla</span>':'')+'</div>'+(e.adv?'<div class="adv-note"><b>İleri görev.</b> '+esc(e.adv)+' Dersin bitmesi için gerekmez; konuyu öğrenince dön.</div>':'')+'<div class="q">'+e.q+'</div>';
+  let h='<div class="ex-grid"><div class="panel brief"><div class="row" style="justify-content:space-between"><span class="eyebrow">Görev'+(solved?' · çözüldü':'')+'</span>'+(e.plan?'<span class="chip" title="Sonuçtan sonra sorgu planına da bakılır. Motor SQLite olduğu için plan SQLite planıdır.">Plan da denetlenir</span>':'')+(e.check?'<span class="chip">Veriyi değiştiren görev</span>':'')+(al.length<5?'<span class="chip">'+al.map(x=>DNAME[x]).join(' / ')+' yazımıyla</span>':'')+'</div>'+(e.adv?'<div class="adv-note"><b>İleri görev.</b> '+esc(e.adv)+' Dersin bitmesi için gerekmez; konuyu öğrenince dön.</div>':'')+'<div class="q">'+e.q+'</div>';
   h+=usedDataHTML(used,!(window.matchMedia&&matchMedia('(max-width:860px)').matches));
   h+='<div class="row" style="gap:8px">'+(e.hint?'<button class="btn sm" data-act="hint">İpucu</button>':'')+'<button class="btn sm ghost" data-act="sol">Çözümü göster</button><button class="btn sm ghost" data-act="ai-copy" title="Görevi, kodunu ve hatanı bir isteme kopyalar. Hiçbir yere gönderilmez.">Yapay zekâ için kopyala</button></div><div id="hintBox"></div><div id="solBox"></div></div>';
   h+='<div class="work"><div class="ed-shell"><div class="ed-top"><label for="exD" style="display:flex;gap:6px;align-items:center">SQL türü <select id="exD">'+al.map(x=>'<option value="'+x+'"'+(x===d?' selected':'')+'>'+DNAME[x]+'</option>').join('')+'</select></label><span class="row" style="gap:8px"><button class="btn sm ghost" data-act="fmt" style="color:var(--code-ink);padding:2px 6px">Biçimlendir</button><span class="kbd-hint">Ctrl/⌘ + Enter</span></span></div><div id="ed"></div></div>';
-  h+='<div class="ed-actions"><button class="btn pri" data-act="submit" data-needs-engine '+(engineReady()?'':'disabled')+'>Kontrol et</button><button class="btn" data-act="run" data-needs-engine '+(engineReady()?'':'disabled')+'>Sadece çalıştır</button><button class="btn" data-act="cmp" data-needs-engine '+(engineReady()?'':'disabled')+'>Diğer SQL türlerinde gör</button><button class="btn ghost sm" data-act="reset-code">Sıfırla</button></div><div id="fb"></div><div class="panel result" id="res"><div class="empty">Sorgunu yaz ve çalıştır; sonuç burada görünecek.</div></div><div id="cmpBox"></div>'+exAiHTML()+'</div></div>';
+  h+='<div class="ed-actions"><button class="btn pri" data-act="submit" data-needs-engine '+(engineReady()?'':'disabled')+'>Kontrol et</button><button class="btn" data-act="run" data-needs-engine '+(engineReady()?'':'disabled')+'>Sadece çalıştır</button><button class="btn" data-act="cmp" data-needs-engine '+(engineReady()?'':'disabled')+'>Diğer SQL türlerinde gör</button><button class="btn ghost sm" data-act="reset-code">Sıfırla</button></div><div id="fb" aria-live="polite"></div><div class="panel result" id="res"><div class="empty">Sorgunu yaz ve çalıştır; sonuç burada görünecek.</div></div><div id="cmpBox"></div>'+exAiHTML()+'</div></div>';
   return h;
 }
 function reqSolved(l){ const req=(l.ex||[]).filter(e=>!e.adv); return !!req.length && (l.ex||[]).every((e,i)=>e.adv||P.ex[exKey(l,i)]); }
@@ -1107,6 +1115,7 @@ function submitEx(){
   const {l,e,k,d}=LS; const code=ED.get(); if(!code.trim()) return;
   const db=fresh(); const r=run(db,code,d); let uset=lastSet(r);
   if(!r.error && e.check){ try{ uset=db.exec(e.check).pop()||null; }catch(er){ uset=null; } }
+  const pf=(!r.error&&e.plan)?DX.planFail(e,db,r):null;
   $('#res').innerHTML=resultHTML(r, Object.assign({noErr:!!r.error}, e.check?{checkSet:uset}:{})); db.close();
   if(r.error){ $('#fb').innerHTML=errHTML(r); return; }
   const s=solResult(e,k);
@@ -1114,6 +1123,7 @@ function submitEx(){
   const c=compare(uset,s.set,e.ord); LS.tries++;
   if(!c.ok && e.check && /değerler farklı|satır|sütun var/.test(c.why)) c.why=/pragma_|sqlite_master|sqlite_schema/i.test(e.check)?'Tablonun yapısı beklenenle aynı değil. Sütunları, PRIMARY KEY, FOREIGN KEY ve CHECK kısıtlarını kontrol et.':'Tablonun son durumu beklenenle aynı değil. Hangi satırların değiştiğini ve koşulu kontrol et.';
   if(c.ok){ const mf=mustFail(e, code, d); if(mf){ $('#fb').innerHTML='<div class="msg err"><b>Sonuç doğru, yöntem eksik</b>'+esc(mf)+'<div class="row" style="margin-top:8px"></div></div>'; return; } }
+  if(c.ok&&pf){ $('#fb').innerHTML='<div class="msg err"><b>Sonuç doğru, plan beklenen gibi değil</b>'+esc(pf.msg)+(pf.plan?'<pre class="plan-cikti">'+esc(pf.plan)+'</pre>':'')+'</div>'; return; }
   if(c.ok){
     const first=!P.ex[k]; P.ex[k]=1; if(first) addXP(LS.shown?2:10);
     const extra=solvedHook(k, LS.tries===1 && !LS.shown);
@@ -1274,7 +1284,7 @@ function viewAbout(){
   h+='<p class="muted" style="max-width:68ch;margin:0;font-size:.88rem">Süreler tahmindir: okuma, kod görevi başına 2-3 dakika ve çoktan seçmeli soru başına 0,5-1 dakikadan hesaplanır. Ölçülmüş değildir; hızın farklı olabilir.</p>';
   h+='<div class="stat-grid"><div class="kpi"><b>'+LESSONS.length+'</b><span>ders</span></div><div class="kpi"><b>'+num(totalEx)+'</b><span>alıştırma</span></div><div class="kpi"><b>'+PRACTICE.length+'</b><span>pratik görevi</span></div><div class="kpi"><b>6</b><span>SQL türü · 6 veri seti</span></div></div>';
   if(A.name){ h+='<section class="panel about-card"><div class="sec-head"><h3>Yapan</h3></div><p style="margin:0"><b style="font-size:1.1rem">'+esc(A.name)+'</b>'+(A.title?'<br><span class="muted">'+esc(A.title)+'</span>':'')+'</p>'+(A.bio?'<p style="margin:0">'+esc(A.bio)+'</p>':'')+'<div class="row" style="gap:8px">'+link(A.linkedin,'LinkedIn')+link(A.github,'GitHub')+link(A.repo,'Kaynak kod')+'</div></section>'; }
-  if(C.story) h+='<section class="panel about-card"><div class="sec-head"><h3>Nasıl yapıldı</h3></div><p style="margin:0">'+esc(C.story)+'</p><p style="margin:10px 0 0"><a href="/vaka/">Vaka notunu oku: kararlar, ölçümler ve yanlış gidenler</a></p></section>';
+  if(C.story) h+='<section class="panel about-card"><div class="sec-head"><h3>Nasıl yapıldı</h3></div><p style="margin:0">'+esc(C.story)+'</p><p style="margin:10px 0 0"><a href="/vaka/">Vaka notunu oku: kararlar, ölçümler ve yanlış gidenler</a></p><p style="margin:10px 0 0"><a href="ders/">Ders metinlerinin tamamı</a></p></section>';
   h+='<section class="panel about-card"><div class="sec-head"><h3>SQL türleri nasıl çalışıyor?</h3></div><p style="margin:0">Tarayıcıdaki motor SQLite\'tır. SQL Server, PostgreSQL, MySQL, Oracle ve BigQuery yazımı bir çeviri katmanıyla SQLite\'ta taklit edilir: yazım kuralları, sık hata mesajları ve belirli davranış farkları denetlenir. Alıştırma çözümleri bu taklit katmanında altı SQL türünde otomatik sınanır; PostgreSQL için ayrıca gerçek motorda (PGlite) çalıştırılır. SQL Server, MySQL, Oracle ve BigQuery gerçek sunucuda sınanmadı.</p><p style="margin:0">Taklidin sınırı: performans, kilitler ve kullanıcı yetkileri gerçek bir sunucudaki gibi davranmaz; bazı karmaşık sorgularda gerçek motorun vereceği hata burada çıkmayabilir.</p></section>';
   h+='<section class="panel about-card"><div class="sec-head"><h3>Görüşün önemli</h3></div><p style="margin:0">Bu ücretsiz bir paylaşım ve portföy projesi. Bir hata gördüysen ya da anlatımı eksik bulduğun bir ders varsa yaz. Bağlantı GitHub Issues\'u açar; ders ve alıştırma bilgisi hazır gelir. Her dersin başlığında da aynı bağlantı var.</p><div class="row" style="gap:8px"><button class="btn pri sm" data-act="feedback" data-ders="Genel">Geri bildirim</button>'+(giscusOn()?'<a class="btn sm" href="https://github.com/'+esc(C.giscus.repo)+'/discussions" target="_blank" rel="noopener">GitHub tartışmaları</a>':'')+'</div></section>';
   const sib=[C.pbiUrl?'<a href="'+esc(C.pbiUrl)+'">Kesit Power BI</a>':'',C.pythonUrl?'<a href="'+esc(C.pythonUrl)+'">Kesit Python</a>':''].filter(Boolean);
@@ -1444,9 +1454,9 @@ function arJudge(c, code, d){
   const cases=[{ad:'Örnek veri', sql:''}].concat(c.tests); const out=[]; let firstR=null;
   for(let i=0;i<cases.length;i++){ const t=cases[i];
     const dbS=fresh(); if(t.sql) try{ dbS.exec(t.sql); }catch(e){} const sr=run(dbS,c.sol,'sqlite'); dbS.close();
-    const dbU=fresh(); if(t.sql) try{ dbU.exec(t.sql); }catch(e){} const ur=run(dbU,code,d); dbU.close(); if(!i) firstR=ur;
+    const dbU=fresh(); if(t.sql) try{ dbU.exec(t.sql); }catch(e){} const ur=run(dbU,code,d); const apf=(!i&&!ur.error&&c.plan)?DX.planFail(c,dbU,ur):null; dbU.close(); if(!i) firstR=ur;
     if(ur.error){ out.push({ad:t.ad, ok:false, why:'Hata: '+ur.error}); break; }
-    const cm=compare(lastSet(ur), lastSet(sr), c.ord ? (/eşitlikte/i.test(c.q) ? 'strict' : true) : false); out.push({ad:t.ad, ok:cm.ok, why:cm.why}); }
+    const cm=compare(lastSet(ur), lastSet(sr), c.ord ? (/eşitlikte/i.test(c.q) ? 'strict' : true) : false); if(cm.ok&&apf){ cm.ok=false; cm.why='Sonuç doğru, plan beklenen gibi değil. '+apf.msg+(apf.plan?' Planın: '+apf.plan.replace(/\n/g,' | '):''); } out.push({ad:t.ad, ok:cm.ok, why:cm.why}); }
   const all=out.length===cases.length&&out.every(x=>x.ok);
   const html='<div class="msg '+(all?'ok':'err')+'"><b>'+(all?'Tüm testler geçti':'Bazı testler geçmedi')+'</b><div class="ar-tests">'+out.map((x,i)=>'<div class="ar-test '+(x.ok?'ok':'no')+'"><i>'+(x.ok?'✓':'✗')+'</i><span>'+(i?'Gizli test '+i:'Örnek veri')+(i&&!x.ok?': '+esc(x.ad):'')+(x.ok?'':'<br><span class="muted">'+esc(x.why)+'</span>')+'</span></div>').join('')+(out.length<cases.length?'<div class="ar-test no"><i>·</i><span class="muted">Kalan '+(cases.length-out.length)+' test çalıştırılmadı.</span></div>':'')+'</div>';
   return {out, all, firstR, html};

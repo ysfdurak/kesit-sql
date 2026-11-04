@@ -1,0 +1,45 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mülakat kalıbı: medyan, yüzdelik ve mod | Kesit SQL</title><meta name="description" content="SQL türünden bağımsız medyan hesabı, grup başına medyan, en sık değer ve yüzdelik dilimler."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/mk-medyan/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Mülakat kalıbı: medyan, yüzdelik ve mod"><meta property="og:description" content="SQL türünden bağımsız medyan hesabı, grup başına medyan, en sık değer ve yüzdelik dilimler."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/mk-medyan/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Mülakat kalıbı: medyan, yüzdelik ve mod","description":"SQL türünden bağımsız medyan hesabı, grup başına medyan, en sık değer ve yüzdelik dilimler.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/mk-medyan/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Mülakat Hazırlığı</span><h1>Mülakat kalıbı: medyan, yüzdelik ve mod</h1><p class="st-l">SQL türünden bağımsız medyan hesabı, grup başına medyan, en sık değer ve yüzdelik dilimler.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-mk-medyan">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Soru</h2>
+<div class="note"><b>Görüşmeci</b>“Her kategoride ürün fiyatlarının medyanını hesapla. MEDIAN fonksiyonu kullanma.” Takip: “En sık görülen sipariş tutarı aralığı (mod) hangisi?”</div>
+<h2>Önce netleştir</h2>
+<p>Kod yazmadan önce sorulacak sorular. Her biri farklı bir sorguya götürür; sormamak en sık puan kaybıdır.</p>
+<ul><li>Çift sayıda değer varsa medyan ortadaki iki değerin ortalaması mı?</li><li>NULL fiyatlar dahil mi?</li><li>Mod için eşit sıklıkta birden çok değer varsa hepsi mi?</li></ul>
+<h2>Yaklaşım</h2>
+<ol><li>Her grupta değerleri sırala: ROW_NUMBER ile sıra, COUNT OVER ile grup büyüklüğü.</li><li>Ortadaki sıraları seç: tek sayıda (n+1)/2, çift sayıda n/2 ve n/2+1.</li><li>Seçilen değerlerin ortalaması medyandır.</li><li>Mod: GROUP BY değer, COUNT, en yüksek sayıyı RANK ile seç.</li></ol>
+<h2>Çözüm 1: ROW_NUMBER ile taşınabilir medyan</h2>
+<pre class="code">WITH s AS (
+  SELECT category, price,
+         ROW_NUMBER() OVER (PARTITION BY category ORDER BY price) AS rn,
+         COUNT(*) OVER (PARTITION BY category) AS n
+  FROM products
+)
+SELECT category, ROUND(AVG(price), 2) AS medyan
+FROM s
+WHERE rn IN ((n + 1) / 2, (n + 2) / 2)
+GROUP BY category
+ORDER BY category;</pre>
+<h2>Çözüm 2: SQL türünün yerleşik fonksiyonu (destekleniyorsa)</h2>
+<pre class="code">-- PostgreSQL, Oracle, SQL Server 2022:
+-- PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price)
+-- BigQuery: APPROX_QUANTILES(price, 2)[OFFSET(1)]  (yaklaşık)
+SELECT category, MEDIAN(price) AS medyan   -- Oracle ve bu uygulama
+FROM products
+GROUP BY category
+ORDER BY category;</pre>
+<p>Birinci çözümün püf noktası <code>(n + 1) / 2</code> ve <code>(n + 2) / 2</code> ifadeleridir: tam sayı bölmesiyle n tekken ikisi de ortadaki sırayı, n çiftken ortadaki iki sırayı verir. Bu ifade MySQL, Oracle ve BigQuery'de ondalıklı bölündüğü için orada FLOOR ile sarılmalıdır. Mülakatta yerleşik fonksiyonu bildiğini söyle, ama genellikle elle yazmanı isterler.</p>
+<h2>Sınır durumları</h2>
+<table><tr><th>Durum</th><th>Ne olur?</th></tr><tr><td>Çift sayıda değer</td><td>Ortadaki iki değerin ortalaması</td></tr><tr><td>Tek değerli grup</td><td>O değerin kendisi</td></tr><tr><td>NULL</td><td>COUNT(*) yerine COUNT(price) ve WHERE price IS NOT NULL</td></tr><tr><td>Tam sayı bölmesi farkı</td><td>MySQL / Oracle / BigQuery'de FLOOR gerekir</td></tr></table>
+<h2>Takip soruları</h2>
+<ul><li>90. yüzdelik nasıl hesaplanır? (NTILE(10) veya PERCENT_RANK)</li><li>Medyan neden çarpık dağılımlarda ortalamadan daha iyi bir özet?</li><li>Çok büyük veride kesin medyan pahalıysa ne yaparsın? (yaklaşık yüzdelik)</li></ul>
+<div class="tip"><b>Görüşmeci neye bakıyor?</b>Tek ve çift sayıda değeri tek bir koşulla ele alman ve tam sayı bölmesinin SQL türlerine göre farkını bilmen.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-mk-medyan">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../mk-selfjoin/">← Mülakat kalıbı: kendine birleştirme klasikleri</a><a href="../mk-vaka/">Mülakat: açık uçlu ürün analitiği vakası →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

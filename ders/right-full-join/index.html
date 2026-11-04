@@ -1,0 +1,36 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RIGHT JOIN, FULL OUTER JOIN | Kesit SQL</title><meta name="description" content="Sağ tabloyu korumak ve iki tarafı da korumak."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/right-full-join/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="RIGHT JOIN, FULL OUTER JOIN"><meta property="og:description" content="Sağ tabloyu korumak ve iki tarafı da korumak."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/right-full-join/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"RIGHT JOIN, FULL OUTER JOIN","description":"Sağ tabloyu korumak ve iki tarafı da korumak.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/right-full-join/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Tabloları Birleştirme</span><h1>RIGHT JOIN, FULL OUTER JOIN</h1><p class="st-l">Sağ tabloyu korumak ve iki tarafı da korumak.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-right-full-join">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>RIGHT JOIN</h2>
+<p>LEFT JOIN'in aynasıdır: sağ tablonun tüm satırlarını korur. Pratikte tablo sırasını değiştirip LEFT JOIN yazmak daha okunaklı olduğu için az kullanılır.</p>
+<pre class="code">SELECT e.first_name, d.name
+FROM employees e
+RIGHT JOIN departments d ON e.dept_id = d.dept_id;</pre>
+<h2>FULL OUTER JOIN</h2>
+<p>Her iki tablonun da tüm satırlarını döndürür; eşi olmayan taraf NULL olur. İki kaynağı karşılaştırırken (“hangi kayıt sadece birinde var?”) çok kullanışlıdır.</p>
+<pre class="code" data-v="{&quot;mysql&quot;:&quot;-- MySQL FULL OUTER JOIN desteklemez: LEFT ve RIGHT JOIN'i birleştir\nSELECT e.first_name, e.dept_id AS calisan_dept, d.name AS departman\nFROM employees e\nLEFT JOIN departments d ON e.dept_id = d.dept_id\nWHERE d.dept_id IS NULL\nUNION ALL\nSELECT e.first_name, e.dept_id, d.name\nFROM employees e\nRIGHT JOIN departments d ON e.dept_id = d.dept_id\nWHERE e.emp_id IS NULL;&quot;}">SELECT e.first_name, e.dept_id AS calisan_dept, d.name AS departman
+FROM employees e
+FULL OUTER JOIN departments d ON e.dept_id = d.dept_id
+WHERE e.emp_id IS NULL OR d.dept_id IS NULL;</pre>
+<p>Bu sorgu hem departmanı olmayan çalışanı (genel müdür) hem de çalışanı olmayan departmanı (Hukuk) gösterir.</p>
+<div class="note"><b>Destek</b>SQL Server, PostgreSQL, Oracle ve SQLite (3.39+) FULL OUTER JOIN destekler. MySQL desteklemez; orada LEFT JOIN ile RIGHT JOIN sonuçları UNION ile birleştirilir. MySQL sekmesine geçip yazımı gör.</div>
+<h2>Özet</h2>
+<table><tr><th>JOIN</th><th>Sol tablonun eşsizleri</th><th>Sağ tablonun eşsizleri</th></tr>
+<tr><td>INNER</td><td>Yok</td><td>Yok</td></tr>
+<tr><td>LEFT</td><td>Var</td><td>Yok</td></tr>
+<tr><td>RIGHT</td><td>Yok</td><td>Var</td></tr>
+<tr><td>FULL</td><td>Var</td><td>Var</td></tr>
+</table>
+<h2>Derinleş: iki listeyi karşılaştırmak</h2><p>FULL OUTER JOIN'in en yaygın kullanımı iki kaynağın uzlaştırılmasıdır: “hangi şehirde restoran var ama kurye yok?”</p><pre class="code" data-na="mysql">WITH r AS (SELECT city, COUNT(*) AS n FROM lk_restaurants GROUP BY city),
+     k AS (SELECT city, COUNT(*) AS n FROM lk_couriers GROUP BY city)
+SELECT COALESCE(r.city, k.city) AS sehir, r.n AS restoran, k.n AS kurye
+FROM r FULL OUTER JOIN k ON k.city = r.city;</pre>
+<p>Önce her iki tarafı aynı grain düzeyinde (şehir) özetle, sonra birleştir. Özetlemeden birleştirmek satırları çarpar.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-right-full-join">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../er-modelleme/">← Veri modelleme ve ER diyagramı: varlıktan tabloya</a><a href="../self-cross-join/">Self JOIN ve CROSS JOIN →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,34 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AND, OR, NOT ve işlem önceliği | Kesit SQL</title><meta name="description" content="Birden fazla koşulu birleştirmek ve parantezin önemi."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/mantik/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="AND, OR, NOT ve işlem önceliği"><meta property="og:description" content="Birden fazla koşulu birleştirmek ve parantezin önemi."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/mantik/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"AND, OR, NOT ve işlem önceliği","description":"Birden fazla koşulu birleştirmek ve parantezin önemi.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/mantik/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Temeller</span><h1>AND, OR, NOT ve işlem önceliği</h1><p class="st-l">Birden fazla koşulu birleştirmek ve parantezin önemi.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-mantik">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Koşulları birleştirmek</h2>
+<ul>
+<li><b>AND</b>: Her iki koşul da doğru olmalı.</li>
+<li><b>OR</b>: En az biri doğru olmalı.</li>
+<li><b>NOT</b>: Koşulu tersine çevirir.</li>
+</ul>
+<pre class="code">SELECT name, category, price
+FROM products
+WHERE category = 'Elektronik' AND price < 1000;</pre>
+<h2>Öncelik tuzağı</h2>
+<p>SQL'de <b>AND, OR'dan önce</b> değerlendirilir (matematikte çarpmanın toplamadan önce gelmesi gibi). Şu sorgu ne döndürür?</p>
+<pre class="code">-- Niyet: Kitap veya Kozmetik kategorisinde, 200 TL altı ürünler
+SELECT name, category, price
+FROM products
+WHERE category = 'Kitap' OR category = 'Kozmetik' AND price < 200;</pre>
+<p>Bu sorgu “Kitap olan HER ürün” VEYA “200 TL altı Kozmetik ürünleri” döndürür, çünkü AND önce bağlanır. Doğrusu parantez kullanmak:</p>
+<pre class="code">SELECT name, category, price
+FROM products
+WHERE (category = 'Kitap' OR category = 'Kozmetik') AND price < 200;</pre>
+<div class="tip"><b>Altın kural</b>AND ve OR'u birlikte kullandığında her zaman parantez koy. Hem hatayı önler hem de okuyan kişiye niyetini gösterir.</div>
+<h2>Derinleş: doğruluk tablosu ve NOT</h2><p>NOT, koşulun tamamını tersine çevirir. <code>NOT (A AND B)</code>, <code>NOT A OR NOT B</code> ile aynıdır (De Morgan kuralı). Şu iki sorgu aynı sonucu verir:</p><pre class="code">SELECT COUNT(*) FROM lk_orders WHERE NOT (status = 'teslim' AND payment = 'kart');
+SELECT COUNT(*) FROM lk_orders WHERE status &lt;> 'teslim' OR payment &lt;> 'kart';</pre>
+<p>Parantez yazmak hem hatayı önler hem de okuyan kişiye niyetini gösterir. Bir koşulu yazdıktan sonra küçük bir örnek satır üzerinde sesli dene: “Bu satır gelir mi?”</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-mantik">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../where/">← WHERE ile filtreleme</a><a href="../in-between-like/">IN, BETWEEN ve LIKE →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,61 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Satır başına alt sorgu: LATERAL ve APPLY | Kesit SQL</title><meta name="description" content="Her satır için ayrı çalışan, birden çok sütun ve satır döndürebilen alt sorgular; “her müşterinin son N siparişi”."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/lateral/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Satır başına alt sorgu: LATERAL ve APPLY"><meta property="og:description" content="Her satır için ayrı çalışan, birden çok sütun ve satır döndürebilen alt sorgular; “her müşterinin son N siparişi”."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/lateral/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Satır başına alt sorgu: LATERAL ve APPLY","description":"Her satır için ayrı çalışan, birden çok sütun ve satır döndürebilen alt sorgular; “her müşterinin son N siparişi”.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/lateral/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Küme ve Alt Sorgular</span><h1>Satır başına alt sorgu: LATERAL ve APPLY</h1><p class="st-l">Her satır için ayrı çalışan, birden çok sütun ve satır döndürebilen alt sorgular; “her müşterinin son N siparişi”.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-lateral">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Sorun</h2>
+<p>“Her müşterinin <b>son iki</b> siparişi” sorusunu düşün. İlişkili alt sorgu SELECT listesinde yalnızca <b>tek bir değer</b> döndürebilir; iki satır ve birkaç sütun döndüremez. FROM içindeki normal alt sorgu ise dışarıdaki tabloyu göremez.</p>
+<h2>LATERAL: FROM içinde ilişkili alt sorgu</h2>
+<p><code>LATERAL</code> anahtar kelimesi, FROM içindeki alt sorgunun solundaki tablolara başvurmasına izin verir. Alt sorgu her dış satır için yeniden çalışır gibi düşünülebilir.</p>
+<pre class="code" data-v="{&quot;tsql&quot;:&quot;SELECT c.customer_id, s.order_id, s.order_date\nFROM customers c\nCROSS APPLY (\n  SELECT TOP 2 o.order_id, o.order_date\n  FROM orders o\n  WHERE o.customer_id = c.customer_id\n  ORDER BY o.order_date DESC\n) AS s\nWHERE c.customer_id &lt;= 3\nORDER BY c.customer_id, s.order_date DESC;&quot;,&quot;mysql&quot;:&quot;SELECT c.customer_id, s.order_id, s.order_date\nFROM customers c\nCROSS JOIN LATERAL (\n  SELECT o.order_id, o.order_date\n  FROM orders o\n  WHERE o.customer_id = c.customer_id\n  ORDER BY o.order_date DESC\n  LIMIT 2\n) AS s\nWHERE c.customer_id &lt;= 3\nORDER BY c.customer_id, s.order_date DESC;&quot;,&quot;oracle&quot;:&quot;SELECT c.customer_id, s.order_id, s.order_date\nFROM customers c\nCROSS APPLY (\n  SELECT o.order_id, o.order_date\n  FROM orders o\n  WHERE o.customer_id = c.customer_id\n  ORDER BY o.order_date DESC\n  FETCH FIRST 2 ROWS ONLY\n) s\nWHERE c.customer_id &lt;= 3\nORDER BY c.customer_id, s.order_date DESC;&quot;}" data-base="pg">SELECT c.customer_id, s.order_id, s.order_date
+FROM customers c
+CROSS JOIN LATERAL (
+  SELECT o.order_id, o.order_date
+  FROM orders o
+  WHERE o.customer_id = c.customer_id
+  ORDER BY o.order_date DESC
+  LIMIT 2
+) AS s
+WHERE c.customer_id &lt;= 3
+ORDER BY c.customer_id, s.order_date DESC;</pre>
+<table>
+<tr><th>SQL türü</th><th>İç birleşim</th><th>Dış birleşim (eşi olmayan da kalsın)</th></tr>
+<tr><td>PostgreSQL 9.3+, MySQL 8.0.14+</td><td><code>CROSS JOIN LATERAL (...) AS s</code></td><td><code>LEFT JOIN LATERAL (...) AS s ON TRUE</code></td></tr>
+<tr><td>SQL Server</td><td><code>CROSS APPLY (...) AS s</code></td><td><code>OUTER APPLY (...) AS s</code></td></tr>
+<tr><td>Oracle 12c+</td><td><code>CROSS APPLY</code> veya <code>CROSS JOIN LATERAL</code></td><td><code>OUTER APPLY</code></td></tr>
+<tr><td>BigQuery</td><td colspan="2">FROM içinde ilişkili alt sorgu yoktur; aynı iş pencere fonksiyonuyla yapılır (aşağıda).</td></tr>
+</table>
+<h2>Eşi olmayanı korumak: LEFT JOIN LATERAL ... ON TRUE</h2>
+<p>Alt sorgu bir dış satır için hiç satır döndürmezse CROSS JOIN LATERAL o satırı düşürür. Dış satırın kalması için LEFT JOIN LATERAL kullanılır. Koşul zaten alt sorgunun içinde olduğundan ON kısmına <code>TRUE</code> yazılır.</p>
+<pre class="code" data-v="{&quot;tsql&quot;:&quot;SELECT d.name, s.calisan\nFROM departments d\nOUTER APPLY (\n  SELECT COUNT(*) AS calisan\n  FROM employees e\n  WHERE e.dept_id = d.dept_id\n) AS s;&quot;,&quot;mysql&quot;:&quot;SELECT d.name, s.calisan\nFROM departments d\nLEFT JOIN LATERAL (\n  SELECT COUNT(*) AS calisan\n  FROM employees e\n  WHERE e.dept_id = d.dept_id\n) AS s ON TRUE;&quot;,&quot;oracle&quot;:&quot;SELECT d.name, s.calisan\nFROM departments d\nOUTER APPLY (\n  SELECT COUNT(*) AS calisan\n  FROM employees e\n  WHERE e.dept_id = d.dept_id\n) s;&quot;}" data-base="pg">SELECT d.name, s.calisan
+FROM departments d
+LEFT JOIN LATERAL (
+  SELECT COUNT(*) AS calisan
+  FROM employees e
+  WHERE e.dept_id = d.dept_id
+) AS s ON TRUE;</pre>
+<h2>Pencere fonksiyonuyla karşılaştırma</h2>
+<p>Aynı “her gruptan ilk N” sorusu ROW_NUMBER ile de çözülür ve her SQL türünde çalışır:</p>
+<pre class="code">WITH s AS (
+  SELECT customer_id, order_id, order_date,
+         ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date DESC) AS rn
+  FROM orders
+)
+SELECT customer_id, order_id, order_date
+FROM s
+WHERE rn <= 2 AND customer_id <= 3
+ORDER BY customer_id, order_date DESC;</pre>
+<table>
+<tr><th></th><th>ROW_NUMBER</th><th>LATERAL / APPLY</th></tr>
+<tr><td>Taşınabilirlik</td><td>Her SQL türünde</td><td>BigQuery'de yok</td></tr>
+<tr><td>Az sayıda dış satır, büyük iç tablo</td><td>Tüm tabloyu numaralandırır</td><td>İndeks varsa her dış satır için birkaç satır okur; çok daha hızlı olabilir</td></tr>
+<tr><td>Satır başına fonksiyon çağırmak</td><td>Uygun değil</td><td>Tablo döndüren fonksiyonları (STRING_SPLIT, OPENJSON, jsonb_array_elements) satır başına çağırmak için doğal yol</td></tr>
+</table>
+<div class="note"><b>Bu uygulamada</b>Tarayıcıdaki motor LATERAL ve APPLY alt sorgularını eşdeğer bir birleşime çevirerek çalıştırır. Alt sorgu dış tabloya WHERE içindeki eşitlik koşullarıyla bağlanmalıdır (yukarıdaki örneklerdeki gibi).</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-lateral">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../correlated/">← İlişkili alt sorgular (correlated subquery) ve EXISTS</a><a href="../exists-anyall/">EXISTS, NOT EXISTS, ANY ve ALL: yarı ve karşıt birleştirmeler →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

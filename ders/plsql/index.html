@@ -1,0 +1,89 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Oracle PL/SQL ile programlama: blok, imleç, prosedür, paket | Kesit SQL</title><meta name="description" content="Anonim bloklar, değişkenler, döngüler, imleçler, istisnalar ve paketler."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/plsql/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Oracle PL/SQL ile programlama: blok, imleç, prosedür, paket"><meta property="og:description" content="Anonim bloklar, değişkenler, döngüler, imleçler, istisnalar ve paketler."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/plsql/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Oracle PL/SQL ile programlama: blok, imleç, prosedür, paket","description":"Anonim bloklar, değişkenler, döngüler, imleçler, istisnalar ve paketler.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/plsql/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · SQL Türlerine Özgü</span><h1>Oracle PL/SQL ile programlama: blok, imleç, prosedür, paket</h1><p class="st-l">Anonim bloklar, değişkenler, döngüler, imleçler, istisnalar ve paketler.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-plsql">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>PL/SQL bloğu</h2>
+<p>PL/SQL, Oracle'ın SQL'e eklediği programlama dilidir (T-SQL'in Oracle karşılığı). Her kod <b>blok</b> yapısındadır:</p>
+<pre class="code" data-norun>DECLARE
+    v_adet   NUMBER;
+    v_ad     customers.first_name%TYPE;     -- sütunun tipini al
+BEGIN
+    SELECT COUNT(*) INTO v_adet FROM orders WHERE status = 'cancelled';
+    DBMS_OUTPUT.PUT_LINE('İptal edilen sipariş: ' || v_adet);
+
+    IF v_adet &gt; 100 THEN
+        DBMS_OUTPUT.PUT_LINE('İptal oranı yüksek!');
+    ELSIF v_adet &gt; 50 THEN
+        DBMS_OUTPUT.PUT_LINE('İzlenmeli.');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Normal.');
+    END IF;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN DBMS_OUTPUT.PUT_LINE('Kayıt yok');
+    WHEN OTHERS THEN DBMS_OUTPUT.PUT_LINE('Hata: ' || SQLERRM);
+END;
+/</pre>
+<table>
+<tr><th>T-SQL</th><th>PL/SQL</th></tr>
+<tr><td><code>DECLARE @x INT = 5;</code></td><td><code>v_x NUMBER := 5;</code> (DECLARE bölümünde)</td></tr>
+<tr><td><code>SET @x = ...</code> / <code>SELECT @x = ...</code></td><td><code>v_x := ...;</code> / <code>SELECT ... INTO v_x</code></td></tr>
+<tr><td><code>PRINT</code></td><td><code>DBMS_OUTPUT.PUT_LINE</code></td></tr>
+<tr><td><code>IF ... ELSE</code>, <code>BEGIN ... END</code></td><td><code>IF ... THEN ... ELSIF ... END IF;</code></td></tr>
+<tr><td><code>WHILE</code></td><td><code>LOOP</code>, <code>WHILE ... LOOP</code>, <code>FOR i IN 1..10 LOOP</code></td></tr>
+<tr><td><code>TRY / CATCH</code></td><td><code>EXCEPTION WHEN ... THEN</code></td></tr>
+<tr><td><code>@@ROWCOUNT</code></td><td><code>SQL%ROWCOUNT</code></td></tr>
+</table>
+<h2>İmleç FOR döngüsü</h2>
+<p>PL/SQL'de imleç kullanmanın en kısa yolu: açma, okuma ve kapatma otomatik yapılır.</p>
+<pre class="code" data-norun>BEGIN
+    FOR r IN (SELECT name, price FROM products WHERE category = 'Kitap' ORDER BY price DESC) LOOP
+        DBMS_OUTPUT.PUT_LINE(r.name || ': ' || r.price);
+    END LOOP;
+END;
+/</pre>
+<h2>Prosedür, fonksiyon ve paket</h2>
+<pre class="code" data-norun>CREATE OR REPLACE FUNCTION net_tutar(p_adet NUMBER, p_fiyat NUMBER, p_indirim NUMBER)
+RETURN NUMBER IS
+BEGIN
+    RETURN ROUND(p_adet * p_fiyat * (1 - NVL(p_indirim, 0)), 2);
+END;
+/
+
+CREATE OR REPLACE PACKAGE satis_pkg AS
+    PROCEDURE fiyat_guncelle(p_kategori VARCHAR2, p_oran NUMBER);
+    FUNCTION kategori_ciro(p_kategori VARCHAR2) RETURN NUMBER;
+END satis_pkg;
+/
+
+CREATE OR REPLACE PACKAGE BODY satis_pkg AS
+    PROCEDURE fiyat_guncelle(p_kategori VARCHAR2, p_oran NUMBER) IS
+    BEGIN
+        UPDATE products SET price = price * (1 + p_oran) WHERE category = p_kategori;
+        IF SQL%ROWCOUNT = 0 THEN
+            RAISE_APPLICATION_ERROR(-20001, 'Kategori bulunamadı: ' || p_kategori);
+        END IF;
+        COMMIT;
+    END;
+
+    FUNCTION kategori_ciro(p_kategori VARCHAR2) RETURN NUMBER IS
+        v_ciro NUMBER;
+    BEGIN
+        SELECT SUM(net_tutar(oi.quantity, oi.unit_price, oi.discount)) INTO v_ciro
+        FROM order_items oi JOIN products p ON p.product_id = oi.product_id
+        WHERE p.category = p_kategori;
+        RETURN v_ciro;
+    END;
+END satis_pkg;
+/
+
+EXEC satis_pkg.fiyat_guncelle('Kitap', 0.05);</pre>
+<p><b>Paket</b>, ilgili prosedür ve fonksiyonları bir arada tutar; dışarıya açık kısım (spec) ile uygulama (body) ayrıdır. Büyük Oracle sistemlerinde iş mantığının büyük kısmı paketlerde yaşar.</p>
+<div class="note"><b>Bu uygulamada</b>Tarayıcıdaki motor PL/SQL bloklarını çalıştırmaz; kodlar okuma amaçlıdır. Oracle'ın sorgu (SQL) kısmı Oracle sekmesinde çalışır.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-plsql">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../oracle-ozel/">← Oracle'a özgü yazımlar</a><a href="../plpgsql/">PostgreSQL'de programlama: PL/pgSQL, DO blokları ve eklentiler →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

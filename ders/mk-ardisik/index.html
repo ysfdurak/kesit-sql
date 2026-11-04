@@ -1,0 +1,63 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mülakat kalıbı: ardışık günler, seriler ve “en az 3 gün üst üste” | Kesit SQL</title><meta name="description" content="Boşluklar ve adalar sorusunun iki çözümü: tarih − ROW_NUMBER ve LAG ile işaretle-topla."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/mk-ardisik/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Mülakat kalıbı: ardışık günler, seriler ve “en az 3 gün üst üste”"><meta property="og:description" content="Boşluklar ve adalar sorusunun iki çözümü: tarih − ROW_NUMBER ve LAG ile işaretle-topla."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/mk-ardisik/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Mülakat kalıbı: ardışık günler, seriler ve “en az 3 gün üst üste”","description":"Boşluklar ve adalar sorusunun iki çözümü: tarih − ROW_NUMBER ve LAG ile işaretle-topla.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/mk-ardisik/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Mülakat Hazırlığı</span><h1>Mülakat kalıbı: ardışık günler, seriler ve “en az 3 gün üst üste”</h1><p class="st-l">Boşluklar ve adalar sorusunun iki çözümü: tarih − ROW_NUMBER ve LAG ile işaretle-topla.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-mk-ardisik">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Soru</h2>
+<div class="note"><b>Görüşmeci</b>“Ilgaz Bank'ta en az 3 gün üst üste işlem yapılmış hesapları bul.” Takip: “Her hesabın en uzun ardışık serisi kaç gün?”</div>
+<h2>Önce netleştir</h2>
+<p>Kod yazmadan önce sorulacak sorular. Her biri farklı bir sorguya götürür; sormamak en sık puan kaybıdır.</p>
+<ul><li>Aynı gün birden çok işlem varsa tek gün sayılır mı? (Evet olmalı: önce gün düzeyine tekilleştir.)</li><li>Tüm işlem türleri mi (faiz tahakkuku gibi otomatik olanlar dahil)?</li><li>Seri takvim günüyle mi, iş günüyle mi ölçülüyor?</li></ul>
+<h2>Yaklaşım</h2>
+<ol><li>Hesap × gün düzeyine indir (DISTINCT, zaman damgasını date() ile güne çevir).</li><li>Her hesapta günleri sırala ve ROW_NUMBER ver.</li><li>Gün numarası − sıra numarası, aynı serideki her gün için sabit kalır: bu değer seri anahtarıdır.</li><li>Hesap × seri anahtarına göre grupla, uzunluğu say, filtrele.</li></ol>
+<h2>Çözüm 1: tarih − ROW_NUMBER</h2>
+<pre class="code">WITH g AS (
+  SELECT DISTINCT account_id, date(txn_time) AS gun
+  FROM bank_txns
+),
+n AS (
+  SELECT account_id, gun,
+         julianday(gun) - julianday('2000-01-01')
+           - ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY gun) AS seri
+  FROM g
+)
+SELECT account_id, MIN(gun) AS baslangic, MAX(gun) AS bitis, COUNT(*) AS gun_sayisi
+FROM n
+GROUP BY account_id, seri
+HAVING COUNT(*) >= 3
+ORDER BY gun_sayisi DESC, account_id
+LIMIT 10;</pre>
+<h2>Çözüm 2: LAG ile işaretle ve kümülatif topla</h2>
+<pre class="code">WITH g AS (
+  SELECT DISTINCT account_id, date(txn_time) AS gun FROM bank_txns
+),
+i AS (
+  SELECT account_id, gun,
+         CASE WHEN julianday(gun) - julianday(LAG(gun) OVER (PARTITION BY account_id ORDER BY gun)) = 1
+              THEN 0 ELSE 1 END AS yeni
+  FROM g
+),
+s AS (
+  SELECT account_id, gun,
+         SUM(yeni) OVER (PARTITION BY account_id ORDER BY gun ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS seri
+  FROM i
+)
+SELECT account_id, COUNT(*) AS gun_sayisi
+FROM s
+GROUP BY account_id, seri
+HAVING COUNT(*) >= 3
+ORDER BY gun_sayisi DESC, account_id
+LIMIT 10;</pre>
+<p>İki çözüm aynı sonucu verir. Birincisi daha kısadır; ikincisi “1 günlük boşluğu tolere et” ya da “30 dakikadan uzun ara yeni oturum başlatır” gibi eşik içeren varyasyonlara daha kolay uyarlanır. Görüşmeci genellikle ikinci varyasyonu takip sorusu olarak sorar.</p>
+<h2>Sınır durumları</h2>
+<table><tr><th>Durum</th><th>Ne olur?</th></tr><tr><td>Aynı gün iki işlem</td><td>DISTINCT olmazsa ROW_NUMBER iki kez artar, seri kırılmış görünür</td></tr><tr><td>Tek günlük seri</td><td>Seri uzunluğu 1; HAVING ile elenir</td></tr><tr><td>Ay ve yıl geçişi</td><td>Tarihi gün numarasına çevirmek ay sonlarını doğru ele alır</td></tr><tr><td>Saatli zaman damgası</td><td>Önce güne indir; yoksa aynı gün farklı satırlar olur</td></tr></table>
+<h2>Takip soruları</h2>
+<ul><li>Bir günlük boşluğa izin verilseydi (31 Ocak ve 2 Şubat aynı seri)?</li><li>Her hesabın yalnızca en uzun serisi nasıl alınır? (ROW_NUMBER ile ikinci kez sırala)</li><li>Milyonlarca satırda hangi indeks gerekir? (account_id, txn_time)</li></ul>
+<div class="tip"><b>Görüşmeci neye bakıyor?</b>Önce gün düzeyine tekilleştirmeyi kendiliğinden yapman ve “tarih eksi sıra numarası neden sabit kalır?” sorusunu açıklayabilmen.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-mk-ardisik">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../mk-topn/">← Mülakat kalıbı: grup başına ilk N ve N'inci en yüksek değer</a><a href="../mk-oran/">Mülakat kalıbı: oranlar, paydalar ve dönüşüm →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

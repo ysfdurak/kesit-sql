@@ -1,0 +1,75 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Özellik mühendisliği (feature engineering) | Kesit SQL</title><meta name="description" content="Müşteri düzeyinde model girdisi tablosu ve churn etiketi."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ds-feature/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Özellik mühendisliği (feature engineering)"><meta property="og:description" content="Müşteri düzeyinde model girdisi tablosu ve churn etiketi."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ds-feature/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Özellik mühendisliği (feature engineering)","description":"Müşteri düzeyinde model girdisi tablosu ve churn etiketi.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/ds-feature/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Veri Bilimi</span><h1>Özellik mühendisliği (feature engineering)</h1><p class="st-l">Müşteri düzeyinde model girdisi tablosu ve churn etiketi.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ds-feature">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Bir satır = bir örnek</h2>
+<p>Makine öğrenmesi modelleri genellikle <b>varlık başına bir satır</b> ister: her müşteri için özellikler (features) ve bir hedef (label). Bu tabloyu SQL ile üretmek, veri bilimcinin en sık yaptığı işlerden biridir.</p>
+<h2>Zaman sızıntısına dikkat</h2>
+<p>Özellikler <b>kesim tarihinden önceki</b> veriden, etiket <b>sonraki</b> veriden hesaplanmalı. Aksi halde model geleceği görür (data leakage).</p>
+<pre class="code">WITH params AS (SELECT '2024-07-01' AS kesim),
+gecmis AS (
+  SELECT o.* FROM orders o, params WHERE o.order_date < params.kesim AND o.status = 'delivered'
+),
+ozellik AS (
+  SELECT g.customer_id,
+         COUNT(DISTINCT g.order_id) AS siparis_sayisi,
+         ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)), 2) AS toplam_harcama,
+         ROUND(SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) / COUNT(DISTINCT g.order_id), 2) AS ort_sepet,
+         CAST(julianday((SELECT kesim FROM params)) - julianday(MAX(g.order_date)) AS INTEGER) AS son_siparisten_gun,
+         COUNT(DISTINCT p.category) AS kategori_cesidi,
+         ROUND(AVG(oi.discount > 0), 2) AS indirimli_oran
+  FROM gecmis g
+  JOIN order_items oi ON oi.order_id = g.order_id
+  JOIN products p ON p.product_id = oi.product_id
+  GROUP BY g.customer_id
+),
+etiket AS (
+  SELECT f.customer_id,
+         CASE WHEN EXISTS (SELECT 1 FROM orders o, params
+                           WHERE o.customer_id = f.customer_id AND o.order_date >= params.kesim
+                             AND o.order_date < date(params.kesim, '+6 months')) THEN 0 ELSE 1 END AS churn
+  FROM ozellik f
+)
+SELECT f.*, c.segment, 2024 - c.birth_year AS yas, e.churn
+FROM ozellik f
+JOIN customers c ON c.customer_id = f.customer_id
+JOIN etiket e ON e.customer_id = f.customer_id
+LIMIT 15;</pre>
+<div class="tip"><b>Kategorik değişkenler</b>One-hot encoding için CASE kullan: <code>CASE WHEN segment = 'Premium' THEN 1 ELSE 0 END AS seg_premium</code>.</div>
+<h2>Derinleş: veri sızıntısını yakalamak</h2>
+<p><b>Veri sızıntısı</b> (data leakage), modelin eğitim sırasında tahmin anında elinde olmayacak bir bilgiyi görmesidir. Sızıntılı bir model test skorunda parlar, canlıda çöker. En sık türleri:</p>
+<ul><li><b>Gelecek bilgisi:</b> Özellik, kesim tarihinden sonraki veriden hesaplanır (tüm zamanların son sipariş tarihi gibi).</li>
+<li><b>Hedef sızıntısı:</b> Özellik, hedefin kendisinden türer (churn etiketi için “hesap kapatma tarihi dolu mu”).</li>
+<li><b>Küme sızıntısı:</b> Ölçekleme ortalaması veya kategori frekansı test verisi de katılarak hesaplanır.</li></ul>
+<p>Anadolu Market'te kesim tarihi 2024-07-01 ve hedef “kesimden sonra (veri 2024 sonunda bitiyor) sipariş verdi mi?” olsun. “Son sipariş tarihi” özelliğini yanlışlıkla <b>tüm</b> siparişlerden hesaplarsak:</p>
+<pre class="code">WITH m AS (
+  SELECT customer_id,
+         MAX(order_date) AS son_tum,
+         MAX(CASE WHEN order_date &lt; '2024-07-01' THEN order_date END) AS son_gecmis,
+         MAX(CASE WHEN order_date >= '2024-07-01' THEN 1 ELSE 0 END) AS geri_geldi
+  FROM orders
+  GROUP BY customer_id
+)
+SELECT CASE WHEN son_tum >= '2024-07-01' THEN 'son sipariş kesimden sonra'
+            ELSE 'son sipariş kesimden önce' END AS sizan_ozellik,
+       COUNT(*) AS musteri, SUM(geri_geldi) AS geri_gelen
+FROM m
+WHERE son_gecmis IS NOT NULL
+GROUP BY CASE WHEN son_tum >= '2024-07-01' THEN 'son sipariş kesimden sonra'
+              ELSE 'son sipariş kesimden önce' END;</pre>
+<p>Sonuç kusursuz: 91 müşterinin 91'i geri gelmiş, 23 müşterinin hiçbiri gelmemiş. Bu kadar temiz bir ayrım neredeyse her zaman sızıntı alarmıdır; özellik etiketi “önceden biliyor”. Doğru (zaman noktasına uygun) özellik, yalnızca kesim öncesi son siparişten geçen gün sayısıdır; onunla geri gelme oranı 0–90 gün grubunda %93,8, 91–180 günde %75, 180 günden eskide %0 çıkar. Gerçekçi ve hâlâ çok bilgilendirici.</p>
+<div class="tip"><b>Zaman noktası doğruluğu (point-in-time)</b>Her özellik sorgusuna “bu değeri kesim anında bilebilir miydim?” sorusunu sor. Pratik kural: özellik CTE'lerinin hepsinde <code>WHERE tarih &lt; kesim</code>, etiket CTE'sinde <code>WHERE tarih &gt;= kesim</code> bulunsun ve kesim tek bir parametre CTE'sinden gelsin.</div>
+<h3>Özellik tablosu kontrol listesi</h3>
+<table><tr><th>Kontrol</th><th>SQL ile nasıl?</th></tr>
+<tr><td>Bir satır = bir varlık</td><td><code>COUNT(*) = COUNT(DISTINCT customer_id)</code></td></tr>
+<tr><td>Eksik değer politikası</td><td><code>COALESCE(siparis_sayisi, 0)</code>; ama “hiç veri yok” bilgisi için ayrıca bayrak sütunu</td></tr>
+<tr><td>Kategorik kodlama</td><td><code>CASE WHEN segment = 'Premium' THEN 1 ELSE 0 END</code></td></tr>
+<tr><td>Oran özellikleri</td><td>Payda sıfırsa <code>NULLIF</code>; tam sayı bölmesinden kaçın</td></tr>
+<tr><td>Sızıntı</td><td>Etiketle mükemmel ayrışan özellik var mı? Grupla ve etiket oranına bak</td></tr></table></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ds-feature">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ds-ornekleme/">← Örnekleme ve eğitim/test ayrımı</a><a href="../ds-zaman/">Zaman serisi özellikleri →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

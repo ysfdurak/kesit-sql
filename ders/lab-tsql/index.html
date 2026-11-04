@@ -1,0 +1,55 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>T-SQL laboratuvarı: SQL Server yazımıyla uygulama | Kesit SQL</title><meta name="description" content="Microsoft sınavlarında ve SQL Server işlerinde sık çıkan T-SQL yapıları: TOP WITH TIES, APPLY, IIF, EOMONTH, STRING_AGG, OFFSET/FETCH ve ROLLUP."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/lab-tsql/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="T-SQL laboratuvarı: SQL Server yazımıyla uygulama"><meta property="og:description" content="Microsoft sınavlarında ve SQL Server işlerinde sık çıkan T-SQL yapıları: TOP WITH TIES, APPLY, IIF, EOMONTH, STRING_AGG, OFFSET/FETCH ve ROLLUP."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/lab-tsql/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"T-SQL laboratuvarı: SQL Server yazımıyla uygulama","description":"Microsoft sınavlarında ve SQL Server işlerinde sık çıkan T-SQL yapıları: TOP WITH TIES, APPLY, IIF, EOMONTH, STRING_AGG, OFFSET/FETCH ve ROLLUP.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/lab-tsql/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Sertifika Hazırlık</span><h1>T-SQL laboratuvarı: SQL Server yazımıyla uygulama</h1><p class="st-l">Microsoft sınavlarında ve SQL Server işlerinde sık çıkan T-SQL yapıları: TOP WITH TIES, APPLY, IIF, EOMONTH, STRING_AGG, OFFSET/FETCH ve ROLLUP.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-lab-tsql">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<p>Microsoft'un veri sınavları (DP-300 yönetim ağırlıklıdır, ama sorgu soruları da içerir) ve SQL Server mülakatları T-SQL'e özgü yapıları sorar. Bu laboratuvardaki her şey <b>SQL Server (T-SQL)</b> yazımıyla çalışır.</p>
+<div class="note"><b>Sınav bilgisi</b>Soru sayısı, süre, geçme notu ve kayıt koşulları zaman zaman değişir. Kayıt olmadan önce sınav sağlayıcısının sayfasındaki güncel konu listesini ve bilgileri kontrol et. Buradaki denemeler resmi soruların kopyası değildir; aynı konu alanlarını ölçer.</div>
+<h2>1. TOP, WITH TIES ve sayfalama</h2>
+<pre class="code" data-base="tsql">SELECT TOP (3) WITH TIES name, price
+FROM products
+ORDER BY price DESC;</pre>
+<pre class="code" data-base="tsql">-- 3. sayfa, sayfa başına 5 ürün
+SELECT name, price
+FROM products
+ORDER BY name
+OFFSET 10 ROWS FETCH NEXT 5 ROWS ONLY;</pre>
+<h2>2. CROSS APPLY ve OUTER APPLY</h2>
+<p>APPLY, sol tablonun her satırı için sağdaki sorguyu çalıştırır. “Her müşterinin son 2 siparişi” gibi grup başına ilk N sorularının en doğal T-SQL çözümüdür. OUTER APPLY, sağ taraf boş dönse de sol satırı korur (LEFT JOIN gibi).</p>
+<pre class="code" data-base="tsql">SELECT c.customer_id, s.order_id, s.order_date
+FROM customers c
+CROSS APPLY (SELECT TOP (2) o.order_id, o.order_date
+             FROM orders o
+             WHERE o.customer_id = c.customer_id
+             ORDER BY o.order_date DESC, o.order_id DESC) s
+WHERE c.customer_id &lt;= 3;</pre>
+<h2>3. Koşul, tarih ve metin fonksiyonları</h2>
+<pre class="code" data-base="tsql">SELECT IIF(price &gt; 1000, 'Pahalı', 'Uygun') AS grup, COUNT(*) AS urun
+FROM products
+GROUP BY IIF(price &gt; 1000, 'Pahalı', 'Uygun');</pre>
+<pre class="code" data-base="tsql">SELECT EOMONTH('2024-02-10') AS ay_sonu,
+       DATEADD(month, 1, '2024-01-31') AS bir_ay_sonra,
+       DATEDIFF(day, '2024-01-01', '2024-03-01') AS gun,
+       DATEFROMPARTS(2024, 5, 1) AS tarih,
+       TRY_CAST('abc' AS INT) AS hatali_sayi;</pre>
+<table><tr><th>Yapı</th><th>Not</th></tr>
+<tr><td><code>DATEDIFF(year, '2024-12-31', '2025-01-01')</code></td><td>1 döner: yıl <b>sınırı</b> sayılır, geçen süre değil</td></tr>
+<tr><td><code>'A' + NULL</code></td><td>NULL; <code>CONCAT('A', NULL)</code> ise 'A'</td></tr>
+<tr><td><code>7 / 2</code></td><td>3 (tam sayı bölmesi); <code>7 / 2.0</code> = 3.5</td></tr>
+<tr><td><code>ISNULL(a, b)</code></td><td>İki değişken alır; sonuç tipi ilk değişkenin tipidir</td></tr>
+</table>
+<h2>4. Ara toplamlar ve metin birleştirme</h2>
+<pre class="code" data-base="tsql">SELECT IIF(GROUPING(category) = 1, 'TOPLAM', category) AS kategori, SUM(stock) AS stok
+FROM products
+GROUP BY ROLLUP(category);</pre>
+<pre class="code" data-base="tsql">SELECT category, STRING_AGG(name, ', ') WITHIN GROUP (ORDER BY name) AS urunler
+FROM products
+GROUP BY category;</pre>
+<div class="note"><b>Sonraki adım</b>Sınavlar sayfasındaki <b>T-SQL Kodlama Laboratuvarı</b> süre altında T-SQL görevleri verir. Yönetim konuları (yedekleme, yüksek erişilebilirlik, izleme) için DP-300 çoktan seçmeli denemesini kullan.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-lab-tsql">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../lab-z071/">← 1Z0-071 laboratuvarı: Oracle yazımıyla uygulama</a><a href="../lab-gda/">BigQuery laboratuvarı: Google veri analitiği yazımıyla uygulama →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

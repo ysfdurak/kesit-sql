@@ -1,0 +1,46 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ALTER TABLE, DROP ve TRUNCATE | Kesit SQL</title><meta name="description" content="Var olan tabloyu değiştirmek, kaldırmak ve şemayı sorgulamak."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/alter-drop/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="ALTER TABLE, DROP ve TRUNCATE"><meta property="og:description" content="Var olan tabloyu değiştirmek, kaldırmak ve şemayı sorgulamak."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/alter-drop/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"ALTER TABLE, DROP ve TRUNCATE","description":"Var olan tabloyu değiştirmek, kaldırmak ve şemayı sorgulamak.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/alter-drop/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veritabanı Tasarımı</span><h1>ALTER TABLE, DROP ve TRUNCATE</h1><p class="st-l">Var olan tabloyu değiştirmek, kaldırmak ve şemayı sorgulamak.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-alter-drop">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>ALTER TABLE</h2>
+<pre class="code" data-v="{&quot;tsql&quot;:&quot;ALTER TABLE customers ADD phone NVARCHAR(20);\nEXEC sp_rename 'customers.segment', 'customer_segment', 'COLUMN';\nSELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS\nWHERE TABLE_NAME = 'customers' ORDER BY ORDINAL_POSITION;&quot;,&quot;pg&quot;:&quot;ALTER TABLE customers ADD COLUMN phone VARCHAR(20);\nALTER TABLE customers RENAME COLUMN segment TO customer_segment;\nSELECT column_name FROM information_schema.columns\nWHERE table_name = 'customers' ORDER BY ordinal_position;&quot;,&quot;mysql&quot;:&quot;ALTER TABLE customers ADD COLUMN phone VARCHAR(20);\nALTER TABLE customers RENAME COLUMN segment TO customer_segment;\nSELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS\nWHERE TABLE_NAME = 'customers' ORDER BY ORDINAL_POSITION;&quot;,&quot;oracle&quot;:&quot;ALTER TABLE customers ADD (phone VARCHAR2(20));\nALTER TABLE customers RENAME COLUMN segment TO customer_segment;\nSELECT column_name FROM user_tab_columns\nWHERE table_name = 'CUSTOMERS' ORDER BY column_id;&quot;}" data-diff="oracle">ALTER TABLE customers ADD COLUMN phone TEXT;
+ALTER TABLE customers RENAME COLUMN segment TO customer_segment;
+SELECT name FROM pragma_table_info('customers');</pre>
+<p>Sütun adlarını listelemek için standart yol <code>INFORMATION_SCHEMA.COLUMNS</code> görünümüdür (SQL Server, PostgreSQL, MySQL). Oracle kendi sözlük görünümlerini (<code>USER_TAB_COLUMNS</code>), SQLite <code>pragma_table_info</code> kullanır. Oracle tablo adlarını büyük harfle saklar.</p>
+<p>Sütun tipini değiştirmek de yaygındır: SQL Server <code>ALTER TABLE t ALTER COLUMN c NVARCHAR(200)</code>, PostgreSQL <code>ALTER COLUMN c TYPE ...</code>, MySQL/Oracle <code>MODIFY</code>. SQLite'ın ALTER desteği sınırlıdır.</p>
+<h2>DROP, TRUNCATE, DELETE</h2>
+<table><tr><th>Komut</th><th>Ne yapar?</th></tr>
+<tr><td><code>DELETE FROM t</code></td><td>Satırları siler, yapı kalır, WHERE kullanılabilir, geri alınabilir.</td></tr>
+<tr><td><code>TRUNCATE TABLE t</code></td><td>Tüm satırları hızla siler, yapı kalır (SQLite'ta yok).</td></tr>
+<tr><td><code>DROP TABLE t</code></td><td>Tabloyu yapısıyla birlikte kaldırır.</td></tr>
+</table>
+<pre class="code" data-v="{&quot;tsql&quot;:&quot;DROP TABLE IF EXISTS raw_signups;\nSELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES\nWHERE TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_NAME;&quot;,&quot;pg&quot;:&quot;DROP TABLE IF EXISTS raw_signups;\nSELECT table_name FROM information_schema.tables\nWHERE table_type = 'BASE TABLE' ORDER BY table_name;&quot;,&quot;mysql&quot;:&quot;DROP TABLE IF EXISTS raw_signups;\nSELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES\nWHERE TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_NAME;&quot;,&quot;oracle&quot;:&quot;DROP TABLE raw_signups;\nSELECT table_name FROM user_tables ORDER BY table_name;&quot;}" data-diff="oracle">DROP TABLE IF EXISTS raw_signups;
+SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name;</pre>
+<div class="warn"><b>Üretimde şema değişikliği</b>Gerçek sistemlerde şema değişiklikleri <i>migration</i> araçlarıyla (Flyway, Liquibase, Alembic, dbt) sürümlenir ve geri alınabilir şekilde yapılır.</div>
+<h2>Derinleş: canlı tabloda güvenli şema değişikliği</h2>
+<p>Geliştirme ortamında <code>ALTER TABLE</code> bir satırdır; üretimde ise uygulama kodu, raporlar ve veri hatları o tabloya aynı anda bağlıdır. Bu yüzden şema değişiklikleri <b>geriye uyumlu</b> küçük adımlarla yapılır. Yaygın yönteme <b>genişlet–daralt</b> (expand–contract) denir:</p>
+<ol><li><b>Genişlet:</b> Yeni sütunu ekle (eski kod onu görmezden gelir, bir şey bozulmaz).</li>
+<li><b>Doldur:</b> Mevcut satırlar için değeri hesapla (backfill); büyük tablolarda parça parça.</li>
+<li><b>Geçir:</b> Uygulama ve raporları yeni sütuna geçir.</li>
+<li><b>Daralt:</b> Artık kullanılmayan eski sütunu kaldır.</li></ol>
+<pre class="code">ALTER TABLE customers ADD COLUMN is_vip INTEGER DEFAULT 0 NOT NULL;
+UPDATE customers SET is_vip = 1 WHERE segment = 'Premium';
+SELECT is_vip, COUNT(*) AS musteri FROM customers GROUP BY is_vip ORDER BY is_vip;</pre>
+<p>Varsayılanlı ve NOT NULL bir sütun eklemek mevcut satırları varsayılanla doldurur (burada 150 müşterinin 117'si 0, Premium olan 33'ü güncellemeyle 1). Bazı eski sürümlerde bu işlem tüm tabloyu yeniden yazar ve uzun süre kilit tutar; büyük tablolarda önce NULL'a izin veren sütun ekleyip parça parça doldurmak daha güvenlidir.</p>
+<h3>DELETE, TRUNCATE, DROP: ayrıntılar</h3>
+<table><tr><th></th><th>DELETE</th><th>TRUNCATE</th><th>DROP</th></tr>
+<tr><td>WHERE</td><td>Var</td><td>Yok</td><td>Yok</td></tr>
+<tr><td>Yapı</td><td>Kalır</td><td>Kalır</td><td>Kalkar (indeks, izinler dahil)</td></tr>
+<tr><td>Hız</td><td>Satır satır, günlüğe yazar</td><td>Çok hızlı (sayfaları bırakır)</td><td>Çok hızlı</td></tr>
+<tr><td>IDENTITY / sıra</td><td>Devam eder</td><td>Başa döner (SQL Server, MySQL)</td><td>—</td></tr>
+<tr><td>Trigger</td><td>Tetiklenir</td><td>Tetiklenmez</td><td>—</td></tr>
+<tr><td>Geri alma</td><td>İşlem içinde mümkün</td><td>SQL Server ve PostgreSQL'de işlem içinde mümkün; MySQL ve Oracle'da hayır</td><td>Oracle'da Flashback/geri dönüşüm kutusu dışında hayır</td></tr></table>
+<div class="warn"><b>Bağımlılıkları unutma</b>Sütun veya tablo kaldırmadan önce ona bakan görünümleri, yabancı anahtarları, saklı yordamları ve rapor sorgularını bul. SQL Server'da <code>sys.sql_expression_dependencies</code>, PostgreSQL'de <code>DROP ... RESTRICT</code> (varsayılan) bağımlı nesne varsa işlemi reddeder; <code>CASCADE</code> ise bağımlıları da sessizce siler.</div>
+<p><b>Kontrol listesi:</b> Değişiklik bir migration dosyasında mı? Geri alma (down) adımı yazıldı mı? Önce test ortamında, üretim boyutunda veriyle denendi mi? Kilit süresi ölçüldü mü?</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-alter-drop">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../upsert/">← UPSERT ve MERGE: varsa güncelle, yoksa ekle</a><a href="../kisitlar/">Kısıtlar (constraints) ayrıntılı: NOT NULL, UNIQUE, CHECK, DEFAULT, FOREIGN KEY eylemleri →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

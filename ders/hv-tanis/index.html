@@ -1,0 +1,38 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kanat Havayolları: veri setini tanı, seç ve filtrele | Kesit SQL</title><meta name="description" content="Yeni bir sektörde aynı temel araçlar: SELECT, WHERE, IN, IS NULL, ORDER BY ve ilk N satır."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/hv-tanis/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Kanat Havayolları: veri setini tanı, seç ve filtrele"><meta property="og:description" content="Yeni bir sektörde aynı temel araçlar: SELECT, WHERE, IN, IS NULL, ORDER BY ve ilk N satır."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/hv-tanis/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Kanat Havayolları: veri setini tanı, seç ve filtrele","description":"Yeni bir sektörde aynı temel araçlar: SELECT, WHERE, IN, IS NULL, ORDER BY ve ilk N satır.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Temel","url":"https://ysfdurak.github.io/kesit-sql/ders/hv-tanis/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Temel · Kanat Havayolları</span><h1>Kanat Havayolları: veri setini tanı, seç ve filtrele</h1><p class="st-l">Yeni bir sektörde aynı temel araçlar: SELECT, WHERE, IN, IS NULL, ORDER BY ve ilk N satır.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-hv-tanis">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Neden ikinci bir veri seti?</h2>
+<p>Bir dili yalnızca tek bir metinle öğrenen, o metnin dışında zorlanır. SQL'de de aynı şey geçerli: Anadolu Market'te öğrendiğin her şeyi şimdi bambaşka bir işte uygulayacaksın. <b>Kanat Havayolları</b> hayali bir havayolu şirketi; Eylül–Aralık 2024 arasında 19 havalimanına yaklaşık 3.200 uçuş yaptı.</p>
+
+<table>
+<tr><th>Tablo</th><th>Ne tutar?</th><th>Bağlantı</th></tr>
+<tr><td><code>hv_airports</code></td><td>Havalimanları: kod, şehir, ülke, UTC farkı, koordinat</td><td></td></tr>
+<tr><td><code>hv_aircraft</code></td><td>Filo: kuyruk tescili, tip, koltuk sayısı</td><td></td></tr>
+<tr><td><code>hv_routes</code></td><td>Rotalar: kalkış ve varış havalimanı, mesafe, planlanan süre</td><td>origin, dest → hv_airports</td></tr>
+<tr><td><code>hv_flights</code></td><td>Uçuşlar: planlanan ve gerçek kalkış/varış, durum, yolcu sayısı</td><td>route_id → hv_routes, tail_no → hv_aircraft</td></tr>
+<tr><td><code>hv_delays</code></td><td>Rötar nedenleri ve dakikaları</td><td>flight_id → hv_flights</td></tr>
+<tr><td><code>hv_passengers</code></td><td>Kanat Mil üyeleri</td><td></td></tr>
+<tr><td><code>hv_bookings</code></td><td>Üyelerin rezervasyonları</td><td>passenger_id → hv_passengers, flight_id → hv_flights</td></tr>
+</table>
+<div class="note"><b>Zaman bilgisi</b>Tüm zamanlar Türkiye saatiyle (UTC+3) ve <code>YYYY-AA-GG SS:DD:ss</code> biçiminde tutulur. Yurt dışı havalimanlarının yerel saati için <code>hv_airports.tz_offset</code> kullanılır.</div>
+<h2>İlk sorgular</h2>
+<pre class="code">SELECT airport_code, city, country
+FROM hv_airports
+WHERE country = 'Türkiye'
+ORDER BY city;</pre>
+<p>İptal edilen uçuşlarda gerçek kalkış ve varış zamanı yoktur, yani NULL'dır:</p>
+<pre class="code">SELECT flight_id, flight_no, sched_dep, status
+FROM hv_flights
+WHERE actual_dep IS NULL
+ORDER BY sched_dep
+LIMIT 5;</pre>
+<div class="tip"><b>Önce veriye bak</b>Bir tabloyu ilk kez sorgularken <code>SELECT * ... LIMIT 10</code> ile birkaç satırı incele ve <b>Veri setleri</b> sayfasındaki ilişki şemasına göz at. Hangi sütunun hangi tabloya bağlandığını bilmek sonraki derslerin yarısıdır.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-hv-tanis">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../proje-temel/">← Bitirme projesi (Temeller): Anadolu Market için ilk raporun</a><a href="../hv-ozet/">Uçuşları özetlemek: COUNT, SUM, AVG, GROUP BY ve HAVING →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

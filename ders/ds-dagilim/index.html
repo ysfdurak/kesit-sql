@@ -1,0 +1,82 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dağılımlar ve histogram (binning) | Kesit SQL</title><meta name="description" content="Sabit genişlikli kutular, logaritmik kutular ve yüzdelikler."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ds-dagilim/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Dağılımlar ve histogram (binning)"><meta property="og:description" content="Sabit genişlikli kutular, logaritmik kutular ve yüzdelikler."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ds-dagilim/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Dağılımlar ve histogram (binning)","description":"Sabit genişlikli kutular, logaritmik kutular ve yüzdelikler.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ds-dagilim/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veri Bilimi</span><h1>Dağılımlar ve histogram (binning)</h1><p class="st-l">Sabit genişlikli kutular, logaritmik kutular ve yüzdelikler.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ds-dagilim">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Sabit genişlikli histogram</h2>
+<p>Değeri kutu genişliğine bölüp aşağı yuvarlarsın:</p>
+<pre class="code">WITH sepet AS (
+  SELECT o.order_id, SUM(oi.quantity * oi.unit_price * (1 - oi.discount)) AS tutar
+  FROM orders o JOIN order_items oi ON oi.order_id = o.order_id
+  GROUP BY o.order_id
+)
+SELECT FLOOR(tutar / 500) * 500 AS kutu_alt,
+       COUNT(*) AS siparis
+FROM sepet
+GROUP BY kutu_alt
+ORDER BY kutu_alt;</pre>
+<h2>Çarpık dağılımlar için log ölçek</h2>
+<pre class="code">SELECT FLOOR(log10(price)) AS basamak, COUNT(*) AS urun,
+       MIN(price) AS min, MAX(price) AS max
+FROM products
+GROUP BY basamak ORDER BY basamak;</pre>
+<h2>Yüzdelikler (quantile)</h2>
+<p>NTILE(100) ile yüzdelik dilimler çıkarılabilir; ya da sıralayıp belirli sıradaki değeri seçersin:</p>
+<pre class="code">WITH s AS (
+  SELECT salary, ROW_NUMBER() OVER (ORDER BY salary) AS rn, COUNT(*) OVER () AS n
+  FROM employees
+)
+SELECT MAX(CASE WHEN rn = FLOOR(0.25 * n) + 1 THEN salary END) AS q1_yaklasik,
+       MAX(CASE WHEN rn = FLOOR(0.75 * n) + 1 THEN salary END) AS q3_yaklasik
+FROM s;</pre>
+<h2>Derinleş: çarpıklık, yüzdelikler ve aykırı değerler</h2>
+<p>Bir dağılımı tek bir ortalamayla özetlemek çoğu zaman yanıltır. Gelir, sepet tutarı, bekleme süresi gibi iş verileri genellikle <b>sağa çarpıktır</b>: değerlerin çoğu küçüktür, az sayıda çok büyük değer ortalamayı yukarı çeker. Bu yüzden analist önce dağılımın şekline bakar, sonra hangi özeti kullanacağına karar verir.</p>
+<p>Lezzet Kurye'de sepet tutarını (sipariş satırlarının toplamı) beş sayıyla özetleyelim:</p>
+<pre class="code">WITH sepet AS (
+  SELECT order_id, SUM(qty * unit_price) AS tutar
+  FROM lk_order_lines
+  GROUP BY order_id
+),
+s AS (
+  SELECT tutar,
+         ROW_NUMBER() OVER (ORDER BY tutar) AS rn,
+         COUNT(*) OVER () AS n
+  FROM sepet
+)
+SELECT ROUND(AVG(tutar), 2) AS ortalama,
+       MAX(CASE WHEN rn = FLOOR(0.25 * n) + 1 THEN tutar END) AS q1,
+       MAX(CASE WHEN rn = FLOOR(0.50 * n) + 1 THEN tutar END) AS medyan,
+       MAX(CASE WHEN rn = FLOOR(0.75 * n) + 1 THEN tutar END) AS q3,
+       MAX(CASE WHEN rn = FLOOR(0.95 * n) + 1 THEN tutar END) AS p95,
+       MAX(tutar) AS en_buyuk
+FROM s;</pre>
+<p>Sonuç: ortalama 510,08 TL, medyan 430 TL, en büyük sepet 2.655 TL. Ortalamanın medyandan belirgin biçimde büyük olması sağa çarpıklığın işaretidir. “Tipik müşteri” için medyanı, toplam ciro planlaması için ortalamayı kullanırsın.</p>
+<h3>IQR ile aykırı değer</h3>
+<p>Çeyrekler arası açıklık <code>IQR = Q3 − Q1</code>. Yaygın kural: <code>Q3 + 1,5 × IQR</code> üstü ve <code>Q1 − 1,5 × IQR</code> altı “aykırı aday”dır. Burada Q1 = 270, Q3 = 665, üst sınır 1.257,5 TL; 7.178 siparişin 232'si (%3,2) bu sınırın üstünde.</p>
+<pre class="code">WITH sepet AS (
+  SELECT order_id, SUM(qty * unit_price) AS tutar FROM lk_order_lines GROUP BY order_id
+),
+r AS (
+  SELECT tutar, ROW_NUMBER() OVER (ORDER BY tutar) AS rn, COUNT(*) OVER () AS n FROM sepet
+),
+q AS (
+  SELECT MAX(CASE WHEN rn = FLOOR(0.25 * n) + 1 THEN tutar END) AS q1,
+         MAX(CASE WHEN rn = FLOOR(0.75 * n) + 1 THEN tutar END) AS q3
+  FROM r
+)
+SELECT q1, q3, q3 + 1.5 * (q3 - q1) AS ust_sinir,
+       (SELECT COUNT(*) FROM sepet WHERE tutar > q.q3 + 1.5 * (q.q3 - q.q1)) AS aykiri
+FROM q;</pre>
+<div class="note"><b>Aykırı değer hata değildir</b>Kalabalık bir ofisin toplu siparişi gerçek bir siparişse veriden atılmaz; yalnızca ortalama yerine medyan kullanılır ya da ayrı bir segment olarak incelenir. Silme kararı, değerin <i>yanlış</i> olduğu (ör. eksi tutar, test kaydı) kanıtlanınca verilir.</div>
+<table><tr><th>Durum</th><th>Tercih edilecek özet</th></tr>
+<tr><td>Simetrik dağılım (ör. boy, sınav puanı)</td><td>Ortalama ve standart sapma</td></tr>
+<tr><td>Sağa çarpık (sepet, gelir, süre)</td><td>Medyan, çeyrekler, p90/p95</td></tr>
+<tr><td>Çok geniş aralık (fiyatlar 10 TL – 50.000 TL)</td><td>Log ölçekte histogram</td></tr>
+<tr><td>SLA ve performans hedefleri</td><td>Yüzdelikler (p95 teslim süresi gibi)</td></tr></table>
+<p><b>Sık hata:</b> histogram kutularını çok dar seçmek gürültü, çok geniş seçmek bilgi kaybı üretir. Kutu sayısını veriye bakarak değiştir; uç değerler için “1.500 ve üzeri” gibi açık uçlu son kutu kullan.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ds-dagilim">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ds-olasilik/">← SQL ile olasılık ve koşullu olasılık</a><a href="../ds-outlier/">Aykırı değer tespiti: z-skoru ve IQR →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

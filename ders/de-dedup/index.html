@@ -1,0 +1,56 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tekilleştirme (deduplication) | Kesit SQL</title><meta name="description" content="Tam ve mantıksal tekrarları ROW_NUMBER ile temizlemek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/de-dedup/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Tekilleştirme (deduplication)"><meta property="og:description" content="Tam ve mantıksal tekrarları ROW_NUMBER ile temizlemek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/de-dedup/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Tekilleştirme (deduplication)","description":"Tam ve mantıksal tekrarları ROW_NUMBER ile temizlemek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/de-dedup/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veri Mühendisliği</span><h1>Tekilleştirme (deduplication)</h1><p class="st-l">Tam ve mantıksal tekrarları ROW_NUMBER ile temizlemek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-de-dedup">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>İki tür tekrar</h2>
+<ul><li><b>Tam tekrar</b>: Tüm sütunlar aynı. <code>SELECT DISTINCT</code> yeterli.</li>
+<li><b>Mantıksal tekrar</b>: Aynı varlık, farklı yazımlar veya sürümler (ör. aynı e-posta, biri büyük harfli). Bir anahtar tanımlayıp her anahtar için <b>bir</b> satır seçmek gerekir.</li></ul>
+<pre class="code">WITH s AS (
+  SELECT *,
+         LOWER(TRIM(email)) AS email_norm,
+         ROW_NUMBER() OVER (PARTITION BY LOWER(TRIM(email)) ORDER BY id) AS rn
+  FROM raw_signups
+)
+SELECT id, email_norm, TRIM(full_name) AS ad, signup_date
+FROM s WHERE rn = 1;</pre>
+<p>“Hangi kayıt kalsın?” sorusu iş kuralıdır: en yeni, en eksiksiz, ilk gelen… ORDER BY ifadesi bu kuralı kodlar.</p>
+<h2>Tablodan silerek tekilleştirme</h2>
+<pre class="code">DELETE FROM raw_signups
+WHERE rowid NOT IN (
+  SELECT MIN(rowid) FROM raw_signups GROUP BY id, full_name, email, city, signup_date
+);
+SELECT COUNT(*) FROM raw_signups;</pre>
+<p>PostgreSQL'de <code>ctid</code>, diğerlerinde CTE + ROW_NUMBER ile benzer yapılır.</p>
+<h2>Derinleş: “hangi kayıt kalır?” kuralı</h2>
+<p>Tekilleştirmenin teknik kısmı kolaydır: <code>ROW_NUMBER() OVER (PARTITION BY anahtar ORDER BY kural)</code> ve <code>rn = 1</code>. Zor kısım iki iş kararıdır: <b>anahtar</b> (iki kayıt ne zaman aynı varlıktır?) ve <b>hayatta kalma kuralı</b> (survivorship: hangisi kalır?).</p>
+<h3>Anahtar seçimi</h3>
+<p>Ad soyad iyi bir anahtar değildir: Lezzet Kurye'de 185 ad–şehir çifti birden fazla müşteri kaydında geçiyor ve bunların çoğu gerçekten farklı kişiler (yaygın adlar). E-posta daha güçlüdür ama onun da tuzağı var: <code>raw_signups</code> tablosunda <code>can.kaya@gmail.com</code> iki farklı <code>id</code> (8 ve 33) altında görünüyor. E-postayı anahtar yaparsan bu iki kaydı birleştirirsin; doğru olup olmadığını kaynağa sormak gerekir.</p>
+<h3>Hayatta kalma kuralı</h3>
+<table><tr><th>Kural</th><th>ORDER BY</th><th>Ne zaman?</th></tr>
+<tr><td>İlk gelen kalır</td><td><code>created_at, id</code></td><td>Müşteri kimliğinin ilk kaydı esas</td></tr>
+<tr><td>En yeni kalır</td><td><code>updated_at DESC, id DESC</code></td><td>Adres, telefon gibi güncel bilgi önemli</td></tr>
+<tr><td>En eksiksiz kalır</td><td><code>CASE WHEN city IS NULL THEN 1 ELSE 0 END, id</code></td><td>Kaynaklar farklı alanları dolduruyor</td></tr>
+<tr><td>Güvenilir kaynak kalır</td><td><code>CASE source WHEN 'crm' THEN 1 ELSE 2 END</code></td><td>Birden çok sistem birleşiyor</td></tr></table>
+<p>ORDER BY'ın sonunda her zaman benzersiz bir sütun (eşitlik bozucu) bulunsun; yoksa aynı sorgu iki çalıştırmada farklı satırı seçebilir.</p>
+<h3>RANK tuzağı</h3>
+<pre class="code">WITH s AS (
+  SELECT LOWER(TRIM(email)) AS e,
+         ROW_NUMBER() OVER (PARTITION BY LOWER(TRIM(email)) ORDER BY id) AS rn,
+         RANK()       OVER (PARTITION BY LOWER(TRIM(email)) ORDER BY id) AS rk
+  FROM raw_signups
+)
+SELECT SUM(CASE WHEN rn = 1 THEN 1 ELSE 0 END) AS row_number_ile,
+       SUM(CASE WHEN rk = 1 THEN 1 ELSE 0 END) AS rank_ile,
+       COUNT(DISTINCT e) AS tekil_email
+FROM s;</pre>
+<p>39 tekil e-posta var; ROW_NUMBER 39 satır bırakır, RANK ise 51. Tam tekrar satırlar aynı <code>id</code>'ye sahip olduğu için RANK hepsine 1 verir ve tekrarlar yerinde kalır.</p>
+<h3>Birleştirmenin bedeli</h3>
+<p>Kanat Havayolları'nda 33 e-posta birden fazla yolcu kaydında geçiyor. En eski kaydı (en küçük <code>joined_date</code>) bırakırsak 34 yolcu kaydı birleşir ve bunlara bağlı 172 rezervasyonun <code>passenger_id</code>'si kalan kayda taşınmalıdır. Tekilleştirme yalnızca bir tabloyu değil, ona bakan tüm tabloları etkiler.</p>
+<div class="note"><b>SQL türlerine göre kısayollar</b>PostgreSQL: <code>SELECT DISTINCT ON (email) ... ORDER BY email, joined_date</code>. BigQuery ve Snowflake: <code>QUALIFY ROW_NUMBER() OVER (...) = 1</code>. Diğerlerinde CTE + ROW_NUMBER kalıbı her yerde çalışır.</div></article>
+<div class="st-c"><a class="st-p" href="../../#ders-de-dedup">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../sql-test/">← SQL kodunu test etmek: veri testleri, birim testleri ve CI</a><a href="../de-incremental/">Artımlı yükleme (incremental load) →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

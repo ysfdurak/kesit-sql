@@ -1,0 +1,54 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Büyük sorgu 2: olaylardan oturum ve oturum hunisi | Kesit SQL</title><meta name="description" content="Ham tıklama verisini 30 dakikalık boşluk kuralıyla oturumlara bölmek, oturum düzeyinde huni ve cihaz kırılımı."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/bs-oturum/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Büyük sorgu 2: olaylardan oturum ve oturum hunisi"><meta property="og:description" content="Ham tıklama verisini 30 dakikalık boşluk kuralıyla oturumlara bölmek, oturum düzeyinde huni ve cihaz kırılımı."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/bs-oturum/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Büyük sorgu 2: olaylardan oturum ve oturum hunisi","description":"Ham tıklama verisini 30 dakikalık boşluk kuralıyla oturumlara bölmek, oturum düzeyinde huni ve cihaz kırılımı.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/bs-oturum/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Büyük Sorgular</span><h1>Büyük sorgu 2: olaylardan oturum ve oturum hunisi</h1><p class="st-l">Ham tıklama verisini 30 dakikalık boşluk kuralıyla oturumlara bölmek, oturum düzeyinde huni ve cihaz kırılımı.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-bs-oturum">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Soru</h2>
+<p>Ürün ekibi “kullanıcı başına” değil “ziyaret başına” dönüşümü görmek istiyor. Ama <code>web_events</code> tablosunda oturum numarası yok; yalnızca kullanıcı ve zaman var. Sektörün yaygın tanımı: aynı kullanıcının iki olayı arasında <b>30 dakikadan uzun</b> boşluk varsa yeni oturum başlar.</p>
+<h2>Sorgu</h2>
+<div class="note"><b>Büyük sorgu nasıl okunur?</b>Yukarıdan aşağı, her CTE'yi ayrı bir tablo gibi düşün. Bir adımı anlamadıysan o CTE'nin adını en sondaki SELECT'e yazıp yalnızca onu çalıştır: <code>SELECT * FROM adim_adi LIMIT 20;</code></div>
+<pre class="code">WITH olay AS (           -- 1) Her olayın bir öncekinden sonra geçen süre (saniye)
+  SELECT user_id, event_id, event_time, event_type, device,
+         ROUND((julianday(event_time) - julianday(LAG(event_time) OVER (PARTITION BY user_id ORDER BY event_time, event_id))) * 86400) AS ara_sn
+  FROM web_events
+),
+isaret AS (              -- 2) 30 dakikadan uzun ara (ya da ilk olay) yeni oturum başlatır
+  SELECT *, CASE WHEN ara_sn IS NULL OR ara_sn > 1800 THEN 1 ELSE 0 END AS yeni
+  FROM olay
+),
+oturum AS (              -- 3) Kümülatif toplam = kullanıcı içinde oturum numarası
+  SELECT *, SUM(yeni) OVER (PARTITION BY user_id ORDER BY event_time, event_id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS oturum_no
+  FROM isaret
+),
+ozet AS (                -- 4) Oturum düzeyi: cihaz, olay sayısı, huni adımları
+  SELECT user_id, oturum_no,
+         MIN(device) AS device,
+         COUNT(*) AS olay,
+         MAX(CASE WHEN event_type = 'product_view' THEN 1 ELSE 0 END) AS gordu,
+         MAX(CASE WHEN event_type = 'add_to_cart' THEN 1 ELSE 0 END) AS sepet,
+         MAX(CASE WHEN event_type = 'purchase' THEN 1 ELSE 0 END) AS aldi
+  FROM oturum
+  GROUP BY user_id, oturum_no
+)
+SELECT device,                -- 5) Cihaz bazında oturum hunisi
+       COUNT(*) AS oturum,
+       ROUND(AVG(olay), 1) AS ort_olay,
+       ROUND(100.0 * SUM(gordu) / COUNT(*), 1) AS urun_goren,
+       ROUND(100.0 * SUM(sepet) / COUNT(*), 1) AS sepete_ekleyen,
+       ROUND(100.0 * SUM(aldi) / COUNT(*), 1) AS satin_alan
+FROM ozet
+GROUP BY device
+ORDER BY oturum DESC;</pre>
+<h2>Adım adım</h2>
+<table><tr><th>Adım</th><th>Ne yapar?</th><th>Çıktının bir satırı</th></tr><tr><td><code>olay</code></td><td>Kullanıcının bir önceki olayından bu yana geçen saniye (LAG)</td><td>kullanıcı 1001, 412 sn</td></tr><tr><td><code>isaret</code></td><td>İlk olay ya da 1800 saniyeden (30 dk) uzun boşluk = 1, değilse 0</td><td>1, 0, 0, 1, 0</td></tr><tr><td><code>oturum</code></td><td>İşaretlerin kümülatif toplamı oturum numarasını verir</td><td>1, 1, 1, 2, 2</td></tr><tr><td><code>ozet</code></td><td>Oturum düzeyine indirger; huni adımlarını MAX(CASE) ile bayrak yapar</td><td>1001, 2, mobile, 5 olay, 1, 1, 0</td></tr><tr><td><code>son SELECT</code></td><td>Cihaz bazında oturum sayısı ve adım oranları</td><td>mobile, 412, 2.6, …</td></tr></table>
+<h2>Kalıp: “işaretle ve kümülatif topla”</h2>
+<p>Bu kalıp yalnızca oturum için değil, her türlü “bir koşul gerçekleşince yeni grup başlar” sorusunda kullanılır: fiyat değişimleri, vardiya başlangıçları, aynı uçağın yerde kaldığı aralıklar. Boşlukları ve adaları ROW_NUMBER farkıyla bulma yöntemine göre avantajı, eşik (30 dakika) koyabilmesidir.</p>
+<div class="note"><b>Neden saniye?</b>Olay zamanları saniyeli. Dakika farkını SQL türleri farklı hesaplar: SQL Server <code>DATEDIFF(minute)</code> geçen dakika sınırlarını sayar, diğerleri kesirli süreyi. Eşiğe yakın aralıklarda bu bir dakikalık fark oturum sayısını değiştirir; saniyeyle karşılaştırmak her SQL türünde aynı sonucu verir.</div>
+<div class="warn"><b>Eşit zamanlı olaylar</b>Aynı saniyede iki olay olabilir. Pencere sıralamasına benzersiz bir sütun (event_id) eklemezsen oturum numaraları çalıştırmadan çalıştırmaya değişebilir.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-bs-oturum">Alıştırmalara geç (4)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../bs-kohort/">← Büyük sorgu 1: aylık kohort elde tutma matrisi</a><a href="../bs-rfm/">Büyük sorgu 3: RFM puanlama ve müşteri segmentleri →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

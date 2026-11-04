@@ -1,0 +1,63 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>1Z0-071 laboratuvarı: Oracle yazımıyla uygulama | Kesit SQL</title><meta name="description" content="Oracle sınavında en çok puan kaybettiren konuları Oracle sözdizimiyle çalıştırarak pekiştir: NVL ailesi, dönüşümler, ROWNUM, FETCH, küme işlemleri ve…"><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/lab-z071/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="1Z0-071 laboratuvarı: Oracle yazımıyla uygulama"><meta property="og:description" content="Oracle sınavında en çok puan kaybettiren konuları Oracle sözdizimiyle çalıştırarak pekiştir: NVL ailesi, dönüşümler, ROWNUM, FETCH, küme işlemleri ve…"><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/lab-z071/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"1Z0-071 laboratuvarı: Oracle yazımıyla uygulama","description":"Oracle sınavında en çok puan kaybettiren konuları Oracle sözdizimiyle çalıştırarak pekiştir: NVL ailesi, dönüşümler, ROWNUM, FETCH, küme işlemleri ve…","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/lab-z071/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Sertifika Hazırlık</span><h1>1Z0-071 laboratuvarı: Oracle yazımıyla uygulama</h1><p class="st-l">Oracle sınavında en çok puan kaybettiren konuları Oracle sözdizimiyle çalıştırarak pekiştir: NVL ailesi, dönüşümler, ROWNUM, FETCH, küme işlemleri ve ANY/ALL.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-lab-z071">Uygulamada aç, 10 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<p>1Z0-071 sınavı soruları çoğunlukla <b>“bu ifade ne döndürür?”</b> ya da <b>“hangisi hata verir?”</b> biçimindedir. Bu yüzden konuyu okumak yetmez; ifadeleri çalıştırıp sonucu görmek gerekir. Bu laboratuvardaki tüm kutular ve alıştırmalar <b>Oracle</b> yazımıyla çalışır.</p>
+<div class="note"><b>Sınav bilgisi</b>Soru sayısı, süre, geçme notu ve kayıt koşulları zaman zaman değişir. Kayıt olmadan önce sınav sağlayıcısının sayfasındaki güncel konu listesini ve bilgileri kontrol et. Buradaki denemeler resmi soruların kopyası değildir; aynı konu alanlarını ölçer.</div>
+<h2>1. NULL fonksiyonları ve tip uyumu</h2>
+<p>NVL'nin iki bağımsız değişkeni aynı tipte olmalıdır. Sayı sütununa metin yedeği vermek için önce TO_CHAR ile çevir.</p>
+<pre class="code" data-base="oracle">SELECT first_name,
+       NVL(TO_CHAR(dept_id), 'Atanmadı') AS departman,
+       NVL2(manager_id, 'Yöneticisi var', 'En üst') AS konum,
+       NULLIF(title, 'Genel Müdür') AS unvan
+FROM employees
+WHERE ROWNUM &lt;= 5;</pre>
+<table><tr><th>Fonksiyon</th><th>Ne yapar?</th><th>Tuzak</th></tr>
+<tr><td>NVL(a, b)</td><td>a NULL ise b</td><td>a ve b aynı tipte olmalı</td></tr>
+<tr><td>NVL2(a, b, c)</td><td>a dolu ise b, NULL ise c</td><td>Sıra: <i>dolu</i> önce gelir</td></tr>
+<tr><td>NULLIF(a, b)</td><td>a = b ise NULL, değilse a</td><td>İlk değişken NULL sabiti olamaz</td></tr>
+<tr><td>COALESCE(a, b, …)</td><td>İlk NULL olmayan</td><td>Tüm değerler uyumlu tipte olmalı</td></tr>
+<tr><td>DECODE(x, a, r1, …, varsayılan)</td><td>Eşitliğe göre seçim</td><td>DECODE, NULL = NULL eşleşmesini <b>doğru</b> sayar</td></tr>
+</table>
+<h2>2. ROWNUM ve FETCH</h2>
+<p>ROWNUM, satıra <b>ORDER BY'dan önce</b> verilir. “En yüksek 3 maaş” için önce alt sorguda sırala, dışta ROWNUM uygula. 12c ve sonrasında FETCH FIRST daha açıktır.</p>
+<pre class="code" data-base="oracle">-- Yanlış: rastgele 3 satırı alır, sonra sıralar
+SELECT first_name, salary FROM employees WHERE ROWNUM &lt;= 3 ORDER BY salary DESC;</pre>
+<pre class="code" data-base="oracle">-- Doğru (klasik)
+SELECT * FROM (SELECT first_name, salary FROM employees ORDER BY salary DESC)
+WHERE ROWNUM &lt;= 3;</pre>
+<pre class="code" data-base="oracle">-- Doğru (12c+): 4.–6. sıradakiler
+SELECT name, price FROM products
+ORDER BY price DESC, product_id
+OFFSET 3 ROWS FETCH NEXT 3 ROWS ONLY;</pre>
+<div class="tip"><b>Sınav tuzağı</b><code>WHERE ROWNUM = 2</code> hiçbir satır döndürmez: ilk satır 1 numarayı alamadığı için elenir, sonraki satır yine 1 olur ve o da elenir.</div>
+<h2>3. Dönüşüm ve tarih fonksiyonları</h2>
+<pre class="code" data-base="oracle">SELECT TO_CHAR(DATE '2024-03-05', 'YYYY-MM') AS ay,
+       ADD_MONTHS(DATE '2024-01-31', 1) AS bir_ay_sonra,
+       LAST_DAY(DATE '2024-02-10') AS ay_sonu,
+       MONTHS_BETWEEN(DATE '2024-03-31', DATE '2024-01-31') AS ay_farki,
+       TRUNC(DATE '2024-05-17', 'MM') AS ay_basi
+FROM dual;</pre>
+<h2>4. Küme işlemleri, ANY ve ALL</h2>
+<pre class="code" data-base="oracle">SELECT customer_id FROM customers
+MINUS
+SELECT customer_id FROM orders;</pre>
+<p><code>&gt; ALL (alt sorgu)</code> en büyükten büyük, <code>&gt; ANY</code> en küçükten büyük demektir. Alt sorgu boşsa <code>ALL</code> her satır için doğru, <code>ANY</code> her satır için yanlıştır.</p>
+<pre class="code" data-base="oracle">SELECT first_name, salary FROM employees
+WHERE salary &gt; ALL (SELECT salary FROM employees WHERE dept_id = 2)
+  AND (dept_id &lt;&gt; 2 OR dept_id IS NULL);</pre>
+<h2>5. LISTAGG ve hiyerarşi</h2>
+<pre class="code" data-base="oracle">SELECT dept_id, LISTAGG(first_name, ', ') WITHIN GROUP (ORDER BY first_name) AS calisanlar
+FROM employees
+WHERE dept_id IS NOT NULL
+GROUP BY dept_id
+ORDER BY dept_id;</pre>
+<div class="note"><b>Sonraki adım</b>Bu laboratuvarı bitirince <b>Sınavlar</b> sayfasındaki <b>1Z0-071 Kodlama Laboratuvarı</b> ile süre altında Oracle yazımıyla görev çöz, ardından çoktan seçmeli denemeyi dene.</div>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-lab-z071">Alıştırmalara geç (10)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../cert-tsql/">← T-SQL sorgulama sertifika konuları: SQL Server ile sorgu yazmak</a><a href="../lab-tsql/">T-SQL laboratuvarı: SQL Server yazımıyla uygulama →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

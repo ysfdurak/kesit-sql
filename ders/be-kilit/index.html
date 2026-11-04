@@ -1,0 +1,40 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Eşzamanlılık uygulaması: çift rezervasyon, FOR UPDATE, SKIP LOCKED | Kesit SQL</title><meta name="description" content="Aynı satırı iki istek aynı anda değiştirirse ne olur; koşullu güncelleme, satır kilidi, iş kuyruğu ve yeniden deneme."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/be-kilit/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Eşzamanlılık uygulaması: çift rezervasyon, FOR UPDATE, SKIP LOCKED"><meta property="og:description" content="Aynı satırı iki istek aynı anda değiştirirse ne olur; koşullu güncelleme, satır kilidi, iş kuyruğu ve yeniden deneme."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/be-kilit/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Eşzamanlılık uygulaması: çift rezervasyon, FOR UPDATE, SKIP LOCKED","description":"Aynı satırı iki istek aynı anda değiştirirse ne olur; koşullu güncelleme, satır kilidi, iş kuyruğu ve yeniden deneme.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/be-kilit/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Uygulama Geliştirme</span><h1>Eşzamanlılık uygulaması: çift rezervasyon, FOR UPDATE, SKIP LOCKED</h1><p class="st-l">Aynı satırı iki istek aynı anda değiştirirse ne olur; koşullu güncelleme, satır kilidi, iş kuyruğu ve yeniden deneme.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-be-kilit">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory"><p>İki kullanıcı son koltuğu aynı anda alıyor. İki istek de “stok 1” okuyor, ikisi de satış yapıyor: <b>çift rezervasyon</b>. Sorun SQL'in yanlış yazılması değil, okuma ile yazma arasındaki boşluk. Bu derste bu boşluğu kapatmanın dört yolunu görürsün.</p>
+<div class="warn"><b>Bu tarayıcıda deneyemezsin</b>Buradaki motorda tek bağlantı var, yani gerçek eşzamanlılık yok. Kilit örnekleri bu yüzden çalıştırılabilir kutuda değil. Sözdizimini PostgreSQL'de doğruladık; davranışı kendi sunucunda iki oturum açarak dene.</div>
+<h2>1. Tek ifadede koşullu güncelleme</h2>
+<p>Çoğu durumda en basit ve en güvenli yol budur. Okumayı ve yazmayı tek ifadede birleştir, sonra etkilenen satır sayısına bak: 0 ise stok bitmiştir.</p>
+<pre class="code">UPDATE products SET stock = stock - 1 WHERE product_id = 7 AND stock >= 1;</pre>
+<h2>2. Kötümser kilit: FOR UPDATE</h2>
+<p>Okuduğun değere göre uygulamada karar vereceksen satırı okurken kilitle. İkinci oturum, birincisi işlemi bitirene kadar bekler.</p>
+<pre class="code" data-norun>BEGIN;
+SELECT stock FROM products WHERE product_id = 7 FOR UPDATE;
+-- uygulama kararını verir
+UPDATE products SET stock = stock - 1 WHERE product_id = 7;
+COMMIT;</pre>
+<table><tr><th>SQL türü</th><th>Satırı kilitleyerek okuma</th><th>Kilitli satırı atlama</th></tr>
+<tr><td>PostgreSQL, MySQL 8+, Oracle</td><td><code>FOR UPDATE</code></td><td><code>FOR UPDATE SKIP LOCKED</code></td></tr>
+<tr><td>SQL Server</td><td><code>WITH (UPDLOCK, ROWLOCK)</code></td><td><code>WITH (UPDLOCK, READPAST)</code></td></tr>
+<tr><td>SQLite, BigQuery</td><td>Yok</td><td>Yok</td></tr></table>
+<h2>3. İş kuyruğu: SKIP LOCKED</h2>
+<p>Birden çok işçi aynı kuyruktan iş çekiyorsa <code>FOR UPDATE</code> onları sıraya dizer. <code>SKIP LOCKED</code> kilitli satırı atlar, her işçi boşta olan bir sonraki işi alır.</p>
+<pre class="code" data-norun>BEGIN;
+SELECT job_id FROM jobs
+WHERE status = 'bekliyor'
+ORDER BY job_id
+LIMIT 1
+FOR UPDATE SKIP LOCKED;
+UPDATE jobs SET status = 'calisiyor' WHERE job_id = :secilen;
+COMMIT;</pre>
+<h2>4. İyimser kilit ve yeniden deneme</h2>
+<p>Çakışma seyrekse kilit tutmak yerine sürüm sütunu kullan: <code>UPDATE ... SET surum = surum + 1 WHERE id = :id AND surum = :okunan</code>. Etkilenen satır 0 ise başkası önce davranmıştır; yeniden oku ve dene.</p>
+<p>Deadlock ve serileştirme hataları normaldir, kod bunlara hazır olmalı: PostgreSQL <code>40P01</code> ve <code>40001</code>, SQL Server <code>1205</code> döndürür. İşlemi baştan, az sayıda ve kısa beklemeyle yeniden dene. Tek ifadenin bir bölümünü değil, <b>bütün işlemi</b> tekrarla.</p>
+<div class="tip"><b>Hangisini seçmeli?</b>Tek satır ve basit koşul: koşullu UPDATE. Uygulama kararı gerekiyor: FOR UPDATE, işlemi kısa tut. Birden çok işçi: SKIP LOCKED. Çakışma seyrek, işlem uzun: sürüm sütunu.</div></article>
+<div class="st-c"><a class="st-p" href="../../#ders-be-kilit">Alıştırmalara geç (4)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../be-desenler/">← Uygulama veritabanı desenleri: yumuşak silme, denetim sütunları, iyimser kilit</a><a href="../be-migration/">Şema değişikliklerini yönetmek: migration ve kesintisiz dağıtım →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

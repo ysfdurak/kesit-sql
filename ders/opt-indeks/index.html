@@ -1,0 +1,96 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>İndeks tasarımı: bileşik ve kapsayan indeks (covering index), sütun sırası, bedel | Kesit SQL</title><meta name="description" content="Eşitlik, aralık ve sıralama için sütun sırası, soldan önek, kapsayan indeks, filtreli indeks ve yazma bedeli."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/opt-indeks/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="İndeks tasarımı: bileşik ve kapsayan indeks (covering index), sütun sırası, bedel"><meta property="og:description" content="Eşitlik, aralık ve sıralama için sütun sırası, soldan önek, kapsayan indeks, filtreli indeks ve yazma bedeli."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/opt-indeks/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"İndeks tasarımı: bileşik ve kapsayan indeks (covering index), sütun sırası, bedel","description":"Eşitlik, aralık ve sıralama için sütun sırası, soldan önek, kapsayan indeks, filtreli indeks ve yazma bedeli.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/opt-indeks/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Sorgu Optimizasyonu</span><h1>İndeks tasarımı: bileşik ve kapsayan indeks (covering index), sütun sırası, bedel</h1><p class="st-l">Eşitlik, aralık ve sıralama için sütun sırası, soldan önek, kapsayan indeks, filtreli indeks ve yazma bedeli.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-indeks">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory"><h2>Senaryo: mobil hesap ekranı</h2>
+<p>Ilgaz Bank mobil uygulamasında kullanıcı hesabına girince son hareketleri görüyor. Sorgu saniyede çok kez çalışıyor. Tek sütunlu <code>account_id</code> indeksi var ama plan bir sıralama adımı daha yapıyor. Bu derste doğru indeksi seçmeyi öğreneceksin.</p>
+<h2>Sütun sırası: eşitlik, aralık, sıralama</h2>
+<p>Bileşik indeks telefon rehberi gibidir: önce soyada, sonra ada göre sıralı. Ada göre aramak için rehberin tamamını okursun. Bu <b>soldan önek</b> kuralıdır. Sıralama kuralı da buradan çıkar:</p>
+<ol>
+<li><b>Eşitlikle aranan sütunlar önce.</b> Aranan bölge tek bir dilime iner.</li>
+<li><b>Aralıkla aranan sütun sonra.</b> Aralıktan sonraki sütunlar arama için kullanılamaz.</li>
+<li><b>ORDER BY eşitlik sütunlarının ardından geliyorsa</b> sıralama adımı kalkar.</li>
+<li><b>Yalnız okunan sütunlar en sona</b> ya da <code>INCLUDE</code> içine.</li>
+</ol>
+<p>Parantez içindeki yazıyı oku. İkinci planda aramayı yalnız tarih yapıyor, tür okunduktan sonra eleniyor:</p>
+<pre class="code" data-na="tsql pg mysql oracle bq">CREATE INDEX ix_iyi ON bank_txns (txn_type, txn_time);
+EXPLAIN QUERY PLAN SELECT SUM(amount) FROM bank_txns
+WHERE txn_type = 'maas' AND txn_time >= '2024-11-01' AND txn_time &lt; '2024-12-01';</pre>
+<pre class="code" data-na="tsql pg mysql oracle bq">CREATE INDEX ix_kotu ON bank_txns (txn_time, txn_type);
+EXPLAIN QUERY PLAN SELECT SUM(amount) FROM bank_txns
+WHERE txn_type = 'maas' AND txn_time >= '2024-11-01' AND txn_time &lt; '2024-12-01';</pre>
+<h3>Aynı fark PostgreSQL'de</h3>
+<div class="note"><b>PostgreSQL çıktıları</b>Bu derslerdeki PostgreSQL planları elle yazılmadı. Aynı veriyle PostgreSQL 16.4 üzerinde (PGlite, tarayıcıda çalışan WASM sürümü) üretildi. <code>VACUUM ANALYZE</code> çalıştırıldı, planlama satırları kısalık için çıkarıldı. Sayılar kendi sunucunda farklı olur; okuma biçimi aynıdır.</div>
+<pre class="code" data-norun>CREATE INDEX ix_a ON bank_txns (txn_type, txn_time);
+EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT COUNT(*) FROM bank_txns WHERE txn_type = 'faiz' AND txn_time >= '2024-11-01' AND txn_time &lt; '2024-12-01';</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">Aggregate  (cost=7.09..7.10 rows=1 width=8) (actual rows=1 loops=1)
+  Buffers: shared hit=4
+  ->  Index Only Scan using ix_a on bank_txns  (cost=0.41..6.82 rows=107 width=0) (actual rows=118 loops=1)
+        Index Cond: ((txn_type = 'faiz'::text) AND (txn_time >= '2024-11-01 00:00:00'::timestamp without time zone) AND (txn_time &lt; '2024-12-01 00:00:00'::timestamp without time zone))
+        Heap Fetches: 0
+        Buffers: shared hit=4</pre>
+<pre class="code" data-norun>CREATE INDEX ix_b ON bank_txns (txn_time, txn_type);
+EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT COUNT(*) FROM bank_txns WHERE txn_type = 'faiz' AND txn_time >= '2024-11-01' AND txn_time &lt; '2024-12-01';</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">Aggregate  (cost=114.28..114.29 rows=1 width=8) (actual rows=1 loops=1)
+  Buffers: shared hit=19
+  ->  Index Only Scan using ix_b on bank_txns  (cost=0.29..114.01 rows=108 width=0) (actual rows=118 loops=1)
+        Index Cond: ((txn_time >= '2024-11-01 00:00:00'::timestamp without time zone) AND (txn_time &lt; '2024-12-01 00:00:00'::timestamp without time zone) AND (txn_type = 'faiz'::text))
+        Heap Fetches: 0
+        Buffers: shared hit=19</pre>
+<p>İkisi de aynı 118 satırı buluyor. İyi sırada 4 sayfa, ters sırada 19 sayfa okunuyor. Tablo büyüdükçe bu fark açılır, çünkü ters sırada aralıktaki bütün türler taranır.</p>
+<div class="note"><b>"En seçici sütun önce" kuralı</b>Sık duyulur ama eksiktir. Eşitlik koşullarında seçicilik sırası sonucu pek değiştirmez. Asıl belirleyici, hangi sütunun eşitlikle, hangisinin aralıkla arandığıdır ve aynı indeksi başka hangi sorguların kullanacağıdır.</div>
+<h2>Kapsayan indeks (covering index)</h2>
+<p>İndeks, sorgunun istediği bütün sütunları içeriyorsa tabloya gidilmez. SQL Server'da bunun yokluğu <code>Key Lookup</code> olarak görünür.</p>
+<pre class="code" data-norun>CREATE INDEX ix_hesap_zaman ON bank_txns (account_id, txn_time);
+EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT SUM(amount) FROM bank_txns WHERE account_id = 100019 AND txn_time >= '2024-01-01';</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">Aggregate  (cost=203.69..203.70 rows=1 width=32) (actual rows=1 loops=1)
+  Buffers: shared hit=68
+  ->  Bitmap Heap Scan on bank_txns  (cost=4.91..203.48 rows=80 width=6) (actual rows=72 loops=1)
+        Recheck Cond: (account_id = 100019)
+        Filter: (txn_time >= '2024-01-01 00:00:00'::timestamp without time zone)
+        Heap Blocks: exact=66
+        Buffers: shared hit=68
+        ->  Bitmap Index Scan on bank_txns_account_id_idx  (cost=0.00..4.89 rows=80 width=0) (actual rows=72 loops=1)
+              Index Cond: (account_id = 100019)
+              Buffers: shared hit=2</pre>
+<pre class="code" data-norun>CREATE INDEX ix_hesap_zaman ON bank_txns (account_id, txn_time) INCLUDE (amount);
+EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)
+SELECT SUM(amount) FROM bank_txns WHERE account_id = 100019 AND txn_time >= '2024-01-01';</pre><p class="plan-etiket">Gerçek çıktı</p><pre class="plan-cikti" tabindex="0">Aggregate  (cost=5.52..5.53 rows=1 width=32) (actual rows=1 loops=1)
+  Buffers: shared hit=4
+  ->  Index Only Scan using ix_hesap_zaman on bank_txns  (cost=0.41..5.40 rows=49 width=6) (actual rows=72 loops=1)
+        Index Cond: ((account_id = 100019) AND (txn_time >= '2024-01-01 00:00:00'::timestamp without time zone))
+        Heap Fetches: 0
+        Buffers: shared hit=4</pre>
+<p>İlk planda yeni indeks seçilmedi bile. Motor var olan <code>account_id</code> indeksiyle satırlara gidiyor ve 68 sayfa okuyor. <code>INCLUDE</code> eklenince 4 sayfada bitiyor. <code>Index Only Scan</code>, <code>Heap Fetches: 0</code> "tabloya hiç gidilmedi" demektir.</p>
+<table>
+<tr><th>SQL türü</th><th>Kapsayan indeks yazımı</th></tr>
+<tr><td>SQL Server</td><td><code>CREATE INDEX ix ON t (a, b) INCLUDE (c);</code></td></tr>
+<tr><td>PostgreSQL</td><td><code>CREATE INDEX ix ON t (a, b) INCLUDE (c);</code></td></tr>
+<tr><td>MySQL, Oracle, SQLite</td><td><code>INCLUDE</code> yok, sütun anahtarın sonuna eklenir: <code>(a, b, c)</code></td></tr>
+<tr><td>BigQuery</td><td>Klasik indeks yok, bölüm ve kümeleme kullanılır</td></tr>
+</table>
+<p>SQL Server belgesi çok sütunlu kapsayan indeksin yararı azalttığını, yer, giriş çıkış ve bellek maliyetini büyüttüğünü özellikle uyarır. <code>SELECT *</code> kullanan sorgu için kapsayan indeks kurma: önce sütunları daralt.</p>
+<h2>Filtreli (kısmi) indeks</h2>
+<p>Çoğu sorgu satırların küçük bir kısmıyla ilgiliyse yalnız onu indeksle. İptal edilen siparişler buna iyi örnektir:</p>
+<pre class="code" data-na="tsql pg mysql oracle bq">CREATE INDEX ix_acik ON lk_orders (placed_at) WHERE status = 'iptal';
+EXPLAIN QUERY PLAN SELECT COUNT(*) FROM lk_orders WHERE status = 'iptal' AND placed_at >= '2024-12-01';</pre>
+<p>SQLite ve PostgreSQL'de kısmi indeks (partial index), SQL Server'da filtreli indeks (filtered index) olarak geçer. Daha küçüktür ve yalnız ilgili satır değiştiğinde güncellenir. MySQL'de bu özellik yoktur.</p>
+<h2>İndeksin bedeli</h2>
+<ul>
+<li>Her <code>INSERT</code>, <code>DELETE</code> ve indeksli sütuna <code>UPDATE</code> indeksi de değiştirir.</li>
+<li>Disk ve bellek ister. Çalışan sorguların sayfaları önbelleği paylaşır.</li>
+<li>Çakışan indeksler boşa gider: <code>(a)</code> varken <code>(a, b)</code> kurduysan <code>(a)</code> genellikle silinebilir.</li>
+</ul>
+<p>Bedeli kendin gör. Kutu indeks kurmadan önceki ve sonraki sayfa sayısını gösterir, yazma süresini kutunun altında okursun:</p>
+<pre class="code" data-na="tsql pg mysql oracle bq">SELECT page_count FROM pragma_page_count;
+CREATE INDEX ix_1 ON bank_txns (txn_time);
+CREATE INDEX ix_2 ON bank_txns (txn_type, txn_time);
+CREATE INDEX ix_3 ON bank_txns (channel, txn_time, amount);
+SELECT page_count FROM pragma_page_count;</pre>
+<div class="tip"><b>Karar sorusu</b>Bu indeks hangi sorguyu hızlandırıyor? O sorgu ne sıklıkla çalışıyor? Tablo saniyede kaç kez yazılıyor? Yanıtlayamıyorsan indeksi ekleme. SQL Server belgesi de "indeksleri tahminle oluşturma, kullanımı izle, kullanılmayanı kaldır" der.</div></article>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-indeks">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../opt-tur/">← Tür dönüşümü ve fonksiyon tuzakları: indeks var ama kullanılmıyor</a><a href="../opt-secicilik/">Seçicilik (selectivity) ve istatistikler: motor neden o planı seçti? →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

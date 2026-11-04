@@ -1,0 +1,57 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SEQUENCE, IDENTITY ve anahtar üretimi | Kesit SQL</title><meta name="description" content="Otomatik numaralar: IDENTITY, SEQUENCE, SCOPE_IDENTITY ve GUID."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-sequence/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="SEQUENCE, IDENTITY ve anahtar üretimi"><meta property="og:description" content="Otomatik numaralar: IDENTITY, SEQUENCE, SCOPE_IDENTITY ve GUID."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-sequence/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"SEQUENCE, IDENTITY ve anahtar üretimi","description":"Otomatik numaralar: IDENTITY, SEQUENCE, SCOPE_IDENTITY ve GUID.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-sequence/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · T-SQL (SQL Server)</span><h1>SEQUENCE, IDENTITY ve anahtar üretimi</h1><p class="st-l">Otomatik numaralar: IDENTITY, SEQUENCE, SCOPE_IDENTITY ve GUID.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-sequence">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<article class="panel theory">
+<h2>Otomatik numara üretmenin yolları</h2>
+<table>
+<tr><th>Yöntem</th><th>Nerede?</th><th>Özellik</th></tr>
+<tr><td><code>IDENTITY(1,1)</code></td><td>Tek bir tablonun sütunu</td><td>Satır eklenince otomatik artar.</td></tr>
+<tr><td><code>SEQUENCE</code></td><td>Bağımsız bir nesne (2012+)</td><td>Birden çok tablo paylaşabilir; değeri satırı eklemeden önce alabilirsin.</td></tr>
+<tr><td><code>NEWID()</code> / <code>NEWSEQUENTIALID()</code></td><td>UNIQUEIDENTIFIER sütunu</td><td>Dünyada tekil GUID; sistemler arası birleştirmede işe yarar ama indekste parçalanmaya yol açar.</td></tr>
+</table>
+<h2>SEQUENCE</h2>
+<pre class="code" data-v="{&quot;pg&quot;:&quot;CREATE SEQUENCE fatura_no START 1000 INCREMENT 1;\n\nSELECT nextval('fatura_no') AS ilk;\nSELECT nextval('fatura_no') AS ikinci;&quot;,&quot;oracle&quot;:&quot;CREATE SEQUENCE fatura_no START WITH 1000 INCREMENT BY 1;\n\nSELECT fatura_no.NEXTVAL AS ilk FROM dual;\nSELECT fatura_no.NEXTVAL AS ikinci FROM dual;&quot;}" data-base="tsql">CREATE SEQUENCE dbo.fatura_no AS INT
+    START WITH 1000
+    INCREMENT BY 1;
+
+SELECT NEXT VALUE FOR dbo.fatura_no AS ilk;
+SELECT NEXT VALUE FOR dbo.fatura_no AS ikinci;</pre>
+<div class="warn"><b>START WITH'i unutma</b>SQL Server'da START WITH yazılmazsa sıra, veri tipinin <b>en küçük değerinden</b> başlar: INT için −2.147.483.648. Bu yaygın bir sürprizdir. PostgreSQL ve Oracle'da varsayılan başlangıç 1'dir.</div>
+<h3>Toplu eklemede sıra kullanmak</h3>
+<pre class="code" data-base="tsql">CREATE SEQUENCE dbo.fatura_no AS INT START WITH 1000 INCREMENT BY 1;
+CREATE TABLE #fatura (fatura_no INT, order_id INT);
+
+INSERT INTO #fatura (fatura_no, order_id)
+SELECT NEXT VALUE FOR dbo.fatura_no, order_id
+FROM orders
+WHERE order_date = '2024-12-31';
+
+SELECT * FROM #fatura;</pre>
+<p>Tabloda varsayılan değer olarak da tanımlanabilir: <code>fatura_no INT DEFAULT (NEXT VALUE FOR dbo.fatura_no)</code>.</p>
+<div class="note"><b>Kısıtlama</b>NEXT VALUE FOR; TOP veya OFFSET içeren sorgularda, alt sorgularda ve CTE'lerde kullanılamaz.</div>
+<h2>Numaralarda boşluk olur</h2>
+<p>Sıra numarası verildikten sonra işlem geri alınsa bile o numara <b>geri gelmez</b>. Bu, eşzamanlı kullanıcılar birbirini beklemesin diye bilinçli bir tasarımdır. Fatura numarasında boşluk yasal olarak sorunsa, numara ayrı ve kilitli bir tabloyla verilir.</p>
+<pre class="code" data-base="tsql">CREATE SEQUENCE dbo.s AS INT START WITH 1 INCREMENT BY 1;
+
+BEGIN TRAN;
+    SELECT NEXT VALUE FOR dbo.s AS geri_alinan;
+ROLLBACK;
+
+SELECT NEXT VALUE FOR dbo.s AS sonraki;  -- 2 gelir, 1 kayboldu</pre>
+<h2>Eklenen satırın numarası</h2>
+<table>
+<tr><th>Fonksiyon</th><th>Döndürdüğü</th></tr>
+<tr><td><code>SCOPE_IDENTITY()</code></td><td>Aynı oturum ve aynı kapsamda üretilen son IDENTITY. <b>Doğru seçim budur.</b></td></tr>
+<tr><td><code>@@IDENTITY</code></td><td>Oturumdaki son IDENTITY; bir trigger başka tabloya eklediyse onun numarasını döndürür.</td></tr>
+<tr><td><code>IDENT_CURRENT('tablo')</code></td><td>Tablonun son numarası, <b>herhangi bir</b> oturumdan.</td></tr>
+<tr><td><code>OUTPUT inserted.id</code></td><td>Çok satırlı eklemede tüm yeni numaralar.</td></tr>
+</table>
+<p>Diğer SQL türleri: PostgreSQL'de <code>GENERATED ALWAYS AS IDENTITY</code> ve <code>RETURNING id</code>, MySQL'de <code>AUTO_INCREMENT</code> ve <code>LAST_INSERT_ID()</code>, Oracle'da <code>GENERATED AS IDENTITY</code> veya sequence kullanılır.</p>
+</article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-sequence">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-sistem/">← Sistem görünümleri, IDENTITY ve yardımcı prosedürler</a><a href="../ts-merge/">MERGE: eşitle, güncelle, ekle, sil →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>
