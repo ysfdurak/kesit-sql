@@ -1,6 +1,18 @@
 /* Veri setleri sayfasındaki "Bilerek bırakılanlar ve bilinen sınırlamalar" bölümünün metinleri. Üç uygulamada aynı metin; sayılar son veriden hesaplandı.
    Anahtarlar: market, bank, hava, kurye, ik, bisiklet, ops (ops yalnız Kesit SQL'de). Değer: { bilerek: [...], sinir: [...] }. */
 window.KESIT_SINIRLAR = {
+ "sis": {
+  "bilerek": [
+   "etl_stg_hareket içinde bozuk tutar, bozuk tarih, boş hesap, mükerrer kayıt ve boyutta olmayan şube bilerek var.",
+   "Engelleme anlık görüntüsünde tepedeki oturum boşta: sys.dm_exec_requests içinde görünmez, bu bilerek öğretilen tuzaktır.",
+   "IX_accounts_durum indeksinin kullanım satırı yok, ilgaz_arsiv günlük zinciri bir yerde kırık, ilgaz_portal günlük yedekleri bir gece iki saat durmuş."
+  ],
+  "sinir": [
+   "Bütünüyle kurgu: elle kuruldu, gerçek bir sistemden alınmadı. Sayılar ölçüm değildir.",
+   "Görünümlerin yalnız seçili sütunları var. Motor gerçek DMV, BACKUP, GRANT, SQL Agent çalıştırmaz; kopyası olmayan görünüm hata verir.",
+   "sys.dm_exec_sql_text ve sys.dm_db_index_physical_stats gerçekte işlevdir; burada tabloya çevrilir, parametreleri yok sayılır."
+  ]
+ },
  "ops": {
   "bilerek": [
    "Tek sorunun iki nedeni var: Salı 12 Kasım sabahı rapor sorgusunun planı değişiyor ve aynı sabah portal sürümüyle pahalı bir sorgu geliyor. Süre bütün sorgularda artar, okunan sayfa yalnız bu ikisinde.",
