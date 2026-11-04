@@ -1,4 +1,4 @@
-toplam 1717 { ayni: 1710, pgHata: 2, fark: 5 }
+toplam 1738 { ayni: 1731, pgHata: 2, fark: 5 }
 bilinen fark 7 gereksiz bilinen kayit 0 
 BILINMEYEN 0
-sure 233s
+sure 226s

@@ -9,7 +9,7 @@ Bu dal (`kaynak`), yayındaki sitenin (`main` dalı) bütün dosyalarını ve bu
 | `index.html` | Uygulama: arayüz, yönlendirme, ilerleme kaydı. Betikleri sırayla yükler. |
 | `db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js`, `ops.js`, `sis.js` | Veri setleri: e-ticaret ve banka, havayolu, yemek teslimatı, İK, bisiklet paylaşımı. `ops.js` kurgusal operasyon günlüğüdür (`ops_` tabloları), `sis.js` sistem görünümü kopyaları ve ETL senaryosudur (`sys_`, `msdb_`, `etl_`); ikisi yalnız bu uygulamada vardır, kendi tohumlu üretecini kullanır. |
 | `dialect.js` | SQL Server, PostgreSQL, MySQL, Oracle ve BigQuery yazımını SQLite'a çeviren katman. |
-| `c1.js` … `c41.js`, `cx.js` | Dersler, öğrenme yolları, pratik görevleri, sınavlar. Sonra yüklenen dosya öncekileri yerinde değiştirebilir. `c35.js` son düzeltme katmanıdır: yol sırası, seviye testi, yöntem kuralları, yeni dersler. `c36.js` BT İş Analisti yolu ve onun on bir dersidir; metindeki sayılar `SQLP_BA_SAYI` nesnesinden gelir, `ba_sayilar.js` denetler. `c37.js` Sorgu Optimizasyonu dersleri, `c38.js` mevcut performans derslerinin genişletilmesi, yeni bitirme projeleri (`opt-proje`, `bv-proje`, `ai-proje`), `op*` pratik görevleri, sözlük ve yol bağlantılarıdır. `c39.js` SQL Server Operasyon ve Güvenlik yolu (`ops-*` dersleri, `sg*` pratik görevleri). |
+| `c1.js` … `c42.js`, `cx.js` | Dersler, öğrenme yolları, pratik görevleri, sınavlar. Sonra yüklenen dosya öncekileri yerinde değiştirebilir. `c35.js` son düzeltme katmanıdır: yol sırası, seviye testi, yöntem kuralları, yeni dersler. `c36.js` BT İş Analisti yolu ve onun on bir dersidir; metindeki sayılar `SQLP_BA_SAYI` nesnesinden gelir, `ba_sayilar.js` denetler. `c37.js` Sorgu Optimizasyonu dersleri, `c38.js` mevcut performans derslerinin genişletilmesi, yeni bitirme projeleri (`opt-proje`, `bv-proje`, `ai-proje`), `op*` pratik görevleri, sözlük ve yol bağlantılarıdır. `c39.js` SQL Server Operasyon ve Güvenlik yolu (`ops-*` dersleri, `sg*` pratik görevleri). |
 | `plan-ciktilari.js` | Derslerdeki PostgreSQL plan çıktıları. Üretilen dosya: `araclar/denetim/opt_cikti.mjs` PGlite ile çalıştırır, sorgular `opt_sorgular.json` içinde. Elle düzenlenmez. |
 | `ipuclari.js` | Alıştırma ipuçları. `araclar/denetim/ipucu_uret.js` üretir; elle yazılanlar `araclar/denetim/ipucu_elle.json` içinde. |
 | `bilinen-sinirlar.js` | Veri setleri sayfasındaki “Bilerek bırakılanlar ve bilinen sınırlamalar” metinleri. |
@@ -153,6 +153,13 @@ Sunucu ve ağ isteği yoktur. Her şey `sqlpatika.v1` içindeki geri uyumlu `pil
 - `node alternatif.js`: bağımsız denetimden gelen elle yazılmış yanlış ve geçerli cevaplar. Beklenen: `YANLIS_GECEN 0`, `DOGRU_RED 0`.
 - **Yok:** TVP, DDL trigger, trigger gövdesinde IF, `CROSS APPLY` ile çok ifadeli işlev, gerçek kilit ve eşzamanlılık.
 
+### 4f. Çoklu çözüm, deneme, merdiven
+- **Çoklu çözüm:** Görevin `alt` alanı başka geçerli çözümlerdir (`{ad, sql, not}`), `kenar` mülakatta sorulacak kenar durumdur. `opt_denetim.js` her `alt` çözümü cevap gibi sınar (`ALT RED`). Çözünce ve süreli set sonunda ekranda görünür; süre tarayıcıda ölçülür.
+- **Süreli setler:** `kod-mk-kolay`, `kod-mk-orta`, `kod-mk-zor`. Kodlama sınavı notu da artık `mustFail` ve gizli varyanttan geçer.
+- **Paylaşılabilir deneme (`#fiddle=`):** Şema ve sorgu JSON olarak base64url ile adresin `#` kısmına yazılır, en çok 8.000 karakter. Sunucu yok. Bağlantıdan gelen kod kendiliğinden çalışmaz. GoatCounter'a `#fiddle` olarak gider, içerik gönderilmez. Sonuç `esc` ile basılır.
+- **Merdiven ve desen haritası:** `SQLP_MERDIVEN`, `SQLP_DESEN` (`c42.js`) var olan görevlere bağlanır. Yeni görev eklemez.
+- Tarayıcıda: `qa` içinde `node kiyas_tarayici.js`. Beklenen: `HATA 0`.
+
 ### 4b. Önkoşul taraması
 ```bash
 node onkosul.js
@@ -167,7 +174,7 @@ node pg_denetim.mjs              # FILTER='^ik-' ile daraltılır
 - Her çözüm dış bir işlem içinde çalışıp geri alınır. Kendi `BEGIN`/`COMMIT` komutları kayıt noktasına çevrilir, veri kalıcı değişmez.
 - İlk çalıştırmada veritabanını kurar ve `pg_taban.tgz` olarak saklar (`base.sqlite` yenilenince kendini yeniler). Tam tur yaklaşık 3 dakika.
 - 45 saniyeyi aşan sorgu `zamanasimi` diye yazılır. Tüm sonuç `pg_audit.json` dosyasındadır.
-- Gerekçesi yazılı farklar `pg_bilinen.json` dosyasındadır. Temiz sonuç: `BILINMEYEN 0` ve `gereksiz bilinen kayit 0` (son tur: 1.717 çözüm, 1.710 aynı, 7 bilinen; `sonuclar/pg.txt`).
+- Gerekçesi yazılı farklar `pg_bilinen.json` dosyasındadır. Temiz sonuç: `BILINMEYEN 0` ve `gereksiz bilinen kayit 0` (son tur: 1.738 çözüm, 1.731 aynı, 7 bilinen; `sonuclar/pg.txt`).
 - Yapısal denetimi SQLite kataloğuna bakan DDL görevlerinde (pragma_table_info) yalnız DDL'in çalıştığı sınanır.
 - Tarih türü ile yapılan sıralamalar ve yerel ayara bağlı `UPPER`/`LOWER` farkı karşılaştırmada i/İ/ı/I harfleri eşit sayılarak ele alınır.
 
@@ -228,7 +235,7 @@ Ders ve yol süreleri `index.html` içindeki `sureDk`, `dkAralik`, `saatAralik` 
 ## Yayına alma
 Site `main` dalından sunulur. `main` dalına **yalnız aşağıdaki dosyalar** gider; `araclar/` ve `NASIL.md` gitmez.
 
-Site dosyaları (tam liste): `index.html`, `db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js`, `ops.js`, `sis.js`, `dialect.js`, `c1.js` … `c41.js`, `cx.js`, `plan-ciktilari.js`, `ipuclari.js`, `arena-data.js`, `config.js`, `bilinen-sinirlar.js`, `belge.js`, `sw.js`, `base-<özet>.b64.txt`, `manifest.webmanifest`, `favicon.svg`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, `og.png`, `vendor/`, `ekran/`, `README.md`, `LICENSE`, `LICENSE-ICERIK.md`, `.nojekyll`.
+Site dosyaları (tam liste): `index.html`, `db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js`, `ops.js`, `sis.js`, `dialect.js`, `c1.js` … `c42.js`, `cx.js`, `plan-ciktilari.js`, `ipuclari.js`, `arena-data.js`, `config.js`, `bilinen-sinirlar.js`, `belge.js`, `sw.js`, `base-<özet>.b64.txt`, `manifest.webmanifest`, `favicon.svg`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, `og.png`, `vendor/`, `ekran/`, `README.md`, `LICENSE`, `LICENSE-ICERIK.md`, `.nojekyll`.
 
 Eski sürümden kaldırılacaklar: `hesap.js`, `hesap-secenegi/`, `YAYIN.md`.
 

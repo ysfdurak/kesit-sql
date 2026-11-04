@@ -1,7 +1,2 @@
-calistirilan 10128 oge 2031 {
-  orderByVarOrdYok: 17,
-  ordAmaOrderByYok: 4,
-  lehceFarkli: 2,
-  lehceHata: 6
-}
-{ tsql: 3, mysql: 3, oracle: 2 }
+calistirilan 10230 oge 2059 { orderByVarOrdYok: 17, ordAmaOrderByYok: 4 }
+{}
