@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Veri Modelleme</span><h1>OLTP ve OLAP, yıldız şema, fact ve dimension</h1><p class="st-l">Analitik veri modellemenin temelleri (Kimball).</p>
 <div class="st-c"><a class="st-p" href="../../#ders-dwh">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>İki farklı dünya</h2>
 <table><tr><th></th><th>OLTP (işlem)</th><th>OLAP (analitik)</th></tr>
@@ -40,6 +41,6 @@ FROM fact_sales f JOIN dim_date d ON d.date_key = f.date_key
 GROUP BY d.year, d.quarter
 ORDER BY d.year, d.quarter;</pre>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-dwh">Alıştırmalara geç (5)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-dwh/1">Alıştırmalara geç (5)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../cografi/">← Coğrafi veri: mesafe, en yakın nokta ve uzamsal tipler</a><a href="../lehceler/">SQL lehçeleri: PostgreSQL, MySQL, SQL Server, Oracle, BigQuery →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

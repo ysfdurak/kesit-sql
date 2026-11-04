@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Uygulama Geliştirme</span><h1>Eşzamanlılık uygulaması: çift rezervasyon, FOR UPDATE, SKIP LOCKED</h1><p class="st-l">Aynı satırı iki istek aynı anda değiştirirse ne olur; koşullu güncelleme, satır kilidi, iş kuyruğu ve yeniden deneme.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-be-kilit">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory"><p>İki kullanıcı son koltuğu aynı anda alıyor. İki istek de “stok 1” okuyor, ikisi de satış yapıyor: <b>çift rezervasyon</b>. Sorun SQL'in yanlış yazılması değil, okuma ile yazma arasındaki boşluk. Bu derste bu boşluğu kapatmanın dört yolunu görürsün.</p>
 <div class="warn"><b>Bu tarayıcıda deneyemezsin</b>Buradaki motorda tek bağlantı var, yani gerçek eşzamanlılık yok. Kilit örnekleri bu yüzden çalıştırılabilir kutuda değil. Sözdizimini PostgreSQL'de doğruladık; davranışı kendi sunucunda iki oturum açarak dene.</div>
 <h2>1. Tek ifadede koşullu güncelleme</h2>
@@ -35,6 +36,6 @@ COMMIT;</pre>
 <p>Çakışma seyrekse kilit tutmak yerine sürüm sütunu kullan: <code>UPDATE ... SET surum = surum + 1 WHERE id = :id AND surum = :okunan</code>. Etkilenen satır 0 ise başkası önce davranmıştır; yeniden oku ve dene.</p>
 <p>Deadlock ve serileştirme hataları normaldir, kod bunlara hazır olmalı: PostgreSQL <code>40P01</code> ve <code>40001</code>, SQL Server <code>1205</code> döndürür. İşlemi baştan, az sayıda ve kısa beklemeyle yeniden dene. Tek ifadenin bir bölümünü değil, <b>bütün işlemi</b> tekrarla.</p>
 <div class="tip"><b>Hangisini seçmeli?</b>Tek satır ve basit koşul: koşullu UPDATE. Uygulama kararı gerekiyor: FOR UPDATE, işlemi kısa tut. Birden çok işçi: SKIP LOCKED. Çakışma seyrek, işlem uzun: sürüm sütunu.</div></article>
-<div class="st-c"><a class="st-p" href="../../#ders-be-kilit">Alıştırmalara geç (4)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-be-kilit/1">Alıştırmalara geç (4)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../be-desenler/">← Uygulama veritabanı desenleri: yumuşak silme, denetim sütunları, iyimser kilit</a><a href="../be-migration/">Şema değişikliklerini yönetmek: migration ve kesintisiz dağıtım →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

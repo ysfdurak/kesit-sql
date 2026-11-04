@@ -1,0 +1,97 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kaynak kodu değiştirilemeyen uygulamada performans: indeks, Query Store, plan zorlama | Kesit SQL</title><meta name="description" content="Sorgu metnine dokunamadığında elinde kalan seçenekler, sırası, geri alınması ve riskleri. Araya giren ağ geçidi mimarisi de kavram olarak."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ops-kaynak/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Kaynak kodu değiştirilemeyen uygulamada performans: indeks, Query Store, plan zorlama"><meta property="og:description" content="Sorgu metnine dokunamadığında elinde kalan seçenekler, sırası, geri alınması ve riskleri. Araya giren ağ geçidi mimarisi de kavram olarak."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ops-kaynak/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Kaynak kodu değiştirilemeyen uygulamada performans: indeks, Query Store, plan zorlama","description":"Sorgu metnine dokunamadığında elinde kalan seçenekler, sırası, geri alınması ve riskleri. Araya giren ağ geçidi mimarisi de kavram olarak.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/ops-kaynak/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · SQL Server Operasyon</span><h1>Kaynak kodu değiştirilemeyen uygulamada performans: indeks, Query Store, plan zorlama</h1><p class="st-l">Sorgu metnine dokunamadığında elinde kalan seçenekler, sırası, geri alınması ve riskleri. Araya giren ağ geçidi mimarisi de kavram olarak.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ops-kaynak">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
+<article class="panel theory"><h2>Senaryo: sorgu metni senin değil</h2>
+<p>Satın alınmış bir uygulama yavaşladı. Üretici sorguyu değiştirmiyor ya da sürüm aylar sonra gelecek. Elinde kod yok, ama veritabanı senin. Peki neye dokunabilirsin? Bu dersin konusu seçenekleri ve özellikle <b>riskini</b> bilmek.</p>
+<div class="note"><b>Veri kurgudur</b><code>ops_</code> tabloları hayali bir portal için tohumlu üreteçle kuruldu. Gerçek bir sistemden alınmadı; süre ve okuma değerleri ölçüm değildir. Motor SQLite olduğu için günlükteki SQL Server sorguları çalıştırılmaz, metin olarak incelenir. Tabloları sorgularsın, sistem yönetimi komutlarını yalnız okursun.</div>
+<div class="tip"><b>Önkoşul</b>Plan okuma ve sütun sırası burada tekrar anlatılmıyor: <b>Sorgu planı okumak</b> ve <b>İndeks tasarımı</b> derslerine bak. Sunucu tarafında "şu an ne çalışıyor" sorusu <b>İzleme: DMV'ler</b> dersindedir.</div>
+<h2>Seçenekler, ucuzdan pahalıya</h2>
+<table>
+<tr><th>Seçenek</th><th>Neyi değiştirir</th><th>Riski</th><th>Geri alma</th></tr>
+<tr><td>İstatistik güncelleme</td><td>Motorun satır tahminini</td><td>Planlar değişebilir, tersine de dönebilir</td><td>Eski istatistiğe dönmek zordur, plan zorlama gerekir</td></tr>
+<tr><td>İndeks</td><td>Okuma yolunu</td><td>Her yazmaya biner, yer kaplar, başka sorgunun planını da değiştirebilir</td><td><code>DROP INDEX</code></td></tr>
+<tr><td>Query Store ile plan zorlama</td><td>Tek sorgunun planını</td><td>Veri değişince plan eskir, zorlama başarısız olabilir</td><td><code>sp_query_store_unforce_plan</code></td></tr>
+<tr><td>Query Store ipucu (hint)</td><td>Tek sorgunun derleme davranışını</td><td>Belge son çare der, veri değişince yeniden değerlendir</td><td><code>sys.sp_query_store_clear_hints</code></td></tr>
+<tr><td>Plan kılavuzu (plan guide)</td><td>Metni eşleşen sorguyu</td><td>Belge son çare der; bazı türlerde metin karakter karakter eşleşmeli</td><td>Kılavuzu kaldır</td></tr>
+<tr><td>Uyumluluk düzeyi, zorunlu parametreleme</td><td>Bütün veritabanını</td><td>Etki alanı geniş, bütün yük için test ister</td><td>Ayarı geri al</td></tr>
+</table>
+<p>Hangisini seçersen seç, üreticinin destek koşullarını oku: bazı sözleşmeler şemaya eklenen nesneleri sınırlar. Eklediğin nesneyi kayıt altına al, yeni sürüm yüklemesinde kaybolabilir ya da çakışabilir.</p>
+<h2>İndeks: en sık çözüm, kör uygulanırsa en sık hata</h2>
+<p>Sorgu metni sabitse indeks tasarımı o metne uyar. Planda sıralama kalkıyor mu, arama yapılıyor mu, ölç:</p>
+<pre class="code" data-na="tsql pg mysql oracle bq">EXPLAIN QUERY PLAN
+SELECT event_at, record_id FROM ops_access_log
+WHERE login_name = 'svc_portal' AND event_at >= '2024-11-12';</pre>
+<pre class="code" data-na="tsql pg mysql oracle bq">CREATE INDEX ix_hesap_zaman ON ops_access_log (login_name, event_at);
+EXPLAIN QUERY PLAN
+SELECT event_at, record_id FROM ops_access_log
+WHERE login_name = 'svc_portal' AND event_at >= '2024-11-12';</pre>
+<h3>Eksik indeks önerileri</h3>
+<p>SQL Server planda ve <code>sys.dm_db_missing_index_details</code> görünümünde indeks önerir. Belgeye göre bunlar <b>reçete değildir</b>:</p>
+<ul>
+<li>Tek sorgunun çalışmadan önceki tahminine dayanır, sonradan sınanmaz.</li>
+<li>Anahtar sütunları sırasız listelenir. Sırayı sen verirsin: eşitlik sütunları önce, eşitsizlik sonra.</li>
+<li>Benzer öneriler çoğalır. Var olan indeksle karşılaştır, mümkünse birleştir.</li>
+<li>Sunucu yeniden başlayınca veriler silinir. Query Store açıksa saklanan planlarda kalır.</li>
+</ul>
+<h3>Koşul fonksiyon içeriyorsa</h3>
+<p>Sorguyu <code>WHERE date(event_at) = ...</code> diye yazıyorsa ve değiştiremiyorsan indeksi ifadeye kurarsın. SQLite ve PostgreSQL ifade indeksi, SQL Server hesaplanmış sütun üzerinde indeks, Oracle fonksiyon tabanlı indeks kullanır. Ayrıntısı <b>Tür dönüşümü ve fonksiyon tuzakları</b> dersinde.</p>
+<h2>Query Store: planın geçmişi</h2>
+<p>Query Store sorguları, planları ve çalışma istatistiklerini veritabanı başına saklar. Belgeye göre SQL Server 2016-2019'da varsayılan olarak kapalıdır, SQL Server 2022'de yeni veritabanlarında açıktır. Planı önbellekten silinse de geçmişi kalır: "Dün hızlıydı" sorusunu yanıtlamanın yolu budur.</p>
+<pre class="code" data-norun>-- Yalnız okumak için: bu komutlar burada çalışmaz
+SELECT q.query_id, p.plan_id, t.query_sql_text,
+       rs.count_executions, rs.avg_duration, rs.avg_logical_io_reads
+FROM sys.query_store_plan p
+JOIN sys.query_store_query q ON q.query_id = p.query_id
+JOIN sys.query_store_query_text t ON t.query_text_id = q.query_text_id
+JOIN sys.query_store_runtime_stats rs ON rs.plan_id = p.plan_id;</pre>
+<p>Bu derste aynı mantığı kurgusal <code>ops_plan_stats</code> tablosunda çalıştırıyoruz. Dikkat: satırlar saat başınadır, bu yüzden ortalamaların ortalaması yanlış sonuç verir. Çalışma sayısıyla <b>ağırlıklandır</b>:</p>
+<pre class="code">SELECT query_name, plan_id,
+       SUM(exec_count) AS calisma,
+       ROUND(1.0 * SUM(exec_count * avg_reads) / SUM(exec_count)) AS ort_okuma
+FROM ops_plan_stats
+GROUP BY query_name, plan_id
+ORDER BY query_name, plan_id;</pre>
+<p>Üç farklı durum görüyorsun:</p>
+<ul>
+<li><code>rapor_ay_tur</code>: plan değişince okuma büyümüş. <b>Gerileme</b> budur.</li>
+<li><code>rapor_sube_ozet</code>: plan değişmiş, okuma düşmüş. Plan değişimi tek başına kötü değildir.</li>
+<li><code>rapor_sube_detay</code>: ortalamalar yakın, ama soru değerden değere değişiyor. Şubeler çok farklı büyüklükte, bir plan küçük şubede iyi, büyük şubede kötü olabilir. Tek plana zorlamak diğer değeri bozar. Bu <b>parametre koklama</b> konusudur.</li>
+</ul>
+<h2>Plan zorlama ve riskleri</h2>
+<pre class="code" data-norun>-- Yalnız okumak için
+EXEC sp_query_store_force_plan @query_id = 8, @plan_id = 11;
+EXEC sp_query_store_unforce_plan @query_id = 8, @plan_id = 11;
+
+-- Zorlanan planları düzenli denetle
+SELECT p.plan_id, p.query_id, p.force_failure_count, p.last_force_failure_reason_desc
+FROM sys.query_store_plan p
+WHERE p.is_forced_plan = 1;</pre>
+<p>Belgeden öğrendiklerimiz:</p>
+<ul>
+<li>Zorlama <b>garanti değildir</b>. Başarısız olursa motor sorguyu normal biçimde derler ve neden <code>sys.query_store_plan</code> içinde görünür.</li>
+<li>Sonuç plan zorlanan planla aynı değil, <b>benzer</b> olabilir. Nadiren performans belirgin biçimde kötüleşir, o zaman zorlama kaldırılır.</li>
+<li>Planın kullandığı nesne değişir ya da silinirse (indeks kaldırılması gibi) zorlama başarısız olmaya başlar.</li>
+<li>Zorlanan plan unutulursa, veri dağılımı değiştiğinde kötü plana kilitli kalırsın. Takvime bağla.</li>
+</ul>
+<p>Yeni sürümlerde <b>Query Store ipuçları</b> (SQL Server 2022 ve sonrası) uygulama metnine dokunmadan ipucu ekler. Belge bunları plan kılavuzlarına göre daha kolay bulur, yine de istatistik ve indeks bakımından sonra, son çare olarak önerir.</p>
+<pre class="code" data-norun>-- Yalnız okumak için
+EXEC sys.sp_query_store_set_hints @query_id = 8, @query_hints = N'OPTION (RECOMPILE)';
+EXEC sys.sp_query_store_clear_hints @query_id = 8;</pre>
+<h2>Araya ağ geçidi koymak (reverse proxy)</h2>
+<p>Uygulama ile veritabanı arasına bir ara katman koymak, koda dokunmadan sorguyu görme fırsatı verir. Bu bölüm kavramsaldır: SQL Server istemcileri TDS protokolüyle konuşur ve bu trafik tarayıcıda yakalanamaz, burada çalışan bir örneği yoktur.</p>
+<table>
+<tr><th>Fayda</th><th>Bedel ve risk</th></tr>
+<tr><td>Kod değişmeden günlük ve ölçüm</td><td><b>Gecikme:</b> her istek ek bir ağ adımından geçer, her işlev ek süre ekler</td></tr>
+<tr><td>Yönlendirme, ör. okumaları kopyaya göndermek</td><td><b>Tek hata noktası:</b> geçit düşerse uygulama düşer. Birden çok kopya ve bağlantı boşaltma gerekir</td></tr>
+<tr><td>Merkezî kural, ör. bilinen kötü sorguyu engellemek</td><td><b>Darboğaz:</b> ortalamaya değil en yoğun ana göre boyutlandırılmalı</td></tr>
+<tr><td>Bazı sonuçları önbellekten vermek</td><td><b>Güvenlik:</b> sorguları ve belki kişisel veriyi gördüğü için değerli bir hedeftir. Sertleştir, ayrı izle, doğrudan bağlantıyı kapat</td></tr>
+</table>
+<p>Şifreli bağlantıda sorguyu görmek için geçidin şifrelemeyi çözmesi gerekir; bu da güven sınırını taşır. Bağlantı durumu taşıyan bir protokolde (oturum ayarları, geçici tablolar, açık işlemler) yönlendirme de sanıldığından zordur. Karar sorusu: Query Store ve denetim günlüğü bu ihtiyacı karşılıyor mu? Çoğu zaman yeni bir parça eklemeden başla.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ops-kaynak/1">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ai-proje/">← Bitirme projesi (Yapay Zekâ Destekli SQL): asistanın yazdığı prim sorgusunu doğrula</a><a href="../ops-parmak-izi/">Sorgu parmak izi (query fingerprint): sorguları normalleştir, en maliyetli 10 sorguyu bul →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · SQL Türlerine Özgü</span><h1>PostgreSQL'de programlama: PL/pgSQL, DO blokları ve eklentiler</h1><p class="st-l">Fonksiyon, prosedür, trigger fonksiyonu; RETURNS TABLE; eklenti ekosistemi.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-plpgsql">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>PL/pgSQL fonksiyonu</h2>
 <pre class="code" data-norun>CREATE OR REPLACE FUNCTION musteri_ciro(p_musteri INT)
@@ -64,6 +65,6 @@ FOR EACH ROW EXECUTE FUNCTION guncelleme_zamani();</pre>
 <h2>Eklentiler</h2>
 <p>PostgreSQL'in gücü eklentilerinden gelir: <b>pgvector</b> (vektör arama), <b>PostGIS</b> (coğrafi veri), <b>pg_stat_statements</b> (sorgu istatistikleri), <b>pg_cron</b> (zamanlanmış görev), <b>pg_trgm</b> (benzer metin araması), <b>fuzzystrmatch</b> (soundex, levenshtein), <b>TimescaleDB</b> (zaman serisi). <code>CREATE EXTENSION ad;</code> ile etkinleştirilir.</p>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-plpgsql">Alıştırmalara geç (7)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-plpgsql/1">Alıştırmalara geç (7)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../plsql/">← Oracle PL/SQL ile programlama: blok, imleç, prosedür, paket</a><a href="../an-kpi/">İş metrikleri: ciro, sipariş, ortalama sepet →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

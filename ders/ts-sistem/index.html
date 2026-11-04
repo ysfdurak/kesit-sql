@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · T-SQL (SQL Server)</span><h1>Sistem görünümleri, IDENTITY ve yardımcı prosedürler</h1><p class="st-l">INFORMATION_SCHEMA, sys.tables, sp_help, IDENTITY, SCOPE_IDENTITY ve @@ROWCOUNT.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ts-sistem">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Veritabanını sorgulayarak keşfetmek</h2>
 <p>SQL Server meta veriyi (tablolar, sütunlar, indeksler) sorgulanabilir görünümlerde tutar. Standart <code>INFORMATION_SCHEMA</code> görünümleri diğer SQL türlerinde da vardır; <code>sys.*</code> görünümleri SQL Server'a özgüdür ve daha ayrıntılıdır.</p>
@@ -60,6 +61,6 @@ VALUES (N'Kurye geç kaldı'), (N'Paket eksik geldi');</pre>
 <div class="tip"><b>OBJECT_ID ile koruma</b><code>IF OBJECT_ID('dbo.t') IS NOT NULL DROP TABLE dbo.t;</code> kalıbı eski sürümlerde de çalışır. SQL Server 2016+ için kısa yol <code>DROP TABLE IF EXISTS dbo.t;</code>.</div>
 <p><b>Sık hata:</b> <code>INFORMATION_SCHEMA</code> sorgularında şemayı unutmak. Aynı adlı tablo farklı şemalarda (<code>dbo.orders</code>, <code>arsiv.orders</code>) bulunabilir; filtreye <code>TABLE_SCHEMA = 'dbo'</code> ekle. <code>sys.tables</code> ile çalışırken de <code>SCHEMA_NAME(t.schema_id)</code> ile şema adını göster.</p>
 <p><b>Keşif kontrol listesi:</b> Tablolar ve satır sayıları, her tablonun birincil anahtarı, yabancı anahtar ilişkileri, NULL'a izin veren sütunlar, tarih sütunlarının tipi (metin mi tarih mi), IDENTITY sütunları.</p></article>
-<div class="st-c"><a class="st-p" href="../../#ders-ts-sistem">Alıştırmalara geç (5)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-sistem/1">Alıştırmalara geç (5)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ts-liste/">← Listeleri bölmek ve birleştirmek: STRING_SPLIT, STRING_AGG, FOR XML PATH</a><a href="../ts-sequence/">SEQUENCE, IDENTITY ve anahtar üretimi →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

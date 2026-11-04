@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · İleri Sorgu Yapıları</span><h1>Boşluklar ve adalar: ardışık serileri bulmak (gaps and islands)</h1><p class="st-l">ROW_NUMBER farkı yöntemiyle ardışık gün/ay serileri ve kesintiler.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ardisik-seri">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Problem</h2>
 <p>“Müşteri kaç ay üst üste alışveriş yaptı?”, “Sensör hangi aralıklarda veri göndermedi?” gibi sorular <b>boşluklar ve adalar</b> (gaps and islands) problemidir. Ada: kesintisiz bir seri; boşluk: iki seri arasındaki kesinti.</p>
@@ -38,6 +39,6 @@ SELECT gun AS son_dolu, LEAD(gun) OVER (ORDER BY gun) AS sonraki_dolu
 FROM m;</pre>
 <p>Sonraki dolu gün ile aradaki fark 1'den büyükse arada boşluk vardır.</p>
 <h2>Derinleş: takvim günü mü, kayıt mı?</h2><p>“Art arda gün” sorularında önce veriyi <b>gün düzeyine</b> indir (DISTINCT), sonra sıra numarası farkını uygula. Aynı gün birden çok kayıt varsa ROW_NUMBER iki kez artar ve seri kırılmış görünür. Saatli zaman damgalarında <code>date(...)</code> ile gün çıkar; gün farkı hesaplarken de saatleri at: <code>julianday(date(b)) - julianday(date(a))</code>.</p></article>
-<div class="st-c"><a class="st-p" href="../../#ders-ardisik-seri">Alıştırmalara geç (6)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-ardisik-seri/1">Alıştırmalara geç (6)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../pencere-cerceve/">← İleri pencere çerçeveleri: ROWS, RANGE, GROUPS ve EXCLUDE</a><a href="../zaman-araligi/">Zaman aralıkları: çakışma, eşzamanlılık ve birleştirme →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

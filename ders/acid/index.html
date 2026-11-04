@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Veritabanı İç Yapısı</span><h1>ACID, izolasyon seviyeleri ve eşzamanlılık</h1><p class="st-l">Dirty read, phantom read, kilitler ve MVCC.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-acid">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>ACID</h2>
 <table><tr><th>Harf</th><th>Özellik</th><th>Anlamı</th></tr>
@@ -32,6 +33,6 @@
 <p>Klasik yaklaşım satır/tablo kilitleridir; okuyucu yazarı, yazar okuyucuyu bekler. Modern veritabanları (PostgreSQL, Oracle, InnoDB) <b>MVCC</b> (Multi-Version Concurrency Control) kullanır: Her işlem verinin bir anlık görüntüsünü görür, okuyucular yazarları engellemez. Bedeli: eski sürümlerin temizlenmesi (PostgreSQL'de VACUUM).</p>
 <p><b>Deadlock</b>: İki işlem birbirinin kilidini bekler. Veritabanı birini kurban seçip geri alır. Önlem: tablolara/satırlara hep aynı sırayla eriş, işlemleri kısa tut.</p>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-acid">Alıştırmalara geç (4)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-acid/1">Alıştırmalara geç (4)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../be-migration/">← Şema değişikliklerini yönetmek: migration ve kesintisiz dağıtım</a><a href="../json/">SQL ile JSON verisi →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

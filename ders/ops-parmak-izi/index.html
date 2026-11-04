@@ -1,0 +1,71 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sorgu parmak izi (query fingerprint): sorguları normalleştir, en maliyetli 10 sorguyu bul | Kesit SQL</title><meta name="description" content="Sabit değerleri ayıklayıp aynı biçimdeki sorguları gruplamak, toplam ve ortalama maliyeti ayırmak, query_hash, kişisel veri riski."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ops-parmak-izi/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Sorgu parmak izi (query fingerprint): sorguları normalleştir, en maliyetli 10 sorguyu bul"><meta property="og:description" content="Sabit değerleri ayıklayıp aynı biçimdeki sorguları gruplamak, toplam ve ortalama maliyeti ayırmak, query_hash, kişisel veri riski."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ops-parmak-izi/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Sorgu parmak izi (query fingerprint): sorguları normalleştir, en maliyetli 10 sorguyu bul","description":"Sabit değerleri ayıklayıp aynı biçimdeki sorguları gruplamak, toplam ve ortalama maliyeti ayırmak, query_hash, kişisel veri riski.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/ops-parmak-izi/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · SQL Server Operasyon</span><h1>Sorgu parmak izi (query fingerprint): sorguları normalleştir, en maliyetli 10 sorguyu bul</h1><p class="st-l">Sabit değerleri ayıklayıp aynı biçimdeki sorguları gruplamak, toplam ve ortalama maliyeti ayırmak, query_hash, kişisel veri riski.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ops-parmak-izi">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
+<article class="panel theory"><h2>Sorun: aynı sorgu binlerce farklı metin</h2>
+<p>Günlükte şu iki satır aynı sorgudur, ama metinleri farklıdır:</p>
+<pre class="code" data-norun>SELECT customer_id, full_name, segment FROM bank_customers WHERE customer_id = 412
+SELECT customer_id, full_name, segment FROM bank_customers WHERE customer_id = 87</pre>
+<p>Metne göre gruplarsan her biri tek satır görünür ve pahalı olan gizlenir: tek çağrısı ucuz, bin çağrısı pahalı bir sorguyu göremezsin. Çözüm, sabitleri atıp <b>parmak izi</b> çıkarmaktır:</p>
+<pre class="code" data-norun>SELECT customer_id, full_name, segment FROM bank_customers WHERE customer_id = ?</pre>
+<div class="note"><b>Veri kurgudur</b><code>ops_</code> tabloları hayali bir portal için tohumlu üreteçle kuruldu. Gerçek bir sistemden alınmadı; süre ve okuma değerleri ölçüm değildir. Motor SQLite olduğu için günlükteki SQL Server sorguları çalıştırılmaz, metin olarak incelenir. Tabloları sorgularsın, sistem yönetimi komutlarını yalnız okursun.</div>
+<h2>Ne kadar sıkışıyor?</h2>
+<p>Günlükte 7.607 satır, 3.057 farklı metin var. Parmak izi sayısına kendin bak:</p>
+<pre class="code">SELECT COUNT(*) AS satir,
+       COUNT(DISTINCT query_text) AS farkli_metin,
+       COUNT(DISTINCT REGEXP_REPLACE(REGEXP_REPLACE(query_text, '''[^'']*''', '?'), '[0-9]+', '?')) AS parmak_izi
+FROM ops_query_log;</pre>
+<h2>Adım adım normalleştirme</h2>
+<ol>
+<li>Tırnaklı metinleri <code>?</code> yap: <code>'[^']*'</code>. Önce bu adım gelir, çünkü metnin içinde rakam olabilir.</li>
+<li>Sayıları <code>?</code> yap: <code>[0-9]+</code>.</li>
+<li>Değişken uzunluklu listeyi tek biçime indir: <code>IN (?, ?, ?)</code> ile <code>IN (?, ?)</code> aynı sorgudur.</li>
+</ol>
+<pre class="code">SELECT DISTINCT REGEXP_REPLACE(REGEXP_REPLACE(query_text, '''[^'']*''', '?'), '[0-9]+', '?') AS parmak_izi
+FROM ops_query_log
+WHERE query_text LIKE '%IN (%';</pre>
+<div class="note"><b>SQL türü farkı</b>PostgreSQL <code>REGEXP_REPLACE</code> için <code>'g'</code> bayrağı ister, yoksa yalnız ilk eşleşmeyi değiştirir. Otomatik çeviri bunu ekler. Belgeye göre SQL Server'da <code>REGEXP_REPLACE</code> 2025 sürümüyle gelir, Azure SQL'de de vardır; 2022 ve öncesinde yoktur.</div>
+<h2>En maliyetli 10 sorgu</h2>
+<pre class="code">WITH n AS (SELECT REGEXP_REPLACE(REGEXP_REPLACE(query_text, '''[^'']*''', '?'), '[0-9]+', '?') AS parmak_izi, logical_reads, duration_ms FROM ops_query_log)
+SELECT parmak_izi, COUNT(*) AS calisma, SUM(logical_reads) AS toplam_okuma, ROUND(AVG(duration_ms)) AS ort_ms
+FROM n
+GROUP BY parmak_izi
+ORDER BY toplam_okuma DESC, parmak_izi
+LIMIT 10;</pre>
+<p>Bu haftalık listede ilk sırayı gece ETL'i alır. Bu bir sorun mu? Kullanıcı gündüz şikâyet ediyorsa değil. Liste <b>hangi zaman dilimi için</b> sorusu olmadan anlamsızdır. Salı sabahı için filtrele, sonuç değişir.</p>
+<h2>Hangi "maliyet"?</h2>
+<table>
+<tr><th>Ölçü</th><th>Yakaladığı</th><th>Kaçırdığı</th></tr>
+<tr><td>Toplam okuma</td><td>Sunucuya en çok yük bindiren</td><td>Tek çağrısı yavaş ama seyrek olan</td></tr>
+<tr><td>Ortalama süre</td><td>Kullanıcının beklediği</td><td>Çok sık çalışan ucuz sorgu; sıkışıklıkta herkes yavaşlar</td></tr>
+<tr><td>Çalışma sayısı</td><td>Önbellek ya da toplu okuma adayı</td><td>Az çalışan pahalı sorgu</td></tr>
+</table>
+<p>Süre sıkışıklıktan etkilenir: suçsuz sorgu da uzar. Okuma sayısı yapılan işi gösterir. Bu yüzden önce okumaya, sonra süreye bak.</p>
+<h2>SQL Server'ın hazır parmak izi: query_hash</h2>
+<p>Normalleştirmeyi elle yapmak zorunda değilsin. Belgeye göre <code>sys.dm_exec_query_stats</code> içindeki <code>query_hash</code>, yalnız sabit değerleri farklı olan sorguların toplam kaynak kullanımını bulmak içindir. <b>İzleme: DMV'ler</b> dersindeki sorgu plan başına listeler; bu sorgu biçim başına toplar.</p>
+<pre class="code" data-norun>-- Yalnız okumak için
+SELECT TOP 10 qs.query_hash,
+       SUM(qs.execution_count) AS calisma,
+       SUM(qs.total_logical_reads) AS toplam_okuma,
+       MIN(t.text) AS ornek_metin
+FROM sys.dm_exec_query_stats qs
+CROSS APPLY sys.dm_exec_sql_text(qs.sql_handle) t
+GROUP BY qs.query_hash
+ORDER BY toplam_okuma DESC;</pre>
+<ul>
+<li>Bu görünümde satırın ömrü plana bağlıdır: plan önbellekten çıkınca kayıt da gider. Geçmişi saklamak için Query Store gerekir.</li>
+<li>Yalnız biten sorguları gösterir, süren sorgular yoktur.</li>
+<li>Belge, farklı <code>query_hash</code> sayısının toplam sorgu sayısına oranını iş yükünün parametresiz olup olmadığını anlamak için kullanır. Yüksek çeşitlilik, plan önbelleğinin boşa harcandığına işaret eder.</li>
+</ul>
+<h2>Sınırlar ve kişisel veri</h2>
+<ul>
+<li>Basit düzenli ifade her şeyi çözmez: yorumlar, büyük ve küçük harf, boşluk farkı, adında rakam olan sütunlar. Gerçek araçlar sorguyu ayrıştırır.</li>
+<li>Sorgu metni sabit değerlerle kişisel veri taşıyabilir. Ad ya da kimlik numarası günlüğe düşer. Normalleştirilmiş metni sakla, ham metne erişimi kısıtla, saklama süresi koy.</li>
+</ul></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ops-parmak-izi/1">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ops-kaynak/">← Kaynak kodu değiştirilemeyen uygulamada performans: indeks, Query Store, plan zorlama</a><a href="../ops-onbellek/">Önbellek kararı: ne zaman önbelleklenir, bayat veri riski nasıl ölçülür →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

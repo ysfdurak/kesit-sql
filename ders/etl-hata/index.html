@@ -1,0 +1,47 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ETL işletimi: hatalı satır tablosu, mükerrer kayıt ve yükleme günlüğü | Kesit SQL</title><meta name="description" content="Bir bozuk satır bütün yüklemeyi durdurmasın; ne okunduğu, ne yüklendiği ve ne reddedildiği hesapça tutsun."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/etl-hata/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="ETL işletimi: hatalı satır tablosu, mükerrer kayıt ve yükleme günlüğü"><meta property="og:description" content="Bir bozuk satır bütün yüklemeyi durdurmasın; ne okunduğu, ne yüklendiği ve ne reddedildiği hesapça tutsun."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/etl-hata/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"ETL işletimi: hatalı satır tablosu, mükerrer kayıt ve yükleme günlüğü","description":"Bir bozuk satır bütün yüklemeyi durdurmasın; ne okunduğu, ne yüklendiği ve ne reddedildiği hesapça tutsun.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/etl-hata/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veri Mühendisliği</span><h1>ETL işletimi: hatalı satır tablosu, mükerrer kayıt ve yükleme günlüğü</h1><p class="st-l">Bir bozuk satır bütün yüklemeyi durdurmasın; ne okunduğu, ne yüklendiği ve ne reddedildiği hesapça tutsun.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-etl-hata">Uygulamada aç, 10 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
+<article class="panel theory"><h2>Gece yüklemesi neden yarıda kalır?</h2>
+<p>Kaynak dosyada bir satırın tutarı <code>abc</code> ise <code>CAST</code> hata verir ve bütün yükleme durur. Sabah rapor boştur, üstelik hangi satır yüzünden olduğunu kimse bilmez. İşletilen bir boru hattı üç şeyi ayırır: temiz satırlar yüklenir, bozuklar nedeniyle ayrı tabloya yazılır, her çalışma günlüğe bir satır bırakır.</p>
+<div class="note"><b>Veri kurgudur</b><code>etl_</code> tabloları hayali bir gece yüklemesi için elle kuruldu. Gerçek bir sistemden alınmadı; bozuk satırlar bilerek kondu.</div>
+<div class="tip"><b>Önkoşul</b>Katmanlar ve idempotent yükleme için <b>ETL ve ELT</b> dersine bak; burada tekrar anlatılmıyor.</div>
+<h2>Bozuk satırı ayıklamak: TRY_CONVERT</h2>
+<p><code>TRY_CONVERT</code> dönüşemeyen değerde hata vermez, NULL döner. Bu yüzden bozuk satır bulmanın temel aracıdır. İki tuzak: boş metin <code>INT</code> için 0, <code>DATE</code> için 1900-01-01 olur, NULL dönmez; boşu ayrıca sına. <code>05.11.2024</code> gibi tarih de dil ayarına göre 5 Kasım ya da 11 Mayıs okunabilir; kaynağı <code>yyyy-MM-dd</code> ya da stil koduyla netleştir.</p>
+<pre class="code" data-base="tsql">SELECT stg_id, kaynak_no, tutar, TRY_CONVERT(DECIMAL(12, 2), tutar) AS sayi, islem_tarihi, TRY_CONVERT(DATE, islem_tarihi) AS tarih
+FROM etl_stg_hareket
+ORDER BY stg_id;</pre>
+<h2>Nedeniyle reddetmek</h2>
+<p>Red tablosu yalnız "bozuk" demez, neden yazar. Sabah ilk bakılan şey hangi nedenin arttığıdır.</p>
+<pre class="code" data-base="tsql">INSERT INTO etl_red (stg_id, neden, batch_id)
+SELECT stg_id,
+       CASE WHEN hesap_no IS NULL THEN 'hesap bos'
+            WHEN TRY_CONVERT(DATE, islem_tarihi) IS NULL THEN 'tarih bozuk'
+            ELSE 'tutar bozuk' END,
+       43
+FROM etl_stg_hareket
+WHERE hesap_no IS NULL
+   OR TRY_CONVERT(DATE, islem_tarihi) IS NULL
+   OR TRY_CONVERT(DECIMAL(12, 2), tutar) IS NULL;
+SELECT neden, COUNT(*) AS satir FROM etl_red GROUP BY neden ORDER BY neden;</pre>
+<h2>Mükerrer kayıt</h2>
+<p>Kaynak aynı kaydı iki kez gönderebilir. Hangi satırın kalacağı kurala bağlanır: burada temiz satırlar içinde <code>kaynak_no</code> başına en küçük <code>stg_id</code>. Önce süz, sonra numaralandır: <code>K1015</code>'in ilk kopyası bozuk, ikincisi temiz.</p>
+<pre class="code" data-base="tsql">SELECT stg_id, kaynak_no, ROW_NUMBER() OVER (PARTITION BY kaynak_no ORDER BY stg_id) AS sira
+FROM etl_stg_hareket
+WHERE kaynak_no = 'K1007';</pre>
+<h2>Yükleme günlüğü ve batch_id</h2>
+<p>Her çalışma <code>batch_id</code> alır. Fact ve red satırı bu numarayı taşır, böylece hatalı bir yüklemeyi yalnız o numarayla geri almak mümkün olur.</p>
+<table><tr><th>Alan</th><th>Neden tutulur</th></tr>
+<tr><td><code>okunan</code>, <code>yuklenen</code>, <code>reddedilen</code>, <code>mukerrer</code></td><td>Mutabakat: okunan = yüklenen + reddedilen + mükerrer olmalı. Tutmuyorsa satır kaybolmuştur.</td></tr>
+<tr><td><code>baslangic</code>, <code>bitis</code></td><td>Süre artışı sorunun erken işaretidir.</td></tr>
+<tr><td><code>durum</code></td><td>Hata alan çalışma da satır bırakır; günlükte yoksa hiç başlamamış demektir.</td></tr></table>
+<div class="note"><b>Zamanlama</b>Bu işi gece kim çalıştırır? SQL Server'da genellikle SQL Agent işi. Tarayıcıda zamanlayıcı yok; bak: <b>SQL Agent ve iş geçmişi</b> dersi.</div>
+<h2>Sıra önemli</h2>
+<p>Red kaydı yüklemeden önce yazılır, fact yüklemesi de reddedilenleri dışlar. Tersi yapılırsa bozuk satır <code>CAST</code> hatasıyla her şeyi durdurur. Aynı batch yeniden çalışırsa önce o batch'in satırları silinir: yeniden çalıştırmak çift satır üretmemeli.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-etl-hata/1">Alıştırmalara geç (10)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ops-proje/">← Bitirme projesi (SQL Server Operasyon): Salı sabahı sistem yavaş ve şüpheli erişim var</a><a href="../etl-boyut/">Boyut yüklemesi: vekil anahtar eşleme, geç gelen boyut, SCD 2 kapat-aç →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

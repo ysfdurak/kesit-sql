@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · BT İş Analizi</span><h1>API sözleşmesini okumak (API contract): REST, JSON, durum kodları, idempotency, hata durumları</h1><p class="st-l">Bir iş analisti için REST ve JSON, durum kodları, aynı isteğin tekrarı, hata senaryoları ve API alanlarını tablolara eşlemek.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ba-api">Uygulamada aç, 10 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory"><p>Kupon servisi, sipariş servisi ve bildirim servisi birbirini <b>API</b> (application programming interface) üzerinden çağırır. Sözleşmeyi (contract) geliştirici yazar, sen okursun: yazdığın kural sözleşmede bir yere oturuyor mu? Bu tarayıcıda gerçek bir servis çalışmıyor; bu ders okumaya ve çıkan veriyi SQL ile doğrulamaya dayanır.</p>
 <h2>REST'in dört fiili</h2>
 <table><tr><th>Fiil (verb)</th><th>Ne yapar?</th><th>Kupon örneği</th></tr>
@@ -58,6 +59,6 @@ Idempotency-Key: siparis-5045
 <tr><td><code>tutar</code></td><td>hesaplanır, <code>ba_kupon.tutar</code></td><td>Karar tablosundan</td></tr>
 <tr><td><code>son_kullanim</code></td><td>kaynak yok</td><td>Açık soru: tabloda alan yok, süre için karar gerekli (Canlıya geçiş dersindeki mini BRD bunu 30 gün olarak kapatır)</td></tr></table>
 <p>Son satır sözleşmeyi okumanın kazancıdır: API'de olan alanın tabloda karşılığı yok. Bunu geliştirme başlamadan yakalamak ucuzdur. Gerçek API'lerle Python'dan çalışmak istersen Kesit Python'daki BT İş Analisti yolunda HTTP dersi var.</p></article>
-<div class="st-c"><a class="st-p" href="../../#ders-ba-api">Alıştırmalara geç (10)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-ba-api/1">Alıştırmalara geç (10)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ba-veri/">← Veriyi konuşmak: ER ve veri sözlüğü, alan eşleme (field mapping), yeni tablo önerisi, göç kontrolleri</a><a href="../ba-uat/">Kullanıcı kabul testi (UAT): senaryolar, test verisi, mutabakat, hata kaydı, onay →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

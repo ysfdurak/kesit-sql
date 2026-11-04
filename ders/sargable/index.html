@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Performans</span><h1>Hızlı sorgu yazmak: SARGable koşullar ve sık yapılan performans hataları</h1><p class="st-l">İndeksin kullanılabildiği koşullar, fonksiyonlu sütun, OR, LIKE '%x', SELECT *.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-sargable">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>SARGable ne demek?</h2>
 <p><b>S</b>earch <b>ARG</b>ument-<b>able</b>: indeks üzerinde arama yapılabilen koşul. Kural basit: <b>sütunu yalnız bırak</b>. Sütun bir fonksiyonun veya işlemin içine girerse motor her satırı tek tek hesaplamak zorunda kalır.</p>
@@ -44,6 +45,6 @@ SELECT * FROM dbo.orders WHERE customer_id = 7;
 EXPLAIN PLAN FOR SELECT * FROM orders WHERE customer_id = 7;
 SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);</pre>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-sargable">Alıştırmalara geç (5)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-sargable/1">Alıştırmalara geç (5)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../performans/">← Sorgu optimizasyonu: iyi alışkanlıklar</a><a href="../performans-lab/">Performans laboratuvarı: 42.000 satırlık tabloda indeksin etkisini ölç →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

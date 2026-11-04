@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Veri Değiştirme</span><h1>UPSERT ve MERGE: varsa güncelle, yoksa ekle</h1><p class="st-l">ON CONFLICT, ON DUPLICATE KEY UPDATE, MERGE ve değişen satırları döndürmek.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-upsert">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Varsa güncelle, yoksa ekle</h2>
 <p>Veri yüklerken aynı anahtarlı kayıt zaten olabilir. Her SQL türü bunu farklı yazar; bu ders SQL türü sekmeleri arasındaki farkı görmek için en iyi örneklerden biri:</p>
@@ -26,6 +27,6 @@ WHERE stock &lt; 10
 RETURNING product_id, name, stock;</pre>
 <div class="note"><b>Özet</b>PostgreSQL ve SQLite <code>RETURNING</code>, SQL Server <code>OUTPUT inserted.* / deleted.*</code> kullanır. OUTPUT, DELETE'te silinen satırları, UPDATE'te hem eski (<code>deleted</code>) hem yeni (<code>inserted</code>) değerleri verebilir.</div>
 <h2>Derinleş: upsert ne zaman gerekir?</h2><p>Bir kaynaktan gelen verinin bir kısmı hedefte zaten varsa ve tekrar çalıştırmanın aynı sonucu vermesi (idempotency) isteniyorsa upsert kullanılır. Yazımlar:</p><p>ON CONFLICT için çakışmanın bakılacağı sütunda birincil anahtar ya da benzersiz kısıt olmalıdır.</p></article>
-<div class="st-c"><a class="st-p" href="../../#ders-upsert">Alıştırmalara geç (5)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-upsert/1">Alıştırmalara geç (5)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../rollup/">← ROLLUP, CUBE ve GROUPING SETS: ara toplamlar</a><a href="../alter-drop/">ALTER TABLE, DROP ve TRUNCATE →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

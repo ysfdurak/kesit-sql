@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Veri Bilimi</span><h1>Özellik mühendisliği (feature engineering)</h1><p class="st-l">Müşteri düzeyinde model girdisi tablosu ve churn etiketi.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ds-feature">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Bir satır = bir örnek</h2>
 <p>Makine öğrenmesi modelleri genellikle <b>varlık başına bir satır</b> ister: her müşteri için özellikler (features) ve bir hedef (label). Bu tabloyu SQL ile üretmek, veri bilimcinin en sık yaptığı işlerden biridir.</p>
@@ -70,6 +71,6 @@ GROUP BY CASE WHEN son_tum >= '2024-07-01' THEN 'son sipariş kesimden sonra'
 <tr><td>Kategorik kodlama</td><td><code>CASE WHEN segment = 'Premium' THEN 1 ELSE 0 END</code></td></tr>
 <tr><td>Oran özellikleri</td><td>Payda sıfırsa <code>NULLIF</code>; tam sayı bölmesinden kaçın</td></tr>
 <tr><td>Sızıntı</td><td>Etiketle mükemmel ayrışan özellik var mı? Grupla ve etiket oranına bak</td></tr></table></article>
-<div class="st-c"><a class="st-p" href="../../#ders-ds-feature">Alıştırmalara geç (6)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-ds-feature/1">Alıştırmalara geç (6)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ds-ornekleme/">← Örnekleme ve eğitim/test ayrımı</a><a href="../ds-zaman/">Zaman serisi özellikleri →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

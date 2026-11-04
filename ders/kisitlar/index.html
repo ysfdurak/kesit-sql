@@ -4,7 +4,8 @@
 <link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Kısıtlar (constraints) ayrıntılı: NOT NULL, UNIQUE, CHECK, DEFAULT, FOREIGN KEY eylemleri","description":"Veri bütünlüğünü veritabanında güvenceye almak; ON DELETE CASCADE / SET NULL.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/kisitlar/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Veritabanı Tasarımı</span><h1>Kısıtlar (constraints) ayrıntılı: NOT NULL, UNIQUE, CHECK, DEFAULT, FOREIGN KEY eylemleri</h1><p class="st-l">Veri bütünlüğünü veritabanında güvenceye almak; ON DELETE CASCADE / SET NULL.</p>
-<div class="st-c"><a class="st-p" href="../../#ders-kisitlar">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<div class="st-c"><a class="st-p" href="../../#ders-kisitlar">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Neden kısıt?</h2>
 <p>Uygulama kodu değişir, farklı ekipler aynı tabloya yazar; ama kısıtlar <b>her zaman</b> çalışır. Bozuk veri bir kez girdiğinde temizlemek, girmesini engellemekten çok daha pahalıdır.</p>
@@ -51,7 +52,21 @@ ALTER TABLE products ADD CONSTRAINT ck_fiyat CHECK (price &gt;= cost);
 ALTER TABLE products DROP CONSTRAINT ck_fiyat;</pre>
 <div class="note"><b>SQL türlerine göre</b>MySQL CHECK kısıtını 8.0.16'dan beri uygular; daha eski sürümler sessizce yok sayardı. Oracle'da NOT NULL yalnızca sütun düzeyinde (inline) yazılabilir ve kısıtlar <code>DEFERRABLE</code> yapılarak işlem sonunda denetlenebilir. BigQuery'de PRIMARY/FOREIGN KEY yalnızca bilgi amaçlıdır (NOT ENFORCED), UNIQUE ve CHECK yoktur.</div>
 <div class="tip"><b>Kısıtlara ad ver</b><code>CONSTRAINT ck_fiyat CHECK (...)</code> gibi adlandırılmış kısıtlar hata mesajlarında anlaşılır görünür ve kolayca kaldırılır.</div>
-</article>
-<div class="st-c"><a class="st-p" href="../../#ders-kisitlar">Alıştırmalara geç (6)</a></div>
+<h2>Yabancı anahtarı gerçekten denemek</h2>
+<div class="warn"><b>Bu motorda</b>Yabancı anahtar, <b>yalnız aynı çalıştırmada <code>FOREIGN KEY</code> ya da <code>REFERENCES</code> içeren bir tablo oluşturursan</b> denetlenir. Yoksa denetim kapalıdır: hazır veri setlerinde <code>DELETE FROM customers</code> hatasız geçer ve yetim satır bırakır; alıştırmalar bu yüzden bozulmasın diye böyledir. Gerçek sunucuda aynı silme reddedilir. MySQL satır içi <code>REFERENCES</code> yazımını yok sayar, orada tablo düzeyinde <code>FOREIGN KEY</code> yazılır; bu yüzden kutular MySQL'de kapalı.</div>
+<pre class="code" data-na="bq mysql" data-err>CREATE TABLE siparis (siparis_id INTEGER PRIMARY KEY);
+CREATE TABLE satir (satir_id INTEGER PRIMARY KEY, siparis_id INTEGER NOT NULL REFERENCES siparis (siparis_id));
+INSERT INTO siparis VALUES (1);
+INSERT INTO satir VALUES (10, 1);
+-- Bağlı satır varken ana satır silinemez
+DELETE FROM siparis WHERE siparis_id = 1;</pre>
+<pre class="code" data-na="bq mysql">CREATE TABLE siparis (siparis_id INTEGER PRIMARY KEY);
+CREATE TABLE satir (satir_id INTEGER PRIMARY KEY, siparis_id INTEGER NOT NULL REFERENCES siparis (siparis_id) ON DELETE CASCADE);
+INSERT INTO siparis VALUES (1);
+INSERT INTO satir VALUES (10, 1);
+INSERT INTO satir VALUES (11, 1);
+DELETE FROM siparis WHERE siparis_id = 1;
+SELECT COUNT(*) AS kalan_satir FROM satir;</pre></article>
+<div class="st-c"><a class="st-p" href="../../#ders-kisitlar/1">Alıştırmalara geç (8)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../alter-drop/">← ALTER TABLE, DROP ve TRUNCATE</a><a href="../transaction/">Transaction: BEGIN, COMMIT, ROLLBACK →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

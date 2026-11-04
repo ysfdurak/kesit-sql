@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Veri Mühendisliği</span><h1>Artımlı yükleme (incremental load)</h1><p class="st-l">Watermark ile sadece yeni kayıtları işlemek.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-de-incremental">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Her gece tüm tabloyu yüklemek ölçeklenmez</h2>
 <p>Milyarlarca satırlık bir olay tablosunu her gün baştan yüklemek pahalıdır. Artımlı yükleme, hedefte en son yüklenen zamanı (<b>watermark</b>) bulur ve sadece ondan yeni kayıtları ekler.</p>
@@ -54,6 +55,6 @@ SELECT (SELECT COUNT(*) FROM price_hist) AS satir, son_deger FROM etl_watermark;
 <tr><td>Güncellenen kayıt</td><td>Durum değişikliği hedefe yansımaz</td><td><code>updated_at</code> watermark'ı + MERGE</td></tr>
 <tr><td>Silinen kayıt</td><td>Hedefte “hayalet” satırlar</td><td>Kaynakta soft delete bayrağı ya da periyodik tam karşılaştırma</td></tr>
 <tr><td>Saat dilimi</td><td>Gün sınırında kayıp/çift</td><td>Watermark'ı UTC tut</td></tr></table></article>
-<div class="st-c"><a class="st-p" href="../../#ders-de-incremental">Alıştırmalara geç (5)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-de-incremental/1">Alıştırmalara geç (5)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../de-dedup/">← Tekilleştirme (deduplication)</a><a href="../de-cdc/">Değişen veriyi yakalamak (CDC, change data capture) →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

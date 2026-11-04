@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Temel · Fonksiyonlar</span><h1>Tarihlerle filtreleme ve gruplama: aralıklar, aylar, haftanın günleri</h1><p class="st-l">Yarı açık tarih aralığı, saatli sütun tuzağı, ay/yıl/çeyrek gruplama.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-tarih-filtre">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Altın kural: yarı açık aralık</h2>
 <p>“2024 yılı” filtresini yazmanın en güvenli yolu <b>başlangıç dahil, bitiş hariç</b> aralıktır:</p>
@@ -39,6 +40,6 @@ ORDER BY yil, ceyrek;</pre>
 FROM orders
 WHERE order_date > date('2024-12-31', '-30 days');</pre>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-tarih-filtre">Alıştırmalara geç (7)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-tarih-filtre/1">Alıştırmalara geç (7)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../tarih-fn/">← Tarih ve saat fonksiyonları</a><a href="../toplama-tuzak/">Toplama fonksiyonlarında tuzaklar: COUNT türleri, NULL ve tam sayı bölmesi →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

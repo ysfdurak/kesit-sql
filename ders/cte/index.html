@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · İleri Sorgu Yapıları</span><h1>CTE: WITH ile okunabilir sorgular</h1><p class="st-l">Karmaşık sorguları adım adım, isimli bloklara bölmek.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-cte">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Common Table Expression</h2>
 <p>CTE, sorgunun başında <b>WITH</b> ile tanımlanan, isim verilmiş geçici bir sonuç kümesidir. İç içe alt sorgular yerine yukarıdan aşağı okunan adımlar yazmanı sağlar.</p>
@@ -39,6 +40,6 @@ WHERE a.ciro > ortalama.ort
 ORDER BY a.ay;</pre>
 <div class="tip"><b>Ne zaman CTE?</b>Aynı alt sonucu birden çok kez kullanacaksan, sorgu üç seviyeden fazla iç içe geçiyorsa veya başkası okuyacaksa. Analist ekiplerinde CTE ile yazmak neredeyse standarttır.</div>
 <h2>Derinleş: CTE ile adım adım doğrulama</h2><p>CTE'nin en büyük faydası her adımı ayrı ayrı çalıştırabilmendir. Uzun bir sorgu yazarken son SELECT'i geçici olarak <code>SELECT * FROM adim2 LIMIT 10</code> yap; her adımın çıktısının beklediğin taneciğe sahip olduğunu gör, sonra bir sonraki adıma geç. Bu alışkanlık mülakatta da, iş hayatında da hataların çoğunu erkenden yakalar.</p></article>
-<div class="st-c"><a class="st-p" href="../../#ders-cte">Alıştırmalara geç (9)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-cte/1">Alıştırmalara geç (9)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../hata-ayiklama/">← Sorgu hata ayıklama: yanlış sonucu adım adım bulmak</a><a href="../recursive-cte/">Özyinelemeli CTE (recursive CTE, WITH RECURSIVE) →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

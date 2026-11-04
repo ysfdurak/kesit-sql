@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Veri Analisti</span><h1>Dönüşüm hunisi (funnel) analizi</h1><p class="st-l">Ziyaretten satın almaya her adımda kaç kullanıcı kaybediliyor?</p>
 <div class="st-c"><a class="st-p" href="../../#ders-an-funnel">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Ham olay kullanıcı değildir</h2>
 <p><code>web_events</code> adımları: <code>visit → product_view → add_to_cart → checkout → purchase</code>. Kullanıcı siteye yeniden gelir, aynı sayfaya tekrar bakar, sepete ikinci ürünü ekler. Üstelik izleme kodu bazı olayları iki kez gönderir. Bu yüzden ham sayım huniyi şişirir: 1.005 <code>visit</code> satırı 600 kullanıcıdan, 75 <code>purchase</code> satırı 67 kullanıcıdan gelir.</p>
@@ -40,6 +41,6 @@ SELECT sira, event_type, kullanici,
 FROM adim ORDER BY sira;</pre>
 <div class="note"><b>Sıralı huni</b>Gerçek analizde adımların <b>doğru sırada</b> yapıldığı da kontrol edilir. Bunun için her adımın ilk zamanını MIN ile alıp karşılaştırırsın. Bu veride 24 kullanıcıda istemci saati kaydığı için iki adımın zamanı yer değiştirmiştir; örneğin 17 kullanıcının ilk ürün görüntülemesi ilk ziyaretinden önce görünür. Bu satırları silme: say, raporla, sırayı <code>event_id</code> ile de karşılaştır.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-an-funnel">Alıştırmalara geç (3)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-an-funnel/1">Alıştırmalara geç (3)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../an-kohort/">← Kohort ve elde tutma (retention) analizi</a><a href="../an-aktif/">Aktif kullanıcı metrikleri: DAU, MAU ve yapışkanlık →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

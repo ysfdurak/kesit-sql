@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Temel · Tabloları Birleştirme</span><h1>İlişkiler: bire-bir, bire-çok, çoka-çok</h1><p class="st-l">Tablolar neden ayrı tutulur ve anahtarlar onları nasıl bağlar?</p>
 <div class="st-c"><a class="st-p" href="../../#ders-iliskiler">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Neden her şey tek tabloda değil?</h2>
 <p>Her siparişin içine müşterinin adını, şehrini, e-postasını tekrar tekrar yazsaydık: veri şişer, müşteri adres değiştirdiğinde yüzlerce satırı güncellememiz gerekir ve tutarsızlık kaçınılmaz olur. İlişkisel tasarım her bilgiyi <b>bir kez</b> saklar ve anahtarlarla bağlar.</p>
@@ -25,6 +26,6 @@ departments (dept_id PK) ─< employees (emp_id PK, dept_id FK, manager_id FK �
 <h2>Derinleş: ilişkileri veriyle doğrulamak</h2><p>Bir ilişkinin türünü varsaymak yerine sorgula. “Her siparişin en fazla bir değerlendirmesi var mı?” sorusu bire-bir mi bire-çok mu olduğunu söyler:</p><pre class="code">SELECT MAX(n) AS en_fazla_degerlendirme
 FROM (SELECT order_id, COUNT(*) AS n FROM lk_ratings GROUP BY order_id) t;</pre>
 <p>Sonuç 1 ise ilişki siparişten değerlendirmeye bire-birdir (ya da değerlendirme yoktur). Benzer biçimde öksüz kayıtları (karşılığı olmayan yabancı anahtar) NOT EXISTS ile ara.</p></article>
-<div class="st-c"><a class="st-p" href="../../#ders-iliskiler">Alıştırmalara geç (7)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-iliskiler/1">Alıştırmalara geç (7)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../dml/">← INSERT, UPDATE, DELETE</a><a href="../inner-join/">INNER JOIN →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

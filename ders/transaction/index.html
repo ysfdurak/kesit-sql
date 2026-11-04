@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Veri Değiştirme</span><h1>Transaction: BEGIN, COMMIT, ROLLBACK</h1><p class="st-l">Ya hep ya hiç: birden çok değişikliği tek iş birimi yapmak.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-transaction">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Para transferi örneği</h2>
 <p>A hesabından 100 TL düşüp B hesabına ekliyorsun. İlk adımdan sonra sistem çökerse para buharlaşır. Transaction, adımları <b>bölünmez</b> bir birim yapar:</p>
@@ -31,6 +32,6 @@ ROLLBACK;
 SELECT * FROM accounts;  -- bakiye hâlâ 500</pre>
 <div class="note"><b>Otomatik onay (autocommit)</b>Çoğu istemcide BEGIN yazmazsan her ifade kendi transaction'ında çalışır ve hemen kalıcı olur. Toplu güncellemeleri transaction içine almak hem güvenli hem çok daha hızlıdır.</div>
 <h2>Derinleş: işlem sınırlarını çizmek</h2><p>Birlikte başarılı ya da birlikte başarısız olması gereken adımlar tek bir işlemdir: bir siparişi iptal edip stok iade etmek, bir hesaptan düşüp diğerine eklemek. SAVEPOINT, işlemin bir kısmını geri almanı sağlar. İşlemi kısa tut: açık kalan bir işlem kilitleri tutar ve diğer oturumları bekletir.</p></article>
-<div class="st-c"><a class="st-p" href="../../#ders-transaction">Alıştırmalara geç (6)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-transaction/1">Alıştırmalara geç (6)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../kisitlar/">← Kısıtlar (constraints) ayrıntılı: NOT NULL, UNIQUE, CHECK, DEFAULT, FOREIGN KEY eylemleri</a><a href="../normalizasyon/">Normalizasyon: 1NF, 2NF, 3NF, BCNF →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

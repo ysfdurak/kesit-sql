@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Tabloları Birleştirme</span><h1>RIGHT JOIN, FULL OUTER JOIN</h1><p class="st-l">Sağ tabloyu korumak ve iki tarafı da korumak.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-right-full-join">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>RIGHT JOIN</h2>
 <p>LEFT JOIN'in aynasıdır: sağ tablonun tüm satırlarını korur. Pratikte tablo sırasını değiştirip LEFT JOIN yazmak daha okunaklı olduğu için az kullanılır.</p>
@@ -31,6 +32,6 @@ WHERE e.emp_id IS NULL OR d.dept_id IS NULL;</pre>
 SELECT COALESCE(r.city, k.city) AS sehir, r.n AS restoran, k.n AS kurye
 FROM r FULL OUTER JOIN k ON k.city = r.city;</pre>
 <p>Önce her iki tarafı aynı grain düzeyinde (şehir) özetle, sonra birleştir. Özetlemeden birleştirmek satırları çarpar.</p></article>
-<div class="st-c"><a class="st-p" href="../../#ders-right-full-join">Alıştırmalara geç (7)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-right-full-join/1">Alıştırmalara geç (7)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../er-modelleme/">← Veri modelleme ve ER diyagramı: varlıktan tabloya</a><a href="../self-cross-join/">Self JOIN ve CROSS JOIN →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

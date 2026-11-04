@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · İleri Sorgu Yapıları</span><h1>Zaman aralıkları: çakışma, eşzamanlılık ve birleştirme</h1><p class="st-l">Başlangıcı ve bitişi olan kayıtlarla çalışmak: iki aralığın çakışma koşulu, aynı anda kaç işin sürdüğü (+1/−1 olay yöntemi) ve çakışan aralıkları birleştirmek.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-zaman-araligi">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Aralık verisi her yerde</h2>
 <p>Bir teslimat kuryenin restorandan aldığı an (<code>picked_at</code>) ile teslim ettiği an (<code>delivered_at</code>) arasında sürer. Otel rezervasyonları, toplantı odaları, abonelik dönemleri, sunucu oturumları hep aynı yapıdadır: <b>[başlangıç, bitiş)</b>.</p>
@@ -52,6 +53,6 @@ SELECT ada, MIN(bas) AS baslangic, MAX(bit) AS bitis, COUNT(*) AS teslimat
 FROM i GROUP BY ada ORDER BY ada;</pre>
 <div class="tip"><b>Sınır kararı</b>Bir iş tam 12:00'de bitip diğeri tam 12:00'de başlıyorsa çakışıyor mu? Yarı açık aralık [başlangıç, bitiş) kabulünde hayır. Koşulda &lt; ve &lt;= seçimi bu kararı belirler; raporda belirt.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-zaman-araligi">Alıştırmalara geç (8)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-zaman-araligi/1">Alıştırmalara geç (8)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ardisik-seri/">← Boşluklar ve adalar: ardışık serileri bulmak (gaps and islands)</a><a href="../pivot/">Pivot: satırları sütuna çevirmek →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

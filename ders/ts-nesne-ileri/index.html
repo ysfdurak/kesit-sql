@@ -1,0 +1,54 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Çok ifadeli tablo işlevi, güncellenebilir view, CHECK OPTION, INSTEAD OF | Kesit SQL</title><meta name="description" content="View üzerinden yazmanın koşulları, filtre dışına çıkan satırı engellemek ve yazılamayan view'i yazılabilir yapmak."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-nesne-ileri/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Çok ifadeli tablo işlevi, güncellenebilir view, CHECK OPTION, INSTEAD OF"><meta property="og:description" content="View üzerinden yazmanın koşulları, filtre dışına çıkan satırı engellemek ve yazılamayan view'i yazılabilir yapmak."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-nesne-ileri/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Çok ifadeli tablo işlevi, güncellenebilir view, CHECK OPTION, INSTEAD OF","description":"View üzerinden yazmanın koşulları, filtre dışına çıkan satırı engellemek ve yazılamayan view'i yazılabilir yapmak.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-nesne-ileri/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · T-SQL (SQL Server)</span><h1>Çok ifadeli tablo işlevi, güncellenebilir view, CHECK OPTION, INSTEAD OF</h1><p class="st-l">View üzerinden yazmanın koşulları, filtre dışına çıkan satırı engellemek ve yazılamayan view'i yazılabilir yapmak.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-nesne-ileri">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
+<article class="panel theory"><h2>Çok ifadeli tablo işlevi</h2>
+<p>Satır içi işlev (<b>Fonksiyonlar</b> dersi) tek SELECT'tir ve sorguya açılır. Çok ifadeli işlev bir tablo değişkeni doldurur, birden çok adım içerebilir. Karşılığında iyileştirici içine bakamaz; satır tahmini zayıftır. Tek SELECT'le yazılabiliyorsa satır içi işlev yeğlenir.</p>
+<pre class="code" data-base="tsql">CREATE FUNCTION dbo.fn_UrunSeviye (@kategori NVARCHAR(50))
+RETURNS @t TABLE (urun INT, fiyat DECIMAL(12, 2), seviye NVARCHAR(10))
+AS
+BEGIN
+  INSERT INTO @t (urun, fiyat, seviye)
+  SELECT product_id, price, N'normal' FROM products WHERE category = @kategori;
+  UPDATE @t SET seviye = N'yüksek' WHERE fiyat > (SELECT AVG(fiyat) FROM @t);
+  RETURN;
+END;
+GO
+SELECT seviye, COUNT(*) AS adet FROM dbo.fn_UrunSeviye(N'Kitap') GROUP BY seviye;</pre>
+<div class="note"><b>Bu motorda</b>İşlev argümanı sabit ya da değişken olmalı. Gerçek sunucuda <code>CROSS APPLY dbo.fn(sutun)</code> de çalışır, burada çalışmaz. İşlev içinde yan etki yasağının tamamı denetlenmez; yalnız istemciye SELECT döndürmek reddedilir.</div>
+<h2>View üzerinden yazmak</h2>
+<p>Learn'e göre koşullar: değişiklik tek taban tablonun sütunlarına dokunmalı; sütunlar doğrudan olmalı (toplama ya da hesaplama değil); <code>GROUP BY</code>, <code>HAVING</code>, <code>DISTINCT</code> etkilememeli.</p>
+<pre class="code" data-base="tsql">CREATE VIEW dbo.v_kitap AS
+SELECT product_id, name, price, category, cost FROM products WHERE category = N'Kitap';
+GO
+UPDATE dbo.v_kitap SET price = price * 1.1 WHERE product_id IN (SELECT TOP (2) product_id FROM dbo.v_kitap ORDER BY product_id);
+SELECT @@ROWCOUNT AS guncellenen;</pre>
+<h2>Filtre dışına kaçan satır</h2>
+<p>View yalnız Kitap gösteriyor ama üzerinden kategori değiştirilebilir ya da başka kategori eklenebilir; satır bir daha görünmez. <code>WITH CHECK OPTION</code> bunu engeller: view üzerinden yapılan değişiklikten sonra satır view'de görünmeye devam etmeli. Doğrudan tabloya yazmayı kapsamaz.</p>
+<pre class="code" data-base="tsql" data-err>CREATE VIEW dbo.v_kitap2 AS
+SELECT product_id, name, price, category, cost FROM products WHERE category = N'Kitap'
+WITH CHECK OPTION;
+GO
+INSERT INTO dbo.v_kitap2 (product_id, name, price, category, cost) VALUES (900, N'Fare', 10, N'Elektronik', 5);</pre>
+<h2>Yazılamayan view: INSTEAD OF</h2>
+<p>İki tablonun sütununa birden dokunan yazma ve birleştirmeli view'den <code>DELETE</code> gerçek sunucuda Msg 4405 verir; tek tablonun sütununa dokunan <code>UPDATE</code> geçer. <code>INSTEAD OF</code> tetikleyici yazma isteğini yakalar, ne yapılacağına sen karar verirsin. <code>inserted</code> ve <code>deleted</code> burada da vardır.</p>
+<div class="note"><b>Bu motorda</b>Motor birleştirmeli view'e hiç doğrudan yazdırmaz, tek tablonun sütununa dokunan UPDATE için de "desteklemiyor" der. Aşağıdaki örnekte iki tabloya birden yazılıyor: gerçek sunucuda da INSTEAD OF gerekir.</div>
+<pre class="code" data-base="tsql">CREATE VIEW dbo.v_siparis AS
+SELECT o.order_id, o.status, c.city FROM orders o JOIN customers c ON c.customer_id = o.customer_id;
+GO
+CREATE TRIGGER trg_v_siparis ON dbo.v_siparis INSTEAD OF UPDATE AS
+BEGIN
+  UPDATE orders SET status = (SELECT status FROM inserted) WHERE order_id = (SELECT order_id FROM inserted);
+  UPDATE customers SET city = (SELECT city FROM inserted) WHERE customer_id = (SELECT customer_id FROM orders WHERE order_id = (SELECT order_id FROM inserted));
+END;
+GO
+UPDATE dbo.v_siparis SET status = 'teslim', city = N'Bursa' WHERE order_id = 1;
+SELECT o.order_id, o.status, c.city FROM orders o JOIN customers c ON c.customer_id = o.customer_id WHERE o.order_id = 1;</pre>
+<div class="warn"><b>Burada satır satır, sunucuda ifade başına</b>Bu motorda tetikleyici her satır için bir kez çalışır; bu yüzden örnekteki tekil alt sorgu geçer. Gerçek SQL Server'da tetikleyici <b>ifade başına</b> bir kez çalışır ve <code>inserted</code> bütün satırları içerir; çok satırlı güncellemede bu alt sorgu hata verir. Gerçek kodda <code>JOIN inserted</code> yaz. Motor ayrıca INSTEAD OF'u yalnız view üzerinde kabul eder ve gövdede IF gibi akış komutu çalıştırmaz.</div></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-nesne-ileri/1">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-hata-ileri/">← Hata yönetimi ileri: yeniden fırlatma, XACT_STATE, XACT_ABORT, yeniden deneme</a><a href="../dba-indeks-bakim/">İndeks bakımı kararı: parçalanma, doluluk, REBUILD, FILLFACTOR, kullanılmayan indeks →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

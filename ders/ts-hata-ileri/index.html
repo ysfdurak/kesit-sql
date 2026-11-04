@@ -1,0 +1,62 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hata yönetimi ileri: yeniden fırlatma, XACT_STATE, XACT_ABORT, yeniden deneme | Kesit SQL</title><meta name="description" content="CATCH bloğunda hatayı yutmamak, işlemin hâlâ geçerli olup olmadığını bilmek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-hata-ileri/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Hata yönetimi ileri: yeniden fırlatma, XACT_STATE, XACT_ABORT, yeniden deneme"><meta property="og:description" content="CATCH bloğunda hatayı yutmamak, işlemin hâlâ geçerli olup olmadığını bilmek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-hata-ileri/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Hata yönetimi ileri: yeniden fırlatma, XACT_STATE, XACT_ABORT, yeniden deneme","description":"CATCH bloğunda hatayı yutmamak, işlemin hâlâ geçerli olup olmadığını bilmek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-hata-ileri/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · T-SQL (SQL Server)</span><h1>Hata yönetimi ileri: yeniden fırlatma, XACT_STATE, XACT_ABORT, yeniden deneme</h1><p class="st-l">CATCH bloğunda hatayı yutmamak, işlemin hâlâ geçerli olup olmadığını bilmek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-hata-ileri">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
+<article class="panel theory"><h2>Hatayı yutma, yeniden fırlat</h2>
+<p>TRY/CATCH temeli için <b>Hata yönetimi</b> dersine bak. <code>CATCH</code> içinde parametresiz <code>THROW;</code> yakalanan hatayı aynı numarayla çağırana iletir. <code>THROW</code> öncesindeki satır noktalı virgülle bitmelidir.</p>
+<pre class="code" data-base="tsql">BEGIN TRY
+  BEGIN TRY
+    SELECT 1 / 0;
+  END TRY
+  BEGIN CATCH
+    PRINT N'Kayda yazıldı: ' + ERROR_MESSAGE();
+    THROW;
+  END CATCH;
+END TRY
+BEGIN CATCH
+  SELECT ERROR_NUMBER() AS dista_yakalanan;
+END CATCH;</pre>
+<h2>XACT_STATE</h2>
+<table><tr><th>Değer</th><th>Anlam</th><th>Yapılabilecek</th></tr>
+<tr><td>1</td><td>Açık, işlenebilir işlem</td><td>COMMIT ya da ROLLBACK</td></tr>
+<tr><td>0</td><td>Açık işlem yok</td><td>Geri alınacak bir şey yok</td></tr>
+<tr><td>-1</td><td>Açık ama işlenemez işlem</td><td>Okuma ve tam ROLLBACK; yazma ve COMMIT yok</td></tr></table>
+<p><code>@@TRANCOUNT</code> işlem var mı der ama işlenebilir mi demez. <code>XACT_STATE</code> ise iç içe sayısını söylemez.</p>
+<h2>SET XACT_ABORT ON</h2>
+<p>Çalışma zamanı hatasında işlemi geri alır; <code>TRY</code> içindeyse işlem işlenemez duruma geçer ve <code>CATCH</code>'te <code>XACT_STATE() = -1</code> görülür. Uygulama zaman aşımında bile kilit bırakmak için yordamların başına konması önerilir.</p>
+<pre class="code" data-base="tsql">SET XACT_ABORT ON;
+BEGIN TRY
+  BEGIN TRANSACTION;
+  DELETE FROM departments WHERE dept_id = 7;
+  SELECT 1 / 0;
+  COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+  SELECT XACT_STATE() AS durum;
+  IF XACT_STATE() &lt;> 0 ROLLBACK TRANSACTION;
+END CATCH;
+SELECT COUNT(*) AS hukuk_duruyor_mu FROM departments WHERE dept_id = 7;</pre>
+<div class="note"><b>Bu motorda</b><code>XACT_STATE</code> -1'i yalnız <code>XACT_ABORT ON</code> iken üretir ve o durumda COMMIT ya da yazma Msg 3930 verir. Gerçek sunucuda bazı hatalar XACT_ABORT kapalıyken de işlemi işlenemez yapabilir. Motor ayrıca hatada bütün çalıştırmayı durdurur; gerçek sunucuda birçok hata yalnız o ifadeyi durdurur, <code>XACT_ABORT OFF</code> ise sonraki satır çalışmaya devam eder.</div>
+<h2>Yeniden deneme kalıbı</h2>
+<p>Deadlock kurbanı 1205 alır ve işlem geri alınmıştır; yeniden denemek güvenlidir. Learn kısa, rastgele bir bekleme öneriyor. Burada 1205 üretemeyiz (tek bağlantı), bu yüzden hatayı <code>THROW</code> ile <b>taklit ediyoruz</b>.</p>
+<pre class="code" data-base="tsql">DECLARE @deneme INT = 0, @bitti INT = 0;
+WHILE @bitti = 0 AND @deneme &lt; 3
+BEGIN
+  SET @deneme = @deneme + 1;
+  BEGIN TRY
+    IF @deneme &lt; 3 THROW 51205, N'Taklit: kurban seçildi', 1;
+    SET @bitti = 1;
+  END TRY
+  BEGIN CATCH
+    PRINT N'Deneme ' + CAST(@deneme AS NVARCHAR(5)) + N' başarısız';
+    IF ERROR_NUMBER() &lt;> 51205 THROW;
+  END CATCH;
+END;
+SELECT @deneme AS deneme, @bitti AS bitti;</pre></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-hata-ileri/1">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-dml-join/">← T-SQL DML kalıpları: UPDATE FROM, DELETE JOIN, TOP ile parça parça silme, OUTPUT</a><a href="../ts-nesne-ileri/">Çok ifadeli tablo işlevi, güncellenebilir view, CHECK OPTION, INSTEAD OF →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

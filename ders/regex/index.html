@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Fonksiyonlar</span><h1>Desen eşleme: LIKE'tan düzenli ifadelere (REGEX)</h1><p class="st-l">REGEXP_LIKE, REGEXP_REPLACE, REGEXP_SUBSTR ve SQL türleri arası farklar.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-regex">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>LIKE yetmediğinde</h2>
 <p><code>LIKE</code> yalnızca iki joker bilir: <code>%</code> ve <code>_</code>. “İçinde rakam geçen e-postalar”, “birden fazla boşluk”, “@ işaretinden sonraki kısım” gibi işler için <b>düzenli ifadeler</b> (regular expressions, regex) kullanılır.</p>
@@ -48,6 +49,6 @@ WHERE email IS NOT NULL
 GROUP BY REGEXP_SUBSTR(email, '[^@]+$');</pre>
 <div class="tip"><b>Regex pahalıdır</b>Regex koşulları indeks kullanamaz ve her satırda çalışır. Büyük tablolarda önce basit bir filtreyle (tarih, durum) satır sayısını azalt.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-regex">Alıştırmalara geç (6)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-regex/1">Alıştırmalara geç (6)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ddl-create/">← CREATE TABLE, veri tipleri ve kısıtlar</a><a href="../metin-benzerlik/">Metin temizleme ve benzerlik: TRANSLATE, SOUNDEX, Levenshtein →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

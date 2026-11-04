@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Bitirme Projeleri</span><h1>Bitirme projesi (Yapay Zekâ Destekli SQL): asistanın yazdığı prim sorgusunu doğrula</h1><p class="st-l">Yapay zekâ asistanının ürettiği makul görünen sorgudaki hataları sağlamayla bulmak, düzeltmek, etkisini ölçmek ve karar vermek.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ai-proje">Uygulamada aç, 10 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory"><h2>Senaryo</h2>
 <p>Lezzet Kurye operasyon müdürü yapay zekâ asistanına şunu sordu: <b>"Kuryeleri zamanında teslim oranına göre sırala. En az 100 teslimatı olan ve oranı %85 ve üstü olanlara prim vereceğiz."</b> Asistan aşağıdaki sorguyu yazdı. Sonuç listesi makul görünüyor, müdür listeyi insan kaynaklarına göndermek üzere. Senden önce bir kontrol istiyor.</p>
 <pre class="code">SELECT c.full_name, COUNT(*) AS teslimat,
@@ -35,6 +36,6 @@ ORDER BY oran DESC;</pre>
 <tr><td>Doğrulama</td><td>Sorgu çalıştı</td><td>Toplamlar kaynakla sağlandı</td><td>Her hatanın etkisi sayıyla gösterildi</td></tr>
 <tr><td>Düzeltme</td><td>Liste düzeldi</td><td>İş kuralı yazılı</td><td>Tek tanım görünüme alındı</td></tr>
 <tr><td>Karar</td><td>Liste gönderildi</td><td>Etkilenenler söylendi</td><td>İnsan onayı ve veri paylaşım kuralı belirlendi</td></tr></table></article>
-<div class="st-c"><a class="st-p" href="../../#ders-ai-proje">Alıştırmalara geç (10)</a></div>
-<nav class="st-n" aria-label="Ders sırası"><a href="../bv-proje/">← Bitirme projesi (Büyük Veri): Pedal İzmir kamyonet bütçesi nereden kısılır?</a><span></span></nav></main>
+<div class="st-c"><a class="st-p" href="../../#ders-ai-proje/1">Alıştırmalara geç (10)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../bv-proje/">← Bitirme projesi (Büyük Veri): Pedal İzmir kamyonet bütçesi nereden kısılır?</a><a href="../ops-kaynak/">Kaynak kodu değiştirilemeyen uygulamada performans: indeks, Query Store, plan zorlama →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

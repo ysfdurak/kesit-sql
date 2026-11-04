@@ -1,0 +1,61 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Önbellek kararı: ne zaman önbelleklenir, bayat veri riski nasıl ölçülür | Kesit SQL</title><meta name="description" content="Okuma ve yazma oranı, tekrar oranı, tazelik gereği ve hassas veri. Isabet oranını günlükten tahmin etmek, bayat okuma riskini saymak."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ops-onbellek/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Önbellek kararı: ne zaman önbelleklenir, bayat veri riski nasıl ölçülür"><meta property="og:description" content="Okuma ve yazma oranı, tekrar oranı, tazelik gereği ve hassas veri. Isabet oranını günlükten tahmin etmek, bayat okuma riskini saymak."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ops-onbellek/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Önbellek kararı: ne zaman önbelleklenir, bayat veri riski nasıl ölçülür","description":"Okuma ve yazma oranı, tekrar oranı, tazelik gereği ve hassas veri. Isabet oranını günlükten tahmin etmek, bayat okuma riskini saymak.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/ops-onbellek/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · SQL Server Operasyon</span><h1>Önbellek kararı: ne zaman önbelleklenir, bayat veri riski nasıl ölçülür</h1><p class="st-l">Okuma ve yazma oranı, tekrar oranı, tazelik gereği ve hassas veri. Isabet oranını günlükten tahmin etmek, bayat okuma riskini saymak.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ops-onbellek">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
+<article class="panel theory"><h2>Senaryo: "Önbellek koyalım"</h2>
+<p>Sistem yavaş, biri önbellek öneriyor. Önbellek hızlı bir kısayol gibi görünür ama iki soruna yol açar: <b>yanlış veri</b> ve <b>sorunu örtmek</b>. Salı sabahı pahalı sorguyu önbelleğe alsan okuma düşer, ama hatalı sorgu yerinde durur ve önbellek boşaldığı anda yük geri gelir.</p>
+<div class="note"><b>Veri kurgudur</b><code>ops_</code> tabloları hayali bir portal için tohumlu üreteçle kuruldu. Gerçek bir sistemden alınmadı; süre ve okuma değerleri ölçüm değildir. Motor SQLite olduğu için günlükteki SQL Server sorguları çalıştırılmaz, metin olarak incelenir. Tabloları sorgularsın, sistem yönetimi komutlarını yalnız okursun.</div>
+<h2>Karar soruları</h2>
+<table>
+<tr><th>Soru</th><th>Önbelleğe uygun</th><th>Uygun değil</th></tr>
+<tr><td>Aynı veri tekrar okunuyor mu?</td><td>Çok tekrar</td><td>Çoğu istek ıskalıyor: kontrol maliyeti kazancı geçer</td></tr>
+<tr><td>Veri ne sıklıkla değişiyor?</td><td>Seyrek</td><td>Sık yazılıyor</td></tr>
+<tr><td>Bayat değerin bedeli ne?</td><td>Düşük: ürün kategorisi, şube listesi</td><td>Yüksek: hesap bakiyesi, stok, yetki</td></tr>
+<tr><td>Hassas mı?</td><td>Hayır</td><td>Güvenlik verisi kaynaktan okunur</td></tr>
+<tr><td>Asıl sorun çözüldü mü?</td><td>Sorgu zaten iyi, yalnız çok sık</td><td>Sorgu hatalı: önce onu düzelt</td></tr>
+</table>
+<p>Son iki satır önemli. Mimari rehberi hassas ve güvenlik verisini önbelleğe almamayı, her zaman birincil kaynaktan okumayı önerir. Çoğu isteğin ıskaladığı durumda da önbellek zarar eder.</p>
+<h2>Hangi önbellek?</h2>
+<table>
+<tr><th>Katman</th><th>Örnek</th><th>Kim yönetir</th><th>Nerede anlatıldı</th></tr>
+<tr><td>Veritabanı belleği</td><td>Tampon havuzu, plan önbelleği</td><td>Motor, otomatik</td><td><b>Mimari</b> ve <b>Yürütme planı</b> dersleri</td></tr>
+<tr><td>Hesaplanmış sonuç</td><td>Özet tablo, materialized view, indexed view</td><td>Sen, yenileme ile</td><td><b>Görünümler</b> ve <b>Toplama</b> dersleri</td></tr>
+<tr><td>Uygulama önbelleği</td><td>Anahtar-değer deposu, süreç içi bellek</td><td>Uygulama</td><td>Bu ders</td></tr>
+</table>
+<h2>İsabet oranını önceden tahmin et</h2>
+<p>Önbelleği kurmadan önce günlükten bir tahmin alırsın. Soru: <b>Bir kayıt, kendisinin önceki okumasından en çok N saniye sonra yine okunuyor mu?</b> Öyleyse önbellekten gelebilirdi.</p>
+<pre class="code">WITH o AS (
+  SELECT event_at, LAG(event_at) OVER (PARTITION BY record_id ORDER BY event_at, event_id) AS onceki
+  FROM ops_access_log
+  WHERE event_type = 'read' AND login_name = 'svc_portal'
+)
+SELECT COUNT(*) AS okuma,
+       SUM(CASE WHEN onceki IS NOT NULL AND (julianday(event_at) - julianday(onceki)) * 86400 &lt;= 60 THEN 1 ELSE 0 END) AS isabet_60sn,
+       SUM(CASE WHEN onceki IS NOT NULL AND (julianday(event_at) - julianday(onceki)) * 86400 &lt;= 300 THEN 1 ELSE 0 END) AS isabet_5dk,
+       SUM(CASE WHEN onceki IS NOT NULL AND (julianday(event_at) - julianday(onceki)) * 86400 &lt;= 900 THEN 1 ELSE 0 END) AS isabet_15dk
+FROM o;</pre>
+<p>Bu kaba bir tahmindir: Sonsuz kapasite varsayar, önbellekten atılmayı (eviction) hesaba katmaz, süreyi son okumadan sayar (kayan süre). Süreyi uzatmanın ne kazandırdığını görmek için asıl kullanılır: bir noktadan sonra süre uzar, isabet artmaz, yalnız bayat kalma riski büyür.</p>
+<h2>Bayat veri riski</h2>
+<p>Yazma olduğunda önbellekteki kopya eskir. Yazmadan sonraki süre içinde gelen okumalar eski değeri görebilir:</p>
+<pre class="code">SELECT COUNT(*) AS riskli_okuma
+FROM ops_access_log w
+JOIN ops_access_log r
+  ON r.record_id = w.record_id AND r.event_type = 'read'
+ AND (julianday(r.event_at) - julianday(w.event_at)) * 86400 BETWEEN 1 AND 300
+WHERE w.event_type = 'write';</pre>
+<p>Bu üst sınırdır: Kayıt yazmadan önce önbellekte olmayabilir. Ölçüm kararı destekler, kararı vermez. Sayı küçük olsa da o veri hesap bakiyesiyse kabul edilemez, ürün açıklamasıysa sorun değildir.</p>
+<h2>Bayatlığı yönetmek</h2>
+<ul>
+<li><b>Süre (TTL):</b> Çok kısa olursa sürekli yeniden okursun, çok uzun olursa veri bayatlar. Süreyi erişim desenine göre seç.</li>
+<li><b>Yazınca sil:</b> Önce veritabanına yaz, sonra önbellek anahtarını sil. Sıra ters olursa araya giren okuma eski değeri önbelleğe geri koyar.</li>
+<li><b>Tutarlılık garantisi yok:</b> Önbelleğe sormadan başka süreç veritabanını değiştirirse önbellek bunu bilmez. Yazmadan sonra tazelik zorunluysa bu desen uygun değildir.</li>
+<li><b>Boşalma:</b> Önbellek düştüğünde bütün yük veritabanına biner. Veritabanı önbelleksiz yükü taşıyamıyorsa kırılgan bir sistem kurmuşsundur.</li>
+</ul>
+<div class="tip"><b>Karar notu</b>Hangi veri, hangi süre, kim siliyor, önbellek düşerse ne olur, bayat veri kimi nasıl etkiler? Beş soruyu yazamıyorsan önbelleği ekleme.</div></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ops-onbellek/1">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ops-parmak-izi/">← Sorgu parmak izi (query fingerprint): sorguları normalleştir, en maliyetli 10 sorguyu bul</a><a href="../ops-injection/">SQL injection ve doğru savunma: parametreli sorgu, en az yetki, işe yaramayan savunmalar →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

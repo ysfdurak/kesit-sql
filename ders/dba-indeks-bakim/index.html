@@ -1,0 +1,46 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>İndeks bakımı kararı: parçalanma, doluluk, REBUILD, FILLFACTOR, kullanılmayan indeks | Kesit SQL</title><meta name="description" content="Sabit eşikle değil, kanıtla karar vermek: hangi indeks bakım ister, hangisi silinir, hangisine hiç dokunulmaz."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/dba-indeks-bakim/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="İndeks bakımı kararı: parçalanma, doluluk, REBUILD, FILLFACTOR, kullanılmayan indeks"><meta property="og:description" content="Sabit eşikle değil, kanıtla karar vermek: hangi indeks bakım ister, hangisi silinir, hangisine hiç dokunulmaz."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/dba-indeks-bakim/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"İndeks bakımı kararı: parçalanma, doluluk, REBUILD, FILLFACTOR, kullanılmayan indeks","description":"Sabit eşikle değil, kanıtla karar vermek: hangi indeks bakım ister, hangisi silinir, hangisine hiç dokunulmaz.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/dba-indeks-bakim/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veritabanı Yönetimi (DBA)</span><h1>İndeks bakımı kararı: parçalanma, doluluk, REBUILD, FILLFACTOR, kullanılmayan indeks</h1><p class="st-l">Sabit eşikle değil, kanıtla karar vermek: hangi indeks bakım ister, hangisi silinir, hangisine hiç dokunulmaz.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-dba-indeks-bakim">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
+<article class="panel theory"><h2>Eski kural: yüzde 5 ve 30</h2>
+<p>Yıllarca "%5-30 yeniden düzenle, %30 üstü yeniden kur" denildi. Microsoft'un güncel rehberi bu sayıları anmıyor ve kararın yalnız sabit parçalanma ya da doluluk eşiğine dayanmaması gerektiğini yazıyor: önce bakımın gerçekten sorgu performansını iyileştirdiğini ölç, yalnız etkilenen indekslere dokun.</p>
+<div class="warn"><b>Burası kurgu kopya</b>Bu tarayıcı motoru gerçek sistem görünümü çalıştırmaz. T-SQL modunda <code>sys.dm_*</code>, <code>sys.query_store_*</code>, <code>msdb.dbo.*</code> yazımı, hayali bir portal için elle kurulmuş tablolara yönlenir. Yazım ve sütun adları gerçekle aynıdır, ama yalnız seçili sütunlar var ve sayılar ölçüm değildir. Parametre alan görünümlerde (<code>sys.dm_db_index_physical_stats</code>) parametreler yok sayılır, bütün satırlar döner; süzmek için <code>WHERE</code> yaz. Gerçek sunucuda aynı sorgu için yetki gerekir: SQL Server 2022 ve sonrasında <code>VIEW SERVER PERFORMANCE STATE</code>, öncesinde <code>VIEW SERVER STATE</code>.</div>
+<table><tr><th>İşlem</th><th>Ne yapar</th><th>Bedel</th></tr>
+<tr><td><code>REORGANIZE</code></td><td>Yaprak düzeyini düzenler, sayfaları doluluk değerine sıkıştırır. Her zaman çevrim içi</td><td>Az kaynak; rehberin varsayılan önerisi</td></tr>
+<tr><td><code>REBUILD</code></td><td>İndeksi yeniden kurar, bütün düzeylerde parçalanmayı giderir, anahtar istatistiklerini tarayarak günceller</td><td>İki kopya kadar alan; çevrim dışıysa nesne kilidi</td></tr></table>
+<div class="tip"><b>Önce istatistiği dene</b>Yeniden kurma sonrası sorgu hızlandıysa sebep çoğu zaman parçalanma değil, güncellenen istatistiktir. <code>UPDATE STATISTICS ... WITH FULLSCAN</code> çok daha ucuzdur; önce onu sına.</div>
+<h2>Parçalanma ve doluluk</h2>
+<p><code>avg_fragmentation_in_percent</code> sıra dışı sayfa oranıdır. <code>avg_page_space_used_in_percent</code> sayfa doluluğudur; rehbere göre birçok iş yükünde doluluğu artırmak parçalanmayı azaltmaktan daha çok kazandırır, çünkü daha az sayfa daha az I/O ve bellek demektir.</p>
+<pre class="code" data-base="tsql">SELECT OBJECT_NAME(ips.object_id) AS tablo, i.name AS indeks,
+       ips.avg_fragmentation_in_percent AS parcalanma,
+       ips.avg_page_space_used_in_percent AS doluluk,
+       ips.page_count AS sayfa
+FROM sys.dm_db_index_physical_stats(DB_ID(), NULL, NULL, NULL, 'SAMPLED') AS ips
+JOIN sys.indexes AS i ON i.object_id = ips.object_id AND i.index_id = ips.index_id
+ORDER BY ips.page_count DESC;</pre>
+<h2>Küçük indeks</h2>
+<p>Küçük indeksi yeniden kurmak parçalanmayı çoğu zaman düşürmez, yüzde 66 görünse bile. <code>portal_oturum</code> 40 sayfa: dokunma.</p>
+<h2>FILLFACTOR ve sayfa bölünmesi</h2>
+<p>Dolu sayfaya satır gelince motor satırların yaklaşık yarısını yeni sayfaya taşır: pahalıdır ve parçalanma üretir. <code>FILLFACTOR</code> yaprak sayfalarda boşluk bırakır. 0 ve 100 aynıdır: tam dolu. Bedeli okumadır: 50 değeri okuma I/O'sunu ve belleği iki katına çıkarır. Rehber, 100 dışında bir değeri yalnız bölünmesi yüksek indekslerde, örneğin ardışık olmayan GUID öncelikli indekste önerir. Sona eklenen artan anahtarda (IDENTITY) boşluk kullanılmaz, işe yaramaz.</p>
+<pre class="code" data-norun>-- Çalışmaz, başvuru: motor fiziksel sayfa tutmaz
+ALTER INDEX IX_customers_guid ON dbo.bank_customers REBUILD WITH (FILLFACTOR = 85);
+ALTER INDEX IX_txns_hesap_zaman ON dbo.bank_txns REORGANIZE;</pre>
+<h2>Kullanılmayan indeks</h2>
+<p>Yazma maliyeti verir, okuma getirmez. Ama iki tuzak var:</p>
+<ul><li><b>Satırı olmayan indeks:</b> Hiç dokunulmamış indeksin <code>sys.dm_db_index_usage_stats</code> içinde satırı olmayabilir; <code>LEFT JOIN</code> şarttır.</li>
+<li><b>Gözlem penceresi:</b> Sayaçlar motor başlayınca sıfırlanır. Dün açılan sunucuda sıfır okuma, aylık rapor indeksinin gereksiz olduğunu göstermez. <code>sys.dm_os_sys_info.sqlserver_start_time</code> bak.</li></ul>
+<pre class="code" data-base="tsql">SELECT OBJECT_NAME(i.object_id) AS tablo, i.name AS indeks, COALESCE(s.user_updates, 0) AS yazma
+FROM sys.indexes AS i
+LEFT JOIN sys.dm_db_index_usage_stats AS s
+  ON s.object_id = i.object_id AND s.index_id = i.index_id AND s.database_id = DB_ID()
+WHERE i.type_desc = 'NONCLUSTERED' AND i.is_unique = 0
+  AND COALESCE(s.user_seeks, 0) + COALESCE(s.user_scans, 0) + COALESCE(s.user_lookups, 0) = 0
+ORDER BY tablo, indeks;</pre>
+<p><code>user_updates</code> satır sayısı değil işlem sayısıdır: 1.000 satır silen tek ifade 1 artırır.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-dba-indeks-bakim/1">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-nesne-ileri/">← Çok ifadeli tablo işlevi, güncellenebilir view, CHECK OPTION, INSTEAD OF</a><a href="../dba-dmv/">Gerçek görünümler: DMV, bekleme istatistiği, Query Store kataloğu →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

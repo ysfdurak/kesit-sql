@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Fonksiyonlar</span><h1>Harmanlama (collation): büyük/küçük harf ve Türkçe “İ” sorunu</h1><p class="st-l">Karşılaştırma ve sıralama kuralları; CI/CS, AI/AS ve Türkçe karakterler.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-collation">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>“istanbul” = “İSTANBUL” mu?</h2>
 <p>Bu sorunun cevabını veritabanının <b>harmanlama</b> (collation) ayarı verir. Collation, metinlerin nasıl karşılaştırılacağını ve sıralanacağını belirler: büyük/küçük harf duyarlı mı, aksanlar (â, ç, ş) dikkate alınıyor mu, hangi dilin alfabe sırası kullanılıyor?</p>
@@ -37,6 +38,6 @@ SELECT name FROM products ORDER BY name COLLATE &quot;tr-x-icu&quot;;</pre>
 <div class="tip"><b>Taşınabilir çözüm</b>Harmanlamaya güvenemiyorsan karşılaştırmadan önce iki tarafı da aynı biçime getir: kırp, Türkçe karakterleri sadeleştir (TRANSLATE), büyük harfe çevir. Metin benzerliği dersindeki “anahtar” yöntemi budur.</div>
 <div class="warn"><b>Indeks uyarısı</b>Sütunu <code>UPPER(city)</code> gibi bir fonksiyona sokmak indeks kullanımını engeller. Sık yapılan aramalar için doğru collation'lı sütun veya normalleştirilmiş ek sütun daha iyidir.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-collation">Alıştırmalara geç (7)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-collation/1">Alıştırmalara geç (7)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../metin-benzerlik/">← Metin temizleme ve benzerlik: TRANSLATE, SOUNDEX, Levenshtein</a><a href="../sorgu-sirasi/">Bir sorgu hangi sırayla çalışır? →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Büyük Sorgular</span><h1>Büyük sorgu 4: havayolu günlük operasyon panosu</h1><p class="st-l">Uçuş, gün ve neden düzeylerini ayrı CTE'lerde kurup tek pano satırında birleştirmek; günün başlıca rötar nedeni ve 7 günlük hareketli dakiklik.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-bs-ops">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Soru</h2>
 <p>Kanat Havayolları operasyon merkezi her sabah bir pano açıyor: Dün kaç uçuş planlandı, kaçı iptal edildi, zamanında kalkış oranı ne, son yedi günün eğilimi ne, rötarların başlıca nedeni neydi? Bu soruların her biri farklı bir grain düzeyinde hesaplanır ve sonunda gün düzeyinde birleşir.</p>
@@ -55,6 +56,6 @@ ORDER BY g.gun;</pre>
 </ul>
 <div class="tip"><b>Neden LEFT JOIN?</b>Hiç rötar yaşanmayan bir günde <code>baslica</code> satırı yoktur. INNER JOIN o günü panodan düşürür; LEFT JOIN günü korur ve nedeni boş bırakır.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-bs-ops">Alıştırmalara geç (3)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-bs-ops/1">Alıştırmalara geç (3)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../bs-rfm/">← Büyük sorgu 3: RFM puanlama ve müşteri segmentleri</a><a href="../bs-aml/">Büyük sorgu 5: bankada şüpheli işlem kural motoru →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

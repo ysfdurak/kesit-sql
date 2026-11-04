@@ -4,7 +4,8 @@
 <link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Mülakat: yavaş sorgu ve performans soruları","description":"Mülakatta yavaş sorgu sorusuna yapılı yanıt, sık sorulan kısa sorular, planı yorumlama ve yeniden yazma görevleri.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/mk-opt/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Mülakat Hazırlığı</span><h1>Mülakat: yavaş sorgu ve performans soruları</h1><p class="st-l">Mülakatta yavaş sorgu sorusuna yapılı yanıt, sık sorulan kısa sorular, planı yorumlama ve yeniden yazma görevleri.</p>
-<div class="st-c"><a class="st-p" href="../../#ders-mk-opt">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<div class="st-c"><a class="st-p" href="../../#ders-mk-opt">Uygulamada aç, 12 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory"><h2>Sorunun amacı</h2>
 <p>"Bu sorgu yavaş, ne yaparsın?" sorusu ezber ölçmez. Mülakatı yapan kişi yönteme bakar: Önce soru mu soruyorsun, ölçüyor musun, kararın bedelini biliyor musun?</p>
 <h2>Yanıt iskeleti</h2>
@@ -37,7 +38,15 @@
 <li>"NOLOCK eklerim" deme. Kirli okumayı anlat.</li>
 <li>Sonucun aynı kaldığını doğrulamayı unutma. Bu cümle seni çoğu adaydan ayırır.</li>
 </ul>
-<p>Motor burada SQLite olduğundan görevlerin planları SQLite planıdır. Mülakatta hangi motor sorulursa onun adlarıyla konuş.</p></article>
-<div class="st-c"><a class="st-p" href="../../#ders-mk-opt">Alıştırmalara geç (9)</a></div>
+<p>Motor burada SQLite olduğundan görevlerin planları SQLite planıdır. Mülakatta hangi motor sorulursa onun adlarıyla konuş.</p><h2>Operasyon ve güvenlik soruları</h2>
+<table><tr><th>Soru</th><th>Kısa yanıt</th></tr>
+<tr><td>Kodu değiştiremiyorum, sorgu yavaş</td><td>İstatistik ve indeks, sonra Query Store ile plan zorlama ya da ipucu. Hepsi geri alınabilir olmalı, takvime bağlanmalı.</td></tr>
+<tr><td>En pahalı sorguları nasıl bulursun?</td><td>Sabitleri ayıklayıp gruplarım: <code>query_hash</code> ya da Query Store. Şikâyetin saat aralığına süzerim.</td></tr>
+<tr><td>Önbellek ne zaman yanlış?</td><td>Bayat verinin bedeli yüksekse, çoğu istek ıskalıyorsa, sorgu hatalıysa.</td></tr>
+<tr><td>SQL injection nasıl önlenir?</td><td>Parametreli sorgu, adlar için izin listesi, en az yetki. Süzme asıl savunma değildir.</td></tr>
+<tr><td>Parola denemesini nasıl görürsün?</td><td>Adres başına farklı hesap, hesap başına deneme, başarısızlıktan sonra başarı.</td></tr>
+</table>
+<p>Ayrıntı <b>SQL Server Operasyon ve Güvenlik</b> yolunda.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-mk-opt/1">Alıştırmalara geç (12)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../opt-yanlis/">← Yanlış optimizasyon: hızlı görünen ama işe yaramayan ya da sonucu bozan değişiklikler</a><a href="../opt-proje/">Bitirme projesi (Sorgu Optimizasyonu): yavaş müşteri raporunu ölç, oku, düzelt, kanıtla →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Küme ve Alt Sorgular</span><h1>Alt sorgular (subquery)</h1><p class="st-l">Skaler alt sorgu, IN ile alt sorgu ve FROM içinde türetilmiş tablo.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-subquery">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Sorgu içinde sorgu</h2>
 <p>Alt sorgu, parantez içindeki bir SELECT'tir. Üç yaygın yerde kullanılır.</p>
@@ -35,6 +36,6 @@ FROM (
 ) AS t;</pre>
 <div class="warn"><b>NOT IN ve NULL</b>Alt sorgu tek bir NULL döndürürse <code>NOT IN</code> hiç satır döndürmez (çünkü <code>x &lt;&gt; NULL</code> bilinmeyendir). NOT IN kullanırken alt sorguya <code>WHERE ... IS NOT NULL</code> ekle veya <code>NOT EXISTS</code> tercih et.</div>
 <h2>Derinleş: alt sorgu nerede ne döndürmeli?</h2><table><tr><th>Yer</th><th>Döndürmesi gereken</th><th>Yanlışsa</th></tr><tr><td><code>WHERE x &gt; (SELECT ...)</code></td><td>Tek değer</td><td>Birden çok satır gelirse hata</td></tr><tr><td><code>WHERE x IN (SELECT ...)</code></td><td>Tek sütun, çok satır</td><td>NOT IN + NULL tuzağı</td></tr><tr><td><code>FROM (SELECT ...) t</code></td><td>Tablo</td><td>Takma ad zorunlu (çoğu SQL türünde)</td></tr><tr><td><code>SELECT (SELECT ...)</code></td><td>Satır başına tek değer</td><td>Büyük tablolarda yavaş olabilir</td></tr></table></article>
-<div class="st-c"><a class="st-p" href="../../#ders-subquery">Alıştırmalara geç (9)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-subquery/1">Alıştırmalara geç (9)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../set-ops/">← UNION, INTERSECT, EXCEPT</a><a href="../correlated/">İlişkili alt sorgular (correlated subquery) ve EXISTS →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

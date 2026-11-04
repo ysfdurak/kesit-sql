@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · İK Analitiği</span><h1>Kadro (headcount): bir tarihte, her ay ve kırılımlarıyla</h1><p class="st-l">Belirli bir tarihteki kadro, aylık kadro serisi için takvimle birleştirme, giriş–çıkış köprüsü ve kıdem dağılımı.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ik-kadro">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Aylık kadro serisi</h2>
 <p>Her ay sonu için aktif kişi sayısı: önce ay sonlarından bir takvim üret, sonra her tarih için “o tarihte aktif” koşuluyla say. Bu bir <b>eşit olmayan birleştirmedir</b>: takvimin her satırı, o tarihte aktif olan tüm çalışanlarla eşleşir.</p>
@@ -32,6 +33,6 @@ FROM ik_employees;</pre>
 <h2>Kıdem</h2>
 <p>Kıdem, işe girişten bugüne (ya da ayrılışa) geçen süredir. Yıl olarak: <code>(julianday('2024-12-31') - julianday(hire_date)) / 365.25</code>.</p>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-ik-kadro">Alıştırmalara geç (6)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-ik-kadro/1">Alıştırmalara geç (6)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ik-giris/">← İK analitiğine giriş: Pusula A.Ş. verisini tanımak</a><a href="../ik-devir/">Devir hızı (turnover): kim, ne zaman, neden ayrılıyor? →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

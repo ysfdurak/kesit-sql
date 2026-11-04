@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · İleri Sorgu Yapıları</span><h1>Özyinelemeli CTE (recursive CTE, WITH RECURSIVE)</h1><p class="st-l">Hiyerarşiler, ağaçlar ve sayı/tarih dizileri üretmek.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-recursive-cte">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Kendini çağıran sorgu</h2>
 <p>Özyinelemeli CTE iki parçadan oluşur: <b>çapa</b> (başlangıç satırları) ve <b>özyinelemeli kısım</b> (bir önceki adımın sonucunu kullanır). UNION ALL ile birleştirilir ve yeni satır üretilmeyene kadar devam eder.</p>
@@ -44,6 +45,6 @@ SELECT * FROM org ORDER BY seviye, emp_id;</pre>
   FROM lk_customers c JOIN zincir z ON c.referred_by = z.customer_id
 )
 SELECT kusak, COUNT(*) AS kisi FROM zincir GROUP BY kusak;</pre><p>Döngü olabilecek verilerde (A, B'yi; B, A'yı davet etmiş gibi) bir derinlik sınırı ekle: <code>WHERE z.kusak &lt; 20</code>.</p></article>
-<div class="st-c"><a class="st-p" href="../../#ders-recursive-cte">Alıştırmalara geç (8)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-recursive-cte/1">Alıştırmalara geç (8)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../cte/">← CTE: WITH ile okunabilir sorgular</a><a href="../hiyerarsi/">Hiyerarşik veriler: CONNECT BY, özyinelemeli CTE, hierarchyid ve yol yöntemi →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · İş Zekâsı ve Raporlama</span><h1>Pay ve oran analizleri: toplama göre yüzde</h1><p class="st-l">SUM() OVER () ile genel toplam, grup içi pay ve endeks.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-bi-pay">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>“Toplamın yüzde kaçı?”</h2>
 <p>Raporlarda en çok sorulan sorulardan biri payların dağılımıdır: hangi kategori cironun yüzde kaçını getiriyor? Bunun için her satırda <b>genel toplamı</b> da görmemiz gerekir. Pencere fonksiyonu <code>SUM(...) OVER ()</code> tam bunu yapar: satırları gruplamadan tüm sonucun toplamını her satıra yazar.</p>
@@ -29,6 +30,6 @@ ORDER BY city, segment;</pre>
 <h2>Endeks: baz dönem = 100</h2>
 <p>Farklı büyüklükteki serileri karşılaştırmak için ilk dönem 100 kabul edilir, diğer dönemler ona oranlanır. <code>FIRST_VALUE</code> ilk dönemin değerini her satıra taşır.</p>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-bi-pay">Alıştırmalara geç (3)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-bi-pay/1">Alıştırmalara geç (3)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../python-sql/">← Python ile SQL: pandas, parametreli sorgu ve SQLAlchemy</a><a href="../ytd/">Dönem karşılaştırmaları: YTD, MTD ve geçen yılın aynı dönemi →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Yapay Zekâ ile SQL</span><h1>Doğal dilden SQL asistanı kurmak: semantik katman ve güvenlik</h1><p class="st-l">Text-to-SQL uygulamalarında doğruluk, yetki ve prompt enjeksiyonu.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ai-guvenli">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>“Veriye soru sor” uygulamaları</h2>
 <p>Birçok şirket çalışanlarının Türkçe soru sorup cevap alabileceği asistanlar kuruyor (Databricks Genie, BigQuery'de Gemini, Power BI Copilot gibi hazır ürünler de var). Böyle bir sistemin kalitesini model kadar <b>veritabanı tarafındaki hazırlık</b> belirler.</p>
@@ -32,6 +33,6 @@ ALTER ROLE asistan_ro SET statement_timeout = '15s';
 COMMENT ON VIEW rapor.v_satis IS 'Sipariş satırı düzeyinde satışlar. net_tutar indirim düşülmüş tutardır.';
 COMMENT ON COLUMN rapor.v_satis.status IS 'delivered, shipped, cancelled, returned. Ciroya yalnızca delivered girer.';</pre>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-ai-guvenli">Alıştırmalara geç (6)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-ai-guvenli/1">Alıştırmalara geç (6)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ai-ml/">← SQL ile makine öğrenmesi ve üretken YZ: BigQuery ML ve benzerleri</a><a href="../bq-giris/">BigQuery'ye giriş: proje, veri seti ve maliyet mantığı →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

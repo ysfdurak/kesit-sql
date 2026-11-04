@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Sorgu Optimizasyonu</span><h1>JOIN, EXISTS, IN ve alt sorgu maliyeti: erken süzme, gereksiz DISTINCT, SELECT *</h1><p class="st-l">Aynı sonucu veren yazımların planı, ilişkili alt sorgu, WHERE ve HAVING, DISTINCT ile örtülen çoğalma, SELECT * bedeli.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-opt-join">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory"><h2>Senaryo: "Hesabı olan müşteriler"</h2>
 <p>Bu soruyu üç biçimde yazabilirsin. Hangisi hızlı? İnternette kesin cevaplar göreceksin. Doğrusu: <b>motora ve veriye bağlı, ölç.</b></p>
 <pre class="code">-- 1) EXISTS
@@ -134,6 +135,6 @@ SELECT txn_id, amount FROM bank_txns ORDER BY amount DESC;</pre><p class="plan-e
   Buffers: shared hit=391
   ->  Seq Scan on bank_txns  (cost=0.00..813.84 rows=42284 width=10) (actual rows=42284 loops=1)
         Buffers: shared hit=391</pre></article>
-<div class="st-c"><a class="st-p" href="../../#ders-opt-join">Alıştırmalara geç (8)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-join/1">Alıştırmalara geç (8)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../opt-secicilik/">← Seçicilik (selectivity) ve istatistikler: motor neden o planı seçti?</a><a href="../opt-toplama/">Toplama ve pencere fonksiyonu maliyeti: önce topla, sırala, özetle →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

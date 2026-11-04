@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · T-SQL (SQL Server)</span><h1>SQL Server'da JSON: FOR JSON, OPENJSON, JSON_VALUE</h1><p class="st-l">Sorgu sonucunu JSON'a, JSON'u tabloya çevirmek.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ts-json">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>SQL Server ve JSON</h2>
 <p>SQL Server 2016'dan beri JSON'u metin (<code>NVARCHAR</code>) olarak saklayıp işleyebilir; SQL Server 2025 ve Azure SQL'de ayrıca yerel <code>json</code> veri tipi vardır. Dört temel araç:</p>
@@ -52,6 +53,6 @@ SELECT JSON_VALUE(@profil, '$.adres.sehir') AS sehir,
        JSON_MODIFY(@profil, '$.puan', 5) AS guncel;</pre>
 <div class="tip"><b>Performans</b>JSON içindeki bir alana sık filtre uyguluyorsan, o alanı <b>hesaplanmış sütun</b> olarak çıkarıp indeksle: <code>ALTER TABLE t ADD sehir AS JSON_VALUE(profil, '$.adres.sehir'); CREATE INDEX ix_sehir ON t(sehir);</code></div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-ts-json">Alıştırmalara geç (3)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-json/1">Alıştırmalara geç (3)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ts-dinamik/">← Dinamik SQL: EXEC ve sp_executesql</a><a href="../ts-index/">SQL Server indeksleri: clustered, nonclustered, INCLUDE, filtreli →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

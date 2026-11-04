@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · T-SQL (SQL Server)</span><h1>Geçici tablolar, tablo değişkenleri ve SELECT INTO</h1><p class="st-l">#temp, ##global, @tablo ve ara sonuçları saklamak.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ts-gecici">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Ara sonucu saklamak</h2>
 <p>Karmaşık raporlarda bir ara sonucu birden çok kez kullanmak gerekir. CTE yalnızca tek bir ifadede geçerlidir; birden çok sorguda kullanmak için <b>geçici tablo</b> gerekir.</p>
@@ -46,6 +47,6 @@ GROUP BY city;
 SELECT * FROM #sehir_ozet WHERE musteri &gt;= 10 ORDER BY musteri DESC;</pre>
 <div class="tip"><b>Ne zaman hangisi?</b>Birkaç yüz satır ve tek kullanım: tablo değişkeni veya CTE. Binlerce satır, birden çok sorguda kullanım veya indeks ihtiyacı: <code>#temp</code>.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-ts-gecici">Alıştırmalara geç (3)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-gecici/1">Alıştırmalara geç (3)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ts-degisken/">← Değişkenler ve akış kontrolü: DECLARE, IF, WHILE</a><a href="../ts-pivot/">PIVOT ve UNPIVOT →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

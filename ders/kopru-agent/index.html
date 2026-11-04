@@ -1,0 +1,21 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Köprü: SQL Agent ve iş geçmişi | Kesit SQL</title><meta name="description" content="Gece işi neden düştü? İş, adım, zamanlama, operatör ve geçmiş tablosunu okumak."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/kopru-agent/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Köprü: SQL Agent ve iş geçmişi"><meta property="og:description" content="Gece işi neden düştü? İş, adım, zamanlama, operatör ve geçmiş tablosunu okumak."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/kopru-agent/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Köprü: SQL Agent ve iş geçmişi","description":"Gece işi neden düştü? İş, adım, zamanlama, operatör ve geçmiş tablosunu okumak.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/kopru-agent/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Köprü Dersleri</span><h1>Köprü: SQL Agent ve iş geçmişi</h1><p class="st-l">Gece işi neden düştü? İş, adım, zamanlama, operatör ve geçmiş tablosunu okumak.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-kopru-agent">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
+<article class="panel theory"><div class="note"><b>Bu bir köprü dersi</b>Zamanlayıcı burada çalışmaz; iş tanımlanamaz. Görevlerde gerçek tablonun <code>msdb.dbo.sysjobhistory</code> kurgu kopyasını okursun.</div>
+<table><tr><th>Kavram</th><th>Anlamı</th></tr><tr><td>İş (job)</td><td>Çalıştırılacak adımlar bütünü</td></tr><tr><td>Adım (step)</td><td>T-SQL, PowerShell, paket; başarı ve hatada ne olacağı tanımlanır</td></tr><tr><td>Zamanlama</td><td>Ne zaman</td></tr><tr><td>Operatör</td><td>Bildirim alan kişi</td></tr><tr><td>Uyarı (alert)</td><td>Belirli hata ya da eşik olunca tetiklenir</td></tr></table>
+<h2>Geçmiş tablosu</h2>
+<p><code>run_status</code>: 0 başarısız, 1 başarılı, 2 yeniden deneme, 3 iptal, 4 sürüyor. <code>step_id</code> 0 işin genel sonucudur. <code>run_date</code> <code>yyyyMMdd</code>, <code>run_time</code> ve <code>run_duration</code> <code>HHmmss</code> biçiminde <b>tam sayıdır</b>: 10203, 1 saat 2 dakika 3 saniye.</p>
+<pre class="code" data-base="tsql">SELECT j.name AS is_adi, h.step_name AS adim, h.sql_message_id AS hata_no, h.message AS ileti, h.run_date AS tarih
+FROM msdb.dbo.sysjobhistory AS h
+JOIN msdb.dbo.sysjobs AS j ON j.job_id = h.job_id
+WHERE h.run_status = 0 AND h.step_id > 0
+ORDER BY h.run_date DESC, h.instance_id;</pre>
+<div class="tip"><b>İzleme</b>Başarısızlık bildirimi tanımlı değilse iş günlerce sessizce düşebilir. Üstteki kayıtta aynı adım iki gündür düşüyor. İzleme adımı sorgu kadar işin parçasıdır.</div></article>
+<div class="st-c"><a class="st-p" href="../../#ders-kopru-agent/1">Alıştırmalara geç (5)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../kopru-ssis-adf/">← Köprü: SSIS ve Azure Data Factory, SQL gözüyle</a><a href="../kopru-kurulum/">Köprü: kurulum, yama, göç ve kapasite kontrol listesi →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

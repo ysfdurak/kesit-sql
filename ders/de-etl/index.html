@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Veri Mühendisliği</span><h1>ETL, ELT ve veri katmanları</h1><p class="st-l">Ham veriden analiz tablosuna: staging, intermediate, mart.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-de-etl">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>ETL ve ELT</h2>
 <ul><li><b>ETL</b> (Extract, Transform, Load): Veri kaynakta çekilir, ayrı bir sunucuda dönüştürülür, sonra ambara yüklenir. Klasik yaklaşım (Informatica, SSIS).</li>
@@ -61,6 +62,6 @@ WHERE o.status = 'delivered' AND o.order_date >= '2024-12-01' AND o.order_date &
 SELECT ay, ciro, (SELECT COUNT(*) FROM aylik_ciro) AS satir FROM aylik_ciro;</pre>
 <p>İki çalıştırmadan sonra da tabloda tek satır var. Gerçek sistemlerde DELETE ile INSERT aynı işlem (transaction) içinde yapılır; böylece arada okuyan bir rapor boş tablo görmez. Diğer idempotent kalıplar: <code>MERGE</code> (upsert), <code>CREATE OR REPLACE TABLE</code> ve bölüm üzerine yazma (BigQuery'de <code>WRITE_TRUNCATE</code>).</p>
 <div class="note"><b>Pipeline kontrol listesi</b>Ham veri değiştirilmeden saklanıyor mu? Her adım idempotent mi? Yüklenen satırlara <code>loaded_at</code> / <code>batch_id</code> ekleniyor mu? Kaynak ve hedef satır sayıları karşılaştırılıyor mu? Hata olursa kim, nasıl haberdar oluyor?</div></article>
-<div class="st-c"><a class="st-p" href="../../#ders-de-etl">Alıştırmalara geç (7)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-de-etl/1">Alıştırmalara geç (7)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ds-zaman/">← Zaman serisi özellikleri</a><a href="../de-kalite/">Veri kalitesi testleri →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

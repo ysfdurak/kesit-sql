@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Veri Bilimi</span><h1>Aykırı değer tespiti: z-skoru ve IQR</h1><p class="st-l">İstatistiksel olarak sıra dışı kayıtları SQL ile işaretlemek.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ds-outlier">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Z-skoru</h2>
 <p><code>z = (x − ortalama) / standart sapma</code>. |z| &gt; 3 genelde aykırı kabul edilir (daha küçük örneklerde 2–2.5).</p>
@@ -35,6 +36,6 @@ SELECT p.name, p.price
 FROM products p, sinir
 WHERE p.price > q3 + 1.5 * (q3 - q1) OR p.price < q1 - 1.5 * (q3 - q1);</pre>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-ds-outlier">Alıştırmalara geç (4)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-ds-outlier/1">Alıştırmalara geç (4)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ds-dagilim/">← Dağılımlar ve histogram (binning)</a><a href="../ds-korelasyon/">Korelasyon ve basit doğrusal regresyon →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

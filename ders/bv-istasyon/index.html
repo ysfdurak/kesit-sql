@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Büyük Veriyle Çalışmak</span><h1>İstasyon dengesi ve güzergâhlar: sistemi işletmek</h1><p class="st-l">İstasyon bazında giren–çıkan farkıyla yeniden dağıtım ihtiyacı, en yoğun güzergâhlar, doluluk baskısı ve veri kalitesi kontrolleri (kapanmamış yolculuk, aynı anda iki yolculukta görünen bisiklet).</p>
 <div class="st-c"><a class="st-p" href="../../#ders-bv-istasyon">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Net akış</h2>
 <p>Bir istasyondan çıkan bisiklet sayısı gelen sayısından fazlaysa istasyon boşalır; tersi doluysa yer kalmaz. İşletme ekibi günde iki tur kamyonetle bisikletleri yeniden dağıtır (<code>bk_rebalancing</code>). Hangi istasyonların kronik olarak boşaldığını <b>net akış = gelen − giden</b> ile bulursun.</p>
@@ -59,6 +60,6 @@ ORDER BY s.name, h.dilim;</pre>
 </table>
 <div class="note"><b>Basitleştirme</b>Buradaki akış hesabı başlangıçta istasyonda kaç bisiklet olduğunu ve gece yapılan taşımaları bilmez; yalnızca kullanıcı hareketini ölçer. Gerçek sistemlerde istasyonların dakikalık doluluk kayıtları (dock status) ayrıca tutulur.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-bv-istasyon">Alıştırmalara geç (8)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-bv-istasyon/1">Alıştırmalara geç (8)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../bv-zaman/">← Zaman desenleri ve hava durumu: ne zaman, neden binilir?</a><a href="../bv-gelir/">Ücret ve kullanıcı segmentleri: aboneler mi, tek seferlikler mi? →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Kanat Havayolları</span><h1>Pencere fonksiyonları: uçağın günü, rötar zinciri ve sıralamalar</h1><p class="st-l">ROW_NUMBER, LAG, DENSE_RANK, hareketli ortalama, FIRST_VALUE ve toplam içindeki pay.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-hv-pencere">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Rötar neden yayılır?</h2>
 <p>Bir uçak gün içinde birkaç sefer yapar. Önceki sefer geç inerse sonraki sefer de geç kalkabilir: buna <b>rötar zinciri</b> (gec_gelen_ucak) denir. Kanat'ta bir sefer en az 15 dakika geç indiğinde aynı uçağın sonraki seferi %48,0 olasılıkla en az 15 dakika geç kalkıyor; zamanında indiğinde bu oran %32,6. Farkı görmek için aynı uçağın uçuşlarını zaman sırasına koyup bir önceki satıra bakmak gerekir; tam olarak pencere fonksiyonlarının işi.</p>
@@ -26,6 +27,6 @@ GROUP BY p.tier;</pre>
 <p><code>SUM(SUM(b.price)) OVER ()</code> ilk bakışta tuhaf görünür: içteki SUM gruplamadan, dıştaki pencereden gelir. Önce her seviyenin toplamı hesaplanır, sonra bu toplamların genel toplamı her satıra yazılır.</p>
 <div class="tip"><b>PARTITION BY = “her biri için”</b>“Her uçak için sırala”, “her yolcu için ilk rezervasyon” gibi ifadeler PARTITION BY'a karşılık gelir; “zamana göre” ifadesi ise ORDER BY'a.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-hv-pencere">Alıştırmalara geç (7)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-hv-pencere/1">Alıştırmalara geç (7)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../hv-alt/">← Alt sorgu ve EXISTS: hiç uçmayan üyeler, ortalamanın üstündeki rotalar</a><a href="../hv-analitik/">Havayolu metrikleri: doluluk, zamanında varış, yolcu-km ve sadakat →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

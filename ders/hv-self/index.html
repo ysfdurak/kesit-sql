@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Kanat Havayolları</span><h1>Aynı tabloyu iki kez kullanmak: kalkış ve varış şehri, aktarmalı yolculuklar</h1><p class="st-l">Havalimanı tablosunu iki rolde birleştirmek, dönüşü olmayan rotayı bulmak ve aktarma bağlantılarını eşleştirmek.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-hv-self">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Bir tablo, iki rol</h2>
 <p>Bir rotanın hem kalkışı hem varışı <code>hv_airports</code> tablosuna bağlanır. Aynı tabloyu iki farklı takma adla birleştirirsin: biri kalkış, biri varış rolünde.</p>
@@ -30,6 +31,6 @@ ORDER BY bekleme_dk
 LIMIT 5;</pre>
 <div class="warn"><b>Eşleşme patlaması</b>Kendine birleştirmede koşulları dar tutmazsan (aynı gün, belirli havalimanı) sonuç uçuş sayısının karesi kadar büyüyebilir. Önce filtrele, sonra birleştir.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-hv-self">Alıştırmalara geç (6)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-hv-self/1">Alıştırmalara geç (6)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../hv-join/">← Uçuş, rota, havalimanı ve uçak: JOIN zinciri</a><a href="../hv-alt/">Alt sorgu ve EXISTS: hiç uçmayan üyeler, ortalamanın üstündeki rotalar →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

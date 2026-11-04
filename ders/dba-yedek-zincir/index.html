@@ -1,0 +1,37 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Yedek zinciri: geri yükleme planı, RPO hesabı, kırık zincir | Kesit SQL</title><meta name="description" content="Yedek almak iş değil, geri dönebilmek iştir. Geçmiş kaydından hangi dosyaların, hangi sırayla gerektiğini çıkar."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/dba-yedek-zincir/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Yedek zinciri: geri yükleme planı, RPO hesabı, kırık zincir"><meta property="og:description" content="Yedek almak iş değil, geri dönebilmek iştir. Geçmiş kaydından hangi dosyaların, hangi sırayla gerektiğini çıkar."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/dba-yedek-zincir/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Yedek zinciri: geri yükleme planı, RPO hesabı, kırık zincir","description":"Yedek almak iş değil, geri dönebilmek iştir. Geçmiş kaydından hangi dosyaların, hangi sırayla gerektiğini çıkar.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/dba-yedek-zincir/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veritabanı Yönetimi (DBA)</span><h1>Yedek zinciri: geri yükleme planı, RPO hesabı, kırık zincir</h1><p class="st-l">Yedek almak iş değil, geri dönebilmek iştir. Geçmiş kaydından hangi dosyaların, hangi sırayla gerektiğini çıkar.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-dba-yedek-zincir">Uygulamada aç, 10 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
+<article class="panel theory"><h2>Temel</h2>
+<p>RPO, RTO, modeller ve yedek türleri <b>Yedekleme ve geri yükleme</b> dersinde. Burada olaydan sonra sorulan soru var: elimizde ne var, kaç dakikalık veri gider?</p>
+<div class="warn"><b>Motor sınırı</b><code>BACKUP</code> ve <code>RESTORE</code> burada çalışmaz. Görevlerde gerçek geçmiş tablosunun <code>msdb.dbo.backupset</code> kurgu kopyasını okursun. Hiçbir dosya yoktur, hiçbir şey geri yüklenmez.</div>
+<table><tr><th>Model</th><th>Günlük yedeği</th><th>Kayıp penceresi</th><th>Belirli ana dönüş</th></tr>
+<tr><td>SIMPLE</td><td>Yok</td><td>Son yedekten beri her şey</td><td>Yok, yalnız yedeğin sonu</td></tr>
+<tr><td>FULL</td><td>Gerekli</td><td>Normalde yok; günlük sonu hasarlıysa son günlük yedeğinden beri</td><td>Var</td></tr>
+<tr><td>BULK_LOGGED</td><td>Gerekli</td><td>Toplu işlem varsa o yedekten beri</td><td>Yok</td></tr></table>
+<h2>Geri yükleme sırası</h2>
+<ol><li>Günlüğe erişiliyorsa <b>son günlük</b> (tail-log) yedeği: <code>WITH NORECOVERY</code></li><li>En son tam yedek</li><li>En son fark yedeği, varsa: günlük sayısını azaltır</li><li>Sonraki günlük yedekleri sırayla</li><li>Kurtar: <code>WITH RECOVERY</code></li></ol>
+<pre class="code" data-norun>-- Çalışmaz, başvuru
+USE master;
+BACKUP LOG ilgaz_portal TO DISK = 'kuyruk.trn' WITH NORECOVERY;
+RESTORE DATABASE ilgaz_portal FROM DISK = 'tam.bak'  WITH NORECOVERY;
+RESTORE DATABASE ilgaz_portal FROM DISK = 'fark.bak' WITH NORECOVERY;
+RESTORE LOG ilgaz_portal FROM DISK = 'g1.trn' WITH NORECOVERY;
+RESTORE LOG ilgaz_portal FROM DISK = 'kuyruk.trn' WITH STOPAT = '2024-11-13 14:36:00', RECOVERY;
+RESTORE VERIFYONLY FROM DISK = 'tam.bak' WITH CHECKSUM;</pre>
+<div class="tip"><b>Doğrulama</b><code>RESTORE VERIFYONLY</code> yedeğin okunabilir olduğunu sınar, veritabanını kurmaz. Yedeğin işe yaradığının tek kanıtı başka sunucuda düzenli geri yükleme denemesidir: süresi de RTO ölçümün olur.</div>
+<h2>msdb kaydını okumak</h2>
+<p><code>type</code>: D tam, I fark, L günlük. <code>first_lsn</code> ilk kayıt, <code>last_lsn</code> sonraki kayıt: günlük zincirinde her yedeğin <code>first_lsn</code> değeri bir öncekinin <code>last_lsn</code> değerine eşit olmalı. <code>is_copy_only</code> 1 olan yedek normal zincire girmez, fark yedeğinin tabanı olmaz.</p>
+<pre class="code" data-base="tsql">SELECT database_name, recovery_model, type, COUNT(*) AS adet, MAX(backup_finish_date) AS son
+FROM msdb.dbo.backupset
+GROUP BY database_name, recovery_model, type
+ORDER BY database_name, type;</pre>
+<h2>Senaryo</h2>
+<p><code>ilgaz_portal</code> diski 13 Kasım 14:37'de bozuldu, günlük dosyasına ulaşılamıyor; son günlük yedeği alınamaz. RPO hedefi 15 dakika. Aşağıdaki görevlerde durumu çıkaracaksın.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-dba-yedek-zincir/1">Alıştırmalara geç (10)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../dba-engelleme/">← Engelleme, deadlock, izolasyon: iki oturumu kafanda çalıştırmak</a><a href="../dba-yetki/">Yetki denetimi: bu kullanıcı gerçekte ne yapabilir? →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

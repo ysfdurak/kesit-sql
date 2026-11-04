@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Veritabanı Tasarımı</span><h1>Görünümler ileri: güncellenebilir view, WITH CHECK OPTION, materialized view</h1><p class="st-l">Hangi view'a INSERT/UPDATE yapılabilir, veri hazır saklayan görünümler ve yenileme.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-view-ileri">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Güncellenebilir görünüm</h2>
 <p>Tek tabloya dayanan, GROUP BY / DISTINCT / toplama / pencere fonksiyonu içermeyen basit görünümler üzerinden INSERT, UPDATE ve DELETE yapılabilir; değişiklik alttaki tabloya yansır.</p>
@@ -47,6 +48,6 @@ CREATE UNIQUE INDEX ON mv_aylik_ciro (ay);
 REFRESH MATERIALIZED VIEW CONCURRENTLY mv_aylik_ciro;   -- okuyanları kilitlemeden yenile</pre>
 <div class="tip"><b>Ne zaman?</b>Pahalı ve sık okunan, ama birkaç dakika/saat eski olmasında sakınca olmayan raporlar için. Gerçek zamanlı doğruluk gereken yerde normal görünüm veya indeks tercih edilir.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-view-ileri">Alıştırmalara geç (8)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-view-ileri/1">Alıştırmalara geç (8)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../view/">← View ve materialized view</a><a href="../trigger/">Trigger →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

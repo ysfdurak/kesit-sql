@@ -1,0 +1,59 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SQL injection ve doğru savunma: parametreli sorgu, en az yetki, işe yaramayan savunmalar | Kesit SQL</title><meta name="description" content="Girdinin kod olarak yorumlanmasını tanımak, katmanlı savunma kurmak, yanlış savunmaları ayırmak ve iz bulmak. Savunma odaklı."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ops-injection/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="SQL injection ve doğru savunma: parametreli sorgu, en az yetki, işe yaramayan savunmalar"><meta property="og:description" content="Girdinin kod olarak yorumlanmasını tanımak, katmanlı savunma kurmak, yanlış savunmaları ayırmak ve iz bulmak. Savunma odaklı."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ops-injection/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"SQL injection ve doğru savunma: parametreli sorgu, en az yetki, işe yaramayan savunmalar","description":"Girdinin kod olarak yorumlanmasını tanımak, katmanlı savunma kurmak, yanlış savunmaları ayırmak ve iz bulmak. Savunma odaklı.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/ops-injection/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · SQL Server Operasyon</span><h1>SQL injection ve doğru savunma: parametreli sorgu, en az yetki, işe yaramayan savunmalar</h1><p class="st-l">Girdinin kod olarak yorumlanmasını tanımak, katmanlı savunma kurmak, yanlış savunmaları ayırmak ve iz bulmak. Savunma odaklı.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ops-injection">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
+<article class="panel theory"><h2>Bu dersin sınırı</h2>
+<p>Amaç savunmak. Saldırıyı yalnız tanımak için en küçük örnek gösterilir. Başkasının sistemini denemek suçtur; sınama yalnız sana ait ya da yazılı izin aldığın ortamda yapılır.</p>
+<div class="note"><b>Veri kurgudur</b><code>ops_</code> tabloları hayali bir portal için tohumlu üreteçle kuruldu. Gerçek bir sistemden alınmadı; süre ve okuma değerleri ölçüm değildir. Motor SQLite olduğu için günlükteki SQL Server sorguları çalıştırılmaz, metin olarak incelenir. Tabloları sorgularsın, sistem yönetimi komutlarını yalnız okursun.</div>
+<h2>Sorun tek cümle</h2>
+<p>Kullanıcı girdisi metin birleştirmeyle sorguya girdiğinde motor neyin veri, neyin kod olduğunu ayıramaz. Temeli <b>Güvenlik</b> dersinde, dinamik SQL tarafı <b>Dinamik SQL</b> dersinde. Burada savunmayı bir bütün olarak kuruyoruz.</p>
+<pre class="code" data-norun>-- YANLIŞ: girdi metne ekleniyor
+DECLARE @sql NVARCHAR(MAX) = N'SELECT COUNT(*) FROM bank_customers WHERE full_name = ''' + @ara + N'''';
+EXEC (@sql);
+-- @ara değeri  a' OR '1'='1  olursa koşul her satırda doğru olur</pre>
+<h2>Katmanlı savunma</h2>
+<table>
+<tr><th>Katman</th><th>Ne yapar</th><th>Tek başına yeter mi?</th></tr>
+<tr><td><b>Parametreli sorgu</b></td><td>Değer kod olarak yorumlanmaz, tür ve uzunluk denetlenir</td><td>Değerler için asıl savunma budur</td></tr>
+<tr><td><b>İzin listesi (beyaz liste)</b></td><td>Tablo ve sütun adı parametre olamaz, kabul edilenleri say</td><td>Adlar için şart; <code>QUOTENAME</code> ile birlikte</td></tr>
+<tr><td><b>Girdi doğrulama</b></td><td>Tür, uzunluk, biçim, aralık. Her güven sınırında, yalnız istemcide değil</td><td>Hayır, ek katman</td></tr>
+<tr><td><b>En az yetki</b></td><td>Uygulama hesabı <code>sysadmin</code> olmaz, yalnız gerekeni yapar</td><td>Açığı kapatmaz, zararı sınırlar</td></tr>
+<tr><td><b>Hata mesajı</b></td><td>Ayrıntıyı kullanıcıya gösterme, günlüğe yaz</td><td>Hayır, yalnız bilgi sızıntısını azaltır</td></tr>
+<tr><td><b>Kod inceleme ve izleme</b></td><td><code>EXEC</code>, <code>sp_executesql</code> kullanan yordamları gözden geçir, günlüğü izle</td><td>Hayır, açığı bulmak içindir</td></tr>
+</table>
+<h3>Doğru yazım</h3>
+<pre class="code" data-norun>-- Dinamik SQL şart değilse kullanma
+SELECT COUNT(*) FROM bank_customers WHERE full_name = @ara;
+
+-- Şartsa değeri parametre olarak ver
+EXEC sp_executesql N'SELECT COUNT(*) FROM bank_customers WHERE full_name = @a',
+     N'@a NVARCHAR(100)', @a = @ara;</pre>
+<h2>İşe yaramayan ya da eksik savunmalar</h2>
+<table>
+<tr><th>Yöntem</th><th>Neden yetmez</th></tr>
+<tr><td>Tek tırnağı silmek ya da çiftlemek</td><td>Sayısal alanda tırnak gerekmez; kaçışlama asıl savunma olamaz. Belge süzmeyi güvenilir birincil savunma saymaz</td></tr>
+<tr><td>Yalnız arayüzde doğrulama</td><td>İstemci atlanır, istek doğrudan gönderilebilir</td></tr>
+<tr><td>Yasak sözcük listesi (<code>DROP</code>, <code>OR</code>)</td><td>Eksik kalır, meşru girdiyi de bozar: "Orhan" adı gibi</td></tr>
+<tr><td>Saklı yordama geçmek</td><td>Yordam içinde metin birleştiriyorsa sorun aynen sürer</td></tr>
+<tr><td>Hata mesajını gizlemek</td><td>Açık yerinde kalır, yalnız görünmesi zorlaşır</td></tr>
+<tr><td>ORM kullanmak</td><td>ORM'in ham SQL yolunda birleştirme yaparsan korunmazsın</td></tr>
+</table>
+<h2>En az yetki günlükle nasıl kurulur?</h2>
+<p>"Bu hesap ne yapıyor?" sorusunu tahminle değil günlükle yanıtla. Hesap başına okuma ve yazma sayısı, hangi izinlerin gereksiz olduğunu gösterir. Uygulama hesabı yalnız gereken yordamlara <code>EXECUTE</code> almalı; ayrıntısı <b>SQL Server güvenliği</b> dersinde. Belge ayrıca <code>xp_cmdshell</code> kullanımını hiçbir ortamda önermez.</p>
+<pre class="code">SELECT l.login_name, l.kind,
+       SUM(CASE WHEN a.event_type = 'read' THEN 1 ELSE 0 END) AS okuma,
+       SUM(CASE WHEN a.event_type = 'write' THEN 1 ELSE 0 END) AS yazma
+FROM ops_logins l
+LEFT JOIN ops_access_log a ON a.login_name = l.login_name
+GROUP BY l.login_name, l.kind
+ORDER BY l.login_name;</pre>
+<h2>Günlükte iz: parmak izi işe yarar</h2>
+<p>Parametreli bir sorgu her çağrıda aynı biçimdedir. Girdi koda dönüşünce biçim değişir ve <b>yeni bir parmak izi</b> doğar. Kurgusal günlüğümüzde pazartesi akşamı arama sorgusunda bunu göreceksin. Portal aramayı parametresiz kuruyor, bu yüzden günlükte girdinin izi var. Bu aynı zamanda bir bulgudur: günlükte sabit değer gördüğün her sorgu, inceleme adayıdır.</p>
+<p>İz bir kanıt başlangıcıdır, hüküm değildir: görünen adres uygulama sunucusudur, denemeyi yapan kişi günlükte yoktur. Girişleri uygulama katmanı günlüğüyle eşleştirmen gerekir.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ops-injection/1">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ops-onbellek/">← Önbellek kararı: ne zaman önbelleklenir, bayat veri riski nasıl ölçülür</a><a href="../ops-anomali/">Log tablosunda anomali avı: mesai dışı erişim, ardışık ID taraması, parola deneme →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

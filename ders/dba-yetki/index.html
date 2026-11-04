@@ -1,0 +1,34 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Yetki denetimi: bu kullanıcı gerçekte ne yapabilir? | Kesit SQL</title><meta name="description" content="LOGIN, USER, rol ve GRANT'ı kataloğu okuyarak denetlemek. En az yetki ilkesine göre karar vermek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/dba-yetki/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Yetki denetimi: bu kullanıcı gerçekte ne yapabilir?"><meta property="og:description" content="LOGIN, USER, rol ve GRANT'ı kataloğu okuyarak denetlemek. En az yetki ilkesine göre karar vermek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/dba-yetki/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Yetki denetimi: bu kullanıcı gerçekte ne yapabilir?","description":"LOGIN, USER, rol ve GRANT'ı kataloğu okuyarak denetlemek. En az yetki ilkesine göre karar vermek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/dba-yetki/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veritabanı Yönetimi (DBA)</span><h1>Yetki denetimi: bu kullanıcı gerçekte ne yapabilir?</h1><p class="st-l">LOGIN, USER, rol ve GRANT'ı kataloğu okuyarak denetlemek. En az yetki ilkesine göre karar vermek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-dba-yetki">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
+<article class="panel theory"><h2>Temel</h2>
+<p>Login, user, rol farkı <b>SQL Server güvenliği</b> dersinde. Burada asıl iş soru: bir yıl sonra hesaba bakıp "bu kişi neye erişiyor, neden?" diyebilmek.</p>
+<div class="warn"><b>Motor sınırı</b>Motorda tek kullanıcı var: <code>CREATE LOGIN</code>, <code>GRANT</code>, <code>DENY</code> çalışmaz, hata verir. Görevlerde gerçek katalog görünümlerinin kurgu kopyalarını sorgularsın. Yetki gerçekte uygulanmaz.</div>
+<pre class="code" data-norun>-- Çalışmaz, başvuru. Yetki kişiye değil role verilir
+CREATE LOGIN rapor_login WITH PASSWORD = N'&lt;guclu parola>';
+CREATE USER rapor_user FOR LOGIN rapor_login;
+CREATE ROLE rol_rapor;
+GRANT SELECT ON dbo.rapor_ozet TO rol_rapor;
+ALTER ROLE rol_rapor ADD MEMBER rapor_user;
+DENY SELECT ON dbo.bank_customers TO rapor_user;
+REVOKE SELECT ON dbo.rapor_ozet FROM rol_rapor;</pre>
+<h2>Kural: DENY kazanır</h2>
+<ul><li>DENY, GRANT'ın ve rolden gelenin önüne geçer.</li><li>Nesne sahibi ve <code>sysadmin</code> üyesi için DENY işlemez.</li><li>Eskiden kalma istisna: tablo düzeyi DENY, sütun düzeyi GRANT'ın önüne geçmez.</li><li>REVOKE yasaklamaz, yalnız kaydı siler: başka yerden gelen izin kalır.</li></ul>
+<h2>Katalog</h2>
+<table><tr><th>Görünüm</th><th>Ne var</th></tr><tr><td><code>sys.database_principals</code></td><td>Kullanıcı ve roller. <code>type</code> S kullanıcı, R rol</td></tr><tr><td><code>sys.database_role_members</code></td><td>Kim hangi rolde</td></tr><tr><td><code>sys.database_permissions</code></td><td><code>major_id</code> nesne, <code>grantee_principal_id</code> alan, <code>state</code> G ya da D</td></tr></table>
+<pre class="code" data-base="tsql">SELECT r.name AS rol, u.name AS uye
+FROM sys.database_role_members AS m
+JOIN sys.database_principals AS r ON r.principal_id = m.role_principal_id
+JOIN sys.database_principals AS u ON u.principal_id = m.member_principal_id
+ORDER BY rol, uye;</pre>
+<h2>En az yetki</h2>
+<p>Hesap işini yapacak kadar yetki alır, fazlası saldırı yüzeyidir: ele geçirilen raporlama hesabı silememeli. Saldırı senaryosu için <b>SQL injection savunması</b> dersine bak. Kısa kontrol listesi:</p>
+<ul><li>Servis hesabı <code>db_owner</code> olmasın.</li><li>Yetki role verilsin, doğrudan kişiye verilen yetki istisnadır ve gerekçe ister.</li><li>Kapalı hesaplar kaldırılsın.</li></ul></article>
+<div class="st-c"><a class="st-p" href="../../#ders-dba-yetki/1">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../dba-yedek-zincir/">← Yedek zinciri: geri yükleme planı, RPO hesabı, kırık zincir</a><a href="../kopru-hadr/">Köprü: HA ve felaket kurtarma seçimi →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

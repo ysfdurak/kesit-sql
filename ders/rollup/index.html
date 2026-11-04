@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · İleri Sorgu Yapıları</span><h1>ROLLUP, CUBE ve GROUPING SETS: ara toplamlar</h1><p class="st-l">Tek sorguda detay, ara toplam ve genel toplam üretmek.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-rollup">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Raporlarda ara toplam</h2>
 <p>“Kategori ve kanal bazında satış, her kategorinin ara toplamı ve genel toplam” gibi raporlar için birden çok GROUP BY'ı UNION ile birleştirmek yerine <b>gruplama kümeleri</b> kullanılır. SQL Server, PostgreSQL, Oracle ve MySQL (WITH ROLLUP) destekler; SQLite desteklemez (SQLite sekmesinde UNION ALL karşılığını görebilirsin).</p>
@@ -34,6 +35,6 @@ FROM orders o
 JOIN customers c ON c.customer_id = o.customer_id
 GROUP BY GROUPING SETS ((c.segment), (o.channel));</pre>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-rollup">Alıştırmalara geç (5)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-rollup/1">Alıştırmalara geç (5)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../unpivot/">← Geniş tablodan uzun tabloya: UNPIVOT</a><a href="../upsert/">UPSERT ve MERGE: varsa güncelle, yoksa ekle →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

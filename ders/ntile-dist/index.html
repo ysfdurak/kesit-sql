@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Pencere Fonksiyonları</span><h1>NTILE, PERCENT_RANK, FIRST_VALUE</h1><p class="st-l">Dilimlere ayırmak, yüzdelik sıra ve penceredeki ilk/son değer.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ntile-dist">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>NTILE: eşit dilimler</h2>
 <p><code>NTILE(4)</code> sıralı satırları 4 eşit gruba (çeyrek) böler. Müşteri segmentasyonunda çok kullanılır.</p>
@@ -26,6 +27,6 @@ ORDER BY salary;</pre>
 FROM products;</pre>
 <div class="warn"><b>LAST_VALUE tuzağı</b>Varsayılan çerçeve “baştan bu satıra” olduğu için LAST_VALUE genelde satırın kendisini döndürür. Doğrusu: <code>LAST_VALUE(x) OVER (... ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)</code>.</div>
 <h2>Derinleş: dilimler ve eşitlik</h2><p>NTILE eşit büyüklükte gruplar üretir; aynı değere sahip iki satır farklı dilimlere düşebilir. “Üst %25 müşteri” derken bu kabul edilebilir mi, yoksa değer eşiği mi (<code>PERCENT_RANK &gt;= 0.75</code>) istiyorsun? İkisi farklı sayıda müşteri döndürür. Belirleyici sonuç için ORDER BY'a benzersiz bir anahtar ekle: <code>NTILE(4) OVER (ORDER BY siparis, customer_id)</code>.</p></article>
-<div class="st-c"><a class="st-p" href="../../#ders-ntile-dist">Alıştırmalara geç (7)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-ntile-dist/1">Alıştırmalara geç (7)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../frames/">← Kümülatif toplam ve hareketli ortalama (running total, moving average)</a><a href="../first-last/">FIRST_VALUE, LAST_VALUE, NTH_VALUE ve varsayılan çerçeve tuzağı →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

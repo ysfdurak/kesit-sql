@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Temel · T-SQL (SQL Server)</span><h1>TOP, WITH TIES, PERCENT ve OFFSET-FETCH</h1><p class="st-l">SQL Server'da ilk N satır, eşitleri dahil etmek ve sayfalama.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ts-top">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>TOP</h2>
 <p>SQL Server'da ilk N satır <code>TOP</code> ile alınır. TOP, SELECT'ten (ve varsa DISTINCT'ten) hemen sonra yazılır. Sıralama olmadan TOP rastgele N satır döndürür; her zaman ORDER BY ile kullan.</p>
@@ -56,6 +57,6 @@ ORDER BY customer_id;</pre>
 <tr><td>Keyset</td><td>Her sayfa aynı hızda, kayma yok</td><td>Rastgele sayfaya atlanamaz, sıralama anahtarı benzersiz olmalı</td></tr>
 <tr><td>ROW_NUMBER + filtre</td><td>Taşınabilir</td><td>OFFSET gibi tüm önceki satırları işler</td></tr></table>
 <div class="note"><b>SQL türleri arası</b>PostgreSQL ve MySQL <code>LIMIT n OFFSET m</code>; Oracle 12c+ ve PostgreSQL 13+ <code>FETCH FIRST n ROWS WITH TIES</code>; MySQL ve SQLite'ta WITH TIES yoktur, <code>RANK() &lt;= n</code> ile yazılır.</div></article>
-<div class="st-c"><a class="st-p" href="../../#ders-ts-top">Alıştırmalara geç (5)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-top/1">Alıştırmalara geç (5)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ts-giris/">← SQL Server ve T-SQL'e giriş</a><a href="../ts-metin/">T-SQL metin fonksiyonları →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

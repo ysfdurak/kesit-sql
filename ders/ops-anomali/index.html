@@ -1,0 +1,67 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Log tablosunda anomali avı: mesai dışı erişim, ardışık ID taraması, parola deneme | Kesit SQL</title><meta name="description" content="Erişim günlüğünden üç temel sinyali SQL ile çıkarmak, yanlış alarmı ayırmak, sinyali kanıta çevirmek."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ops-anomali/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Log tablosunda anomali avı: mesai dışı erişim, ardışık ID taraması, parola deneme"><meta property="og:description" content="Erişim günlüğünden üç temel sinyali SQL ile çıkarmak, yanlış alarmı ayırmak, sinyali kanıta çevirmek."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ops-anomali/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Log tablosunda anomali avı: mesai dışı erişim, ardışık ID taraması, parola deneme","description":"Erişim günlüğünden üç temel sinyali SQL ile çıkarmak, yanlış alarmı ayırmak, sinyali kanıta çevirmek.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/ops-anomali/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · SQL Server Operasyon</span><h1>Log tablosunda anomali avı: mesai dışı erişim, ardışık ID taraması, parola deneme</h1><p class="st-l">Erişim günlüğünden üç temel sinyali SQL ile çıkarmak, yanlış alarmı ayırmak, sinyali kanıta çevirmek.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ops-anomali">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
+<article class="panel theory"><h2>Sinyal kanıt değildir</h2>
+<p>Bir SQL sorgusu şüphe üretir, hüküm vermez. Her sinyal için üç soru sor: <b>Normal hâli ne?</b> <b>Masum açıklaması var mı?</b> <b>Başka hangi kayıt bunu doğrular?</b></p>
+<div class="note"><b>Veri kurgudur</b><code>ops_</code> tabloları hayali bir portal için tohumlu üreteçle kuruldu. Gerçek bir sistemden alınmadı; süre ve okuma değerleri ölçüm değildir. Motor SQLite olduğu için günlükteki SQL Server sorguları çalıştırılmaz, metin olarak incelenir. Tabloları sorgularsın, sistem yönetimi komutlarını yalnız okursun.</div>
+<h2>Sinyal 1: Mesai dışı erişim</h2>
+<p>Burada mesai hafta içi 08:00-18:00. Düz sorgu servis hesaplarıyla dolar: gece ETL'i zaten mesai dışında çalışır. Bu yüzden hesap listesiyle birleştir: <code>off_hours_ok = 0</code> olanlar kim?</p>
+<pre class="code">SELECT a.login_name, a.event_at, a.client_ip
+FROM ops_access_log a
+JOIN ops_logins l ON l.login_name = a.login_name
+WHERE a.event_type = 'login_ok' AND l.off_hours_ok = 0
+  AND (CAST(strftime('%H', a.event_at) AS INTEGER) NOT BETWEEN 8 AND 17 OR CAST(strftime('%w', a.event_at) AS INTEGER) IN (0, 6))
+ORDER BY a.event_at;</pre>
+<p>Çıkan üç kaydı karşılaştır: biri akşam 18:22, biri cumartesi, biri salı sabaha karşı. Hepsi sorulur ama aciliyetleri aynı değildir. Aradaki fark adres sütunundadır.</p>
+<h2>Sinyal 2: Parola deneme</h2>
+<p>Başarısız girişi adrese göre say. İki desen vardır:</p>
+<table>
+<tr><th>Desen</th><th>Görünüşü</th><th>Hangi gruplama yakalar</th></tr>
+<tr><td>Kaba kuvvet (brute force)</td><td>Tek hesaba çok deneme</td><td>Hesap başına</td></tr>
+<tr><td>Parola püskürtme (password spray)</td><td>Çok hesaba az deneme, hesap kilidine takılmamak için</td><td>Adres başına farklı hesap sayısı</td></tr>
+</table>
+<pre class="code">SELECT client_ip, COUNT(*) AS deneme, COUNT(DISTINCT login_name) AS hesap,
+       MIN(event_at) AS ilk, MAX(event_at) AS son
+FROM ops_access_log
+WHERE event_type = 'login_fail'
+GROUP BY client_ip
+ORDER BY deneme DESC;</pre>
+<p>En çok denemeli adres saldırgan değil: <code>svc_eski</code> kapalı bir hesap, eski bir iş 30 dakikada bir bağlanmaya çalışıyor. İçeriden, tek hesaptan, düzenli aralıkla. Ama bu da bir bulgudur: işi kapatan yok ve gürültüsü gerçek saldırıyı gizler. <b>En kritik soru</b> sayı değil, <b>başarısızlıklardan sonra başarı geldi mi?</b></p>
+<h2>Sinyal 3: Ardışık kayıt okuma</h2>
+<p>Gerçek kullanıcı müşterileri rastgele okur. Numarayı birer artırarak okuyan biri büyük olasılıkla listeyi çekiyordur (enumeration). <code>LAG</code> ile önceki kayıttan farkı al:</p>
+<pre class="code">WITH o AS (
+  SELECT login_name, client_ip, event_at, record_id,
+         record_id - LAG(record_id) OVER (PARTITION BY login_name, client_ip ORDER BY event_at, event_id) AS fark
+  FROM ops_access_log
+  WHERE event_type = 'read'
+)
+SELECT login_name, client_ip, COUNT(*) AS ardisik, MIN(event_at) AS ilk, MAX(event_at) AS son
+FROM o
+WHERE fark = 1
+GROUP BY login_name, client_ip
+HAVING COUNT(*) >= 20
+ORDER BY ardisik DESC;</pre>
+<p>İki sonuç çıkar. Biri haftalık ETL: planlı, içeriden, servis hesabı. Diğeri bir analist hesabı, dış adresten. Aynı sorgu, farklı anlam. Bağlam olmadan alarm kurarsan her pazar yanlış alarm gelir.</p>
+<h2>Sinyalleri zincirle</h2>
+<p>Tek başına zayıf sinyaller, aynı adres ve hesapta sırayla geliyorsa güçlü bir hikâye olur: çok deneme, sonra başarı, sonra toplu okuma. Bu sırayı tek bir zaman çizelgesine dök.</p>
+<h2>Kaynak nereden gelir?</h2>
+<p>Bu tablolar kurgu. Gerçek SQL Server'da karşılıkları (burada çalışmaz):</p>
+<pre class="code" data-norun>-- Sunucu denetimi: başarısız girişler (yalnız okumak için)
+CREATE SERVER AUDIT denetim_giris TO FILE (FILEPATH = 'E:\Denetim\');
+CREATE SERVER AUDIT SPECIFICATION giris_ozeti
+    FOR SERVER AUDIT denetim_giris ADD (FAILED_LOGIN_GROUP) WITH (STATE = ON);
+ALTER SERVER AUDIT denetim_giris WITH (STATE = ON);</pre>
+<ul>
+<li><b>SQL Server Audit:</b> Belge, başarısız girişleri denetleyen bu örneği verir. Yeni denetim belirtimi kapalı başlar, açmayı unutma. Hassas sütunlu tabloları da denetlemeyi önerir.</li>
+<li><b>Giriş denetimi ayarı:</b> Başarısız, başarılı ya da ikisini hata günlüğüne yazar. Değişiklik için sunucu yeniden başlatılmalıdır.</li>
+<li><b>SQL Trace:</b> Eski <code>Audit Login Failed</code> olayı kullanımdan kalkmakta olan SQL Trace'e aittir; yeni kurulumda denetim ya da Extended Events tercih edilir.</li>
+</ul>
+<div class="tip"><b>Günlüğü de koru</b>Saldırgan izini siler. Denetim kaydını ayrı konuma yaz, yazma yetkisini sınırla, saklama süresini belirle. Denetim hedefini ağ paylaşımına yazarken gecikmeye dikkat et: Belge, bunun sunucuyu yavaşlatabileceğini söyler.</div></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ops-anomali/1">Alıştırmalara geç (9)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ops-injection/">← SQL injection ve doğru savunma: parametreli sorgu, en az yetki, işe yaramayan savunmalar</a><a href="../ops-proje/">Bitirme projesi (SQL Server Operasyon): Salı sabahı sistem yavaş ve şüpheli erişim var →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

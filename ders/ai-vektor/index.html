@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Yapay Zekâ ile SQL</span><h1>Veritabanında yapay zekâ: embedding ve vektör benzerlik araması</h1><p class="st-l">Anlamsal arama, kosinüs benzerliği, pgvector, SQL Server 2025 VECTOR, BigQuery VECTOR_SEARCH.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ai-vektor">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Kelimeyle değil anlamla aramak</h2>
 <p>“Kablosuz kulaklık” arayan biri “Bluetooth hoparlör”ü de görmek isteyebilir; LIKE bunu bulamaz. Yapay zekâ modelleri bir metni (veya görseli) yüzlerce sayıdan oluşan bir <b>vektöre</b> (embedding) çevirir. Anlamca yakın metinlerin vektörleri birbirine yakındır. Veritabanı bu vektörleri saklayıp “en yakın olanları” bulduğunda <b>anlamsal arama</b> yapmış olur. RAG (retrieval-augmented generation) denen, şirket belgeleriyle konuşan sohbet botları da bu yöntemle çalışır.</p>
@@ -52,6 +53,6 @@ FROM dbo.products
 ORDER BY mesafe;</pre>
 <div class="note"><b>Mesafe mi benzerlik mi?</b>Çoğu veritabanı <b>mesafe</b> döndürür (kosinüs mesafesi = 1 − benzerlik); bu yüzden küçükten büyüğe sıralanır.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-ai-vektor">Alıştırmalara geç (7)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-ai-vektor/1">Alıştırmalara geç (7)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ai-dogrulama/">← Yapay zekânın yazdığı SQL'i doğrulamak: hata avı</a><a href="../ai-ml/">SQL ile makine öğrenmesi ve üretken YZ: BigQuery ML ve benzerleri →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

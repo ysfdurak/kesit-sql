@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Mülakat Hazırlığı</span><h1>Mülakat soruları 1: klasikler</h1><p class="st-l">N. en yüksek maaş, tekrar eden kayıtlar, yöneticiden fazla kazananlar ve daha fazlası.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-mulakat-1">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Veri pozisyonu mülakatlarının değişmezleri</h2>
 <p>Bu sorular veri analisti, veri bilimci ve veri mühendisi mülakatlarında neredeyse her zaman karşına çıkar. Önce kendin çöz, takılırsan ipucuna bak. Her birinin birden çok doğru çözümü vardır; sonucun doğruysa kabul edilir.</p>
@@ -53,6 +54,6 @@ s AS (
 SELECT COUNT(DISTINCT customer_id) AS musteri, MAX(seri) AS en_uzun_seri
 FROM s WHERE seri >= 3;</pre>
 <div class="tip"><b>Mülakatta sırayla</b>1) Tanecik ve tanımları sor. 2) Küçük bir örnek üzerinde beklenen sonucu söyle. 3) Önce okunaklı bir CTE çözümü yaz. 4) Kenar durumları (NULL, eşitlik, boş grup) say. 5) Büyük veride performansı (indeks, pencere fonksiyonu maliyeti) konuş.</div></article>
-<div class="st-c"><a class="st-p" href="../../#ders-mulakat-1">Alıştırmalara geç (7)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-mulakat-1/1">Alıştırmalara geç (7)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../bs-scd/">← Büyük sorgu 6: SCD 2 fiyat boyutu ve nokta-zaman birleştirme</a><a href="../mulakat-2/">Mülakat soruları 2: analitik vakalar →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

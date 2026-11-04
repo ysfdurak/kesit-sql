@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Mülakat Hazırlığı</span><h1>Mülakat kalıbı: zaman pencereleri, büyüme ve “son 30 gün”</h1><p class="st-l">Aydan aya büyüme, kümülatif toplam, hareketli pencere ve kayan “son N gün” sorularında doğru çerçeve.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-mk-zaman">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Soru</h2>
 <div class="note"><b>Görüşmeci</b>“Her ay için teslim edilen ciroyu, bir önceki aya göre büyümeyi ve yılbaşından bu yana kümülatif ciroyu getir.” Takip: “Her gün için son 7 günün cirosu nedir? Sipariş olmayan günler de görünmeli.”</div>
@@ -48,6 +49,6 @@ ORDER BY t.gun;</pre>
 <ul><li>Geçen yılın aynı ayıyla (YoY) nasıl karşılaştırırsın? (LAG(ciro, 12) ya da yıl − 1 ile self join)</li><li>Ay içinde bugüne kadar (MTD) ciro nasıl hesaplanır?</li><li>Bu sorguyu bir BI aracına verecek olsan hangi taneciği seçerdin?</li></ul>
 <div class="tip"><b>Görüşmeci neye bakıyor?</b>Boş dönemleri ve pencere çerçevesini kendiliğinden düşünmen; büyümede NULL ile 0 farkını gözetmen.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-mk-zaman">Alıştırmalara geç (6)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-mk-zaman/1">Alıştırmalara geç (6)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../mk-tekrar/">← Mülakat kalıbı: tekrarlar, ilk ve son kayıt, ikinci sipariş</a><a href="../mk-selfjoin/">Mülakat kalıbı: kendine birleştirme klasikleri →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

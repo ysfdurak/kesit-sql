@@ -5,11 +5,8 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · T-SQL (SQL Server)</span><h1>SQL Server'da kilitler, izolasyon ve NOLOCK</h1><p class="st-l">Engelleme (blocking), kilitlenme (deadlock), RCSI ve SNAPSHOT.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ts-izolasyon">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
-<div class="note"><b>Deadlock grafiği</b>Hangi iki oturumun neden kilitlendiğini grafik gösterir. SQL Server'da varsayılan <code>system_health</code> Extended Events oturumu deadlock kayıtlarını tutar; XML kaydını SSMS'te açınca süreçler ve kaynaklar çizilir. Okurken sor: kurban kim, hangi iki nesneye ters sırayla erişildi? Çözüm çoğunlukla nesnelere aynı sırayla erişmek ve işlemi kısaltmaktır.
-<pre class="code" data-norun>SELECT CAST(event_data AS XML) AS olay
-FROM sys.fn_xe_file_target_read_file('system_health*.xel', NULL, NULL, NULL)
-WHERE object_name = 'xml_deadlock_report';</pre></div>
 <h2>Kilit türleri</h2>
 <table><tr><th>Kilit</th><th>Ne zaman?</th></tr>
 <tr><td>Paylaşımlı (S)</td><td>Okurken; diğer okuyucularla uyumlu</td></tr>
@@ -17,19 +14,11 @@ WHERE object_name = 'xml_deadlock_report';</pre></div>
 <tr><td>Güncelleme (U)</td><td>Güncellemeden önce okurken; kilitlenmeyi önler</td></tr>
 </table>
 <p>SQL Server'ın varsayılan izolasyonu <b>READ COMMITTED</b>'dır ve klasik kilitleme kullanır: bir işlem satırı güncellerken o satırı okumak isteyen sorgu <b>bekler</b> (blocking).</p>
-<div class="note"><b>Deadlock grafiği</b>Hangi iki oturumun neden kilitlendiğini grafik gösterir. SQL Server'da varsayılan <code>system_health</code> Extended Events oturumu deadlock kayıtlarını tutar; XML kaydını SSMS'te açınca süreçler ve kaynaklar çizilir. Okurken sor: kurban kim, hangi iki nesneye ters sırayla erişildi? Çözüm çoğunlukla nesnelere aynı sırayla erişmek ve işlemi kısaltmaktır.
-<pre class="code" data-norun>SELECT CAST(event_data AS XML) AS olay
-FROM sys.fn_xe_file_target_read_file('system_health*.xel', NULL, NULL, NULL)
-WHERE object_name = 'xml_deadlock_report';</pre></div>
 <h2>NOLOCK neden tehlikeli?</h2>
 <pre class="code" data-base="tsql">SELECT COUNT(*) AS siparis
 FROM orders WITH (NOLOCK)
 WHERE status = 'delivered';</pre>
 <p><code>WITH (NOLOCK)</code> (= READ UNCOMMITTED) beklemeyi önler ama kirli okuma yapar: onaylanmamış veri, aynı satırı <b>iki kez</b> okuma veya hiç okumama mümkündür. Finansal raporlarda kullanılmamalıdır.</p>
-<div class="note"><b>Deadlock grafiği</b>Hangi iki oturumun neden kilitlendiğini grafik gösterir. SQL Server'da varsayılan <code>system_health</code> Extended Events oturumu deadlock kayıtlarını tutar; XML kaydını SSMS'te açınca süreçler ve kaynaklar çizilir. Okurken sor: kurban kim, hangi iki nesneye ters sırayla erişildi? Çözüm çoğunlukla nesnelere aynı sırayla erişmek ve işlemi kısaltmaktır.
-<pre class="code" data-norun>SELECT CAST(event_data AS XML) AS olay
-FROM sys.fn_xe_file_target_read_file('system_health*.xel', NULL, NULL, NULL)
-WHERE object_name = 'xml_deadlock_report';</pre></div>
 <h2>Doğru çözüm: satır sürümleme</h2>
 <ul>
 <li><b>READ_COMMITTED_SNAPSHOT (RCSI)</b>: Veritabanı düzeyinde açılır (<code>ALTER DATABASE ... SET READ_COMMITTED_SNAPSHOT ON</code>). Okuyucular, yazarları beklemeden son onaylanmış sürümü okur. Azure SQL'de varsayılandır.</li>
@@ -42,6 +31,6 @@ WHERE object_name = 'xml_deadlock_report';</pre></div>
 <h2>Deadlock</h2>
 <p>İki işlem birbirinin tuttuğu kaynağı beklerse SQL Server birini kurban seçip <b>Msg 1205</b> hatasıyla geri alır. Önlem: tablolara hep aynı sırayla eriş, işlemleri kısa tut, uygun indeksler kullan, uygulamada 1205 için yeniden deneme ekle.</p>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-ts-izolasyon">Alıştırmalara geç (7)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-izolasyon/1">Alıştırmalara geç (7)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ts-plan/">← Yürütme planı ve STATISTICS IO: sorgu neden yavaş?</a><a href="../dba-mimari/">SQL Server mimarisi: instance, dosyalar ve sistem veritabanları →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

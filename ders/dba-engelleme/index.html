@@ -1,0 +1,74 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Engelleme, deadlock, izolasyon: iki oturumu kafanda çalıştırmak | Kesit SQL</title><meta name="description" content="Tarayıcıda tek bağlantı var; kilit gösterilemez. Bu yüzden zaman çizelgesi, anlık görüntü sorgusu ve deadlock kaydı okuyoruz."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/dba-engelleme/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Engelleme, deadlock, izolasyon: iki oturumu kafanda çalıştırmak"><meta property="og:description" content="Tarayıcıda tek bağlantı var; kilit gösterilemez. Bu yüzden zaman çizelgesi, anlık görüntü sorgusu ve deadlock kaydı okuyoruz."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/dba-engelleme/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Engelleme, deadlock, izolasyon: iki oturumu kafanda çalıştırmak","description":"Tarayıcıda tek bağlantı var; kilit gösterilemez. Bu yüzden zaman çizelgesi, anlık görüntü sorgusu ve deadlock kaydı okuyoruz.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/dba-engelleme/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veritabanı Yönetimi (DBA)</span><h1>Engelleme, deadlock, izolasyon: iki oturumu kafanda çalıştırmak</h1><p class="st-l">Tarayıcıda tek bağlantı var; kilit gösterilemez. Bu yüzden zaman çizelgesi, anlık görüntü sorgusu ve deadlock kaydı okuyoruz.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-dba-engelleme">Uygulamada aç, 11 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
+<article class="panel theory"><h2>Neden burada denenemiyor?</h2>
+<div class="warn"><b>Motor sınırı</b>Bu motor tek bağlantıdır. <code>SET TRANSACTION ISOLATION LEVEL</code>, <code>WITH (NOLOCK)</code>, <code>LOCK_TIMEOUT</code> hatasız kabul edilir ama hiçbir davranış üretmez; sonuç ekranında bunu söyleyen uyarı görürsün. Aşağıdaki çizelgeler gerçek sunucuda olacakları anlatır, burada çalıştırılmadı.</div>
+<h2>Engelleme: normal bir bekleme</h2>
+<table><tr><th>Zaman</th><th>Oturum 61</th><th>Oturum 62</th></tr>
+<tr><td>09:06</td><td><code>BEGIN TRAN; UPDATE bank_accounts ... WHERE account_id = 100002;</code></td><td></td></tr>
+<tr><td>09:11</td><td>(COMMIT unutuldu, boşta)</td><td><code>UPDATE bank_accounts ... WHERE account_id = 100002;</code> bekliyor</td></tr>
+<tr><td>09:40</td><td>hâlâ boşta, kilit duruyor</td><td>29 dakikadır bekliyor</td></tr></table>
+<p>Tutan bitince bekleyen devam eder. Varsayılan bekleme süresi sınırsızdır, <code>LOCK_TIMEOUT</code> verilmedikçe zaman aşımı olmaz. Teşhis: <code>blocking_session_id</code> zincirini tepeye kadar izle.</p>
+<div class="warn"><b>Sorgular kurgu anlık görüntü üzerinde</b>Bu tarayıcı motoru gerçek sistem görünümü çalıştırmaz. T-SQL modunda <code>sys.dm_*</code>, <code>sys.query_store_*</code>, <code>msdb.dbo.*</code> yazımı, hayali bir portal için elle kurulmuş tablolara yönlenir. Yazım ve sütun adları gerçekle aynıdır, ama yalnız seçili sütunlar var ve sayılar ölçüm değildir. Parametre alan görünümlerde (<code>sys.dm_db_index_physical_stats</code>) parametreler yok sayılır, bütün satırlar döner; süzmek için <code>WHERE</code> yaz. Gerçek sunucuda aynı sorgu için yetki gerekir: SQL Server 2022 ve sonrasında <code>VIEW SERVER PERFORMANCE STATE</code>, öncesinde <code>VIEW SERVER STATE</code>.</div>
+<pre class="code" data-base="tsql">SELECT r.session_id, r.blocking_session_id, r.wait_type, r.wait_time / 1000 AS bekleme_sn, r.wait_resource, st.text AS sorgu
+FROM sys.dm_exec_requests AS r
+CROSS APPLY sys.dm_exec_sql_text(r.sql_handle) AS st
+WHERE r.blocking_session_id > 0
+ORDER BY r.wait_time DESC;</pre>
+<p><code>sys.dm_exec_requests</code> yalnız çalışan istekleri gösterir. Tepedeki suçlu sıklıkla <b>boşta</b> ve açık işlemi olan oturumdur; onu <code>sys.dm_exec_sessions</code> gösterir. <code>blocking_session_id</code> 0 engel yok, -2 ile -5 özel durumlardır: bu yüzden <code>&gt; 0</code> süzülür.</p>
+<table><tr><th>Belirti</th><th>Durum</th><th>Hareket</th></tr>
+<tr><td>Çalışıyor, okuma artıyor</td><td>Uzun sorgu</td><td>Bekle ya da sorguyu iyileştir</td></tr>
+<tr><td><code>sleeping</code>, açık işlem &gt; 0</td><td>Kapatılmamış işlem</td><td>Sahibine sor; gerekirse <code>KILL</code>. Uygulamada hata yolunda geri al</td></tr>
+<tr><td><code>KILLED/ROLLBACK</code></td><td>Geri alınıyor</td><td>Bekle. Yeniden başlatma daha uzun sürer</td></tr></table>
+<h2>Deadlock: döngüsel bekleme</h2>
+<table><tr><th>Zaman</th><th>Oturum 62</th><th>Oturum 70</th></tr>
+<tr><td>1</td><td><code>UPDATE ... account_id = 100001</code> kilit alır</td><td></td></tr>
+<tr><td>2</td><td></td><td><code>UPDATE ... account_id = 100002</code> kilit alır</td></tr>
+<tr><td>3</td><td><code>UPDATE ... 100002</code> 70'i bekler</td><td></td></tr>
+<tr><td>4</td><td></td><td><code>UPDATE ... 100001</code> 62'yi bekler: döngü</td></tr></table>
+<p>Motor döngüyü bulur, kurbanı seçer: önce düşük <code>DEADLOCK_PRIORITY</code>, eşitse geri alması ucuz olan. Kurban 1205 alır, işlemi geri alınır. Uygulama kısa ve rastgele bekleyip yeniden dener. Kalıcı çözüm: nesnelere aynı sırayla erişmek, işlemi kısa tutmak, işlem içinde kullanıcı beklememek, satır sürümlemeyi düşünmek.</p>
+<h2>Deadlock kaydını okumak</h2>
+<p>Üç bölüm: <code>victim-list</code>, <code>process-list</code>, <code>resource-list</code>. <code>system_health</code> oturumu bu kaydı varsayılan olarak tutar. Elle kurulmuş örnek:</p>
+<pre class="code" data-norun>&lt;deadlock>
+  &lt;victim-list>&lt;victimProcess id="process7"/>&lt;/victim-list>
+  &lt;process-list>
+    &lt;process id="process7" spid="62" transactionname="transfer" lockMode="X" isolationlevel="read committed (2)">
+      &lt;inputbuf>UPDATE bank_accounts SET balance = balance - 100 WHERE account_id = 100002&lt;/inputbuf>
+    &lt;/process>
+    &lt;process id="process9" spid="70" transactionname="mutabakat" lockMode="X" isolationlevel="read committed (2)">
+      &lt;inputbuf>UPDATE bank_accounts SET balance = balance + 100 WHERE account_id = 100001&lt;/inputbuf>
+    &lt;/process>
+  &lt;/process-list>
+  &lt;resource-list>
+    &lt;keylock objectname="bank_accounts" indexname="PK_bank_accounts" mode="X">
+      &lt;owner-list>&lt;owner id="process9" mode="X"/>&lt;/owner-list>
+      &lt;waiter-list>&lt;waiter id="process7" mode="X" requestType="wait"/>&lt;/waiter-list>
+    &lt;/keylock>
+    &lt;keylock objectname="bank_accounts" indexname="PK_bank_accounts" mode="X">
+      &lt;owner-list>&lt;owner id="process7" mode="X"/>&lt;/owner-list>
+      &lt;waiter-list>&lt;waiter id="process9" mode="X" requestType="wait"/>&lt;/waiter-list>
+    &lt;/keylock>
+  &lt;/resource-list>
+&lt;/deadlock></pre>
+<h2>İzolasyon düzeyleri: hangi anomali kalır</h2>
+<table><tr><th>Düzey</th><th>Kirli okuma</th><th>Tekrarlanamayan</th><th>Hayalet</th><th>Nasıl</th></tr>
+<tr><td>READ UNCOMMITTED, <code>NOLOCK</code></td><td>Var</td><td>Var</td><td>Var</td><td>Paylaşımlı kilit almaz</td></tr>
+<tr><td>READ COMMITTED (varsayılan)</td><td>Yok</td><td>Var</td><td>Var</td><td>Kilit ya da RCSI ile sürüm</td></tr>
+<tr><td>REPEATABLE READ</td><td>Yok</td><td>Yok</td><td>Var</td><td>Okunan satırda kilit tutar</td></tr>
+<tr><td>SNAPSHOT</td><td>Yok</td><td>Yok</td><td>Yok</td><td>İşlem başındaki sürümü okur; yazma çakışması hata verir</td></tr>
+<tr><td>SERIALIZABLE</td><td>Yok</td><td>Yok</td><td>Yok</td><td>Aralık kilidi</td></tr></table>
+<h2>Niyet kilidi ve kilit yükseltme</h2>
+<p>Satırı kilitlemeden önce sayfa ve tabloya niyet kilidi (IS, IX) konur: başkası tablo kilidi isterse her satırı taramadan çakışmayı görür. Bir ifade çok fazla satır kilidi alırsa motor bellek için bunları tablo kilidine yükseltebilir; bu yüzden büyük toplu güncelleme bütün tabloyu kilitleyebilir, parçalara bölmek bu riski de azaltır.</p>
+<pre class="code" data-norun>-- Çalışmaz, başvuru
+SET DEADLOCK_PRIORITY LOW;
+SET LOCK_TIMEOUT 5000;
+KILL 61;
+DBCC OPENTRAN;</pre></article>
+<div class="st-c"><a class="st-p" href="../../#ders-dba-engelleme/1">Alıştırmalara geç (11)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../dba-dmv/">← Gerçek görünümler: DMV, bekleme istatistiği, Query Store kataloğu</a><a href="../dba-yedek-zincir/">Yedek zinciri: geri yükleme planı, RPO hesabı, kırık zincir →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

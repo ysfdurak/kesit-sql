@@ -1,0 +1,52 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Köprü: T-SQL bilenler için Oracle PL/SQL | Kesit SQL</title><meta name="description" content="Prosedür, IN OUT, açık imleç, BULK COLLECT, FORALL, EXECUTE IMMEDIATE, koleksiyon: okuma düzeyi."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/kopru-plsql/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Köprü: T-SQL bilenler için Oracle PL/SQL"><meta property="og:description" content="Prosedür, IN OUT, açık imleç, BULK COLLECT, FORALL, EXECUTE IMMEDIATE, koleksiyon: okuma düzeyi."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/kopru-plsql/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Köprü: T-SQL bilenler için Oracle PL/SQL","description":"Prosedür, IN OUT, açık imleç, BULK COLLECT, FORALL, EXECUTE IMMEDIATE, koleksiyon: okuma düzeyi.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/kopru-plsql/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Köprü Dersleri</span><h1>Köprü: T-SQL bilenler için Oracle PL/SQL</h1><p class="st-l">Prosedür, IN OUT, açık imleç, BULK COLLECT, FORALL, EXECUTE IMMEDIATE, koleksiyon: okuma düzeyi.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-kopru-plsql">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
+<article class="panel theory"><div class="note"><b>Bu bir köprü dersi</b>Tarayıcıda PL/SQL yorumlayıcısı yok; bu kodlar çalışmaz, denetlenmez. Hedef, ilanda ya da mevcut kodda gördüğünde okuyabilmek. Yazmayı öğrenmek için ücretsiz Oracle ortamı gerekir. Blok, tip ve basit imleç için <b>Oracle PL/SQL ile programlama</b> dersine bak. Yazımlar genel bilgiye dayanır, Oracle belgesi bu dersi yazarken açılamadı.</div>
+<table><tr><th>İş</th><th>T-SQL</th><th>PL/SQL</th></tr>
+<tr><td>Çıkış parametresi</td><td><code>@p INT OUTPUT</code></td><td><code>p OUT NUMBER</code>, iki yönlü <code>IN OUT</code></td></tr>
+<tr><td>Sonuç kümesi döndürme</td><td><code>SELECT</code> yeter</td><td><code>OUT SYS_REFCURSOR</code></td></tr>
+<tr><td>Dinamik SQL</td><td><code>sp_executesql</code></td><td><code>EXECUTE IMMEDIATE ... USING</code></td></tr>
+<tr><td>Toplu okuma</td><td>Küme tabanlı <code>SELECT</code></td><td><code>BULK COLLECT INTO</code></td></tr>
+<tr><td>Toplu yazma</td><td>Küme tabanlı DML</td><td><code>FORALL</code></td></tr>
+<tr><td>Hata</td><td><code>THROW</code></td><td><code>RAISE_APPLICATION_ERROR(-20001, ...)</code></td></tr></table>
+<pre class="code" data-norun>CREATE OR REPLACE PROCEDURE zam_yap (p_dept IN NUMBER, p_oran IN NUMBER, p_adet OUT NUMBER) AS
+  TYPE t_id IS TABLE OF employees.emp_id%TYPE;
+  v_id t_id;
+BEGIN
+  SELECT emp_id BULK COLLECT INTO v_id FROM employees WHERE dept_id = p_dept;
+  FORALL i IN 1 .. v_id.COUNT
+    UPDATE employees SET salary = salary * (1 + p_oran) WHERE emp_id = v_id(i);
+  p_adet := SQL%ROWCOUNT;
+  COMMIT;
+EXCEPTION
+  WHEN OTHERS THEN
+    ROLLBACK;
+    RAISE;
+END;
+/</pre>
+<h2>Neden BULK COLLECT ve FORALL?</h2>
+<p>PL/SQL motoru ile SQL motoru ayrıdır; döngüde her satırda iki motor arasında geçiş olur. Bu iki yazım geçişi topluca yapar, büyük hacimde belirgin hızlandırır. Tek SQL ifadesiyle yazılabiliyorsa o yine en iyisidir.</p>
+<pre class="code" data-norun>-- Açık imleç: OPEN, FETCH, CLOSE
+DECLARE
+  CURSOR c IS SELECT name, price FROM products WHERE category = 'Kitap';
+  v c%ROWTYPE;
+BEGIN
+  OPEN c;
+  LOOP
+    FETCH c INTO v;
+    EXIT WHEN c%NOTFOUND;
+    DBMS_OUTPUT.PUT_LINE(v.name);
+  END LOOP;
+  CLOSE c;
+END;
+/
+-- Dinamik SQL, bağlı değişkenle
+EXECUTE IMMEDIATE 'UPDATE products SET stock = 0 WHERE product_id = :1' USING v_id;</pre></article>
+<div class="st-c"><a class="st-p" href="../../#ders-kopru-plsql/1">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../kopru-hadr/">← Köprü: HA ve felaket kurtarma seçimi</a><a href="../kopru-ssis-adf/">Köprü: SSIS ve Azure Data Factory, SQL gözüyle →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

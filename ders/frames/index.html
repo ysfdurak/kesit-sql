@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Pencere Fonksiyonları</span><h1>Kümülatif toplam ve hareketli ortalama (running total, moving average)</h1><p class="st-l">ROWS BETWEEN ile pencere çerçevesi tanımlamak.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-frames">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>ORDER BY eklenince toplam birikir</h2>
 <pre class="code">WITH aylik AS (
@@ -33,6 +34,6 @@ SELECT gun, siparis,
 FROM gunluk;</pre>
 <div class="warn"><b>ROWS ile RANGE farkı</b>ORDER BY olup çerçeve belirtilmediğinde varsayılan <code>RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code>'dur. RANGE, sıralama değeri eşit olan satırları birlikte ele alır; tekrarlı tarihlerde beklenmedik kümülatif değerler görürsün. Emin olmak için ROWS yaz.</div>
 <h2>Derinleş: çerçeveyi sesli oku</h2><p><code>ROWS BETWEEN 6 PRECEDING AND CURRENT ROW</code> “bu satır ve ondan önceki 6 <b>satır</b>” demektir, 6 gün değil. Siparişsiz günler tabloda yoksa pencere 7 günden fazlasına yayılır; önce bir takvimle boş günleri doldur. İlk 6 satırda pencere eksiktir; bunu raporda belirt ya da o satırları dışarıda bırak.</p></article>
-<div class="st-c"><a class="st-p" href="../../#ders-frames">Alıştırmalara geç (8)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-frames/1">Alıştırmalara geç (8)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../lag-lead/">← LAG ve LEAD: önceki ve sonraki satır</a><a href="../ntile-dist/">NTILE, PERCENT_RANK, FIRST_VALUE →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

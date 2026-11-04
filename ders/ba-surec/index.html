@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · BT İş Analizi</span><h1>Süreci çizmek: AS-IS, TO-BE, BPMN, sıra diyagramı (sequence diagram), karar tablosu</h1><p class="st-l">Bugünkü ve hedef süreç, BPMN temel öğeleri, servisler arası mesajlaşma, karar tablosu, kuralı veriden çıkarmak.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ba-surec">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory"><p>Yazılı kurallar tek tek doğru olsa bile bütün akışı göstermez. Süreç şeması, “bu noktada ne olur?” sorusunu görünür kılar. Çoğu boşluk iki kutunun arasındaki okta yakalanır.</p>
 <h2>AS-IS ve TO-BE</h2>
 <p><b>AS-IS</b> bugünkü süreç, <b>TO-BE</b> hedef süreçtir. Önce AS-IS yaz: neyin değişeceğini ve kimin işinin etkileneceğini ancak böyle görürsün. Kupon talebinde bugünkü durumu destek ekibinden dinledik:</p>
@@ -68,6 +69,6 @@ JOIN sepet s ON s.order_id = o.order_id
 GROUP BY CASE WHEN o.delivery_fee = 0 THEN 'ücretsiz' ELSE 'ücretli' END
 ORDER BY teslimat;</pre>
 <p>Ücretsiz teslimatların en küçüğü 400 TL, ücretlilerin en büyüğü 395 TL. Tek istisna yok. Yani kural “400 TL ve üzeri ücretsiz” diye yazılmalı, sözlükteki “üzeri” sözcüğü sınırı yanlış anlatıyor. Veri kuralı doğrular ya da çürütür, ama kuralın neden öyle olduğunu söylemez: onu iş birimine sorarsın.</p></article>
-<div class="st-c"><a class="st-p" href="../../#ders-ba-surec">Alıştırmalara geç (9)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-ba-surec/1">Alıştırmalara geç (9)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ba-gereksinim/">← Gereksinim yazmak (requirements): iş kuralı, kullanıcı hikâyesi, kabul kriteri, kenar durumlar</a><a href="../ba-veri/">Veriyi konuşmak: ER ve veri sözlüğü, alan eşleme (field mapping), yeni tablo önerisi, göç kontrolleri →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

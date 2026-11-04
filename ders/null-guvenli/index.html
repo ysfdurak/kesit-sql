@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Temel · Fonksiyonlar</span><h1>NULL güvenli karşılaştırma: IS DISTINCT FROM ve eşdeğerleri</h1><p class="st-l">“Eşit değil” koşulu NULL satırları neden kaçırır; iki değeri NULL dahil doğru karşılaştırmanın yolları.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-null-guvenli">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Sorun: <code>&lt;&gt;</code> NULL'ı görmez</h2>
 <p><code>raw_signups</code> tablosunda şehri “İstanbul” <b>olmayan</b> kayıtları saymak istiyorsun:</p>
@@ -37,6 +38,6 @@ WHERE city <> 'İstanbul' OR city IS NULL;</pre>
 </table>
 <div class="tip"><b>Nerede işe yarar?</b>Veri mühendisliğinde “hangi satırlar değişti?” sorusu: kaynak ve hedefteki değerleri karşılaştırırken eski değer NULL, yeni değer dolu ise satır değişmiş sayılmalıdır. <code>&lt;&gt;</code> bu değişikliği kaçırır.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-null-guvenli">Alıştırmalara geç (6)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-null-guvenli/1">Alıştırmalara geç (6)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../coalesce/">← COALESCE, NULLIF ve NULL ile hesap</a><a href="../kosullu/">Koşullu sayım ve oranlar: SUM(CASE WHEN …) →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

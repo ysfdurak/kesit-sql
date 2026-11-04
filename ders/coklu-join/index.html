@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Tabloları Birleştirme</span><h1>Çoklu JOIN ve satır çoğalması tuzağı</h1><p class="st-l">Üç-dört tabloyu zincirlemek ve yanlış toplamları önlemek.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-coklu-join">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Zincirleme JOIN</h2>
 <p>Müşteri → sipariş → sipariş satırı → ürün yolunu takip edelim:</p>
@@ -26,6 +27,6 @@ FROM orders o
 JOIN order_items oi ON oi.order_id = o.order_id;</pre>
 <div class="warn"><b>Altın kural</b>JOIN'den sonra toplam alırken, sonuç tablonun <b>grain düzeyini</b> (tanecik) bil: Her satır neyi temsil ediyor? Bir sipariş mi, bir sipariş satırı mı? Farklı grain düzeyindeki iki tabloyu birleştirmeden önce birini önce özetlemek (alt sorgu/CTE) çoğu zaman doğru yoldur.</div>
 <h2>Derinleş: grain tablosu</h2><p>Birleştirdiğin her tablonun bir satırının neyi temsil ettiğini yaz:</p><table><tr><th>Tablo</th><th>Bir satır</th></tr><tr><td>lk_orders</td><td>bir sipariş</td></tr><tr><td>lk_order_lines</td><td>bir siparişteki bir ürün</td></tr><tr><td>lk_ratings</td><td>bir siparişin değerlendirmesi (0 ya da 1)</td></tr></table><p>Siparişleri satırlarla birleştirince tanecik “sipariş satırı” olur; siparişe ait tutarlar (bahşiş, teslimat ücreti) satır sayısı kadar tekrarlanır. Ya önce satırları sipariş düzeyine topla, ya da siparişe ait tutarları ayrı bir sorguda hesapla.</p></article>
-<div class="st-c"><a class="st-p" href="../../#ders-coklu-join">Alıştırmalara geç (7)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-coklu-join/1">Alıştırmalara geç (7)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../self-cross-join/">← Self JOIN ve CROSS JOIN</a><a href="../non-equi/">Eşit olmayan JOIN ve aralık eşleştirme →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

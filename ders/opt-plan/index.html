@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Sorgu Optimizasyonu</span><h1>Sorgu planı okumak (query plan): tarama, arama, birleştirme, tahmin ve gerçek</h1><p class="st-l">SCAN ve SEARCH, Seq Scan ve Index Scan, Nested Loop, Hash Join, Merge Join, tahmini ve gerçek satır, döngü sayısı.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-opt-plan">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory"><h2>Plan neyi söyler?</h2>
 <p>Sorgu iyileştirici (optimizer) aynı sonucu verecek birçok yol arasından en ucuz görüneni seçer. Plan bu seçimdir. Sana dört şey söyler: <b>hangi tablo nasıl okunuyor</b>, <b>tablolar hangi yöntemle birleşiyor</b>, <b>motor kaç satır bekliyor</b>, <b>gerçekte kaç satır çıktı</b>.</p>
 <div class="note"><b>PostgreSQL çıktıları</b>Bu derslerdeki PostgreSQL planları elle yazılmadı. Aynı veriyle PostgreSQL 16.4 üzerinde (PGlite, tarayıcıda çalışan WASM sürümü) üretildi. <code>VACUUM ANALYZE</code> çalıştırıldı, planlama satırları kısalık için çıkarıldı. Sayılar kendi sunucunda farklı olur; okuma biçimi aynıdır.</div>
@@ -127,6 +128,6 @@ SELECT COUNT(*) FROM bank_txns WHERE EXTRACT(YEAR FROM txn_time) = 2024 AND EXTR
         Buffers: shared hit=391</pre>
 <p>Motor 1 satır bekliyor, 3.590 satır çıkıyor. Sütun fonksiyonun içinde olduğu için istatistikler işe yaramıyor ve motor körlemesine tahmin yapıyor. Bu örnekte zarar yok, çünkü tek tablo var. Birleştirmeli bir sorguda bu yanlış tahmin "1 satır için iç içe döngü yeter" kararına yol açar ve binlerce döngüye dönüşür. Planda ilk aranacak şey budur: <b>tahmin ve gerçek arasındaki büyük fark</b>.</p>
 <p>SQL Server'da tahmini planı Ctrl+L, gerçek planı Ctrl+M verir. Oracle'da <code>E-Rows</code> ve <code>A-Rows</code> sütunlarını karşılaştırırsın. MySQL'de <code>EXPLAIN ANALYZE</code> ağacında her düğümde tahmini satır ve gerçek satır yan yana yazar.</p></article>
-<div class="st-c"><a class="st-p" href="../../#ders-opt-plan">Alıştırmalara geç (8)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-plan/1">Alıştırmalara geç (8)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../opt-olc/">← Önce ölç, sonra düzelt: yavaş sorguda çalışma akışı</a><a href="../opt-tur/">Tür dönüşümü ve fonksiyon tuzakları: indeks var ama kullanılmıyor →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

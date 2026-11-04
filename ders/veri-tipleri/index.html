@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Fonksiyonlar</span><h1>Veri tipleri ayrıntılı: ondalık hassasiyet, Unicode metin ve saat dilimleri</h1><p class="st-l">FLOAT ile DECIMAL farkı, NVARCHAR ve N'..', DATE/DATETIME/TIMESTAMP, AT TIME ZONE.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-veri-tipleri">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Para FLOAT'ta tutulmaz</h2>
 <p><code>FLOAT</code>/<code>REAL</code>/<code>DOUBLE</code> ikili kayan noktalı sayılardır; 0,1 gibi değerleri tam saklayamazlar. Küçük farklar toplamlarda büyür ve <code>=</code> karşılaştırmaları şaşırtıcı sonuç verir.</p>
@@ -67,6 +68,6 @@ WHERE strftime('%H', event_time) IN ('21', '22', '23')
 ORDER BY event_id
 LIMIT 5;</pre>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-veri-tipleri">Alıştırmalara geç (9)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-veri-tipleri/1">Alıştırmalara geç (9)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../sayi-tip/">← Sayılar, veri tipleri ve CAST</a><a href="../tarih-fn/">Tarih ve saat fonksiyonları →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

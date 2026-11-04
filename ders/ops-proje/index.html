@@ -1,0 +1,37 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bitirme projesi (SQL Server Operasyon): Salı sabahı sistem yavaş ve şüpheli erişim var | Kesit SQL</title><meta name="description" content="Kurgusal günlükle teşhis, kanıt ve karar: yavaşlığın nedenleri, şüpheli erişimin zinciri, ikisinin ilişkisi, yönetime not."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ops-proje/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Bitirme projesi (SQL Server Operasyon): Salı sabahı sistem yavaş ve şüpheli erişim var"><meta property="og:description" content="Kurgusal günlükle teşhis, kanıt ve karar: yavaşlığın nedenleri, şüpheli erişimin zinciri, ikisinin ilişkisi, yönetime not."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ops-proje/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Bitirme projesi (SQL Server Operasyon): Salı sabahı sistem yavaş ve şüpheli erişim var","description":"Kurgusal günlükle teşhis, kanıt ve karar: yavaşlığın nedenleri, şüpheli erişimin zinciri, ikisinin ilişkisi, yönetime not.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"İleri","url":"https://ysfdurak.github.io/kesit-sql/ders/ops-proje/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">İleri · Bitirme Projeleri</span><h1>Bitirme projesi (SQL Server Operasyon): Salı sabahı sistem yavaş ve şüpheli erişim var</h1><p class="st-l">Kurgusal günlükle teşhis, kanıt ve karar: yavaşlığın nedenleri, şüpheli erişimin zinciri, ikisinin ilişkisi, yönetime not.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ops-proje">Uygulamada aç, 11 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
+<article class="panel theory"><h2>Senaryo</h2>
+<p>Salı 12 Kasım 2024, sabah 09:30. Ilgaz Bank portal ekibi "sistem çok yavaş" diyor. Aynı saatlerde güvenlik ekibi şüpheli bir girişten söz ediyor. Herkesin ilk tahmini aynı: "Saldırı sistemi yavaşlattı." Senden üç şey isteniyor: <b>Teşhis, kanıt, karar.</b></p>
+<div class="note"><b>Veri kurgudur</b><code>ops_</code> tabloları hayali bir portal için tohumlu üreteçle kuruldu. Gerçek bir sistemden alınmadı; süre ve okuma değerleri ölçüm değildir. Motor SQLite olduğu için günlükteki SQL Server sorguları çalıştırılmaz, metin olarak incelenir. Tabloları sorgularsın, sistem yönetimi komutlarını yalnız okursun.</div>
+<h2>Veri</h2>
+<table><tr><th>Tablo</th><th>Satır</th><th>İçerik</th></tr>
+<tr><td><code>ops_query_log</code></td><td>7.607</td><td>Sorgu günlüğü</td></tr>
+<tr><td><code>ops_access_log</code></td><td>3.991</td><td>Giriş, okuma, yazma</td></tr>
+<tr><td><code>ops_plan_stats</code></td><td>335</td><td>Plan ve saat başına istatistik (Query Store taklidi)</td></tr>
+<tr><td><code>ops_logins</code></td><td>10</td><td>Hesap listesi</td></tr></table>
+<h2>Yol haritası</h2>
+<table><tr><th>Adım</th><th>Soru</th><th>Sonuç türü</th></tr>
+<tr><td>1</td><td>Gerçekten yavaş mı, geçen salıya göre ne değişti?</td><td>Teşhis</td></tr>
+<tr><td>2-3</td><td>Yükü kim bindiriyor, bu sorgular yeni mi?</td><td>Teşhis</td></tr>
+<tr><td>4</td><td>Plan değişti mi, ne zaman?</td><td>Teşhis</td></tr>
+<tr><td>5</td><td>Şüpheli adres ne yaptı?</td><td>Kanıt</td></tr>
+<tr><td>6-7</td><td>Hangi kayıtlar okundu, hesabın sahibi aynı anda neredeydi?</td><td>Kanıt</td></tr>
+<tr><td>8</td><td>Saldırı yavaşlığı açıklıyor mu?</td><td>Ayrım</td></tr>
+<tr><td>9-11</td><td>Zaman çizelgesi, öncelik ve yönetime not</td><td>Karar</td></tr></table>
+<div class="note"><b>Sınır</b>Bu bir eğitim senaryosudur. Veride kimin yaptığı bilgisi yoktur, yalnız hesap ve adres vardır. Hesabın ele geçirildiği de bir çıkarımdır; kişinin kendisiyle doğrulanır. KVKK ve bildirim kararları hukuk ve uyum ekibiyle verilir, bu proje onların yerine geçmez.</div>
+<h3>Kanıtı koru</h3>
+<p>Müdahaleden önce günlükleri kopyala, saklama süresi dolmasın, kopyayı salt okunur tut. Kayıt silme ve "temizleme" yapma. Her adımı saatle birlikte yaz.</p>
+<h3>Kendini değerlendir</h3>
+<table><tr><th>Ölçüt</th><th>Başlangıç</th><th>İyi</th><th>Mükemmel</th></tr>
+<tr><td>Teşhis</td><td>Yavaş sorgu bulundu</td><td>Geçen salıyla karşılaştırıldı, iki neden ayrıldı</td><td>Süre ve okuma ayrımı yapıldı</td></tr>
+<tr><td>Kanıt</td><td>Şüpheli adres bulundu</td><td>Zincir kuruldu, kapsam sayıldı</td><td>Yanlış alarmlar elenip gerekçesi yazıldı</td></tr>
+<tr><td>Karar</td><td>Liste</td><td>Öncelikli eylem planı</td><td>Bilinen ve bilinmeyenler ayrı, geri alma yazılı</td></tr></table></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ops-proje/1">Alıştırmalara geç (11)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ops-anomali/">← Log tablosunda anomali avı: mesai dışı erişim, ardışık ID taraması, parola deneme</a><a href="../etl-hata/">ETL işletimi: hatalı satır tablosu, mükerrer kayıt ve yükleme günlüğü →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

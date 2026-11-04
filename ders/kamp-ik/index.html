@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Alıştırma Kampı</span><h1>Alıştırma Kampı: İnsan kaynakları (10 soru)</h1><p class="st-l">Çalışanlar ve departmanlar: JOIN, self join, alt sorgu ve pencere pratiği.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-kamp-ik">Uygulamada aç, 10 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>İK veritabanı senaryosu</h2>
 <p>İK müdürü maaş dengesini, yönetici yapısını ve kıdemi inceliyor. <code>employees</code> ve <code>departments</code> tablolarıyla 10 soru. Self join (çalışan–yönetici), alt sorgu ve pencere fonksiyonları sık geçecek.</p>
@@ -21,6 +22,6 @@
 <table><tr><th>İhtiyaç</th><th>Kalıp</th></tr><tr><td>Departman adı</td><td><code>JOIN departments d ON d.dept_id = e.dept_id</code></td></tr><tr><td>Yönetici adı</td><td><code>LEFT JOIN employees m ON m.emp_id = e.manager_id</code></td></tr><tr><td>Eşi olmayan da kalsın</td><td><code>departments d LEFT JOIN employees e ... COUNT(e.emp_id)</code></td></tr><tr><td>Ortalamaya göre</td><td><code>WHERE salary > (SELECT AVG(salary) FROM employees)</code></td></tr><tr><td>Departman içi sıra</td><td><code>DENSE_RANK() OVER (PARTITION BY dept_id ORDER BY salary DESC)</code></td></tr><tr><td>Departman ortalaması</td><td><code>AVG(salary) OVER (PARTITION BY dept_id)</code></td></tr></table>
 <div class="note"><b>Tablolar</b><code>employees</code> ve <code>departments</code>. Yönetici ilişkisi <code>employees.manager_id → employees.emp_id</code> ile kurulur. Sütunların açıklamaları ve örnek satırlar Veri setleri sayfasında.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-kamp-ik">Alıştırmalara geç (10)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-kamp-ik/1">Alıştırmalara geç (10)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../kamp-musteri/">← Alıştırma Kampı: Müşteri verisi (10 soru)</a><a href="../kamp-eticaret/">Alıştırma Kampı: E-ticaret (10 soru) →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

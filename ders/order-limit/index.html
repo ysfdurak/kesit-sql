@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Temel · Temeller</span><h1>ORDER BY ve ilk N satır (LIMIT / TOP / FETCH)</h1><p class="st-l">Sıralama, ilk N kaydı almak ve sayfalama; her SQL türünün kendi yazımı.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-order-limit">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Sıralama</h2>
 <p>SQL, ORDER BY yazmadığın sürece sonuçların sırasını <b>garanti etmez</b>. Sıralamak için:</p>
@@ -20,7 +21,7 @@ ORDER BY price DESC;</pre>
 FROM products
 ORDER BY category ASC, price DESC;</pre>
 <h2>İlk N satır: her SQL türü farklı yazar</h2>
-<p>Standart SQL'de bu iş <code>FETCH FIRST n ROWS ONLY</code> ile yapılır; ama en yaygın iki yazım <code>LIMIT</code> ve <code>TOP</code>'tur. Aşağıdaki kutunun üstündeki SQL türü sekmelerine tıklayarak farkı gör:</p>
+<p>Standart SQL'de bu iş <code>FETCH FIRST n ROWS ONLY</code> ile yapılır; ama en yaygın iki yazım <code>LIMIT</code> ve <code>TOP</code>'tur. Uygulamada kutunun üstündeki SQL türü sekmelerinden farkı görebilirsin:</p>
 <pre class="code">SELECT name, price
 FROM products
 ORDER BY price DESC
@@ -44,6 +45,6 @@ FROM customers
 ORDER BY city
 LIMIT 8;</pre>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-order-limit">Alıştırmalara geç (8)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-order-limit/1">Alıştırmalara geç (8)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../null/">← NULL: bilinmeyen değer</a><a href="../sozdizimi/">SQL yazım kuralları: anahtar kelime, noktalı virgül, yorum ve tırnak →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

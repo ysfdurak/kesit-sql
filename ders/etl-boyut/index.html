@@ -1,0 +1,42 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Boyut yüklemesi: vekil anahtar eşleme, geç gelen boyut, SCD 2 kapat-aç | Kesit SQL</title><meta name="description" content="Fact satırını doğru boyut sürümüne bağlamak, boyutta olmayan şubeyi kaybetmemek, değişen boyutu kapatıp yeniden açmak."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/etl-boyut/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Boyut yüklemesi: vekil anahtar eşleme, geç gelen boyut, SCD 2 kapat-aç"><meta property="og:description" content="Fact satırını doğru boyut sürümüne bağlamak, boyutta olmayan şubeyi kaybetmemek, değişen boyutu kapatıp yeniden açmak."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/etl-boyut/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Boyut yüklemesi: vekil anahtar eşleme, geç gelen boyut, SCD 2 kapat-aç","description":"Fact satırını doğru boyut sürümüne bağlamak, boyutta olmayan şubeyi kaybetmemek, değişen boyutu kapatıp yeniden açmak.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/etl-boyut/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veri Mühendisliği</span><h1>Boyut yüklemesi: vekil anahtar eşleme, geç gelen boyut, SCD 2 kapat-aç</h1><p class="st-l">Fact satırını doğru boyut sürümüne bağlamak, boyutta olmayan şubeyi kaybetmemek, değişen boyutu kapatıp yeniden açmak.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-etl-boyut">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
+<article class="panel theory"><h2>Fact iş anahtarıyla değil, vekil anahtarla bağlanır</h2>
+<p>Kaynak <code>S01</code> diyor. Fact ise <code>sube_key</code> tutar, çünkü aynı şubenin birden çok sürümü olabilir. Bu derste S01 Haziran sonuna kadar Ankara'da, Temmuzdan beri Bursa'da. Mart hareketi Ankara sürümüne, Kasım hareketi Bursa sürümüne bağlanmalı.</p>
+<div class="note"><b>Veri kurgudur</b><code>etl_</code> tabloları hayali bir gece yüklemesi için elle kuruldu. Gerçek bir sistemden alınmadı; bozuk satırlar bilerek kondu.</div>
+<div class="tip"><b>Önkoşul</b>SCD türleri için <b>Yavaş değişen boyutlar</b> dersine bak. Orada geçmiş LEAD ile okunuyor; burada yükleme yazıyoruz.</div>
+<pre class="code" data-base="tsql">SELECT h.kaynak_no, h.sube_kodu, h.islem_tarihi, d.sube_key, d.sehir
+FROM etl_stg_hareket h
+JOIN etl_dim_sube d ON d.sube_kodu = h.sube_kodu
+ AND TRY_CONVERT(DATE, h.islem_tarihi) BETWEEN d.gecerli_bas AND d.gecerli_bit
+WHERE h.sube_kodu = 'S01'
+ORDER BY h.stg_id;</pre>
+<div class="warn"><b>Sık hata</b><code>guncel = 1</code> ile eşlemek bütün geçmiş hareketleri bugünkü sürüme yazar. Rapor "Mart'ta Bursa'da hareket" gösterir ve kimse fark etmez, çünkü toplam tutar değişmez.</div>
+<h2>Boyutta olmayan şube: geç gelen boyut</h2>
+<p>Hareket gelmiş ama şube S99 henüz boyutta yok. <code>JOIN</code> bu satırı sessizce atar, toplam eksik çıkar. İki yaygın çözüm:</p>
+<table><tr><th>Yol</th><th>Nasıl</th><th>Bedel</th></tr>
+<tr><td>Bilinmeyen üye</td><td><code>LEFT JOIN</code>, eşleşmezse <code>-1</code></td><td>Sonra şube gelince fact güncellemesi gerekir</td></tr>
+<tr><td>Tahmini üye (inferred)</td><td>Boyuta iskelet satır ekle, gerçek veri gelince tamamla</td><td>Boyutta eksik alanlı satır olur</td></tr></table>
+<h2>SCD 2: önce kapat, sonra aç</h2>
+<p>Sıra önemli. Önce değişen güncel satır kapatılır, sonra güncel sürümü kalmayan her şube için yeni satır açılır. Böylece hem değişen hem tamamen yeni şube aynı INSERT ile açılır.</p>
+<pre class="code" data-base="tsql">UPDATE d SET d.gecerli_bit = '2024-11-11', d.guncel = 0
+FROM etl_dim_sube d
+JOIN etl_stg_sube s ON s.sube_kodu = d.sube_kodu
+WHERE d.guncel = 1 AND (s.sube_adi &lt;> d.sube_adi OR s.sehir &lt;> d.sehir);
+INSERT INTO etl_dim_sube (sube_kodu, sube_adi, sehir, gecerli_bas, gecerli_bit, guncel)
+SELECT s.sube_kodu, s.sube_adi, s.sehir, '2024-11-12', '9999-12-31', 1
+FROM etl_stg_sube s
+LEFT JOIN etl_dim_sube d ON d.sube_kodu = s.sube_kodu AND d.guncel = 1
+WHERE d.sube_key IS NULL;
+SELECT sube_key, sube_kodu, sehir, gecerli_bas, gecerli_bit, guncel FROM etl_dim_sube ORDER BY sube_kodu, gecerli_bas;</pre>
+<div class="note"><b>NULL tuzağı</b><code>s.sehir &lt;&gt; d.sehir</code>, alanlardan biri NULL ise doğru dönmez ve değişiklik kaçar. Gerçek yüklemede NULL olabilen sütunları ayrıca karşılaştır.</div>
+<h2>Sıralama</h2>
+<p>Boyutlar önce, fact sonra yüklenir. Tersi olursa yeni gelen şube fact yüklemesinde bilinmeyen sayılır.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-etl-boyut/1">Alıştırmalara geç (8)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../etl-hata/">← ETL işletimi: hatalı satır tablosu, mükerrer kayıt ve yükleme günlüğü</a><a href="../dwh-fact/">Fact türleri: işlem, periyodik, biriken; factless ve uyumlu boyut →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

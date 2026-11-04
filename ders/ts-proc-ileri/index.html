@@ -1,0 +1,41 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Saklı yordam derinliği: varsayılan parametre, iç içe çağrı, INSERT EXEC | Kesit SQL</title><meta name="description" content="Gerçek yordamlar birbirini çağırır, sonuçları tabloya alır ve hata anında temiz çıkar."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-proc-ileri/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Saklı yordam derinliği: varsayılan parametre, iç içe çağrı, INSERT EXEC"><meta property="og:description" content="Gerçek yordamlar birbirini çağırır, sonuçları tabloya alır ve hata anında temiz çıkar."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-proc-ileri/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Saklı yordam derinliği: varsayılan parametre, iç içe çağrı, INSERT EXEC","description":"Gerçek yordamlar birbirini çağırır, sonuçları tabloya alır ve hata anında temiz çıkar.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-proc-ileri/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · T-SQL (SQL Server)</span><h1>Saklı yordam derinliği: varsayılan parametre, iç içe çağrı, INSERT EXEC</h1><p class="st-l">Gerçek yordamlar birbirini çağırır, sonuçları tabloya alır ve hata anında temiz çıkar.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-proc-ileri">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
+<article class="panel theory"><h2>Varsayılan parametre</h2>
+<p>Temel yazım için <b>Saklı yordamlar</b> dersine bak. Varsayılan değer verilen parametre çağrıda atlanabilir. <code>NULL</code> varsayılan ve <code>(@p IS NULL OR sutun = @p)</code>, isteğe bağlı filtrenin yaygın kalıbıdır; ama <a href="#ders-opt-turler">parametre koklama</a> riski taşır.</p>
+<pre class="code" data-base="tsql">CREATE PROCEDURE dbo.usp_Urunler @kategori NVARCHAR(50) = NULL, @en_az DECIMAL(12, 2) = 0 AS
+BEGIN
+  SET NOCOUNT ON;
+  SELECT name, price FROM products WHERE (@kategori IS NULL OR category = @kategori) AND price >= @en_az ORDER BY price DESC, name;
+END;
+GO
+EXEC dbo.usp_Urunler @kategori = N'Kitap';
+EXEC dbo.usp_Urunler @en_az = 5000;</pre>
+<h2>İç içe çağrı</h2>
+<p>Bir yordam diğerini çağırabilir. <code>@@NESTLEVEL</code> kaçıncı derinlikte olduğunu verir. Sınır 32'dir; aşılınca Msg 217 alınır, bu motor da aynı hatayı verir.</p>
+<pre class="code" data-base="tsql">CREATE PROCEDURE dbo.usp_Ic AS BEGIN SELECT @@NESTLEVEL AS derinlik; END;
+GO
+CREATE PROCEDURE dbo.usp_Dis AS BEGIN EXEC dbo.usp_Ic; END;
+GO
+EXEC dbo.usp_Dis;</pre>
+<h2>INSERT ... EXEC</h2>
+<p>Yordamın sonuç kümesini tabloya alır. Sütun sayısı ve sırası uymalı. Sınırı: yordam birden çok sonuç kümesi döndürüyorsa işler karışır ve iç içe INSERT EXEC gerçek SQL Server'da yasaktır. Satır içi tablo değerli işlev çoğu zaman daha temizdir.</p>
+<pre class="code" data-base="tsql">CREATE PROCEDURE dbo.usp_Kitap AS BEGIN SELECT product_id, price FROM products WHERE category = N'Kitap'; END;
+GO
+CREATE TABLE #kitap (product_id INT, price DECIMAL(12, 2));
+INSERT INTO #kitap EXEC dbo.usp_Kitap;
+SELECT COUNT(*) AS adet, MAX(price) AS en_pahali FROM #kitap;</pre>
+<h2>WITH RECOMPILE ve TVP</h2>
+<table><tr><th>Özellik</th><th>Ne yapar</th><th>Bu motorda</th></tr>
+<tr><td><code>WITH RECOMPILE</code></td><td>Yordam her çağrıda yeniden derlenir, plan önbelleğe yazılmaz</td><td>Yazım kabul edilir, plan etkisi görülmez</td></tr>
+<tr><td>Tablo değerli parametre</td><td><code>CREATE TYPE ... AS TABLE</code>, <code>READONLY</code> ile çok satır geçirme</td><td>Çalışmaz: <code>CREATE TYPE</code> reddedilir</td></tr></table>
+<h2>Yordamda güvenli işlem</h2>
+<p>Hata yönetimi kalıbı için <b>Hata yönetimi ileri</b> dersine bak: <code>SET XACT_ABORT ON</code>, <code>TRY/CATCH</code>, geri al, yeniden fırlat.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-proc-ileri/1">Alıştırmalara geç (7)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../dwh-tasarim/">← İş ihtiyacından şema: tanecik, boyut ve anahtar kararını sen ver</a><a href="../ts-dml-join/">T-SQL DML kalıpları: UPDATE FROM, DELETE JOIN, TOP ile parça parça silme, OUTPUT →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

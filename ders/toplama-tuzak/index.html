@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Temel · Özetleme</span><h1>Toplama fonksiyonlarında tuzaklar: COUNT türleri, NULL ve tam sayı bölmesi</h1><p class="st-l">COUNT(*) / COUNT(sütun) / COUNT(DISTINCT), AVG ve NULL, oran hesaplarken bölme.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-toplama-tuzak">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Üç farklı COUNT</h2>
 <pre class="code">SELECT COUNT(*)              AS satir,        -- tüm satırlar
@@ -28,6 +29,6 @@ WHERE order_id = -1;</pre>
 <h2>Derinleş: dört tuzak, dört kontrol</h2><table><tr><th>Tuzak</th><th>Kontrol</th></tr><tr><td>JOIN sonrası SUM şişer</td><td>Toplamı birleştirmeden önce ve sonra karşılaştır</td></tr><tr><td>AVG boşları atlar</td><td><code>COUNT(*)</code> ile <code>COUNT(x)</code> farkına bak</td></tr><tr><td>Oranların ortalaması</td><td>Toplam pay / toplam payda ile karşılaştır</td></tr><tr><td>COUNT(DISTINCT) ile toplamak</td><td>Taneciği (grain) yaz: bir satır neyi temsil ediyor, neyi sayıyorsun?</td></tr></table>
 <pre class="code">SELECT (SELECT SUM(tip) FROM lk_orders) AS dogru_bahsis,
        (SELECT SUM(o.tip) FROM lk_orders o JOIN lk_order_lines ol ON ol.order_id = o.order_id) AS sisirilmis;</pre></article>
-<div class="st-c"><a class="st-p" href="../../#ders-toplama-tuzak">Alıştırmalara geç (6)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-toplama-tuzak/1">Alıştırmalara geç (6)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../tarih-filtre/">← Tarihlerle filtreleme ve gruplama: aralıklar, aylar, haftanın günleri</a><a href="../case/">CASE WHEN: SQL'de eğer-ise →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

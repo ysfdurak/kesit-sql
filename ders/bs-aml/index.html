@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Büyük Sorgular</span><h1>Büyük sorgu 5: bankada şüpheli işlem kural motoru</h1><p class="st-l">Her kuralı ayrı bir CTE olarak yazmak, UNION ALL ile alarm tablosu kurmak, hesap başına risk puanı ve öncelik sırası.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-bs-aml">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Soru</h2>
 <p>Ilgaz Bank uyum ekibi her sabah incelenecek hesapların listesini istiyor. Kurallar iş biriminden gelir ve sık değişir; bu yüzden sorgu, her kuralın ayrı bir blok olduğu ve kolayca eklenip çıkarılabildiği bir yapıda yazılır.</p>
@@ -69,6 +70,6 @@ LIMIT 15;</pre>
 </ul>
 <div class="warn"><b>Kural 3'ün maliyeti</b>Kendi kendine birleştirme ve zaman aralığı koşulu büyük tablolarda pahalıdır. Gerçek sistemlerde (account_id, txn_time) üzerinde indeks ya da LAG ile yeniden yazım tercih edilir. Alıştırmalardan biri bunu istiyor.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-bs-aml">Alıştırmalara geç (4)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-bs-aml/1">Alıştırmalara geç (4)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../bs-ops/">← Büyük sorgu 4: havayolu günlük operasyon panosu</a><a href="../bs-scd/">Büyük sorgu 6: SCD 2 fiyat boyutu ve nokta-zaman birleştirme →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · T-SQL (SQL Server)</span><h1>Dönüşümler ve koşullu fonksiyonlar: CAST, CONVERT, TRY_CAST, IIF, CHOOSE</h1><p class="st-l">Tip dönüşümü, hatasız dönüşüm, ISNULL ile COALESCE farkı.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ts-donusum">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>CAST, CONVERT ve TRY_ ailesi</h2>
 <pre class="code" data-base="tsql">SELECT CAST('123' AS INT) + 1             AS sayi,
@@ -34,6 +35,6 @@ ORDER BY DATEPART(quarter, order_date);</pre>
 <p>Örneğin <code>ISNULL(CAST(NULL AS VARCHAR(3)), 'Bilinmiyor')</code> sonucu <b>'Bil'</b> olur; COALESCE ise 'Bilinmiyor' döner.</p>
 <div class="note"><b>Örtük dönüşüm ve tip önceliği</b>SQL Server farklı tipleri karşılaştırırken düşük öncelikli tipi yüksek olana çevirir (ör. VARCHAR → INT). <code>WHERE musteri_no = 123</code> sorgusunda musteri_no VARCHAR ise <b>her satır</b> sayıya çevrilir: hem indeks kullanılamaz hem de sayıya çevrilemeyen bir değer sorguyu patlatır.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-ts-donusum">Alıştırmalara geç (4)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-donusum/1">Alıştırmalara geç (4)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ts-tarih/">← T-SQL tarih ve saat fonksiyonları</a><a href="../ts-degisken/">Değişkenler ve akış kontrolü: DECLARE, IF, WHILE →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

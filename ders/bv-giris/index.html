@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Büyük Veriyle Çalışmak</span><h1>Büyük tabloyla tanışma: profil çıkarmak ve örneklemek</h1><p class="st-l">Yüz binlerce satırlık bir tabloyu körlemesine sorgulamadan önce satır sayısı, tarih aralığı, boş değerler ve dağılımlarla tanımak; tekrarlanabilir örnekleme.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-bv-giris">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Pedal İzmir</h2>
 <p>Bu modülde İzmir'de hayali bir bisiklet paylaşım sisteminin üç aylık verisiyle çalışacaksın. Yolculuk tablosu (<code>bk_trips</code>) yaklaşık <b>116.000 satır</b>dır: şimdiye kadarki tabloların çok üstünde. Büyük tabloda iki şey değişir: <b>her sorgunun bir maliyeti vardır</b> ve <b>sonuca bakarak hatayı görmek zorlaşır</b>, çünkü satırları tek tek okuyamazsın.</p>
@@ -24,6 +25,6 @@ FROM bk_trips;</pre>
 <p>Ya da bir zaman dilimiyle sınırla: <code>WHERE started_at &gt;= '2024-06-01' AND started_at &lt; '2024-06-08'</code>. Sorgu doğru çalışınca filtreyi kaldır.</p>
 <div class="tip"><b>Alışkanlık</b>Büyük tabloda <code>SELECT *</code> yerine ihtiyacın olan sütunları seç ve sonuç ekranına yüz binlerce satır getirme; önce özetle.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-bv-giris">Alıştırmalara geç (6)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-bv-giris/1">Alıştırmalara geç (6)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../performans-lab/">← Performans laboratuvarı: 42.000 satırlık tabloda indeksin etkisini ölç</a><a href="../bv-plan/">Sorgu planı ve indeks: büyük tabloda hız farkı →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

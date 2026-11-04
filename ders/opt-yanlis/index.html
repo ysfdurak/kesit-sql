@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Sorgu Optimizasyonu</span><h1>Yanlış optimizasyon: hızlı görünen ama işe yaramayan ya da sonucu bozan değişiklikler</h1><p class="st-l">Sonucu değiştiren yeniden yazımlar, efsaneler (COUNT(1), EXISTS), NOLOCK, her sütuna indeks, ipucu kullanımı, ölçmeden karar.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-opt-yanlis">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory"><h2>En tehlikeli optimizasyon sonucu değiştirendir</h2>
 <p>Yavaş rapor can sıkar, yanlış rapor kararı bozar. Aşağıdakilerin hepsi gerçek işlerde sık görülür. Önce sonucu bozanlara, sonra işe yaramayanlara bakalım.</p>
 <h2>Sonucu bozan "hızlandırmalar"</h2>
@@ -61,6 +62,6 @@ SELECT COUNT(1) FROM lk_orders;</pre><p class="plan-etiket">Gerçek çıktı</p>
 <li>Sonucu karşılaştırmamak.</li>
 </ul>
 <div class="tip"><b>Kontrol sorusu</b>"Bu değişiklikten sonra sonuç aynı mı, hangi sayı düştü, karşılığında ne ödedim?" Bu üçünü söyleyemiyorsan optimizasyon bitmedi.</div></article>
-<div class="st-c"><a class="st-p" href="../../#ders-opt-yanlis">Alıştırmalara geç (8)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-yanlis/1">Alıştırmalara geç (8)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../opt-turler/">← SQL türüne özgü optimizasyon: parametre koklama, EXPLAIN ANALYZE, bayt maliyeti</a><a href="../mk-opt/">Mülakat: yavaş sorgu ve performans soruları →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Küme ve Alt Sorgular</span><h1>EXISTS, NOT EXISTS, ANY ve ALL: yarı ve karşıt birleştirmeler</h1><p class="st-l">Var mı / yok mu soruları, NOT IN ve NULL tuzağı, ANY/ALL ile karşılaştırma.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-exists-anyall">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>EXISTS: “en az bir tane var mı?”</h2>
 <p><code>EXISTS (alt sorgu)</code>, alt sorgu en az bir satır döndürürse doğrudur. Alt sorgunun SELECT listesi önemsizdir (<code>SELECT 1</code> yazılır). Bu desene <b>yarı birleştirme</b> (semi-join) denir: müşteri satırı çoğalmaz.</p>
@@ -44,6 +45,6 @@ WHERE price &gt; ALL (SELECT price FROM products WHERE category = 'Kitap')
 ORDER BY price;</pre>
 <div class="note"><b>Boş liste</b><code>x &gt; ALL (boş)</code> her zaman doğrudur, <code>x &gt; ANY (boş)</code> her zaman yanlıştır. MAX/MIN eşdeğerinde boş liste NULL verir; bu ince farka dikkat.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-exists-anyall">Alıştırmalara geç (7)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-exists-anyall/1">Alıştırmalara geç (7)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../lateral/">← Satır başına alt sorgu: LATERAL ve APPLY</a><a href="../join-ozet/">JOIN ile özetleme: satır çoğalması ve önce özetle sonra birleştir →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

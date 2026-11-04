@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Uygulama Geliştirme</span><h1>Uygulama veritabanı desenleri: yumuşak silme, denetim sütunları, iyimser kilit</h1><p class="st-l">Gerçek uygulamalarda her tabloda karşılaşılan kalıplar.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-be-desenler">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Yumuşak silme (soft delete)</h2>
 <p>Satırı gerçekten silmek yerine <code>deleted_at</code> sütununa tarih yazılır. Kayıt geri getirilebilir, geçmiş raporlar bozulmaz. Bedeli: <b>her sorguda</b> <code>WHERE deleted_at IS NULL</code> unutulmamalıdır. Bunu garanti etmenin yolu, uygulamanın tabloya değil bir görünüme bakmasıdır.</p>
@@ -38,6 +39,6 @@ SELECT * FROM hesap;</pre>
 <h2>Tekrarlanabilir (idempotent) istekler</h2>
 <p>Ödeme gibi işlemlerde ağ hatası yüzünden aynı istek iki kez gelebilir. İsteğe tekil bir <b>idempotency anahtarı</b> verilip tekil kısıtla saklanır; ikinci istek kısıta takılır ve ilk sonucun aynısı döndürülür.</p>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-be-desenler">Alıştırmalara geç (4)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-be-desenler/1">Alıştırmalara geç (4)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../be-sayfalama/">← Uygulamalarda sayfalama: OFFSET ve keyset</a><a href="../be-kilit/">Eşzamanlılık uygulaması: çift rezervasyon, FOR UPDATE, SKIP LOCKED →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

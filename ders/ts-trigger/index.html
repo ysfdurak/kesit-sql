@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · T-SQL (SQL Server)</span><h1>SQL Server trigger'ları: inserted ve deleted</h1><p class="st-l">Küme bazlı tetikleyiciler ve denetim kaydı (audit).</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ts-trigger">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>inserted ve deleted sanal tabloları</h2>
 <table><tr><th>İşlem</th><th><code>inserted</code></th><th><code>deleted</code></th></tr>
@@ -39,6 +40,6 @@ SELECT order_id, old_status, new_status FROM order_audit ORDER BY order_id;</pre
 <div class="note"><b>INSTEAD OF trigger</b>Asıl işlemin yerine çalışır; çoğunlukla birden çok tabloya dayanan view'ları güncellenebilir yapmak için kullanılır. Bu taklitte AFTER trigger'lar desteklenir.</div>
 <div class="note"><b>Alternatifler</b>Denetim kaydı için SQL Server'ın yerleşik <b>Temporal Tables</b> (sistem sürümlü tablolar), <b>Change Data Capture</b> ve <b>SQL Server Audit</b> özellikleri trigger'dan daha az bakım gerektirir.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-ts-trigger">Alıştırmalara geç (3)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-trigger/1">Alıştırmalara geç (3)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ts-cursor/">← İmleçler (CURSOR): satır satır işlem</a><a href="../ts-guvenlik/">SQL Server güvenliği: login, user, rol, şema ve yetkiler →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Büyük Sorgular</span><h1>Büyük sorgu 6: SCD 2 fiyat boyutu ve nokta-zaman birleştirme</h1><p class="st-l">Fiyat geçmişinden geçerlilik aralıkları kurmak, satışları satış anındaki fiyatla eşleştirmek ve sapmaları ölçmek.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-bs-scd">Uygulamada aç, 4 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Soru</h2>
 <p>Finans ekibi soruyor: “Satış satırlarındaki birim fiyat, o gün geçerli liste fiyatıyla tutarlı mı?” Ürün tablosu yalnızca <b>güncel</b> fiyatı tutar; geçmişi <code>price_updates</code> tablosundaki güncellemelerden geri kurmak gerekir. Bu, veri ambarlarında “yavaş değişen boyut Tip 2” ve “nokta-zaman (as-of) birleştirme” olarak bilinir.</p>
@@ -51,6 +52,6 @@ ORDER BY s.product_id;</pre>
 <p>Birleştirme koşulu <code>s.order_date &gt;= b.baslangic AND s.order_date &lt; b.bitis</code> şeklindedir. Bitişi dahil etseydin (<code>&lt;=</code>), tam güncelleme anına denk gelen bir satış iki fiyat satırıyla eşleşir ve satır çoğalırdı.</p>
 <div class="note"><b>Bilerek bırakılmış bir basitleştirme</b>Başlangıç fiyatı, products tablosundaki güncel fiyattan türetilemez; gerçek bir sistemde ilk fiyat ayrı bir kaynaktan gelir. Bu örnekte ilk aralık için güncel fiyat kullanıldı; alıştırmalardan biri bunu düzeltiyor.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-bs-scd">Alıştırmalara geç (4)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-bs-scd/1">Alıştırmalara geç (4)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../bs-aml/">← Büyük sorgu 5: bankada şüpheli işlem kural motoru</a><a href="../mulakat-1/">Mülakat soruları 1: klasikler →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · T-SQL (SQL Server)</span><h1>Değişkenler ve akış kontrolü: DECLARE, IF, WHILE</h1><p class="st-l">T-SQL'i bir programlama diline dönüştüren yapılar.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ts-degisken">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Değişken tanımlamak ve değer atamak</h2>
 <p>Değişkenler <code>@</code> ile başlar ve <code>DECLARE</code> ile tipiyle birlikte tanımlanır. Değer, <code>SET</code> veya <code>SELECT @x = ...</code> ile atanır. <code>PRINT</code> Mesajlar sekmesine yazar.</p>
@@ -48,6 +49,6 @@ END;
 SELECT * FROM @ozet;</pre>
 <div class="warn"><b>Döngü yerine küme</b>SQL küme tabanlı bir dildir. Yukarıdaki döngü tek bir <code>GROUP BY YEAR(order_date)</code> ile yazılabilirdi ve milyonlarca satırda yüzlerce kat hızlı olurdu. WHILE'ı yönetim işleri ve parça parça işleme (batch) gibi durumlar için sakla.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-ts-degisken">Alıştırmalara geç (3)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-degisken/1">Alıştırmalara geç (3)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ts-donusum/">← Dönüşümler ve koşullu fonksiyonlar: CAST, CONVERT, TRY_CAST, IIF, CHOOSE</a><a href="../ts-gecici/">Geçici tablolar, tablo değişkenleri ve SELECT INTO →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

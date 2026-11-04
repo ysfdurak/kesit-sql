@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · T-SQL (SQL Server)</span><h1>Listeleri bölmek ve birleştirmek: STRING_SPLIT, STRING_AGG, FOR XML PATH</h1><p class="st-l">Virgüllü listeyi satırlara, satırları virgüllü listeye çevirmek.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ts-liste">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Satırdan listeye: STRING_AGG</h2>
 <p>SQL Server 2017'den beri birden çok satırı tek metinde birleştirmenin yolu <code>STRING_AGG</code>'dır. Sıra önemliyse <code>WITHIN GROUP (ORDER BY ...)</code> eklenir.</p>
@@ -51,6 +52,6 @@ FROM t
 CROSS APPLY STRING_SPLIT(t.notlar, ',') AS s;</pre>
 <div class="tip"><b>Diğer SQL türleri</b>PostgreSQL: <code>string_to_table(metin, ',')</code> veya <code>unnest(string_to_array(...))</code>. MySQL: <code>JSON_TABLE</code> ya da özyinelemeli CTE. Oracle: <code>REGEXP_SUBSTR</code> + <code>CONNECT BY LEVEL</code>. Kalıcı çözüm ise listeyi tek sütunda tutmamak (normalizasyon) ve ayrı bir tabloya yazmaktır.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-ts-liste">Alıştırmalara geç (3)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-liste/1">Alıştırmalara geç (3)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ts-apply/">← CROSS APPLY ve OUTER APPLY</a><a href="../ts-sistem/">Sistem görünümleri, IDENTITY ve yardımcı prosedürler →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

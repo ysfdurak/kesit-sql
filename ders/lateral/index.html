@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Küme ve Alt Sorgular</span><h1>Satır başına alt sorgu: LATERAL ve APPLY</h1><p class="st-l">Her satır için ayrı çalışan, birden çok sütun ve satır döndürebilen alt sorgular; “her müşterinin son N siparişi”.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-lateral">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Sorun</h2>
 <p>“Her müşterinin <b>son iki</b> siparişi” sorusunu düşün. İlişkili alt sorgu SELECT listesinde yalnızca <b>tek bir değer</b> döndürebilir; iki satır ve birkaç sütun döndüremez. FROM içindeki normal alt sorgu ise dışarıdaki tabloyu göremez.</p>
@@ -56,6 +57,6 @@ ORDER BY customer_id, order_date DESC;</pre>
 </table>
 <div class="note"><b>Bu uygulamada</b>Tarayıcıdaki motor LATERAL ve APPLY alt sorgularını eşdeğer bir birleşime çevirerek çalıştırır. Alt sorgu dış tabloya WHERE içindeki eşitlik koşullarıyla bağlanmalıdır (yukarıdaki örneklerdeki gibi).</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-lateral">Alıştırmalara geç (6)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-lateral/1">Alıştırmalara geç (6)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../correlated/">← İlişkili alt sorgular (correlated subquery) ve EXISTS</a><a href="../exists-anyall/">EXISTS, NOT EXISTS, ANY ve ALL: yarı ve karşıt birleştirmeler →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

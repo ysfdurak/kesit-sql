@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Veri Mühendisliği</span><h1>Yavaş değişen boyutlar (SCD Tip 1 ve 2)</h1><p class="st-l">Değişen nitelikleri ezmek mi, tarihçesini tutmak mı?</p>
 <div class="st-c"><a class="st-p" href="../../#ders-de-scd">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Sorun</h2>
 <p>Bir ürünün fiyatı veya bir müşterinin şehri değişir. Geçmiş raporlar eski değeri mi, yeni değeri mi göstermeli?</p>
@@ -65,6 +66,6 @@ WHERE o.order_date >= '2024-10-01'
 <li>Değişenlerde güncel satırı kapat: <code>valid_to = değişiklik anı</code>, <code>is_current = 0</code>.</li>
 <li>Yeni değerle <code>valid_to = '9999-12-31'</code>, <code>is_current = 1</code> satırı ekle.</li>
 <li>Test: her anahtar için tam olarak bir güncel satır var mı, aralıklar çakışıyor mu?</li></ol></article>
-<div class="st-c"><a class="st-p" href="../../#ders-de-scd">Alıştırmalara geç (6)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-de-scd/1">Alıştırmalara geç (6)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../de-cdc/">← Değişen veriyi yakalamak (CDC, change data capture)</a><a href="../de-dbt/">dbt ile SQL dönüşüm katmanı: modeller ve testler →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

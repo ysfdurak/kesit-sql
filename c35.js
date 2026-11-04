@@ -56,11 +56,11 @@ BODY('ts-index', "%30 üzeri için <code>ALTER INDEX ... REBUILD</code>, daha az
 /* performans: var olmayan önceki ders */
 BODY('performans', 'Tam tarama, iç içe döngü ve tahmini satır sayılarını incele (önceki ders).', 'Tam tarama, iç içe döngü ve tahmini satır sayılarını incele (<b>İndeksler ve sorgu planı</b> dersi).');
 /* deadlock grafiği */
-BODY('ts-izolasyon', '<h2>', `<div class="note"><b>Deadlock grafiği</b>Hangi iki oturumun neden kilitlendiğini grafik gösterir. SQL Server'da varsayılan <code>system_health</code> Extended Events oturumu deadlock kayıtlarını tutar; XML kaydını SSMS'te açınca süreçler ve kaynaklar çizilir. Okurken sor: kurban kim, hangi iki nesneye ters sırayla erişildi? Çözüm çoğunlukla nesnelere aynı sırayla erişmek ve işlemi kısaltmaktır.
+BODY('ts-izolasyon', '<h2>Deadlock', `<div class="note"><b>Deadlock grafiği</b>Hangi iki oturumun neden kilitlendiğini grafik gösterir. SQL Server'da varsayılan <code>system_health</code> Extended Events oturumu deadlock kayıtlarını tutar; XML kaydını SSMS'te açınca süreçler ve kaynaklar çizilir. Okurken sor: kurban kim, hangi iki nesneye ters sırayla erişildi? Çözüm çoğunlukla nesnelere aynı sırayla erişmek ve işlemi kısaltmaktır.
 <pre class="code" data-norun>SELECT CAST(event_data AS XML) AS olay
 FROM sys.fn_xe_file_target_read_file('system_health*.xel', NULL, NULL, NULL)
 WHERE object_name = 'xml_deadlock_report';</pre></div>
-<h2>`.replace(/^/, ''));
+<h2>Deadlock`.replace(/^/, ''));
 /* upsert: aynı tablo iki kez */
 { const l = LM('upsert'); const t2 = "<table><tr><th>SQL türü</th><th>Yazım</th></tr><tr><td>PostgreSQL, SQLite</td><td><code>INSERT ... ON CONFLICT (anahtar) DO UPDATE SET ...</code></td></tr><tr><td>MySQL</td><td><code>INSERT ... ON DUPLICATE KEY UPDATE ...</code></td></tr><tr><td>SQL Server, Oracle, BigQuery</td><td><code>MERGE INTO hedef USING kaynak ON ... WHEN MATCHED ... WHEN NOT MATCHED ...</code></td></tr></table>"; if (!l.body.includes(t2)) throw new Error('upsert tablosu'); l.body = l.body.replace(t2, ''); BODY('upsert', '<tr><td>SQL Server, Oracle</td><td><code>MERGE INTO hedef', '<tr><td>SQL Server, Oracle, BigQuery</td><td><code>MERGE INTO hedef'); }
 

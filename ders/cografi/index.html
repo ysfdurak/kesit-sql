@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Modern SQL</span><h1>Coğrafi veri: mesafe, en yakın nokta ve uzamsal tipler</h1><p class="st-l">Haversine ile mesafe, PostGIS, SQL Server geography, BigQuery GEOGRAPHY.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-cografi">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Konum sorguları</h2>
 <p>“Müşteriye en yakın mağaza”, “5 km içindeki kuryeler”, “hangi ilçede?” gibi sorular coğrafi (uzamsal) veri gerektirir. Basit mesafe hesabı düz SQL ile yapılabilir; ciddi işler için uzamsal tipler ve indeksler kullanılır.</p>
@@ -53,6 +54,6 @@ SELECT ad, ST_Distance_Sphere(konum, POINT(28.98, 41.01)) / 1000 AS km FROM maga
 <div class="warn"><b>Sıra tuzağı</b>Fonksiyonların çoğu nokta için <b>(boylam, enlem)</b> sırası ister (x, y); SQL Server'ın <code>geography::Point</code> fonksiyonu ise (enlem, boylam). Ters yazılan koordinatlar okyanusun ortasında nokta üretir.</div>
 <p>SRID 4326 = WGS 84 (GPS koordinatları). <code>geography</code> mesafeyi metre olarak küre üzerinde, <code>geometry</code> düzlemde hesaplar.</p>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-cografi">Alıştırmalara geç (5)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-cografi/1">Alıştırmalara geç (5)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../json/">← SQL ile JSON verisi</a><a href="../dwh/">OLTP ve OLAP, yıldız şema, fact ve dimension →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

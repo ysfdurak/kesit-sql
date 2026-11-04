@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Sorgu Optimizasyonu</span><h1>Önce ölç, sonra düzelt: yavaş sorguda çalışma akışı</h1><p class="st-l">Yavaş sorguda tahminle değil ölçümle ilerlemek: temel ölçüm, plan, tek değişiklik, yeniden ölçüm ve sonuç sağlaması.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-opt-olc">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory"><h2>Senaryo: "Rapor yavaş, indeks ekleyelim"</h2>
 <p>Ilgaz Bank'ta operasyon ekibi aylık hareket raporunun yavaşladığını söylüyor. Biri hemen "indeks ekleyelim" diyor. Belki doğrudur, ama henüz kimse hangi sorgunun neden yavaş olduğunu görmedi. Optimizasyon işi tahminle başlarsa yanlış yere indeks eklersin, yazmayı yavaşlatırsın, rapor yine yavaş kalır.</p>
 <h2>Altı adımlık akış</h2>
@@ -77,6 +78,6 @@ SELECT COUNT(*) FROM bank_txns WHERE txn_time >= '2024-11-01' AND txn_time &lt; 
 <tr><td>SQLite</td><td><code>EXPLAIN QUERY PLAN</code></td><td>SCAN ve SEARCH, geçici yapılar</td></tr>
 </table>
 <div class="tip"><b>Mülakatta</b>"Bu sorgu yavaş, ne yaparsın?" sorusuna "indeks eklerim" ile başlama. "Önce ne kadar yavaş ve ne sıklıkla çalıştığını öğrenir, planı okur, tek değişiklik yapar, ölçer ve sonucun aynı kaldığını doğrularım" de. Ardından indeksten söz et.</div></article>
-<div class="st-c"><a class="st-p" href="../../#ders-opt-olc">Alıştırmalara geç (8)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-olc/1">Alıştırmalara geç (8)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ba-mulakat/">← Mülakat: BT iş analisti için SQL ve senaryo soruları</a><a href="../opt-plan/">Sorgu planı okumak (query plan): tarama, arama, birleştirme, tahmin ve gerçek →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

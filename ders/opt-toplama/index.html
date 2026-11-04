@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Sorgu Optimizasyonu</span><h1>Toplama ve pencere fonksiyonu maliyeti: önce topla, sırala, özetle</h1><p class="st-l">GROUP BY ve pencere fonksiyonunda sıralama maliyeti, indeksle sıralamayı kaldırmak, önce toplama, COUNT DISTINCT, özet tablo.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-opt-toplama">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory"><h2>Senaryo: Pedal İzmir yönetim panosu</h2>
 <p>Pano her yenilendiğinde 116.000 yolculuk üzerinden istasyon toplamları ve kullanıcı sıralamaları hesaplıyor. Toplama ve pencere fonksiyonları satırları sıralamayı ya da gruplamayı gerektirir. Maliyetin büyük kısmı filtreden sonra burada oluşur.</p>
 <h2>GROUP BY: sıralı mı, karma mı?</h2>
@@ -91,6 +92,6 @@ GROUP BY date(started_at), start_station;
 SELECT gun, SUM(yolculuk) AS yolculuk FROM ozet_gun
 WHERE gun >= '2024-07-01' AND gun &lt; '2024-07-08'
 GROUP BY gun ORDER BY gun;</pre></article>
-<div class="st-c"><a class="st-p" href="../../#ders-opt-toplama">Alıştırmalara geç (8)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-toplama/1">Alıştırmalara geç (8)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../opt-join/">← JOIN, EXISTS, IN ve alt sorgu maliyeti: erken süzme, gereksiz DISTINCT, SELECT *</a><a href="../opt-turler/">SQL türüne özgü optimizasyon: parametre koklama, EXPLAIN ANALYZE, bayt maliyeti →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

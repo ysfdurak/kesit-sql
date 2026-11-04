@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Veri Mühendisliği</span><h1>Tekilleştirme (deduplication)</h1><p class="st-l">Tam ve mantıksal tekrarları ROW_NUMBER ile temizlemek.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-de-dedup">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>İki tür tekrar</h2>
 <ul><li><b>Tam tekrar</b>: Tüm sütunlar aynı. <code>SELECT DISTINCT</code> yeterli.</li>
@@ -51,6 +52,6 @@ FROM s;</pre>
 <h3>Birleştirmenin bedeli</h3>
 <p>Kanat Havayolları'nda 33 e-posta birden fazla yolcu kaydında geçiyor. En eski kaydı (en küçük <code>joined_date</code>) bırakırsak 34 yolcu kaydı birleşir ve bunlara bağlı 172 rezervasyonun <code>passenger_id</code>'si kalan kayda taşınmalıdır. Tekilleştirme yalnızca bir tabloyu değil, ona bakan tüm tabloları etkiler.</p>
 <div class="note"><b>SQL türlerine göre kısayollar</b>PostgreSQL: <code>SELECT DISTINCT ON (email) ... ORDER BY email, joined_date</code>. BigQuery ve Snowflake: <code>QUALIFY ROW_NUMBER() OVER (...) = 1</code>. Diğerlerinde CTE + ROW_NUMBER kalıbı her yerde çalışır.</div></article>
-<div class="st-c"><a class="st-p" href="../../#ders-de-dedup">Alıştırmalara geç (5)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-de-dedup/1">Alıştırmalara geç (5)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../sql-test/">← SQL kodunu test etmek: veri testleri, birim testleri ve CI</a><a href="../de-incremental/">Artımlı yükleme (incremental load) →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Modern SQL</span><h1>SQL ile JSON verisi</h1><p class="st-l">Yarı yapılandırılmış veriyi sorgulamak ve üretmek; SQL türleri arası farklar.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-json">Uygulamada aç, 5 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Neden JSON?</h2>
 <p>Uygulama olayları, API yanıtları ve esnek nitelikler çoğu zaman JSON olarak gelir. SQL:2016 ile JSON desteği standarda girdi; ama her SQL türü kendi fonksiyonlarını kullanır.</p>
@@ -70,6 +71,6 @@ GROUP BY jt.etiket;</pre>
 <p>Boş dizili 3 numaralı olay sonuçta görünmez; çünkü açılacak eleman yoktur (iç birleştirme gibi davranır). “Etiketsiz olay” sayısı da gerekiyorsa ayrıca hesapla ya da LEFT JOIN LATERAL / OUTER APPLY kullan.</p>
 <p><b>Performans:</b> JSON içindeki bir alana göre sık filtreleme yapılıyorsa her satırda metni yeniden ayrıştırmak pahalıdır. PostgreSQL'de <code>jsonb</code> sütununa GIN indeks, MySQL'de alanı üretilmiş sütuna çıkarıp indeksleme (<code>ALTER TABLE t ADD sehir VARCHAR(50) AS (j-&gt;&gt;'$.sehir'), ADD INDEX (sehir)</code>), SQL Server'da hesaplanmış sütun + indeks kullanılır.</p>
 <div class="tip"><b>Ne zaman JSON, ne zaman sütun?</b>Sık filtrelenen, raporlanan veya birleştirilen alanları gerçek sütunlara çıkar. JSON'u gerçekten esnek, seyrek ve kaynağa göre değişen nitelikler için bırak.</div></article>
-<div class="st-c"><a class="st-p" href="../../#ders-json">Alıştırmalara geç (5)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-json/1">Alıştırmalara geç (5)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../acid/">← ACID, izolasyon seviyeleri ve eşzamanlılık</a><a href="../cografi/">Coğrafi veri: mesafe, en yakın nokta ve uzamsal tipler →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Temel · Tabloları Birleştirme</span><h1>LEFT JOIN ve eşi olmayanları bulmak</h1><p class="st-l">Sol tablonun tüm satırlarını korumak, anti-join kalıbı.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-left-join">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Soldaki her satır kalsın</h2>
 <p><b>LEFT JOIN</b> (LEFT OUTER JOIN), sol tablodaki <b>tüm</b> satırları döndürür. Sağda eşi yoksa sağ tablonun sütunları NULL gelir.</p>
@@ -33,6 +34,6 @@ LIMIT 10;</pre>
 <div class="warn"><b>COUNT(*) değil COUNT(sütun)</b>LEFT JOIN sonrası COUNT(*) eşi olmayan satırı da 1 sayar. Sağ tablodaki bir sütunu saymak (<code>COUNT(o.order_id)</code>) doğru sonucu verir.</div>
 <h2>Derinleş: ON ile WHERE farkı tek tabloda</h2><table><tr><th>Yazım</th><th>Sonuç</th></tr><tr><td><code>LEFT JOIN o ON o.courier_id = c.courier_id AND o.status = 'teslim'</code></td><td>Tüm kuryeler; teslimatı olmayanlar NULL ile</td></tr><tr><td><code>LEFT JOIN o ON o.courier_id = c.courier_id WHERE o.status = 'teslim'</code></td><td>Yalnızca teslimatı olan kuryeler (fiilen INNER JOIN)</td></tr><tr><td><code>... WHERE o.order_id IS NULL</code></td><td>Yalnızca eşi olmayanlar (anti-join)</td></tr></table>
 <p>LEFT JOIN sonrası <code>COUNT(*)</code> eşi olmayan satırı 1 sayar; <code>COUNT(sağ_tablo.anahtar)</code> 0 sayar.</p></article>
-<div class="st-c"><a class="st-p" href="../../#ders-left-join">Alıştırmalara geç (9)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-left-join/1">Alıştırmalara geç (9)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../inner-join/">← INNER JOIN</a><a href="../ddl-create/">CREATE TABLE, veri tipleri ve kısıtlar →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

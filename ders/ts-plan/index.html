@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · T-SQL (SQL Server)</span><h1>Yürütme planı ve STATISTICS IO: sorgu neden yavaş?</h1><p class="st-l">Plan operatörleri, mantıksal okuma, SARGable koşullar ve parameter sniffing.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ts-plan">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Plan: motorun yol haritası</h2>
 <p>SQL Server bir sorguyu çalıştırmadan önce <b>sorgu iyileştirici</b> (optimizer) birçok olası yol arasından en ucuz görüneni seçer. Bu seçim <b>yürütme planıdır</b>. SSMS'te <b>Ctrl+L</b> tahmini planı, <b>Ctrl+M</b> ile açılan “gerçek plan” ise sorguyla birlikte gerçekleşen planı gösterir.</p>
@@ -47,6 +48,6 @@ SELECT COUNT(*) AS adet FROM orders WHERE order_date &gt;= '2024-01-01' AND orde
 </ul>
 <div class="tip"><b>Query Store</b>SQL Server 2016+'da sorguların plan geçmişini ve performansını saklar. “Dün hızlıydı, bugün yavaş” sorununda hangi planın değiştiğini gösterir ve eski planı zorlamana izin verir.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-ts-plan">Alıştırmalara geç (6)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-plan/1">Alıştırmalara geç (6)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ts-index/">← SQL Server indeksleri: clustered, nonclustered, INCLUDE, filtreli</a><a href="../ts-izolasyon/">SQL Server'da kilitler, izolasyon ve NOLOCK →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

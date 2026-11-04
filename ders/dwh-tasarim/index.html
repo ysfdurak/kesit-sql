@@ -1,0 +1,25 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>İş ihtiyacından şema: tanecik, boyut ve anahtar kararını sen ver | Kesit SQL</title><meta name="description" content="Müşteri cümlesinden tablo çıkarmak. Sütunlar verilmez; denetim tanecik, anahtar ve ayrışmayı sınar."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/dwh-tasarim/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="İş ihtiyacından şema: tanecik, boyut ve anahtar kararını sen ver"><meta property="og:description" content="Müşteri cümlesinden tablo çıkarmak. Sütunlar verilmez; denetim tanecik, anahtar ve ayrışmayı sınar."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/dwh-tasarim/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"İş ihtiyacından şema: tanecik, boyut ve anahtar kararını sen ver","description":"Müşteri cümlesinden tablo çıkarmak. Sütunlar verilmez; denetim tanecik, anahtar ve ayrışmayı sınar.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/dwh-tasarim/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veri Ambarı</span><h1>İş ihtiyacından şema: tanecik, boyut ve anahtar kararını sen ver</h1><p class="st-l">Müşteri cümlesinden tablo çıkarmak. Sütunlar verilmez; denetim tanecik, anahtar ve ayrışmayı sınar.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-dwh-tasarim">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
+<article class="panel theory"><h2>Dört soru</h2>
+<p>İlanlarda "veri modelleme" yazınca beklenen, hazır sütun listesini DDL'e çevirmek değil, cümleden tablo çıkarmaktır. Sıra hep aynı:</p>
+<ol><li><b>Süreç:</b> Hangi iş olayını ölçüyoruz?</li><li><b>Tanecik:</b> Bir satır tam olarak nedir? Bunu tek cümleyle söyleyemiyorsan tasarım başlamamıştır.</li><li><b>Boyutlar:</b> Kim, ne, nerede, ne zaman? "... bazında" dediği her şey.</li><li><b>Ölçüler:</b> Toplanacak sayılar. Tanecikle uyumlu olmayan ölçü aynı tabloya girmez.</li></ol>
+<h2>Örnek cümle</h2>
+<div class="note"><b>Operasyon müdürü</b>"Her kuryenin her ay kaç teslimat yaptığını, ne kadar teslim ücreti ve bahşiş getirdiğini görmek istiyorum. Ayrıntıya inebilmeliyim."</div>
+<table><tr><th>Karar</th><th>Seçim</th><th>Neden</th></tr>
+<tr><td>Tanecik</td><td>Bir teslim edilmiş sipariş</td><td>"Ayrıntıya inebilmeliyim": ay özeti buradan türer, tersi olmaz</td></tr>
+<tr><td>Boyut</td><td>Kurye, tarih</td><td>"Kurye" ve "ay"</td></tr>
+<tr><td>Ölçü</td><td>Ücret, bahşiş</td><td>İkisi de bir siparişe ait, toplanabilir</td></tr>
+<tr><td>Anahtar</td><td>Boyutta vekil anahtar</td><td>Kaynak kimliği değişebilir, sürüm tutmak gerekebilir</td></tr></table>
+<div class="warn"><b>Sık hata</b>Aylık özeti fact yapmak. Bugünkü soru cevaplanır, yarın "gün bazında" denince tablo yeniden kurulur. En ince tanecikte sakla, özeti view yap.</div>
+<h2>Veri sözlüğü</h2>
+<p>Her sütun için bir cümle yaz: ne, hangi birimde, nereden geliyor. Ambar teslim edilirken istenen şey budur; <code>ba-veri</code> dersinde iş analizi tarafı var.</p>
+<div class="note"><b>Denetim ne yapar?</b>Görevde sütun adını büyük ölçüde sen seçersin. Denetim yalnız söylenen adları ve şunları arar: satır sayısı doğru tanecikte mi, toplam tutuyor mu, boyutlarda birincil anahtar var mı, fact tablosunda açıklama metni kalmış mı, fact anahtarları boyutta karşılık buluyor mu, kurye başına teslimat doğru mu.</div></article>
+<div class="st-c"><a class="st-p" href="../../#ders-dwh-tasarim/1">Alıştırmalara geç (6)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../dwh-fact/">← Fact türleri: işlem, periyodik, biriken; factless ve uyumlu boyut</a><a href="../ts-proc-ileri/">Saklı yordam derinliği: varsayılan parametre, iç içe çağrı, INSERT EXEC →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

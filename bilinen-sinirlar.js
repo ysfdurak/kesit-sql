@@ -1,6 +1,33 @@
 /* Veri setleri sayfasındaki "Bilerek bırakılanlar ve bilinen sınırlamalar" bölümünün metinleri. Üç uygulamada aynı metin; sayılar son veriden hesaplandı.
-   Anahtarlar: market, bank, hava, kurye, ik, bisiklet. Değer: { bilerek: [...], sinir: [...] }. */
+   Anahtarlar: market, bank, hava, kurye, ik, bisiklet, ops (ops yalnız Kesit SQL'de). Değer: { bilerek: [...], sinir: [...] }. */
 window.KESIT_SINIRLAR = {
+ "sis": {
+  "bilerek": [
+   "etl_stg_hareket içinde bozuk tutar, bozuk tarih, boş hesap, mükerrer kayıt ve boyutta olmayan şube bilerek var.",
+   "Engelleme anlık görüntüsünde tepedeki oturum boşta: sys.dm_exec_requests içinde görünmez, bu bilerek öğretilen tuzaktır.",
+   "IX_accounts_durum indeksinin kullanım satırı yok, ilgaz_arsiv günlük zinciri bir yerde kırık, ilgaz_portal günlük yedekleri bir gece iki saat durmuş."
+  ],
+  "sinir": [
+   "Bütünüyle kurgu: elle kuruldu, gerçek bir sistemden alınmadı. Sayılar ölçüm değildir.",
+   "Görünümlerin yalnız seçili sütunları var. Motor gerçek DMV, BACKUP, GRANT, SQL Agent çalıştırmaz; kopyası olmayan görünüm hata verir.",
+   "sys.dm_exec_sql_text ve sys.dm_db_index_physical_stats gerçekte işlevdir; burada tabloya çevrilir, parametreleri yok sayılır.",
+   "Motor birleştirmeli view'e doğrudan yazdırmaz; gerçek sunucu tek tablonun sütununa dokunan UPDATE'e izin verir. Tetikleyici satır başına çalışır, gerçek sunucuda ifade başınadır. Bir hata bütün çalıştırmayı durdurur; gerçek sunucuda XACT_ABORT kapalıyken sonraki satır sürer.",
+   "GRANT, BACKUP, ALTER INDEX, UPDATE STATISTICS, DBCC gibi komutlar burada çalışmaz, ekranda 'Bu motor desteklemiyor' yazar; yazımın yanlış olduğu anlamına gelmez. sys.indexes yalnız object_id, index_id ya da fill_factor geçen sorguda kurgu kopyaya gider, yoksa motorun kendi indekslerini gösterir."
+  ]
+ },
+ "ops": {
+  "bilerek": [
+   "Tek sorunun iki nedeni var: Salı 12 Kasım sabahı rapor sorgusunun planı değişiyor ve aynı sabah portal sürümüyle pahalı bir sorgu geliyor. Süre bütün sorgularda artar, okunan sayfa yalnız bu ikisinde.",
+   "Yanıltıcı örüntüler bilerek kondu: kapalı svc_eski hesabının 30 dakikada bir başarısız girişi, pazar gecesi ETL'in müşterileri sırayla okuması, an_selin'in üç yazım hatası, an_derya'nın cumartesi girişi.",
+   "Parola deneme, ardışık okuma ve arama kutusu denemesi aynı kişiye bağlanamaz: portal kayıtlarında görünen adres uygulama sunucusudur."
+  ],
+  "sinir": [
+   "Bütünüyle kurgu: tohumlu üreteçten gelir, gerçek bir sistemden alınmadı. Süre ve okuma değerleri ölçüm değildir, bu sayıları gerçek bir SQL Server'a taşıma.",
+   "IP adresleri özel ağ (10.0.0.0/8) ve belgeleme (203.0.113.0/24) aralıklarındandır.",
+   "ops_plan_stats, Query Store'u basitleştirerek taklit eder; gerçek katalog görünümleri değildir. Uygulama motoru SQLite olduğu için günlükte yazan sorgular çalıştırılmaz, metin olarak incelenir.",
+   "Bu veri yalnız Kesit SQL'dedir; Kesit Power BI ve Kesit Python'da yoktur."
+  ]
+ },
  "market": {
   "bilerek": [
    "raw_signups (52 satır) kirli bırakıldı: boşluk, büyük ve küçük harf karışıklığı, tekrar ve karışık tarih biçimi temizlik pratiği içindir.",

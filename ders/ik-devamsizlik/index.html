@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · İK Analitiği</span><h1>Devamsızlık ve izin analitiği: Bradford faktörü ve Pazartesi etkisi</h1><p class="st-l">İzin türlerine göre gün sayıları, sık ve kısa devamsızlığı öne çıkaran Bradford faktörü, haftanın gününe göre hastalık izinleri ve kullanılmayan yıllık izin.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ik-devamsizlik">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Kısa ama sık devamsızlık</h2>
 <p>Bir yılda 10 gün hastalık izni iki biçimde olabilir: tek seferde 10 gün (ameliyat) ya da 10 ayrı 1 günlük izin. İkincisi işin akışını çok daha fazla bozar. <b>Bradford faktörü</b> bunu ölçer: <b>B = S² × D</b>; S izin sayısı (kaç kez), D toplam gün.</p>
@@ -46,6 +47,6 @@ ORDER BY s;</pre>
 </table>
 <div class="note"><b>Haftanın günü</b>SQLite'ta <code>strftime('%w', start_date)</code> haftanın gününü verir (1 = Pazartesi). Bu veride hastalık izinlerinin yaklaşık 2.200'ü Pazartesi başlıyor; diğer günlerin her biri 1.130–1.210 arasında. Diğer SQL türlerinde bu hesap farklı fonksiyonlarla yapılır (SQL Server <code>DATEPART(weekday, …)</code>, PostgreSQL <code>EXTRACT(DOW FROM …)</code>).</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-ik-devamsizlik">Alıştırmalara geç (7)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-ik-devamsizlik/1">Alıştırmalara geç (7)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ik-alim/">← İşe alım analitiği: huni, kaynak etkinliği ve doldurma süresi</a><a href="../ik-baglilik/">Bağlılık anketi analitiği: eNPS, katılım ve yönetici etkisi →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · T-SQL (SQL Server)</span><h1>CROSS APPLY ve OUTER APPLY</h1><p class="st-l">Her satır için çalışan alt sorgu: grup başına ilk N ve satır bazlı hesaplar.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ts-apply">Uygulamada aç, 3 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>APPLY nedir?</h2>
 <p><code>APPLY</code>, sol taraftaki <b>her satır için</b> sağdaki tablo ifadesini (alt sorgu veya tablo değerli fonksiyon) çalıştırır ve sonuçları birleştirir. Sağ taraf, sol taraftaki sütunlara başvurabilir; normal JOIN'de bu mümkün değildir.</p>
@@ -32,6 +33,6 @@ ORDER BY d.dept_id;</pre>
 <p>Çalışanı olmayan Hukuk departmanı da 0 çalışanla listelenir.</p>
 <div class="note"><b>Diğer kullanımlar</b>APPLY ayrıca tablo değerli fonksiyonları satır satır çağırmak (<code>CROSS APPLY dbo.fn(c.id)</code>), metni parçalamak (<code>CROSS APPLY STRING_SPLIT(etiketler, ',')</code>) ve JSON açmak (<code>CROSS APPLY OPENJSON(...)</code>) için kullanılır. Bu taklitte APPLY alt sorgu ve satır içi tablo fonksiyonlarıyla çalışır.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-ts-apply">Alıştırmalara geç (3)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-apply/1">Alıştırmalara geç (3)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ts-pivot/">← PIVOT ve UNPIVOT</a><a href="../ts-liste/">Listeleri bölmek ve birleştirmek: STRING_SPLIT, STRING_AGG, FOR XML PATH →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

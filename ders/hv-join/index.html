@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Kanat Havayolları</span><h1>Uçuş, rota, havalimanı ve uçak: JOIN zinciri</h1><p class="st-l">Dört tabloyu adım adım birleştirmek, eşi olmayanı LEFT JOIN ile bulmak ve rötar nedenlerini özetlemek.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-hv-join">Uygulamada aç, 9 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Bir uçuşun tam resmi</h2>
 <p><code>hv_flights</code> tek başına “KN101 kalktı” der ama nereden nereye uçtuğunu, hangi uçakla uçtuğunu söylemez. Bunlar başka tablolardadır ve yabancı anahtarlarla bağlanır:</p>
@@ -48,6 +49,6 @@ JOIN (SELECT DISTINCT flight_id FROM hv_delays) d ON d.flight_id = f.flight_id;<
 <p>Her JOIN'den önce kendine şunu sor: “Sol tablodaki bir satır, sağ tabloda kaç satırla eşleşebilir?” <code>hv_flights → hv_routes</code> ve <code>hv_flights → hv_aircraft</code> çoka-bir ilişkilerdir; satır sayısı değişmez. <code>hv_flights → hv_bookings</code> ve <code>hv_flights → hv_delays</code> ise bire-çok ilişkilerdir; satır çoğalır. Bir sorguda iki ayrı bire-çok tabloyu aynı anda birleştirirsen (rezervasyonlar <b>ve</b> rötarlar) çoğalma çarpılarak büyür. Bu durumda her birini ayrı bir alt sorguda özetlemek gerekir.</p>
 <div class="tip"><b>Hızlı kontrol</b>JOIN'den sonra <code>COUNT(*)</code> ile <code>COUNT(DISTINCT f.flight_id)</code>'yi karşılaştır. Eşit değillerse taneciğin değişti ve toplamların şişmiş olabilir.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-hv-join">Alıştırmalara geç (9)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-hv-join/1">Alıştırmalara geç (9)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../hv-zaman/">← Saat ve süre hesapları: rötar dakikası, saat dilimleri, zamanında kalkış</a><a href="../hv-self/">Aynı tabloyu iki kez kullanmak: kalkış ve varış şehri, aktarmalı yolculuklar →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

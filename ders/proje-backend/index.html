@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Bitirme Projeleri</span><h1>Bitirme projesi (Backend): sepet özelliği için şema ve sorgular</h1><p class="st-l">Kısıtlı tablo tasarımı, idempotent ekleme, anahtar tabanlı sayfalama, işlemle sipariş oluşturma.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-proje-backend">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Senaryo</h2>
 <p>Anadolu Market mobil uygulamasına kalıcı sepet özelliği eklenecek. Kullanıcı sepete ürün ekler, adet değiştirir, siparişe çevirir. API ekibi senden şemayı ve uç noktaların çalıştıracağı sorguları istiyor.</p>
@@ -51,6 +52,6 @@ DELETE FROM cart_item WHERE cart_id = :sepet;
 COMMIT;</pre>
 <p>Adımlardan biri hata verirse uygulama <code>ROLLBACK</code> çalıştırır ve hiçbir tablo değişmez. Stok kontrolü için 3. adımdan önce yetersiz stoklu satır olup olmadığı sorgulanabilir ya da <code>CHECK (stock &gt;= 0)</code> kısıtı ihlali hatası yakalanabilir.</p>
 <h3>Karar</h3><p>Uç noktaları yayına almadan önce sepet okuma ve ürün listesi sorgularının planını al, indeks kararını ve yazma bedelini kısa bir notla ekibe yaz. Sorgu ne sıklıkla çalışıyor, tablo ne sıklıkla yazılıyor? Bu proje sonunda şema, sorgular ve indeks birlikte teslim edilir.</p></article>
-<div class="st-c"><a class="st-p" href="../../#ders-proje-backend">Alıştırmalara geç (7)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-backend/1">Alıştırmalara geç (7)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../proje-dba/">← Bitirme projesi (DBA): yavaş raporu hızlandır ve veritabanını güvenceye al</a><a href="../proje-tsql/">Bitirme projesi (T-SQL): şube raporu için saklı yordam ve hata yönetimi →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · İleri Sorgu Yapıları</span><h1>Boşluk doldurma: son bilinen değerle ilerlemek</h1><p class="st-l">Eksik günleri takvimle tamamlamak ve boş kalan değeri bir önceki bilinen değerle doldurmak (forward fill): ilişkili alt sorgu, pencere ile grup numarası ve IGNORE NULLS.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-son-deger">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Sorun</h2>
 <p>Ilgaz Bank'ın döviz kuru tablosu (<code>bank_fx</code>) yalnızca iş günlerini içerir. Hafta sonu yapılan bir döviz işleminin TL karşılığını hesaplamak için o günün kuru gerekir; finans ekiplerinin kuralı: <b>hafta sonu ve tatilde son bilinen kur geçerlidir</b>. Buna “son bilinen değerle doldurma” (forward fill, LOCF) denir.</p>
@@ -45,6 +46,6 @@ ORDER BY gun;</pre>
 <p>Oracle, BigQuery, Snowflake ve SQL Server 2022 şu kısa yazımı destekler: <code>LAST_VALUE(try_rate IGNORE NULLS) OVER (ORDER BY gun)</code>. PostgreSQL ve MySQL'de yoktur; orada 2. yol kullanılır.</p>
 <div class="note"><b>Dikkat</b>Dizinin <b>başında</b> boşluk varsa (ilk gün hafta sonuysa) doldurulacak bir önceki değer yoktur; sorgu NULL döndürür. Takvimi bir gün geriden başlatmak ya da ilk değeri bilinçli olarak seçmek gerekir.</div>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-son-deger">Alıştırmalara geç (7)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-son-deger/1">Alıştırmalara geç (7)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../takvim/">← Tarih serisi ve takvim tablosu: eksik günleri doldurmak</a><a href="../window-intro/">Pencere fonksiyonlarına giriş (window functions): OVER ve PARTITION BY →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

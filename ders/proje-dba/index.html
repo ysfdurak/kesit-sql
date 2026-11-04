@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Bitirme Projeleri</span><h1>Bitirme projesi (DBA): yavaş raporu hızlandır ve veritabanını güvenceye al</h1><p class="st-l">Sorgu analizi, indeks tasarımı, SARGable yeniden yazım, salt okunur rapor katmanı.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-proje-dba">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Senaryo</h2>
 <p>Ilgaz Bank'ın gün sonu raporu yavaşladı ve denetçiler, analistlerin ham hesap tablolarına doğrudan eriştiğini fark etti. Görevin: raporu hızlandırmak ve raporlama için güvenli bir katman kurmak.</p>
@@ -41,6 +42,6 @@ FROM bank_txns;</pre>
 <div class="tip"><b>Yönetici özeti örneği</b>Gün sonu raporu tarih filtresi SARGable yazılarak ve <code>txn_time</code> indeksi eklenerek tam tablo taraması yerine aralık taraması yapıyor; çıktı eskisiyle birebir aynı (153 satır, 3.584 hareket). Analistler artık ham tablolar yerine iki görünüme erişiyor ve ad soyad maskeli. Kalan risk raporun canlı sistemde çalışması; okuma replikasına taşınmasını öneriyoruz.</div>
 <h3>Kendini değerlendir</h3>
 <table><tr><th>Ölçüt</th><th>Başlangıç</th><th>İyi</th><th>Mükemmel</th></tr><tr><td>Performans</td><td>İndeks eklenmiş</td><td>Önce/sonra plan karşılaştırılmış</td><td>Ölçüm, plan ve yazma maliyeti birlikte değerlendirilmiş</td></tr><tr><td>Doğruluk</td><td>Rapor çalışıyor</td><td>Satır sayısı aynı</td><td>Adet ve tutar mutabakatı sıfır fark</td></tr><tr><td>Güvenlik</td><td>Görünüm var</td><td>Kişisel veri maskeli</td><td>Yetki matrisi, test ve geri alma planı hazır</td></tr></table></article>
-<div class="st-c"><a class="st-p" href="../../#ders-proje-dba">Alıştırmalara geç (8)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-dba/1">Alıştırmalara geç (8)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../proje-muhendis/">← Bitirme projesi (Veri Mühendisi): ham kayıttan temiz boyut tablosuna ve veri testlerine</a><a href="../proje-backend/">Bitirme projesi (Backend): sepet özelliği için şema ve sorgular →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

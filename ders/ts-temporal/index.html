@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · T-SQL (SQL Server)</span><h1>Değişiklik geçmişi: temporal tablolar, CDC ve change tracking</h1><p class="st-l">Bir satırın geçmişteki halini sorgulamak ve değişiklikleri yakalamak.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ts-temporal">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>“Bu müşterinin adresi geçen ay neydi?”</h2>
 <p>Normal bir tabloda UPDATE eski değeri siler. Geçmişi saklamanın yolları:</p>
@@ -39,6 +40,6 @@ EXEC sys.sp_cdc_enable_db;
 EXEC sys.sp_cdc_enable_table @source_schema = N'dbo', @source_name = N'orders', @role_name = NULL;</pre>
 <p>Diğer SQL türleri: Oracle'da <b>Flashback Query</b> (<code>AS OF TIMESTAMP</code>), MariaDB'de system-versioned tablolar, BigQuery'de <code>FOR SYSTEM_TIME AS OF</code> (son 7 gün), PostgreSQL'de eklenti veya trigger tabanlı geçmiş tabloları. Veri ambarında aynı ihtiyaç SCD Tip 2 ile karşılanır.</p>
 </article>
-<div class="st-c"><a class="st-p" href="../../#ders-ts-temporal">Alıştırmalara geç (6)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-temporal/1">Alıştırmalara geç (6)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ts-guvenlik/">← SQL Server güvenliği: login, user, rol, şema ve yetkiler</a><a href="../ts-dinamik/">Dinamik SQL: EXEC ve sp_executesql →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

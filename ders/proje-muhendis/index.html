@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Bitirme Projeleri</span><h1>Bitirme projesi (Veri Mühendisi): ham kayıttan temiz boyut tablosuna ve veri testlerine</h1><p class="st-l">Staging, temizleme, tekilleştirme, boyut ve olgu tabloları, artımlı yükleme ve testler.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-proje-muhendis">Uygulamada aç, 7 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Senaryo</h2>
 <p>Pazarlama formlarından gelen <code>raw_signups</code> verisi kirli: büyük/küçük harf karışık, tekrar eden satırlar, iki farklı tarih biçimi. Ayrıca fiyat güncellemeleri ayrı bir dosyadan geliyor. Senden temiz tablolar ve bunları koruyan testler isteniyor.</p>
@@ -40,6 +41,6 @@ FROM raw_signups;</pre>
 <div class="tip"><b>Yönetici özeti örneği</b>Ham 52 satır 40 tekil kayda indi; 12 id tekrarlıydı ve 20 satırın tarihi ISO biçimine çevrildi. Şehir alanındaki 7 farklı yazım 3 standart değere indirildi; 6 kaydın şehri bilinmiyor. Açık soru: can.kaya@gmail.com iki farklı id'de kayıtlı; aynı kişi mi, iş biriminin kararı gerekiyor.</div>
 <h3>Kendini değerlendir</h3>
 <table><tr><th>Ölçüt</th><th>Başlangıç</th><th>İyi</th><th>Mükemmel</th></tr><tr><td>Temizlik</td><td>Biçimler düzeltilmiş</td><td>Tekilleştirme kuralı yazılı</td><td>İş anahtarı çatışmaları raporlanmış</td></tr><tr><td>Testler</td><td>Yok</td><td>Ham veride üç test</td><td>Her katmanda test, beklenen değer 0 ve satır mutabakatı</td></tr><tr><td>Teslim</td><td>SQL dosyası</td><td>Katmanlı modeller</td><td>Modeller + testler + değişiklik notu + açık sorular</td></tr></table></article>
-<div class="st-c"><a class="st-p" href="../../#ders-proje-muhendis">Alıştırmalara geç (7)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-muhendis/1">Alıştırmalara geç (7)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../proje-bilimci/">← Bitirme projesi (Veri Bilimi): şüpheli işlem tespiti ve müşteri özellik tablosu</a><a href="../proje-dba/">Bitirme projesi (DBA): yavaş raporu hızlandır ve veritabanını güvenceye al →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

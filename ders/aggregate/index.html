@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Temel · Özetleme</span><h1>Toplama fonksiyonları: COUNT, SUM, AVG, MIN, MAX</h1><p class="st-l">Bir tablodan tek bir özet değer üretmek.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-aggregate">Uygulamada aç, 10 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Satırlardan tek değere</h2>
 <p>Toplama (aggregate) fonksiyonları çok sayıda satırı alıp <b>tek bir değer</b> üretir.</p>
@@ -36,6 +37,6 @@ WHERE status = 'cancelled';</pre>
 FROM lk_orders
 WHERE status = 'teslim';</pre>
 <ul><li>Hiç satır yoksa <code>COUNT</code> 0, <code>SUM</code> ve <code>AVG</code> NULL döner.</li><li>Tam sayı sütunlarında <code>AVG</code> bazı SQL türlerinde tam sayı döndürür (SQL Server); <code>AVG(1.0 * x)</code> güvenlidir.</li><li><code>SUM(DISTINCT x)</code> tekrar eden değerleri bir kez toplar; nadiren istenen şeydir.</li></ul></article>
-<div class="st-c"><a class="st-p" href="../../#ders-aggregate">Alıştırmalara geç (10)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-aggregate/1">Alıştırmalara geç (10)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../tarih/">← SQL'in tarihi: bir makaleden dünya standardına (isteğe bağlı okuma)</a><a href="../group-by/">GROUP BY: gruplara göre özet →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

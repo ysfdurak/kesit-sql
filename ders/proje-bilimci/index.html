@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Bitirme Projeleri</span><h1>Bitirme projesi (Veri Bilimi): şüpheli işlem tespiti ve müşteri özellik tablosu</h1><p class="st-l">İstatistiksel aykırı değer, kural tabanlı skor ve model için özellik tablosu.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-proje-bilimci">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Senaryo</h2>
 <p>Ilgaz Bank'ın risk ekibi dolandırıcılık modeli kurmadan önce veriyi tanımak istiyor. İki şey bekleniyor: kural ve istatistikle şüpheli işlemlerin işaretlenmesi, ve her müşteri için bir satırlık <b>özellik tablosu</b> (feature table).</p>
@@ -40,6 +41,6 @@ WHERE t.txn_type = 'kart_harcama' AND t.txn_time &lt; '2024-12-01';</pre>
 <div class="tip"><b>Yönetici özeti örneği</b>Kasım sonuna kadar harcaması olan 477 müşteri için özellik tablosu hazırlandı; 13 müşteri Aralık'ta pasifleşti. Son harcamasının üzerinden 30 günden fazla geçen 13 müşterinin 12'si pasif kaldı; <code>son_gun</code> tek başına çok güçlü bir sinyal. Kural skoru 25 işlemi işaretledi; bunların 19'u hesap bazında z-skoruyla da olağandışı. Bu 25 işlemin hepsi gece saatlerinde, 45.400 TL üstünde ve her biri farklı bir hesapta: dolandırıcılık ekibine öncelikli inceleme listesi olarak gönderilmeli.</div>
 <h3>Kendini değerlendir</h3>
 <table><tr><th>Ölçüt</th><th>Başlangıç</th><th>İyi</th><th>Mükemmel</th></tr><tr><td>Doğruluk</td><td>Özellikler hesaplanmış</td><td>Kesim tarihi her yerde aynı</td><td>Sızıntı ve satır sayısı testleri sıfır hata</td></tr><tr><td>Analiz</td><td>Tek yöntem</td><td>Kural ve istatistik karşılaştırılmış</td><td>Kesişim ve etiketle ilişki sayıyla gösterilmiş</td></tr><tr><td>Teslim</td><td>Sorgular</td><td>Tablo + sütun sözlüğü</td><td>Tablo, sözlük ve modelin neyi tahmin edeceğine dair net not</td></tr></table></article>
-<div class="st-c"><a class="st-p" href="../../#ders-proje-bilimci">Alıştırmalara geç (8)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-proje-bilimci/1">Alıştırmalara geç (8)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../proje-bi/">← Bitirme projesi (İş Zekâsı): Anadolu Market yönetim KPI panosu için veri hazırlığı</a><a href="../proje-muhendis/">Bitirme projesi (Veri Mühendisi): ham kayıttan temiz boyut tablosuna ve veri testlerine →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Sorgu Optimizasyonu</span><h1>Seçicilik (selectivity) ve istatistikler: motor neden o planı seçti?</h1><p class="st-l">Seçicilik hesabı, çarpık dağılım, indeksin işe yaramadığı değerler, ANALYZE, sqlite_stat1, bayat istatistik.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-opt-secicilik">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory"><h2>Senaryo: aynı sorgu, iki farklı değer</h2>
 <p><code>txn_type</code> sütununa indeks kuruldu. Faiz işlemleri raporu çok hızlandı. Kart harcaması raporu ise hiç hızlanmadı. Aynı sorgu, aynı indeks. Fark değerin <b>seçiciliğinde</b>.</p>
 <h2>Seçicilik nedir?</h2>
@@ -75,6 +76,6 @@ SELECT tbl, idx, stat FROM sqlite_stat1 WHERE tbl = 'bank_txns';</pre>
 <p>Dikkat et: bu çıktıda taze planın okuduğu sayfa sayısı daha yüksek (654 ve 291). Toplu <code>UPDATE</code> tabloda ölü satır bıraktı ve bitmap yolu yalnız gerekli sayfaları okudu. Plan tahmine göre seçilir, doğru tahmin her zaman daha az sayfa demek değildir. Tek sorguyla hüküm verme: asıl risk, yanlış tahminin iç içe döngüye ya da küçük bellek ayrılmasına dönüştüğü birleştirmeli sorgulardır. Batch sonrasında <code>ANALYZE</code> iyi bir alışkanlıktır.</p>
 <h2>Parametreyle ilişkisi</h2>
 <p>Aynı sorgunun iki değeri farklı planı hak ediyorsa ve motor planı bir kez seçip saklıyorsa sorun çıkar. SQL Server'da buna parametre koklama (parameter sniffing) denir. Ayrıntısı <b>SQL türüne özgü optimizasyon</b> dersinde.</p></article>
-<div class="st-c"><a class="st-p" href="../../#ders-opt-secicilik">Alıştırmalara geç (8)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-secicilik/1">Alıştırmalara geç (8)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../opt-indeks/">← İndeks tasarımı: bileşik ve kapsayan indeks (covering index), sütun sırası, bedel</a><a href="../opt-join/">JOIN, EXISTS, IN ve alt sorgu maliyeti: erken süzme, gereksiz DISTINCT, SELECT * →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

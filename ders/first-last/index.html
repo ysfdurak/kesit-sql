@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Pencere Fonksiyonları</span><h1>FIRST_VALUE, LAST_VALUE, NTH_VALUE ve varsayılan çerçeve tuzağı</h1><p class="st-l">Bölümdeki ilk/son/n. değere erişim ve ROWS BETWEEN ... UNBOUNDED FOLLOWING.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-first-last">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Bölümün ilk değeri</h2>
 <pre class="code">SELECT category, name, price,
@@ -30,6 +31,6 @@ FROM products;</pre>
        FIRST_VALUE(name) OVER (PARTITION BY restaurant_id ORDER BY price DESC, name) AS en_pahali
 FROM lk_menu_items
 WHERE restaurant_id &lt;= 3;</pre></article>
-<div class="st-c"><a class="st-p" href="../../#ders-first-last">Alıştırmalara geç (6)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-first-last/1">Alıştırmalara geç (6)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ntile-dist/">← NTILE, PERCENT_RANK, FIRST_VALUE</a><a href="../pencere-cerceve/">İleri pencere çerçeveleri: ROWS, RANGE, GROUPS ve EXCLUDE →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

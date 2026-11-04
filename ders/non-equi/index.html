@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · Tabloları Birleştirme</span><h1>Eşit olmayan JOIN ve aralık eşleştirme</h1><p class="st-l">BETWEEN ve karşılaştırmalarla birleştirmek: fiyat bantları, kampanya dönemleri.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-non-equi">Uygulamada aç, 6 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>JOIN koşulu eşitlik olmak zorunda değil</h2>
 <p>ON içinde her türlü koşul yazılabilir. En yaygın kullanım, bir değeri bir <b>aralık tablosuyla</b> eşleştirmektir: fiyat bantları, vergi dilimleri, kampanya dönemleri.</p>
@@ -29,6 +30,6 @@ LEFT JOIN orders o ON o.order_date BETWEEN k.bas AND k.bit
 GROUP BY k.kampanya;</pre>
 <div class="warn"><b>Aralıklar çakışmasın</b>Bir değer iki banda birden düşerse satır iki kez sayılır. Alt sınırı dahil, üst sınırı hariç (<code>&gt;= alt AND &lt; ust</code>) yazmak bu hatayı önler.</div>
 <h2>Derinleş: aralık tablosuyla çalışmak</h2><p>Bantları sorgunun içinde bir alt sorguyla tanımlayabilir ya da gerçek bir tabloda tutabilirsin. Tablo yaklaşımı, iş birimi bantları değiştirdiğinde sorguyu değiştirmeden güncellemeni sağlar. Kural: <b>alt sınır dahil, üst sınır hariç</b>; böylece bir değer iki banda birden düşmez ve hiçbir değer arada kalmaz.</p></article>
-<div class="st-c"><a class="st-p" href="../../#ders-non-equi">Alıştırmalara geç (6)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-non-equi/1">Alıştırmalara geç (6)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../coklu-join/">← Çoklu JOIN ve satır çoğalması tuzağı</a><a href="../set-ops/">UNION, INTERSECT, EXCEPT →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

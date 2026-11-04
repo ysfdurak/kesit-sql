@@ -1,0 +1,48 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gerçek görünümler: DMV, bekleme istatistiği, Query Store kataloğu | Kesit SQL</title><meta name="description" content="Operasyon yolunda kurgu günlükle öğrendiğin teşhisi gerçek sistem görünümü yazımıyla yazmak."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/dba-dmv/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="Gerçek görünümler: DMV, bekleme istatistiği, Query Store kataloğu"><meta property="og:description" content="Operasyon yolunda kurgu günlükle öğrendiğin teşhisi gerçek sistem görünümü yazımıyla yazmak."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/dba-dmv/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"Gerçek görünümler: DMV, bekleme istatistiği, Query Store kataloğu","description":"Operasyon yolunda kurgu günlükle öğrendiğin teşhisi gerçek sistem görünümü yazımıyla yazmak.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/dba-dmv/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · Veritabanı Yönetimi (DBA)</span><h1>Gerçek görünümler: DMV, bekleme istatistiği, Query Store kataloğu</h1><p class="st-l">Operasyon yolunda kurgu günlükle öğrendiğin teşhisi gerçek sistem görünümü yazımıyla yazmak.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-dba-dmv">Uygulamada aç, 10 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
+<article class="panel theory"><h2>Hangi soru, hangi görünüm</h2>
+<table><tr><th>Soru</th><th>Görünüm</th><th>Ömür</th></tr>
+<tr><td>En çok kaynak yiyen sorgu</td><td><code>sys.dm_exec_query_stats</code> + <code>sys.dm_exec_sql_text</code></td><td>Plan önbellekte kaldığı sürece</td></tr>
+<tr><td>Sunucu neyi bekliyor</td><td><code>sys.dm_os_wait_stats</code></td><td>Başlatmadan beri toplam</td></tr>
+<tr><td>Bu sorgu dün nasıldı, plan değişti mi</td><td><code>sys.query_store_*</code></td><td>Veritabanında kalıcı, saklama ayarına bağlı</td></tr></table>
+<div class="warn"><b>Burası kurgu kopya</b>Bu tarayıcı motoru gerçek sistem görünümü çalıştırmaz. T-SQL modunda <code>sys.dm_*</code>, <code>sys.query_store_*</code>, <code>msdb.dbo.*</code> yazımı, hayali bir portal için elle kurulmuş tablolara yönlenir. Yazım ve sütun adları gerçekle aynıdır, ama yalnız seçili sütunlar var ve sayılar ölçüm değildir. Parametre alan görünümlerde (<code>sys.dm_db_index_physical_stats</code>) parametreler yok sayılır, bütün satırlar döner; süzmek için <code>WHERE</code> yaz. Gerçek sunucuda aynı sorgu için yetki gerekir: SQL Server 2022 ve sonrasında <code>VIEW SERVER PERFORMANCE STATE</code>, öncesinde <code>VIEW SERVER STATE</code>.</div>
+<div class="tip"><b>Önkoşul</b>Teşhis mantığı <b>SQL Server Operasyon ve Güvenlik</b> yolundaki parmak izi ve plan değişimi derslerinde. Burada aynı mantığın gerçek yazımı var.</div>
+<h2>En pahalı sorgular</h2>
+<p><code>sys.dm_exec_sql_text</code> tablo değerli işlevdir, her satır için <code>CROSS APPLY</code> ile çağrılır. Süre ve CPU sütunları <b>mikrosaniyedir</b>; sütun toplamdır, ortalama için çalışma sayısına böl.</p>
+<pre class="code" data-base="tsql">SELECT TOP (3) st.text AS sorgu, qs.execution_count AS calisma,
+       qs.total_worker_time / 1000 AS toplam_cpu_ms
+FROM sys.dm_exec_query_stats AS qs
+CROSS APPLY sys.dm_exec_sql_text(qs.sql_handle) AS st
+ORDER BY qs.total_worker_time DESC;</pre>
+<div class="warn"><b>Kör nokta</b>Görünüm önbellekteki planları gösterir. Yordam düzeyinde <code>WITH RECOMPILE</code> ile çalışan ya da önbellekten düşen sorgu görünmez, sunucu yeniden başlayınca hepsi gider. Kalıcı geçmiş için Query Store.</div>
+<h2>Bekleme istatistiği</h2>
+<p>Toplam bekleme <code>wait_time_ms</code>; bunun <code>signal_wait_time_ms</code> kısmı kaynağı aldıktan sonra işlemci sırası beklemektir. Listenin başında zararsız arka plan beklemeleri olur, süz. Küçük örnek:</p>
+<pre class="code" data-base="tsql">SELECT TOP (4) wait_type, wait_time_ms, signal_wait_time_ms
+FROM sys.dm_os_wait_stats
+WHERE wait_type NOT IN ('LAZYWRITER_SLEEP', 'SLEEP_TASK', 'BROKER_TO_FLUSH')
+ORDER BY wait_time_ms DESC;</pre>
+<table><tr><th>Bekleme</th><th>İlk bakılacak yer</th></tr><tr><td><code>LCK_M_*</code></td><td>Engelleme: uzun işlem</td></tr><tr><td><code>PAGEIOLATCH_*</code></td><td>Diskten okuma: eksik indeks, tarama, bellek</td></tr><tr><td><code>SOS_SCHEDULER_YIELD</code></td><td>CPU baskısı</td></tr><tr><td><code>WRITELOG</code></td><td>Günlük diski</td></tr></table>
+<h2>Query Store kataloğu</h2>
+<p>Yol: metin → sorgu → plan → çalışma istatistiği → zaman aralığı. <code>avg_duration</code> mikrosaniye, <code>avg_logical_io_reads</code> 8 KB sayfadır. Bir plan her aralık için ayrı satır verir; toplamken çalışma sayısıyla ağırlıklandır. Aralık zamanları UTC'dir.</p>
+<pre class="code" data-base="tsql">SELECT q.query_id, p.plan_id, SUM(rs.count_executions) AS calisma,
+       SUM(rs.count_executions * rs.avg_duration) / SUM(rs.count_executions) / 1000 AS ort_ms,
+       SUM(rs.count_executions * rs.avg_logical_io_reads) / SUM(rs.count_executions) AS ort_okuma
+FROM sys.query_store_query AS q
+JOIN sys.query_store_plan AS p ON p.query_id = q.query_id
+JOIN sys.query_store_runtime_stats AS rs ON rs.plan_id = p.plan_id
+WHERE q.query_id = 8
+GROUP BY q.query_id, p.plan_id
+ORDER BY p.plan_id;</pre>
+<pre class="code" data-norun>-- Çalışmaz, başvuru: motorda plan yok
+EXEC sp_query_store_force_plan @query_id = 8, @plan_id = 21;</pre>
+<h2>Extended Events</h2>
+<p>Oturumu tanımlarsın, olayları hedefe (dosya, halka tampon) yazar. Varsayılan <code>system_health</code> oturumu deadlock kayıtlarını zaten tutar. Motorda çalışmaz; deadlock kaydı okuma <b>Engelleme, deadlock, izolasyon</b> dersinde.</p></article>
+<div class="st-c"><a class="st-p" href="../../#ders-dba-dmv/1">Alıştırmalara geç (10)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../dba-indeks-bakim/">← İndeks bakımı kararı: parçalanma, doluluk, REBUILD, FILLFACTOR, kullanılmayan indeks</a><a href="../dba-engelleme/">Engelleme, deadlock, izolasyon: iki oturumu kafanda çalıştırmak →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

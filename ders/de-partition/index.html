@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Veri Mühendisliği</span><h1>Büyük veri: partition, clustering, dosya formatları</h1><p class="st-l">Petabayt ölçeğinde SQL'in hızlı ve ucuz çalışması.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-de-partition">Uygulamada aç, 10 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory">
 <h2>Partitioning (bölümleme)</h2>
 <p>Tablo, bir sütuna (çoğunlukla tarih) göre fiziksel parçalara ayrılır. <code>WHERE event_date = '2024-12-01'</code> yazdığında motor sadece o günün bölümünü okur (<b>partition pruning</b>).</p>
@@ -114,6 +115,6 @@ SELECT COUNT(*) FROM tx_bolum WHERE txn_time >= (SELECT MAX(txn_time) - INTERVAL
 <li>Elemeyi doğrulamak için kuru çalıştırma (dry run) ile tahmini baytı kontrol et.</li>
 </ul>
 <p>SQLite'ın bölümleme özelliği yok. Bu yüzden görevlerde mantığı aralık koşulu ve indeksle çalıştırıyoruz, gerçek bölüm davranışını yukarıdaki çıktılardan okuyoruz.</p></article>
-<div class="st-c"><a class="st-p" href="../../#ders-de-partition">Alıştırmalara geç (10)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-de-partition/1">Alıştırmalara geç (10)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../de-dbt/">← dbt ile SQL dönüşüm katmanı: modeller ve testler</a><a href="../ai-giris/">Yapay zekâyla SQL yazmak: doğru soruyu sormak →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -1,0 +1,52 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>T-SQL DML kalıpları: UPDATE FROM, DELETE JOIN, TOP ile parça parça silme, OUTPUT | Kesit SQL</title><meta name="description" content="Günlük T-SQL'in en sık yazımları: başka tabloya göre güncelle, sil; büyük silmeyi böl; neyin değiştiğini yakala."><link rel="canonical" href="https://ysfdurak.github.io/kesit-sql/ders/ts-dml-join/">
+<meta property="og:type" content="article"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="Kesit SQL"><meta property="og:title" content="T-SQL DML kalıpları: UPDATE FROM, DELETE JOIN, TOP ile parça parça silme, OUTPUT"><meta property="og:description" content="Günlük T-SQL'in en sık yazımları: başka tabloya göre güncelle, sil; büyük silmeyi böl; neyin değiştiğini yakala."><meta property="og:url" content="https://ysfdurak.github.io/kesit-sql/ders/ts-dml-join/"><meta property="og:image" content="https://ysfdurak.github.io/kesit-sql/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/vendor/fonts.css"><link rel="stylesheet" href="../statik.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"T-SQL DML kalıpları: UPDATE FROM, DELETE JOIN, TOP ile parça parça silme, OUTPUT","description":"Günlük T-SQL'in en sık yazımları: başka tabloya göre güncelle, sil; büyük silmeyi böl; neyin değiştiğini yakala.","inLanguage":"tr","isAccessibleForFree":true,"learningResourceType":"Ders","educationalLevel":"Orta","url":"https://ysfdurak.github.io/kesit-sql/ders/ts-dml-join/","isPartOf":{"@type":"Course","name":"Kesit SQL","url":"https://ysfdurak.github.io/kesit-sql/","provider":{"@type":"Person","name":"Yusuf Durak"}}}</script></head>
+<body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
+<main id="icerik" class="st-m"><span class="st-e">Orta · T-SQL (SQL Server)</span><h1>T-SQL DML kalıpları: UPDATE FROM, DELETE JOIN, TOP ile parça parça silme, OUTPUT</h1><p class="st-l">Günlük T-SQL'in en sık yazımları: başka tabloya göre güncelle, sil; büyük silmeyi böl; neyin değiştiğini yakala.</p>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-dml-join">Uygulamada aç, 10 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
+<article class="panel theory"><h2>Başka tabloya göre güncellemek</h2>
+<p>T-SQL'e özgü yazım: hedef <code>FROM</code> içinde tekrar yer alır, <code>UPDATE</code> sonrasında takma ad yazılır. Bu yazım ISO standardı değildir; aynı işi PostgreSQL <code>UPDATE t ... FROM s</code>, MySQL <code>UPDATE t JOIN s ... SET</code> ile yapar.</p>
+<pre class="code" data-base="tsql">UPDATE p SET p.price = u.new_price
+FROM products p
+JOIN price_updates u ON u.product_id = p.product_id
+WHERE u.new_price > p.price;
+SELECT @@ROWCOUNT AS guncellenen;</pre>
+<div class="warn"><b>Belirsizlik</b>Bir hedef satırı birden çok kaynak satırıyla eşleşirse hangisinin yazılacağı belirsizdir; hata da vermez. Önce kaynağı tekilleştir. Yukarıdaki sorguda bir ürünün birden çok fiyat kaydı varsa sonuç garanti değildir. Bu yüzden <b>MERGE</b> dersinde önce son kayıt seçiliyordu.</div>
+<h2>Başka tabloya göre silmek</h2>
+<p>Hedef <code>DELETE</code> ile <code>FROM</code> arasına takma adla yazılır.</p>
+<pre class="code" data-base="tsql">DELETE i
+FROM order_items i
+JOIN orders o ON o.order_id = i.order_id
+WHERE o.status = 'cancelled';
+SELECT @@ROWCOUNT AS silinen;</pre>
+<h2>Parça parça silmek</h2>
+<p>Milyonlarca satırı tek işlemde silmek günlüğü şişirir, kilitleri uzun tutar. <code>DELETE TOP (n)</code> döngüde çalıştırılır. <code>TOP</code> burada <code>ORDER BY</code> almaz, hangi satırların gideceği belirsizdir; bu silmede sorun değildir, çünkü hepsi gidecektir.</p>
+<pre class="code" data-base="tsql">DECLARE @n INT = 1, @tur INT = 0;
+WHILE @n > 0
+BEGIN
+  DELETE TOP (500) FROM bank_txns WHERE txn_time &lt; '2024-02-01';
+  SET @n = @@ROWCOUNT;
+  SET @tur = @tur + 1;
+END;
+SELECT @tur AS tur, COUNT(*) AS kalan FROM bank_txns WHERE txn_time &lt; '2024-02-01';</pre>
+<h2>OUTPUT: neyin değiştiğini yakala</h2>
+<p><code>inserted</code> yeni, <code>deleted</code> eski değerdir. Trigger yazmadan denetim kaydı almanın kısa yolu.</p>
+<pre class="code" data-base="tsql">UPDATE departments SET city = N'Ankara'
+OUTPUT deleted.dept_id, deleted.city AS eski, inserted.city AS yeni
+WHERE dept_id = 2;</pre>
+<h2>MERGE OUTPUT ve $action</h2>
+<p>MERGE'te <code>$action</code> satıra ne yapıldığını yazar: <code>INSERT</code>, <code>UPDATE</code> ya da <code>DELETE</code>. Sıra garanti değildir, sıralama gerekiyorsa sonucu tabloya alıp sırala. <code>OUTPUT ... INTO</code> hedefi tablo ya da tablo değişkenidir.</p>
+<pre class="code" data-base="tsql">DECLARE @d TABLE (islem NVARCHAR(10), dept_id INT, eski NVARCHAR(50), yeni NVARCHAR(50));
+MERGE departments AS t
+USING (SELECT 2 AS dept_id, N'Pazarlama' AS name, N'Ankara' AS city UNION ALL SELECT 50, N'Veri', N'İzmir') AS s
+   ON t.dept_id = s.dept_id
+WHEN MATCHED THEN UPDATE SET city = s.city
+WHEN NOT MATCHED THEN INSERT (dept_id, name, city) VALUES (s.dept_id, s.name, s.city)
+OUTPUT $action, COALESCE(inserted.dept_id, deleted.dept_id), deleted.city, inserted.city INTO @d;
+SELECT * FROM @d ORDER BY dept_id;</pre>
+<div class="note"><b>Bu motorda</b>Bu yazımlar tarayıcıdaki taklit motorda SQLite'a çevrilerek çalışır; söz dizimi ve sonuç öğretilir, günlük ve kilit etkisi görülmez.</div></article>
+<div class="st-c"><a class="st-p" href="../../#ders-ts-dml-join/1">Alıştırmalara geç (10)</a></div>
+<nav class="st-n" aria-label="Ders sırası"><a href="../ts-proc-ileri/">← Saklı yordam derinliği: varsayılan parametre, iç içe çağrı, INSERT EXEC</a><a href="../ts-hata-ileri/">Hata yönetimi ileri: yeniden fırlatma, XACT_STATE, XACT_ABORT, yeniden deneme →</a></nav></main>
+<footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">Orta · BT İş Analizi</span><h1>Gereksinim yazmak (requirements): iş kuralı, kullanıcı hikâyesi, kabul kriteri, kenar durumlar</h1><p class="st-l">İşlevsel ve işlevsel olmayan gereksinim, test edilebilir ifade, INVEST, Given/When/Then, kenar durumları veriden bulmak.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-ba-gereksinim">Uygulamada aç, 11 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory"><p>Görüşmeler bitti. Şimdi konuşulanları, başka biri okuyup aynı şeyi yapacak hâle getiriyorsun. İyi bir gereksinimin ölçüsü basit: geliştirici ve test uzmanı birbirine sormadan aynı sonuca varır.</p>
 <h2>Üç tür ifade</h2>
 <table><tr><th>Tür</th><th>Neyi söyler?</th><th>Kupon örneği</th></tr>
@@ -73,6 +74,6 @@ ORDER BY status;</pre>
 <tr><td>Dönemde 182 iade var, ama iadenin ne zaman yapıldığı tutulmuyor</td><td>Kupon 5 dakikada oluşur, iade sonra gelirse kupon geri alınır mı?</td><td>Öneri: kullanılmamış kupon iptal edilir; kullanılmışsa geri alınmaz. Karar finansın, açık soruya yazılır</td></tr></table>
 <div class="warn"><b>Dakika mı, saniye mi?</b>Süreyi dakikaya kesen bir hesapla “45'ten büyük” yazarsan 45 dakika 30 saniye süren teslimat geç sayılmaz. Bu veride 153 teslimat tam bu aralıkta: toplam 4.590 TL'lik kupon sessizce kaybolur. SQL türlerinin dakika farkı fonksiyonları da aynı davranmaz; SQL Server'ın <code>DATEDIFF(minute, ...)</code> ifadesi dakika sınırı geçişlerini sayar. Bu yüzden kural saniye ile yazıldı. Böyle bir ayrıntı gereksinimde açık yazılmazsa testte değil canlıda ortaya çıkar.</div>
 <p>Çıktın: numaralı gereksinim listesi, iş kuralları tablosu, hikâyeler ve her hikâyenin kabul kriterleri. Bunlar BRD'nin kalbidir.</p></article>
-<div class="st-c"><a class="st-p" href="../../#ders-ba-gereksinim">Alıştırmalara geç (11)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-ba-gereksinim/1">Alıştırmalara geç (11)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../ba-talep/">← Talebi anlamak: asıl sorun, görüşme soruları ve sorunu SQL ile boyutlandırmak</a><a href="../ba-surec/">Süreci çizmek: AS-IS, TO-BE, BPMN, sıra diyagramı (sequence diagram), karar tablosu →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>

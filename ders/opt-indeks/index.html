@@ -5,6 +5,7 @@
 <body class="st"><a class="st-skip" href="#icerik">Ana içeriğe geç</a><header class="st-h"><a class="st-b" href="../../">Kesit SQL</a><nav aria-label="Konum"><a href="../">Tüm dersler</a></nav></header>
 <main id="icerik" class="st-m"><span class="st-e">İleri · Sorgu Optimizasyonu</span><h1>İndeks tasarımı: bileşik ve kapsayan indeks (covering index), sütun sırası, bedel</h1><p class="st-l">Eşitlik, aralık ve sıralama için sütun sırası, soldan önek, kapsayan indeks, filtreli indeks ve yazma bedeli.</p>
 <div class="st-c"><a class="st-p" href="../../#ders-opt-indeks">Uygulamada aç, 8 alıştırmayı çöz</a><span>Ücretsiz, hesap gerekmez, kurulum yok.</span></div>
+<p class="st-not">Bu sayfa dersin okuma sürümüdür. Metin bir kutuyu çalıştırmanı ya da adıma geçmeni söylüyorsa dersi uygulamada aç.</p>
 <article class="panel theory"><h2>Senaryo: mobil hesap ekranı</h2>
 <p>Ilgaz Bank mobil uygulamasında kullanıcı hesabına girince son hareketleri görüyor. Sorgu saniyede çok kez çalışıyor. Tek sütunlu <code>account_id</code> indeksi var ama plan bir sıralama adımı daha yapıyor. Bu derste doğru indeksi seçmeyi öğreneceksin.</p>
 <h2>Sütun sırası: eşitlik, aralık, sıralama</h2>
@@ -91,6 +92,6 @@ CREATE INDEX ix_2 ON bank_txns (txn_type, txn_time);
 CREATE INDEX ix_3 ON bank_txns (channel, txn_time, amount);
 SELECT page_count FROM pragma_page_count;</pre>
 <div class="tip"><b>Karar sorusu</b>Bu indeks hangi sorguyu hızlandırıyor? O sorgu ne sıklıkla çalışıyor? Tablo saniyede kaç kez yazılıyor? Yanıtlayamıyorsan indeksi ekleme. SQL Server belgesi de "indeksleri tahminle oluşturma, kullanımı izle, kullanılmayanı kaldır" der.</div></article>
-<div class="st-c"><a class="st-p" href="../../#ders-opt-indeks">Alıştırmalara geç (8)</a></div>
+<div class="st-c"><a class="st-p" href="../../#ders-opt-indeks/1">Alıştırmalara geç (8)</a></div>
 <nav class="st-n" aria-label="Ders sırası"><a href="../opt-tur/">← Tür dönüşümü ve fonksiyon tuzakları: indeks var ama kullanılmıyor</a><a href="../opt-secicilik/">Seçicilik (selectivity) ve istatistikler: motor neden o planı seçti? →</a></nav></main>
 <footer class="st-f">Kesit ücretsiz bir eğitim ve portföy projesidir. Veri setleri hayalidir. <a href="/">Kesit ana sayfası</a> · <a href="/vaka/">Nasıl yapıldı</a></footer></body></html>
