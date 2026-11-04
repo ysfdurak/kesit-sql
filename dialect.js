@@ -979,7 +979,7 @@ function revType(type, d, tryMode) { // CAST hedef tipi → {fn} ya da SQLite ti
     if (/^(INT|INTEGER|BIGINT|SMALLINT|TINYINT)$/.test(T)) return { wrap: x => `tsql_int_(${x}, ${tryMode ? 1 : 0}, '${T.toLowerCase()}')` };
     if (T === 'DATE') return { wrap: x => `tsql_date_(${x}, ${tryMode ? 1 : 0}, 0)` };
     if (/^(DATETIME2?|SMALLDATETIME)(\(\d+\))?$/.test(T)) return { wrap: x => `tsql_date_(${x}, ${tryMode ? 1 : 0}, 1)` };
-    if ((m = T.match(/^(DECIMAL|NUMERIC)\s*\(\s*\d+\s*,\s*(\d+)\s*\)$/))) return { wrap: x => `ROUND(tsql_num_(${x}, ${tryMode ? 1 : 0}), ${m[2]})` };
+    if ((m = T.match(/^(DECIMAL|NUMERIC)\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)$/))) return { wrap: x => `ROUND(tsql_dec_(${x}, ${tryMode ? 1 : 0}, ${m[2]}, ${m[3]}), ${m[3]})` };
     if (/^(FLOAT|REAL|MONEY|DECIMAL|NUMERIC)$/.test(T)) return { wrap: x => `tsql_num_(${x}, ${tryMode ? 1 : 0})` };
     if ((m = T.match(/^N?VARCHAR\s*\(\s*(\d+)\s*\)$/))) return { wrap: x => `substr(CAST(${x} AS TEXT), 1, ${m[1]})` };
   }
@@ -1420,7 +1420,7 @@ function revInfoSchema(sql) {
   const COL = "(SELECT m.name AS TABLE_NAME, p.name AS COLUMN_NAME, p.cid + 1 AS ORDINAL_POSITION, tsqltype_(p.type) AS DATA_TYPE, CASE p.\"notnull\" WHEN 1 THEN 'NO' ELSE 'YES' END AS IS_NULLABLE, p.dflt_value AS COLUMN_DEFAULT FROM sqlite_master m, pragma_table_info(m.name) p WHERE m.type = 'table' AND m.name NOT LIKE 'sqlite_%')";
   const SYST = "(SELECT name, rowid AS object_id, 'U' AS type, 'USER_TABLE' AS type_desc FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%')";
   const SYSC = "(SELECT p.name, (SELECT rowid FROM sqlite_master x WHERE x.name = m.name) AS object_id, p.cid + 1 AS column_id, tsqltype_(p.type) AS type_name, CASE p.\"notnull\" WHEN 1 THEN 0 ELSE 1 END AS is_nullable FROM sqlite_master m, pragma_table_info(m.name) p WHERE m.type = 'table' AND m.name NOT LIKE 'sqlite_%')";
-  const SYSI = "(SELECT name, tbl_name AS table_name, 'NONCLUSTERED' AS type_desc FROM sqlite_master WHERE type = 'index')";
+  const SYSI = "(SELECT name, tbl_name AS table_name, 'NONCLUSTERED' AS type_desc FROM sqlite_master WHERE type = 'index' AND name NOT LIKE 'sqlite_%')";
   const SYSV = "(SELECT name FROM sqlite_master WHERE type = 'view')";
   return sql.replace(/\bINFORMATION_SCHEMA\s*\.\s*TABLES\b/gi, TBL).replace(/\bINFORMATION_SCHEMA\s*\.\s*COLUMNS\b/gi, COL)
     .replace(/\bsys\s*\.\s*tables\b/gi, SYST).replace(/\bsys\s*\.\s*columns\b/gi, SYSC).replace(/\bsys\s*\.\s*indexes\b/gi, SYSI).replace(/\bsys\s*\.\s*views\b/gi, SYSV)
@@ -2140,7 +2140,8 @@ function friendly(e, d) {
   if (/CHECK constraint failed/.test(m)) return { message: d === 'tsql' ? 'Msg 547, Level 16: The INSERT statement conflicted with the CHECK constraint.' : d === 'pg' ? 'ERROR: new row violates check constraint' : d === 'oracle' ? 'ORA-02290: check constraint violated' : d === 'mysql' ? 'ERROR 3819 (HY000): Check constraint is violated.' : m, hint: 'Değer CHECK kuralına uymuyor.' };
   if (/FOREIGN KEY constraint failed/.test(m)) return { message: d === 'tsql' ? 'Msg 547, Level 16: The statement conflicted with the FOREIGN KEY constraint.' : m, hint: 'Bağlı kayıt var ya da referans verilen kayıt yok.' };
   if ((mm = m.match(/CHECK_OPTION_(\w+)/))) return { message: d === 'tsql' ? `Msg 550, Level 16: The attempted insert or update failed because the target view '${mm[1]}' either specifies WITH CHECK OPTION or spans a view that specifies WITH CHECK OPTION and one or more rows resulting from the operation did not qualify under the CHECK OPTION constraint.` : d === 'pg' ? `ERROR: new row violates check option for view "${mm[1]}"` : d === 'oracle' ? 'ORA-01402: view WITH CHECK OPTION where-clause violation' : `ERROR 1369 (HY000): CHECK OPTION failed '${mm[1]}'`, hint: 'WITH CHECK OPTION, view üzerinden yazılan satırın view\'de görünmeye devam etmesini ister.' };
-  if ((mm = m.match(/cannot modify (\S+) because it is a view/))) return { message: d === 'tsql' ? `Msg 4405, Level 16: View or function '${mm[1]}' is not updatable because the modification affects multiple base tables.` : d === 'pg' ? `ERROR: cannot change view "${mm[1]}"` : d === 'oracle' ? 'ORA-01732: data manipulation operation not legal on this view' : `ERROR 1288 (HY000): The target table ${mm[1]} of the UPDATE is not updatable`, hint: 'Bu motorda yalnız tek tablolu, hesaplama ve gruplama içermeyen view doğrudan yazılabilir. Birden çok tabloyu birleştiren view için INSTEAD OF tetikleyici yaz.' };
+  if ((mm = m.match(/cannot modify (\S+) because it is a view/))) return { message: `Bu motor '${mm[1]}' view'ine yazmayı desteklemiyor: yalnız tek tablolu, hesaplama ve gruplama içermeyen view doğrudan yazılabilir.`, hint: 'Gerçek sunucu birleştirmeli view\'de tek tablonun sütununa dokunan UPDATE\'e izin verir. Burada INSTEAD OF tetikleyici yaz ya da taban tabloya yaz.' };
+  if ((mm = m.match(/table (\S+) has \d+ columns but \d+ values were supplied/))) return { message: d === 'tsql' ? 'Msg 213, Level 16: Column name or number of supplied values does not match table definition.' : m, hint: 'Tablonun sütun sayısı ile verilen değer sayısı tutmuyor.' };
   if ((mm = m.match(/table (\S+) already exists/))) return { message: d === 'tsql' ? `Msg 2714, Level 16: There is already an object named '${mm[1].replace(/^tmp_/, '#')}' in the database.` : d === 'pg' ? `ERROR: relation "${mm[1]}" already exists` : d === 'oracle' ? 'ORA-00955: name is already used by an existing object' : d === 'mysql' ? `ERROR 1050 (42S01): Table '${mm[1]}' already exists` : m, hint: '' };
   if (/do not have the same number of result columns/.test(m)) return { message: d === 'tsql' ? 'Msg 205, Level 16: All queries combined using a UNION, INTERSECT or EXCEPT operator must have an equal number of expressions in their target lists.' : d === 'oracle' ? 'ORA-01789: query block has incorrect number of result columns' : m, hint: 'Küme işleminin iki tarafı aynı sayıda sütun döndürmeli.' };
   if (/cannot (commit|rollback) - no transaction is active/.test(m)) return { message: d === 'tsql' ? 'Msg 3902, Level 16: The COMMIT/ROLLBACK TRANSACTION request has no corresponding BEGIN TRANSACTION.' : m, hint: 'Önce BEGIN TRANSACTION ile işlem başlat.' };
@@ -2187,24 +2188,27 @@ function topParcala(T, i) { // i: TOP; döner {metin, son}
   const o = nx(T, i); if (isP(T[o], '(')) { const c = closeP(T, o); return { metin: txt(T.slice(i, c + 1)), son: c }; } return { metin: txt(T.slice(i, o + 1)), son: o };
 }
 function dmlOutputAyir(T, D, a, b) { for (let i = a; i < b; i++) if (D[i] === 0 && isW(T[i], 'OUTPUT')) { let e = b; for (let j = i + 1; j < b; j++) if (D[j] === 0 && isW(T[j], 'FROM', 'WHERE')) { e = j; break; } return { i, e, liste: txt(T.slice(nx(T, i), e)).trim() }; } return null; }
-function revDmlJoin(text) {
+function revDmlJoin(text, tetik) {
   const T = rt(text.replace(/;\s*$/, '')); const D = depthAt(T); const hi = basIfade(T, D, 'UPDATE', 'DELETE'); if (hi < 0) return null;
   const once = T.slice(0, hi).filter(sigk); if (once.length && !isW(once[0], 'WITH')) return null;
   const on = txt(T.slice(0, hi));
+  { const n1 = nx(T, hi); if (isW(T[n1], 'TOP') && !isP(T[nx(T, n1)], '(')) throw new DErr(`Msg 102, Level 15: Incorrect syntax near '${T[nx(T, n1)] ? T[nx(T, n1)].v : 'TOP'}'.`, 'UPDATE ve DELETE içinde TOP parantez ister: TOP (n).'); if (T.some((t, z) => z > hi && D[z] === 0 && isW(t, 'ORDER'))) throw new DErr("Msg 156, Level 15: Incorrect syntax near the keyword 'ORDER'.", 'UPDATE ve DELETE doğrudan ORDER BY almaz. Sıra gerekiyorsa CTE ya da alt sorguda TOP ve ORDER BY yaz.'); }
   if (isW(T[hi], 'DELETE')) {
     let i = nx(T, hi), top = ''; if (isW(T[i], 'TOP')) { const tp = topParcala(T, i); top = tp.metin + ' '; i = nx(T, tp.son); }
     let ilkFrom = false; if (isW(T[i], 'FROM')) { ilkFrom = true; i = nx(T, i); }
     let e = i; while (isP(T[nx(T, e)], '.')) e = nx(T, nx(T, e));
     const hedef = T[e].v; let k = nx(T, e); let al0 = null; if (T[k] && isW(T[k], 'AS')) { k = nx(T, k); al0 = T[k].v; k = nx(T, k); }
     const f2 = isW(T[k], 'FROM') ? k : -1; const wi = T.findIndex((t, z) => z > e && D[z] === 0 && isW(t, 'WHERE'));
-    if (f2 < 0 && !top) return null;
-    if (T.some((t, z) => z > hi && D[z] === 0 && isW(t, 'OUTPUT'))) return null;
-    const son = T.length; const wT = wi >= 0 ? ' ' + txt(T.slice(wi, son)) : '';
-    if (f2 < 0) return { tur: 'delete', sql: `${on}DELETE FROM ${hedef} WHERE rowid IN (SELECT ${top}rowid FROM ${hedef}${wT})` };
+    const oi2 = T.findIndex((t, z) => z > e && D[z] === 0 && isW(t, 'OUTPUT'));
+    if (f2 < 0 && !top && oi2 < 0) return null;
+    if (f2 < 0 && !top && oi2 >= 0 && !/\bdeleted\./i.test(txt(T.slice(oi2)))) return null;
+    let cikti0 = null, son = T.length; if (oi2 >= 0) { let e2 = wi > oi2 ? wi : son; for (let j = oi2 + 1; j < son; j++) if (D[j] === 0 && isW(T[j], 'FROM', 'WHERE')) { e2 = j; break; } cikti0 = txt(T.slice(nx(T, oi2), e2)).trim(); if (f2 >= 0 && f2 > oi2) throw new DErr('Bu motor OUTPUT ile birlikte ikinci FROM desteklemiyor.', 'Gerçek SQL Server\'da geçerli olabilir; burada önce silinecekleri seç.'); }
+    const wT = wi >= 0 ? ' ' + txt(T.slice(wi, son)) : '';
+    if (f2 < 0) return { tur: 'delete', hedef, cikti: cikti0, sql: `${on}DELETE FROM ${hedef} WHERE rowid IN (SELECT ${top}rowid FROM ${hedef}${wT})` };
     void ilkFrom; const fs = nx(T, f2); const fe = wi >= 0 ? wi : son; const K = fromKaynaklari(T, fs, fe, D, 0);
     const es = K.find(x => adEsit(x.alias, hedef)) || K.find(x => x.ad && adEsit(x.ad, hedef));
     if (!es || !es.ad) throw new DErr(`Msg 208, Level 16: Invalid object name '${hedef}'.`, 'DELETE sonrasındaki ad, FROM içindeki tablo ya da takma ad olmalı.');
-    return { tur: 'delete', sql: `${on}DELETE FROM ${es.tam} WHERE rowid IN (SELECT ${top}${es.alias}.rowid FROM ${txt(T.slice(fs, fe))}${wT})` };
+    return { tur: 'delete', hedef: es.tam, cikti: cikti0, sql: `${on}DELETE FROM ${es.tam} WHERE rowid IN (SELECT ${top}${es.alias}.rowid FROM ${txt(T.slice(fs, fe))}${wT})` };
   }
   let i = nx(T, hi), top = ''; if (isW(T[i], 'TOP')) { const tp = topParcala(T, i); top = tp.metin + ' '; i = nx(T, tp.son); }
   let e = i; while (isP(T[nx(T, e)], '.')) e = nx(T, nx(T, e)); const hedef = T[e].v; const hedefTam = txt(T.slice(i, e + 1));
@@ -2220,7 +2224,9 @@ function revDmlJoin(text) {
   let gercek = hedefTam, alias = hedef, kaynak = fT;
   if (fi >= 0) { const K = fromKaynaklari(T, nx(T, fi), wi >= 0 ? wi : son, D, 0); const es = K.find(x => adEsit(x.alias, hedef)) || K.find(x => x.ad && adEsit(x.ad, hedef)); if (es && es.ad) { gercek = es.tam; alias = es.alias; } else kaynak = `${hedefTam} , ${fT}`; }
   else kaynak = hedefTam;
+  if (fi >= 0 && !top && !ot && !tetik && !T.slice(nx(T, fi), wi >= 0 ? wi : son).some((t, z) => D[nx(T, fi) + z] === 0 && (isW(t, 'JOIN') || isP(t, ','))) && !/^\s*\(/.test(fT)) return { tur: 'update', sql: `${on}UPDATE ${gercek} AS ${alias} SET ${atama.map(a => `${a.kol} = ${a.ex}`).join(', ')}${wT}` };
   const sec = atama.map((a, z) => `${a.ex} AS __v${z}`).join(', ');
+  if (tetik) { const ic = `(SELECT ${top}${alias}.rowid AS __r, ${sec} FROM ${kaynak}${wT})`; const gt = gercek.replace(/^.*\./, ''); return { tur: 'update', sql: `${on}UPDATE ${gt} SET ${atama.map((a, z) => `${a.kol} = (SELECT __x.__v${z} FROM ${ic} AS __x WHERE __x.__r = ${gt}.rowid)`).join(', ')} WHERE rowid IN (SELECT __x.__r FROM ${ic} AS __x)` }; }
   return { tur: 'update', hedef: gercek, cikti: ot ? ot.liste : null, sql: `${on}UPDATE ${gercek} AS __u SET ${atama.map((a, z) => `${a.kol} = __x.__v${z}`).join(', ')} FROM (SELECT ${top}${alias}.rowid AS __r, ${sec} FROM ${kaynak}${wT}) AS __x WHERE __u.rowid = __x.__r` };
 }
 /* Tek tablolu view: tsql, pg, mysql, oracle'da gerçek motordaki gibi yazılabilir. SQLite INSTEAD OF tetikleyicisiyle taklit edilir. */
@@ -2253,7 +2259,10 @@ const ETKISIZ = [
   [/\bSET\s+LOCK_TIMEOUT\b|\bSET\s+DEADLOCK_PRIORITY\b/i, 'LOCK_TIMEOUT ve DEADLOCK_PRIORITY bu motorda etkisizdir: tek bağlantıda kilit beklemesi ya da deadlock oluşmaz.'],
   [/\bFILLFACTOR\b|\bCOLUMNSTORE\b|\bCREATE\s+PARTITION\s+(FUNCTION|SCHEME)\b/i, 'Depolama seçenekleri (FILLFACTOR, COLUMNSTORE, bölümleme) bu motorda yazım olarak kabul edilir, fiziksel etkisi yoktur.']
 ];
-function etkisizUyari(sql) { const temiz = tokenize(sql).filter(t => t.k !== 's' && (sigk(t) || t.k === 'ws')).map(t => t.v).join(''); const o = []; for (const [re, m] of ETKISIZ) if (re.test(temiz)) o.push(m); return o; }
+/* Gerçek sunucuda geçerli ama motorda karşılığı olmayan komutlar: "Incorrect syntax" yerine dürüst ileti. */
+const DESTEKSIZ = /(?:^|[;\n]|\bBEGIN\b|\bELSE\b|\bGO\b)\s*(GRANT|DENY|REVOKE|KILL|DBCC|RECONFIGURE|BACKUP\s+(?:DATABASE|LOG)|RESTORE\s+(?:DATABASE|LOG|VERIFYONLY|HEADERONLY|FILELISTONLY)|UPDATE\s+STATISTICS|ALTER\s+(?:INDEX|DATABASE|ROLE|LOGIN|USER|SERVER|AUTHORIZATION)|(?:CREATE|DROP)\s+(?:LOGIN|USER|ROLE|TYPE|DATABASE|SERVER\s+\w+)|ALTER\s+TABLE\s+[\w.\[\]#]+\s+(?:ADD\s+CONSTRAINT|DROP\s+CONSTRAINT|WITH\s+(?:NO)?CHECK|(?:NO)?CHECK\s+CONSTRAINT)|EXEC(?:UTE)?\s+(?:sys\s*\.\s*)?(?:sp_configure|sp_query_store_force_plan|sp_query_store_unforce_plan|sp_who2?|sp_recompile|sp_addrolemember))\b/i;
+function desteksizKomut(sql, d) { if (d !== 'tsql') return null; const temiz = tokenize(sql).filter(t => t.k !== 's' && (sigk(t) || t.k === 'ws')).map(t => t.v).join(''); const m = temiz.match(DESTEKSIZ); if (!m) return null; const ad = m[1].replace(/\s+/g, ' ').toUpperCase(); return new DErr(`Bu motor desteklemiyor: ${ad}. Komut gerçek SQL Server'da geçerli olabilir, bu tarayıcı motoru çalıştırmaz; yazımın yanlış olduğu anlamına gelmez.`, 'Motorda tek bağlantı ve tek kullanıcı var; sunucu yönetimi, yetki, yedek ve fiziksel depolama komutları yok.'); }
+function etkisizUyari(sql) { const temiz = tokenize(sql).filter(t => t.k !== 's' && (sigk(t) || t.k === 'ws')).map(t => t.v).join(''); const o = []; for (const [re, m] of ETKISIZ) if (re.test(temiz)) o.push(m); { const pm = sql.match(/\bdm_db_index_physical_stats\s*\(((?:[^()]|\([^()]*\))*)\)/i); if (pm) { const ar = splitTop(rt(pm[1]), ',').map(x => txt(x).trim().toUpperCase()); if (ar.slice(1, 4).some(x => x && x !== 'NULL' && x !== 'DEFAULT') || (ar[4] && !/SAMPLED|DETAILED/.test(ar[4]))) o.push('sys.dm_db_index_physical_stats parametreleri bu motorda yok sayılır: nesne ve mod ne olursa olsun kurgu kopyanın bütün satırları döner. Gerçek sunucuda filtrelenir; LIMITED modda sayfa doluluğu NULL gelir. Tabloyu WHERE ile süz.'); } } return o; }
 function mergeToSql(text) {
   const T2 = rt(text.replace(/;\s*$/, '')); const D2 = depthAt(T2); const sg = i => T2[i];
   let i = nx(T2, -1); i = nx(T2, i); if (isW(sg(i), 'INTO')) i = nx(T2, i);
@@ -2261,13 +2270,14 @@ function mergeToSql(text) {
   const tgt = T2[i].v; let j = nx(T2, i); let ta = tgt; if (isW(sg(j), 'AS')) j = nx(T2, j); if (!isW(sg(j), 'USING')) { ta = T2[j].v; j = nx(T2, j); }
   if (!isW(sg(j), 'USING')) throw new DErr('MERGE sözdizimi anlaşılamadı (USING bekleniyor).');
   const us = nx(T2, j); let ue = us; if (isP(sg(us), '(')) ue = closeP(T2, us);
-  const srcTxt = txt(T2.slice(us, ue + 1)); let k = nx(T2, ue); let sa = srcTxt; if (isW(sg(k), 'AS')) k = nx(T2, k); if (!isW(sg(k), 'ON')) { sa = T2[k].v; k = nx(T2, k); }
+  const srcTxt = txt(T2.slice(us, ue + 1)); let k = nx(T2, ue); let sa = srcTxt; if (isW(sg(k), 'AS')) k = nx(T2, k); let saKol = ''; if (!isW(sg(k), 'ON')) { sa = T2[k].v; k = nx(T2, k); if (isP(sg(k), '(')) { const kc = closeP(T2, k); saKol = ' ' + txt(T2.slice(k, kc + 1)); k = nx(T2, kc); } }
   const onS = nx(T2, k); const onE = T2.findIndex((t, z) => z > onS && D2[z] === 0 && isW(t, 'WHEN')); const onTxt = txt(T2.slice(onS, onE)).trim();
   const whens = []; let cur = null;
   for (let z = onE; z < T2.length; z++) { if (D2[z] === 0 && isW(T2[z], 'WHEN')) { if (cur) whens.push(cur); cur = { s: z }; } }
   if (cur) whens.push(cur);
   whens.forEach((w, idx) => { w.e = idx + 1 < whens.length ? whens[idx + 1].s : T2.length; w.t = txt(T2.slice(w.s, w.e)).trim().replace(/;\s*$/, ''); });
-  const srcFrom = `${srcTxt} AS ${sa}`; const out = [];
+  const srcFrom = `${srcTxt} AS ${sa}${saKol}`; const out = [];
+  if (whens.some(w => /^WHEN\s+MATCHED/i.test(w.t))) { const yy = whens.filter(w => /^WHEN\s+MATCHED/i.test(w.t)).map(w => { const m0 = w.t.match(/^WHEN\s+MATCHED(?:\s+AND\s+([\s\S]+?))?\s+THEN/i); return m0 && m0[1] ? '(' + m0[1] + ')' : '1 = 1'; }).join(' OR '); out.kontrol = `SELECT 1 FROM ${tgt} AS ${ta} JOIN ${srcFrom} ON ${onTxt} WHERE ${yy} GROUP BY ${ta}.rowid HAVING COUNT(*) > 1 LIMIT 1`; }
   for (const w of whens) {
     let m;
     if ((m = w.t.match(/^WHEN\s+MATCHED(?:\s+AND\s+([\s\S]+?))?\s+THEN\s+UPDATE\s+SET\s+([\s\S]+)$/i))) {
@@ -2316,6 +2326,7 @@ function splitTsql(T) {
         else if (t.u === 'ELSE' && caseD > 0) boundary = false;
         if ((t.u === 'COMMIT' || t.u === 'ROLLBACK') && head === 'BEGIN' && false) boundary = false;
         if (t.u === 'BEGIN' && head === 'CREATE') boundary = false;
+        if (t.u === 'ALTER' && isW(ps, 'OR')) boundary = false;
         if (t.u === 'EXEC' && head === 'INSERT') boundary = false;
         if (t.u === 'FETCH' && !isCursorFetch(T, i)) boundary = false;
         if (t.u === 'OPEN' || t.u === 'CLOSE') { const n1 = T[nx(T, i)]; if (!n1 || !(n1.k === 'w' || n1.k === 'q' || n1.k === 'var')) boundary = false; }
@@ -2496,6 +2507,7 @@ function tsqlRun(db, sql, opt) {
         if (!S.length) { if (ctx && ctx.err) throw Object.assign(new Error(ctx.err.message), { tsql: ctx.err }); throw new DErr('Msg 10704: THROW without parameters must be inside a CATCH block.'); }
         const A = splitTop(S, ',').map(a => trimT(a));
         const num = evalExpr(A[0], sc, ctx), msg = evalExpr(A[1], sc, ctx);
+        if (!(Number(num) >= 50000 && Number(num) <= 2147483647)) throw new DErr(`Msg 35100, Level 16: Error number ${num} in the THROW statement is outside the valid range. Specify an error number in the valid range of 50000 to 2147483647.`, 'THROW yalnız 50000 ve üstü kendi hata numaranı kabul eder.');
         const er = new Error(`Msg ${num}, Level 16, State 1: ${msg}`); er.tsql = { number: num, message: msg, severity: 16 }; throw er;
       }
       case 'raiserror': {
@@ -2595,7 +2607,7 @@ function tsqlRun(db, sql, opt) {
     if (/\bWHERE\s+CURRENT\s+OF\b/i.test(text)) throw new DErr('WHERE CURRENT OF bu taklit katmanında desteklenmiyor.', 'İmleçten okuduğun anahtar değeriyle güncelle: UPDATE ... WHERE id = @id');
     { const m = text.match(/^\s*DROP\s+(PROC|PROCEDURE|FUNCTION)\s+(IF\s+EXISTS\s+)?(?:dbo\s*\.\s*)?\[?(\w+)\]?/i); if (m) { const nm = m[3].toLowerCase(); const had = env.procs[nm] || env.tvfs[nm] || env.funcs[nm.toUpperCase()]; delete env.procs[nm]; delete env.tvfs[nm]; delete env.funcs[nm.toUpperCase()]; if (!had && !m[2]) throw new DErr(`Msg 3701, Level 11: Cannot drop the ${m[1].toLowerCase().startsWith('f') ? 'function' : 'procedure'} '${m[3]}', because it does not exist or you do not have permission.`); return; } }
     { const m = text.match(/^\s*(CREATE\s+OR\s+ALTER|ALTER)\s+VIEW\s+(?:dbo\s*\.\s*)?(\w+)/i); if (m) { db.exec(`DROP VIEW IF EXISTS ${m[2]}`); const va0 = viewAyikla(text); const q = toSqlite(va0.sql.replace(/^\s*(CREATE\s+OR\s+ALTER|ALTER)\s+VIEW/i, 'CREATE VIEW'), ctx); R.translated.push(q); db.exec(q); viewTetik(db, q, va0.check); R.messages.push('Komutlar başarıyla tamamlandı.'); return; } }
-    if (/^\s*MERGE\b/i.test(text) || (/^\s*WITH\b/i.test(text) && (() => { const TT = rt(text); const DD = depthAt(TT); return TT.some((t, z) => DD[z] === 0 && isW(t, 'MERGE')); })())) return doMerge(text, sc, ctx);
+    if (/^\s*MERGE\b/i.test(text) || (/^\s*WITH\b/i.test(text) && (() => { const TT = rt(text); const DD = depthAt(TT); return TT.some((t, z) => DD[z] === 0 && isW(t, 'MERGE')); })())) { const sonT = S0.filter(sigk).pop(); if (!isP(sonT, ';')) throw new DErr('Msg 10713, Level 15: A MERGE statement must be terminated by a semi-colon (;).', 'MERGE ifadesinin sonuna noktalı virgül koy.'); return doMerge(text, sc, ctx); }
     if (/^\s*(BEGIN)\s+(TRAN|TRANSACTION)\b/i.test(text)) { if (env.tran === 0) db.exec('BEGIN TRANSACTION'); env.tran++; return; }
     if (env.doomed && /^\s*(INSERT|UPDATE|DELETE|MERGE|COMMIT)\b/i.test(text)) throw new DErr('Msg 3930, Level 16: The current transaction cannot be committed and cannot support operations that write to the log file. Roll back the transaction.', 'XACT_STATE() -1 iken yalnız okuma ve tam ROLLBACK yapılabilir.');
     if (/^\s*ROLLBACK\b/i.test(text)) env.doomed = false;
@@ -2604,8 +2616,8 @@ function tsqlRun(db, sql, opt) {
     if (/^\s*SAVE\s+(TRAN|TRANSACTION)\s+(\w+)/i.test(text)) { const m = text.match(/(\w+)\s*$/); (env.saves = env.saves || []).push(m[1].toLowerCase()); db.exec('SAVEPOINT ' + m[1]); return; }
     if (/^\s*TRUNCATE\s+TABLE\s+/i.test(text)) { const q = toSqlite(text.replace(/^\s*TRUNCATE\s+TABLE/i, 'DELETE FROM'), ctx); db.exec(q); return; }
     { const dj = revDmlJoin(text); if (dj) {
-        if (dj.cikti) { const n = ciktiCalistir(dj.hedef, [{ tur: 'UPDATE', sql: toSqlite(dj.sql, ctx) }], dj.cikti, sc, ctx); sc.rowcount = n; if (!env.nocount) R.messages.push(`(${n} satır etkilendi)`); return; }
-        const q = toSqlite(dj.sql, ctx); R.translated.push(q); execOne(db, q); const n = db.getRowsModified(); sc.rowcount = n; if (!env.nocount) R.messages.push(`(${n} satır etkilendi)`); return; } }
+        if (dj.cikti) { const n = ciktiCalistir(dj.hedef, [{ tur: dj.tur === 'delete' ? 'DELETE' : 'UPDATE', sql: toSqlite(dj.sql, ctx) }], dj.cikti, sc, ctx); sc.rowcount = n; if (!env.nocount) R.messages.push(`(${n} satır etkilendi)`); return; }
+        const q = toSqlite(dj.sql, ctx); R.translated.push(q); const vm = viewMi(db, q); const on0 = toplamDegisen(db); execOne(db, q); const n = vm ? toplamDegisen(db) - on0 : db.getRowsModified(); sc.rowcount = n; if (!env.nocount) R.messages.push(`(${n} satır etkilendi)`); return; } }
     { const va = viewAyikla(text); if (/^\s*CREATE\s+VIEW\b/i.test(va.sql)) { const q = toSqlite(va.sql, ctx); R.translated.push(q); db.exec(q); viewTetik(db, q, va.check); R.messages.push('Komutlar başarıyla tamamlandı.'); return; } }
     if (viewMi(db, toSqlite(text, ctx))) { const q = toSqlite(text, ctx); R.translated.push(q); const on0 = toplamDegisen(db); const res = execOne(db, q); if (res) R.sets.push(res); const n = toplamDegisen(db) - on0; sc.rowcount = n; if (!env.nocount) R.messages.push(`(${n} satır etkilendi)`); return; }
     for (const part of splitSemis(text)) {
@@ -2617,6 +2629,7 @@ function tsqlRun(db, sql, opt) {
       if (!isSel || /\bRETURNING\b/i.test(q)) { const ch = db.getRowsModified(); if (/^\s*(INSERT|UPDATE|DELETE|CREATE\s+TABLE\s+\S+\s+AS)/i.test(q)) { const n = /^\s*CREATE/i.test(q) ? (execOne(db, 'SELECT COUNT(*) FROM ' + q.match(/CREATE\s+TABLE\s+(\S+)/i)[1]).values[0][0]) : ch; sc.rowcount = n; R.changes += n; if (!env.nocount) R.messages.push(`(${n} satır etkilendi)`); } }
     }
   }
+  function mergeKontrol(adm, prefix, ctx) { if (!adm.kontrol) return; const r = execOne(db, toSqlite(prefix + adm.kontrol, ctx)); if (r && r.values.length) throw new DErr('Msg 8672, Level 16: The MERGE statement attempted to UPDATE or DELETE the same row more than once. A target row matched more than one source row.', 'Kaynakta aynı anahtar birden çok kez var. Önce kaynağı tekilleştir.'); }
   function doMerge(text, sc, ctx) {
     let total = 0; let prefix = '';
     { const TT = rt(text); const DD = depthAt(TT); const mi = TT.findIndex((t, z) => DD[z] === 0 && isW(t, 'MERGE')); if (mi > 0) { prefix = txt(TT.slice(0, mi)); text = txt(TT.slice(mi)); } }
@@ -2624,9 +2637,9 @@ function tsqlRun(db, sql, opt) {
     { const TT = rt(text.replace(/;\s*$/, '')); const DD = depthAt(TT); let oi = -1; for (let z = TT.length - 1; z >= 0; z--) if (DD[z] === 0 && isW(TT[z], 'OUTPUT')) { oi = z; break; } if (oi >= 0) { cikti = txt(TT.slice(nx(TT, oi))).trim(); text = txt(TT.slice(0, oi)); } }
     if (cikti) {
       const TT = rt(text); let i0 = nx(TT, -1); i0 = nx(TT, i0); if (isW(TT[i0], 'INTO')) i0 = nx(TT, i0); let e0 = i0; while (isP(TT[nx(TT, e0)], '.')) e0 = nx(TT, nx(TT, e0));
-      const hedef = txt(TT.slice(i0, e0 + 1)); const adimlar = mergeToSql(text).map(q00 => ({ tur: /^\s*(INSERT|UPDATE|DELETE)/i.exec(q00)[1].toUpperCase(), sql: toSqlite(prefix + q00, ctx) }));
+      const hedef = txt(TT.slice(i0, e0 + 1)); mergeKontrol(mergeToSql(text), prefix, ctx); const adimlar = mergeToSql(text).map(q00 => ({ tur: /^\s*(INSERT|UPDATE|DELETE)/i.exec(q00)[1].toUpperCase(), sql: toSqlite(prefix + q00, ctx) }));
       total = ciktiCalistir(hedef, adimlar, cikti, sc, ctx);
-    } else for (const q00 of mergeToSql(text)) { const q0 = prefix + q00; const qq = toSqlite(q0, ctx); R.translated.push(qq); db.exec(qq); total += db.getRowsModified(); }
+    } else { const adm = mergeToSql(text); mergeKontrol(adm, prefix, ctx); for (const q00 of adm) { const q0 = prefix + q00; const qq = toSqlite(q0, ctx); R.translated.push(qq); db.exec(qq); total += db.getRowsModified(); } }
     sc.rowcount = total; if (!env.nocount) R.messages.push(`(${total} satır etkilendi)`);
   }
   /* OUTPUT: eski değerler anlık kopyadan, yeni değerler tablodan. Sıra garanti değildir (gerçek sunucuda da). */
@@ -2658,7 +2671,7 @@ function tsqlRun(db, sql, opt) {
   }
   function doCreateProc(S) {
     const sig = S.filter(sigk); let k = 1; if (isW(sig[1], 'OR')) k = 3; const nameI = S.indexOf(sig[k + 1]); let ne = nameI; while (isP(S[nx(S, ne)], '.')) ne = nx(S, nx(S, ne));
-    const name = S[ne].v.replace(/^\[|\]$/g, '').toLowerCase(); const asI = S.findIndex((t, z) => z > ne && isW(t, 'AS') && depthAt(S)[z] === 0);
+    const name = S[ne].v.replace(/^\[|\]$/g, '').toLowerCase(); const D5 = depthAt(S); const asI = S.findIndex((t, z) => { if (z <= ne || !isW(t, 'AS') || D5[z] !== 0) return false; const on = S[pv(S, z)]; return !(on && on.k === 'var'); });
     let paramSon = asI; { const D3 = depthAt(S); for (let z = ne + 1; z < asI; z++) if (D3[z] === 0 && isW(S[z], 'WITH')) { paramSon = z; break; } }
     const params = parseParams(S, ne + 1, paramSon);
     const bodyToks = S.slice(asI + 1);
@@ -2700,7 +2713,7 @@ function tsqlRun(db, sql, opt) {
     const stmts = parseTsql(splitTsql(body)).filter(n => !(n.t === 'noop'));
     if (stmts.some(n => n.t !== 'sql')) throw new DErr('Tetikleyici gövdesinde yalnızca SQL ifadeleri destekleniyor (IF/PRINT gibi akış komutları değil).');
     for (const ev of events) {
-      const parts = stmts.map(n => { let s = txt(trimT(n.S)).replace(/;\s*$/, ''); s = s.replace(/\binserted\b/gi, ev === 'DELETE' ? pseudo('OLD') : pseudo('NEW')).replace(/\bdeleted\b/gi, pseudo('OLD')); return toSqlite(s, ctx); });
+      const parts = stmts.map(n => { let s = txt(trimT(n.S)).replace(/;\s*$/, ''); { const dj = revDmlJoin(s, true); if (dj) s = dj.sql; } s = s.replace(/\binserted\b/gi, ev === 'DELETE' ? pseudo('OLD') : pseudo('NEW')).replace(/\bdeleted\b/gi, pseudo('OLD')); return toSqlite(s, ctx); });
       if (yerine) db.exec(`DROP TRIGGER IF EXISTS "__v_${table}_${ev.toLowerCase()}"`);
       const q = `CREATE TRIGGER "${tname}_${ev.toLowerCase()}" ${yerine ? 'INSTEAD OF' : 'AFTER'} ${ev} ON ${table} FOR EACH ROW BEGIN ${parts.join('; ')}; END`;
       R.translated.push(q); db.exec(q);
@@ -2854,6 +2867,7 @@ function runDialect(db, sql, d, opt) {
   const res = { sets: [], messages: [], changes: 0, translated: [], d };
   try {
     if (d === 'tsql') {
+      { const dk = desteksizKomut(sql, d); if (dk) throw dk; }
       const r = tsqlRunChecked(db, sql, opt);
       Object.assign(res, r);
     } else {
@@ -2870,7 +2884,7 @@ function runDialect(db, sql, d, opt) {
         if (d !== 'sqlite' && d !== 'bq' && /^SET\s+TRANSACTION\b/i.test(p)) continue;
         if (d !== 'sqlite' && /^(CREATE|DROP|ALTER)\s+SEQUENCE\b/i.test(p)) { const msg = seqDdl(p, env0, d); if (msg && msg !== 'skip') res.messages.push(msg); continue; }
         if (d === 'bq' && /^CREATE\s+OR\s+REPLACE/i.test(p)) { const m = p.match(/^CREATE\s+OR\s+REPLACE\s+(TEMP\s+|TEMPORARY\s+)?(TABLE|VIEW)\s+(`[^`]+`|[\w.]+)/i); if (m) { const nm = m[3].replace(/`/g, '').split('.').pop(); db.exec(`DROP ${m[2].toUpperCase()} IF EXISTS "${nm}"`); } }
-        if ((d === 'oracle' || d === 'bq') && /^MERGE\b/i.test(p)) { let n = 0; for (const m0 of mergeToSql(p)) { const qq = reverse(m0, d, db); res.translated.push(qq); db.exec(qq); n += db.getRowsModified(); } res.messages.push(`(${n} satır birleştirildi)`); continue; }
+        if ((d === 'oracle' || d === 'bq') && /^MERGE\b/i.test(p)) { let n = 0; const adm0 = mergeToSql(p); if (adm0.kontrol) { const k0 = execOne(db, reverse(adm0.kontrol, d, db)); if (k0 && k0.values.length) throw new DErr(d === 'oracle' ? 'ORA-30926: unable to get a stable set of rows in the source tables' : 'UPDATE/MERGE must match at most one source row for each target row', 'Kaynakta aynı anahtar birden çok kez var. Önce kaynağı tekilleştir.'); } for (const m0 of adm0) { const qq = reverse(m0, d, db); res.translated.push(qq); db.exec(qq); n += db.getRowsModified(); } res.messages.push(`(${n} satır birleştirildi)`); continue; }
         const va = (d === 'pg' || d === 'mysql' || d === 'oracle') ? viewAyikla(p) : { sql: p, check: false };
         const q = reverse(va.sql, d, db); res.translated.push(q);
         const vm = d !== 'sqlite' && d !== 'bq' && viewMi(db, q); const on0 = vm ? toplamDegisen(db) : 0;
@@ -3071,9 +3085,10 @@ function register(db) {
   F('trunc_', function (v, f) { const p = typeof v === 'string' ? pd(v) : null; if (p) { const ff = (f || 'DD').toUpperCase(); if (/^(MM|MONTH|MON)$/.test(ff)) return datetrunc('month', v); if (/^(YYYY|YEAR|YY|Y)$/.test(ff)) return datetrunc('year', v); if (/^(Q)$/.test(ff)) return datetrunc('quarter', v); if (/^(IW|WW|W|DAY|DY|D)$/.test(ff)) return datetrunc('week', v); return datetrunc('day', v); } if (v === null) return null; const k = Math.pow(10, Number(f || 0)); return Math.trunc(Number(v) * k) / k; }, true);
   F('isnumeric_', v => v !== null && v !== '' && !isNaN(Number(v)) ? 1 : 0);
   F('newid_', () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16).toUpperCase(); }));
-  F('tsql_int_', (v, tr, ty) => { if (v === null) return null; if (typeof v === 'number') return Math.trunc(v); const t = String(v).trim(); if (/^[-+]?\d+$/.test(t)) return parseInt(t, 10); if (tr) return null; return fnErr(`Msg 245, Level 16, State 1: Conversion failed when converting the varchar value '${v}' to data type ${ty}.`); });
+  F('tsql_int_', (v, tr, ty) => { if (v === null) return null; if (typeof v === 'number') return Math.trunc(v); const t = String(v).trim(); if (t === '') return 0; if (/^[-+]?\d+$/.test(t)) return parseInt(t, 10); if (tr) return null; return fnErr(`Msg 245, Level 16, State 1: Conversion failed when converting the varchar value '${v}' to data type ${ty}.`); });
+  F('tsql_dec_', (v, tr, p, sc) => { if (v === null) return null; let n; if (typeof v === 'number') n = v; else { const t = String(v).trim(); if (!/^[-+]?(\d+\.?\d*|\.\d+)$/.test(t)) { if (tr) return null; return fnErr('Msg 8114, Level 16, State 5: Error converting data type varchar to numeric.'); } n = Number(t); } const u = Math.pow(10, sc); if (Math.abs(Math.round(n * u) / u) >= Math.pow(10, p - sc)) { if (tr) return null; return fnErr('Msg 8115, Level 16, State 8: Arithmetic overflow error converting to data type numeric.'); } return n; });
   F('tsql_num_', (v, tr) => { if (v === null) return null; if (typeof v === 'number') return v; const t = String(v).trim(); if (/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(t)) return Number(t); if (tr) return null; return fnErr(`Msg 8114, Level 16, State 5: Error converting data type varchar to numeric.`); });
-  F('tsql_date_', (v, tr, dt) => { if (v === null) return null; const p = pd(v); if (p && p.mo >= 1 && p.mo <= 12 && p.d >= 1 && p.d <= new Date(Date.UTC(p.y, p.mo, 0)).getUTCDate()) return fmtD(D(p), !!dt); if (tr) return null; return fnErr(`Msg 241, Level 16, State 1: Conversion failed when converting date and/or time from character string.`); });
+  F('tsql_date_', (v, tr, dt) => { if (v === null) return null; if (String(v).trim() === '') return dt ? '1900-01-01 00:00:00' : '1900-01-01'; const p = pd(v); if (p && p.mo >= 1 && p.mo <= 12 && p.d >= 1 && p.d <= new Date(Date.UTC(p.y, p.mo, 0)).getUTCDate()) return fmtD(D(p), !!dt); if (tr) return null; return fnErr(`Msg 241, Level 16, State 1: Conversion failed when converting date and/or time from character string.`); });
   F('quotename_', function (s, q) { if (s === null) return null; q = q || '['; return q === '[' ? '[' + String(s).replace(/]/g, ']]') + ']' : q + s + q; }, true);
   F('tsqltype_', t => { const T = String(t || '').toUpperCase(); if (/INT/.test(T)) return 'int'; if (/REAL|FLOA|DOUB|DEC|NUM/.test(T)) return 'decimal'; if (/DATE|TIME/.test(T)) return 'date'; return 'nvarchar'; });
   F('affinity_', t => { const T = String(t || '').toUpperCase(); if (/INT/.test(T)) return 'INTEGER'; if (/^NUMBER\s*\(\s*\d+\s*\)$/.test(T)) return 'INTEGER'; if (/CHAR|CLOB|TEXT|DATE|TIME/.test(T)) return 'TEXT'; if (/BLOB/.test(T) || T === '') return 'BLOB'; return 'REAL'; });
@@ -3150,7 +3165,28 @@ function mustFail(e, code, d) {
   if (e.must) for (const m of e.must) { if (m.d && !m.d.includes(d)) continue; if (!new RegExp(m.re, 'i').test(bare)) return m.msg; }
   if (e.mustNot) for (const m of e.mustNot) { if (m.d && !m.d.includes(d)) continue; if (new RegExp(m.re, 'i').test(bare)) return m.msg; }
   /* Çözüm tablodan okuyorsa (FROM metin sabitinde değil, kodda) cevap da okumalı. Dinamik SQL'de FROM metnin içindedir, kural uygulanmaz. */
-  if (!e.check && e.sol && /\bFROM\b/i.test(bareOf(e.sol)) && !/\bFROM\b/i.test(bare)) return 'Bu görevde sonucu tablodan hesaplaman gerekiyor; sabit değer yazmak sayılmaz.';
+  if (!e.check && e.sol && /\bFROM\b/i.test(bareOf(e.sol))) { const adlar = s => { const T = tokenize(s).filter(sigk); const out = new Set(), cte = new Set(); T.forEach((t, i) => { if (isW(t, 'WITH') || isP(t, ',')) { const a = T[i + 1], b = T[i + 2]; if (a && a.k === 'w' && (isW(b, 'AS') || isP(b, '('))) cte.add(a.u); } if (isW(t, 'FROM', 'JOIN')) { let j = i + 1; if (!T[j] || !(T[j].k === 'w' || T[j].k === 'q')) return; while (isP(T[j + 1], '.') && T[j + 2]) j += 2; out.add(String(T[j].u || T[j].v).replace(/["`\[\]]/g, '').toUpperCase()); } }); return [...out].filter(x => !cte.has(x)); }; const istenen = adlar(e.sol); if (istenen.length) { const kod = new Set(tokenize(code).filter(sigk).map(t => String(t.u || t.v).replace(/["`\[\]]/g, '').toUpperCase())); if (!istenen.some(x => kod.has(x))) return 'Bu görevde sonucu görevin tablolarından hesaplaman gerekiyor; sabit değer yazmak sayılmaz.'; } }
+  return '';
+}
+/* Gizli varyant: sonuç doğru çıktıktan sonra görevin tablolarından satır silinmiş kopyada çözüm ve cevap yeniden çalışır. Elle yazılmış sabit sonuç ya da bugünkü satırlara uydurulmuş koşul burada ayrışır.
+   Yalnız silme yapılır, yabancı anahtarla bağlı alt satırlar da silinir: bütünlük bozulmaz, veride her zaman doğru olan bir şey doğru kalır, geçerli cevap reddedilmez.
+   ctx: { fresh(): db, run(db, kod, tur): sonuç, esit(u, s, ord): bool, beklenen }. Dönüş: sorun yoksa '', varsa ileti. */
+function varyantTablolar(db, sol) { const t = revKatalog(tokenize(sol).filter(x => x.k !== 'com').map(x => x.v).join('')).replace(/\bsys\s*\.\s*indexes\b/gi, 'sys_indexes'); const ad = new Set((t.match(/[A-Za-z_]\w*/g) || []).map(x => x.toLowerCase())); const r = execOne(db, "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"); return r.values.map(x => x[0]).filter(x => ad.has(x.toLowerCase())); }
+function varyantUygula(db, tablolar, mod, kalan) {
+  const bag = {}; for (const ro of execOne(db, "SELECT m.name, f.\"table\", f.\"from\", f.\"to\" FROM sqlite_master m, pragma_foreign_key_list(m.name) f WHERE m.type = 'table'").values) (bag[String(ro[1]).toLowerCase()] = bag[String(ro[1]).toLowerCase()] || []).push(ro);
+  const kuyruk = []; for (const t of tablolar) { db.run(`DELETE FROM "${t}" WHERE rowid % ${mod} = ${kalan}`); if (db.getRowsModified()) kuyruk.push(t); }
+  for (let g = 0; g < 200 && kuyruk.length; g++) { const t = kuyruk.shift(); for (const [c, , f, u] of bag[t.toLowerCase()] || []) { const pk = u || 'rowid'; db.run(`DELETE FROM "${c}" WHERE "${f}" IS NOT NULL AND "${f}" NOT IN (SELECT "${pk}" FROM "${t}")`); if (db.getRowsModified() && !kuyruk.includes(c)) kuyruk.push(c); } }
+}
+function varyantFail(e, code, d, ctx) {
+  const taban = e.base || 'sqlite'; if (!e.sol || String(code).trim() === String(e.sol).trim()) return '';
+  const son = (db, r) => { let s = r.sets && r.sets.length ? r.sets[r.sets.length - 1] : null; if (e.check) { try { s = db.exec(e.check).pop() || null; } catch (er) { s = null; } } return s; };
+  let tablolar; { const db = ctx.fresh(); try { tablolar = varyantTablolar(db, e.sol); } finally { db.close(); } } if (!tablolar.length) return '';
+  for (const [mod, kalan] of [[5, 0], [3, 1], [2, 0]]) {
+    const db = ctx.fresh(); let sb = null, hata = false; try { varyantUygula(db, tablolar, mod, kalan); const r = ctx.run(db, e.sol, taban); if (r.error) hata = true; else sb = son(db, r); } catch (er) { hata = true; } db.close();
+    if (hata || ctx.esit(sb, ctx.beklenen, e.ord)) continue;
+    const db2 = ctx.fresh(); let ok = true; try { varyantUygula(db2, tablolar, mod, kalan); const r2 = ctx.run(db2, code, d); if (!r2.error) { const su = son(db2, r2); /* Eşitlikte sıra (TOP, LIMIT) ve tür farkı (yuvarlama) geçerli cevabı ayırabilir: bu durumda cevabın veriye tepki vermesi yeter */ const yumusak = d !== taban || /\b(TOP|LIMIT|FETCH|ROWNUM)\b/i.test(String(e.sol) + ' ' + String(code)); ok = yumusak ? !ctx.esit(su, ctx.beklenen, e.ord) : ctx.esit(su, sb, e.ord); } } catch (er) { /* cevap bu veride çalışmıyorsa reddetme */ } db2.close();
+    return ok ? '' : 'Sonuç bu veride doğru görünüyor ama aynı sorgu başka veride tutmuyor. Değerleri elle yazmış olabilirsin ya da koşul yalnız bugünkü satırlara uyuyor; sonucu tablolardan hesapla.';
+  }
   return '';
 }
 /* Plan denetimi: alıştırmanın e.plan alanı varsa sonuç doğru olduktan sonra SQLite planına da bakılır.
@@ -3173,7 +3209,7 @@ function planFail(e, db, res) {
   if (p.not && new RegExp(p.not, 'i').test(det)) return { msg, plan: det };
   return null;
 }
-root.SQLP_DIALECT = { DIALECTS, DNAME, mustFail, planFail, planOf, tokenize, forward, reverse, lint, runDialect, register, splitSemis, execOne, friendly,
+root.SQLP_DIALECT = { DIALECTS, DNAME, mustFail, varyantFail, planFail, planOf, tokenize, forward, reverse, lint, runDialect, register, splitSemis, execOne, friendly,
   convert, isProcedural, forwardCanon,
   setSchemaHints(dateCols, textCols, allCols, dtCols) { (dtCols || []).forEach(c => DT_COLS.add(c)); dateCols.forEach(c => DATE_COLS.add(c)); textCols.forEach(c => TEXT_COLS.add(c)); (allCols || []).forEach(c => ALL_COLS.add(String(c).toLowerCase())); } };
 // T-SQL yolunda da önce denetim uygula
