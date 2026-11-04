@@ -7,9 +7,9 @@ Bu dal (`kaynak`), yayındaki sitenin (`main` dalı) bütün dosyalarını ve bu
 |---|---|
 | Kök | Sitenin kendisi. Derleme adımı yoktur; dosyalar olduğu gibi sunulur. |
 | `index.html` | Uygulama: arayüz, yönlendirme, ilerleme kaydı. Betikleri sırayla yükler. |
-| `db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js` | Veri setleri: e-ticaret ve banka, havayolu, yemek teslimatı, İK, bisiklet paylaşımı. |
+| `db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js`, `ops.js` | Veri setleri: e-ticaret ve banka, havayolu, yemek teslimatı, İK, bisiklet paylaşımı. `ops.js` kurgusal operasyon günlüğüdür (`ops_` tabloları), yalnız bu uygulamada vardır, kendi tohumlu üretecini kullanır. |
 | `dialect.js` | SQL Server, PostgreSQL, MySQL, Oracle ve BigQuery yazımını SQLite'a çeviren katman. |
-| `c1.js` … `c38.js`, `cx.js` | Dersler, öğrenme yolları, pratik görevleri, sınavlar. Sonra yüklenen dosya öncekileri yerinde değiştirebilir. `c35.js` son düzeltme katmanıdır: yol sırası, seviye testi, yöntem kuralları, yeni dersler. `c36.js` BT İş Analisti yolu ve onun on bir dersidir; metindeki sayılar `SQLP_BA_SAYI` nesnesinden gelir, `ba_sayilar.js` denetler. `c37.js` Sorgu Optimizasyonu dersleri, `c38.js` mevcut performans derslerinin genişletilmesi, yeni bitirme projeleri (`opt-proje`, `bv-proje`, `ai-proje`), `op*` pratik görevleri, sözlük ve yol bağlantılarıdır. |
+| `c1.js` … `c39.js`, `cx.js` | Dersler, öğrenme yolları, pratik görevleri, sınavlar. Sonra yüklenen dosya öncekileri yerinde değiştirebilir. `c35.js` son düzeltme katmanıdır: yol sırası, seviye testi, yöntem kuralları, yeni dersler. `c36.js` BT İş Analisti yolu ve onun on bir dersidir; metindeki sayılar `SQLP_BA_SAYI` nesnesinden gelir, `ba_sayilar.js` denetler. `c37.js` Sorgu Optimizasyonu dersleri, `c38.js` mevcut performans derslerinin genişletilmesi, yeni bitirme projeleri (`opt-proje`, `bv-proje`, `ai-proje`), `op*` pratik görevleri, sözlük ve yol bağlantılarıdır. `c39.js` SQL Server Operasyon ve Güvenlik yolu (`ops-*` dersleri, `sg*` pratik görevleri). |
 | `plan-ciktilari.js` | Derslerdeki PostgreSQL plan çıktıları. Üretilen dosya: `araclar/denetim/opt_cikti.mjs` PGlite ile çalıştırır, sorgular `opt_sorgular.json` içinde. Elle düzenlenmez. |
 | `ipuclari.js` | Alıştırma ipuçları. `araclar/denetim/ipucu_uret.js` üretir; elle yazılanlar `araclar/denetim/ipucu_elle.json` içinde. |
 | `bilinen-sinirlar.js` | Veri setleri sayfasındaki “Bilerek bırakılanlar ve bilinen sınırlamalar” metinleri. |
@@ -46,7 +46,7 @@ Bütün komutlar `araclar/denetim` klasöründen çalıştırılır.
 
 ## Derleme
 ### Veritabanını yeniden üret
-Bir veri dosyasını (`db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js`) ya da tablo kuran bir içerik dosyasını değiştirdiysen bu adım gerekir:
+Bir veri dosyasını (`db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js`, `ops.js`) ya da tablo kuran bir içerik dosyasını değiştirdiysen bu adım gerekir:
 ```bash
 node make_base.js
 ```
@@ -137,6 +137,11 @@ node opt_cikti.mjs           # sorgu değişince dosyayı yeniden üretir
 - SQL Server, MySQL, Oracle ve BigQuery için plan çıktısı yazılmaz. Bu ürünlerin bilgileri resmî belgeden alınmıştır.
 - Tarayıcıda: kökü 8811 portunda sun, `qa` içinde `NODE_PATH=$(npm root -g) node opt_tarayici.js`. 1280 ve 390 genişlikte dersleri açar, doğru cevabın kabul edildiğini, yanlışların reddedildiğini sınar.
 
+### 4d. Pilot özeti
+Sunucu ve ağ isteği yoktur. Her şey `sqlpatika.v1` içindeki geri uyumlu `pilot` alanındadır: `tests` (en çok 20 kayıt, ilk test silinmez), `aktifDk` (sayfa görünür ve son 60 saniyede etkileşim varken), `dersBaslangic`, `dersBitis`, `takilma`. Profil'deki "Pilot özeti" kutusu ve "Özeti kopyala" düğmesi bu alandan düz JSON üretir. Yedek ve içe aktarma alanı birleştirir, sıfırlama temizler.
+- `index.html` içindeki `PILOT_SURUM`, `sw.js` önbellek sürümüyle birlikte artırılır.
+- Tarayıcıda: kökü 8811 portunda sun, `qa` içinde `NODE_PATH=$(npm root -g) node pilot_tarayici.js`. 1280 ve 390 genişlikte yükleme mesajını, Türkçe klavye ipucunu, "Devam et"i, seviye testinin karışmasını, kaydı, kopyalamayı, içe aktarmayı, sıfırlamayı dener. Beklenen: `HATA 0`.
+
 ### 4b. Önkoşul taraması
 ```bash
 node onkosul.js
@@ -151,7 +156,7 @@ node pg_denetim.mjs              # FILTER='^ik-' ile daraltılır
 - Her çözüm dış bir işlem içinde çalışıp geri alınır. Kendi `BEGIN`/`COMMIT` komutları kayıt noktasına çevrilir, veri kalıcı değişmez.
 - İlk çalıştırmada veritabanını kurar ve `pg_taban.tgz` olarak saklar (`base.sqlite` yenilenince kendini yeniler). Tam tur yaklaşık 3 dakika.
 - 45 saniyeyi aşan sorgu `zamanasimi` diye yazılır. Tüm sonuç `pg_audit.json` dosyasındadır.
-- Gerekçesi yazılı farklar `pg_bilinen.json` dosyasındadır. Temiz sonuç: `BILINMEYEN 0` ve `gereksiz bilinen kayit 0` (son tur: 1.670 çözüm, 1.663 aynı, 7 bilinen; `sonuclar/pg.txt`).
+- Gerekçesi yazılı farklar `pg_bilinen.json` dosyasındadır. Temiz sonuç: `BILINMEYEN 0` ve `gereksiz bilinen kayit 0` (son tur: 1.708 çözüm, 1.701 aynı, 7 bilinen; `sonuclar/pg.txt`).
 - Yapısal denetimi SQLite kataloğuna bakan DDL görevlerinde (pragma_table_info) yalnız DDL'in çalıştığı sınanır.
 - Tarih türü ile yapılan sıralamalar ve yerel ayara bağlı `UPPER`/`LOWER` farkı karşılaştırmada i/İ/ı/I harfleri eşit sayılarak ele alınır.
 
@@ -212,13 +217,13 @@ Ders ve yol süreleri `index.html` içindeki `sureDk`, `dkAralik`, `saatAralik` 
 ## Yayına alma
 Site `main` dalından sunulur. `main` dalına **yalnız aşağıdaki dosyalar** gider; `araclar/` ve `NASIL.md` gitmez.
 
-Site dosyaları (tam liste): `index.html`, `db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js`, `dialect.js`, `c1.js` … `c38.js`, `cx.js`, `plan-ciktilari.js`, `ipuclari.js`, `arena-data.js`, `config.js`, `bilinen-sinirlar.js`, `belge.js`, `sw.js`, `base-<özet>.b64.txt`, `manifest.webmanifest`, `favicon.svg`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, `og.png`, `vendor/`, `ekran/`, `README.md`, `LICENSE`, `LICENSE-ICERIK.md`, `.nojekyll`.
+Site dosyaları (tam liste): `index.html`, `db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js`, `ops.js`, `dialect.js`, `c1.js` … `c39.js`, `cx.js`, `plan-ciktilari.js`, `ipuclari.js`, `arena-data.js`, `config.js`, `bilinen-sinirlar.js`, `belge.js`, `sw.js`, `base-<özet>.b64.txt`, `manifest.webmanifest`, `favicon.svg`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, `og.png`, `vendor/`, `ekran/`, `README.md`, `LICENSE`, `LICENSE-ICERIK.md`, `.nojekyll`.
 
 Eski sürümden kaldırılacaklar: `hesap.js`, `hesap-secenegi/`, `YAYIN.md`.
 
 ```bash
 git checkout main
-git checkout kaynak -- index.html db.js hv.js lk.js ik.js bk.js dialect.js c[0-9]*.js cx.js plan-ciktilari.js ipuclari.js arena-data.js config.js bilinen-sinirlar.js belge.js sw.js manifest.webmanifest favicon.svg apple-touch-icon.png icon-192.png icon-512.png icon-512-maskable.png og.png vendor ekran README.md LICENSE LICENSE-ICERIK.md .nojekyll base-*.b64.txt
+git checkout kaynak -- index.html db.js hv.js lk.js ik.js bk.js ops.js dialect.js c[0-9]*.js cx.js plan-ciktilari.js ipuclari.js arena-data.js config.js bilinen-sinirlar.js belge.js sw.js manifest.webmanifest favicon.svg apple-touch-icon.png icon-192.png icon-512.png icon-512-maskable.png og.png vendor ekran README.md LICENSE LICENSE-ICERIK.md .nojekyll base-*.b64.txt
 git rm -r --ignore-unmatch hesap.js hesap-secenegi YAYIN.md
 git rm --cached --ignore-unmatch base-<eski-özet>.b64.txt   # veritabanı yenilendiyse eskisini kaldır
 git commit -m "..." && git push origin main
@@ -229,7 +234,7 @@ GitHub Pages bir iki dakika içinde güncellenir.
 `sw.js` ağ öncelikli çalışır; ziyaretçiler yeni sürümü bir sonraki açılışta alır. Önbellek biçimini değiştirirsen `CACHE` sabitinin sürümünü artır; eski önbellek etkinleşmede silinir. Yeni `base-*.b64.txt` alınınca eskisi önbellekten çıkar.
 
 ## Ortak veri setleri
-Ilgaz Bank, Kanat Havayolları, Lezzet Kurye, Pusula İK ve Pedal İzmir üç uygulamada satır satır aynıdır; SQL'in Anadolu Market `web_events` tablosu Python `anadolu_market` ile aynıdır (Power BI `WebOlaylari` ayrı veridir). Kaynak bu depodaki üreteçlerdir (`db.js` içindeki banka bölümü, `hv.js`, `lk.js`, `ik.js`, `bk.js`); diğer iki depo bunlardan türer:
+Ilgaz Bank, Kanat Havayolları, Lezzet Kurye, Pusula İK ve Pedal İzmir üç uygulamada satır satır aynıdır (`ops_` tabloları yalnız Kesit SQL'dedir); SQL'in Anadolu Market `web_events` tablosu Python `anadolu_market` ile aynıdır (Power BI `WebOlaylari` ayrı veridir). Kaynak bu depodaki üreteçlerdir (`db.js` içindeki banka bölümü, `hv.js`, `lk.js`, `ik.js`, `bk.js`); diğer iki depo bunlardan türer:
 1. Burada üreteci değiştir, `node make_base.js`.
 2. Kesit Power BI: dosyayı `scratchpad/sqlsrc/` içine kopyala, `scratchpad/ds` içinde `node seed.js <sqlsrc yolu>`, `python3 mk.py`, SQLite kopyalarını `kur.sh`'taki gibi üret, `node build/vdpack.js`, `.b64.txt` kopyalarını yenile. Yeni tablo eklendiyse `vd_*.js` içindeki `tables` listesine de ekle; pakette yalnız o liste çıkar.
 3. Kesit Python: değişen CSV'leri Power BI `ds/csv` klasöründen BOM'suz kopyala (`web_events.csv` dahil, `ds/csv/db` altında), `data/manifest.json` içinde satır ve bayt sayılarını güncelle (`name` alanlarına dokunma; yeni tabloya `cols` ve `note` da yaz).

@@ -59,6 +59,12 @@ opt-derin-sayfa rows=10 | 3166/2024-11-15 11:49:58 ; 3165/2024-11-14 23:58:28
 opt-distinct rows=135 | 1/Kayseri ; 2/İstanbul
 opt-net-akis rows=5 | Alsancak Çarşı/-708 ; Alsancak Meydan/-674
 opt-fanout rows=44 | 1/122/2039 ; 2/122/2023
+test no effect (bilinçli olabilir) ops-spray 1 Tek hesaba çok deneme
+ops-spray rows=1 | 203.0.113.77/88/7
+test no effect (bilinçli olabilir) ops-tarama 0 Çok okuyan ama sıralı okumayan dış adres
+ops-tarama rows=1 | an_mert/203.0.113.77/290
+test no effect (bilinçli olabilir) ops-pencere 0 Pencere dışında dev sorgu
+ops-pencere rows=1 | SELECT t.txn_type, SUM(t.amount) AS toplam FROM bank_txns t WHERE t.txn_time >= ? AND t.txn_time < ? GROUP BY t.txn_type/74316
 ik-ayrilan rows=3 | Çağrı Merkezi/36 ; Mağaza Operasyonları/31
 ik-ilk-yil rows=1 | 17.1
 ik-bant-alti rows=11 | Mağaza Operasyonları/53 ; Yazılım Geliştirme/43
@@ -98,6 +104,8 @@ pred o01 13283 | 11462 | 9150 | 1821
 pred o02 3397 | 3590 | 3311 | 42284
 pred o03 0 | 20 | 27 | 1
 pred o04 849 | 500 | 500 | 42284
+pred o05 88 | 499 | 61 | 8
+pred o06 24 | 3057 | 7607 | 9
 pz b01 6
 pz b02 6
 pz b03 27
@@ -116,6 +124,8 @@ pz b15 5
 pz o01 10
 pz o02 8
 pz o03 62
+pz o04 1
+pz o05 1
 det kayip-kargo tsql 4471 | Kaan Aydemir | 100 | 65 | 06 ZT 4410 | Tolga Sarp
 det kayip-kargo pg 4471 | Kaan Aydemir | 100 | 65 | 06 ZT 4410 | Tolga Sarp
 det kayip-kargo mysql 4471 | Kaan Aydemir | 100 | 65 | 06 ZT 4410 | Tolga Sarp

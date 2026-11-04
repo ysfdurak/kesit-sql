@@ -1,5 +1,5 @@
-dogru sik konum dagilimi (A..E): [ 171, 489, 95, 20, 0 ]
-dogru sik en uzun olan: 203 / 775
+dogru sik konum dagilimi (A..E): [ 175, 511, 95, 20, 0 ]
+dogru sik en uzun olan: 179 / 801
 {
   hicbirPatikadaDegil: 1,
   patikaSeviyeGeriDonus: 13,

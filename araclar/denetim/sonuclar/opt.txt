@@ -1,7 +1,27 @@
-sik 57 dogru_en_uzun 12 %21 dogru_en_kisa 9 %16 SIVRI 0
+sik 83 dogru_en_uzun 26 %31 dogru_en_kisa 12 %14 SIVRI 0
 SIRA_HATA 0
 hata ile red opt-secicilik#4 no such table: sqlite_stat1 | CREATE INDEX ix_tip ON bank_txns (txn_type); SELECT idx, stat FROM sqlite_stat1 WHERE idx = 'ix_tip';
-YAVAS 6406 ms sqlite SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
-YAVAS 35026 ms sqlite SELECT s.name, (SELECT COUNT(*) FROM bk_trips t WHERE t.end_station = s.station_id) - (SEL
-YAVAS 29969 ms sqlite SELECT s.name, (SELECT COUNT(*) FROM bk_trips t WHERE t.end_station = s.station_id) - (SEL
-cozum 112 COZUM_RED 0 yanlis 213 GECEN_YANLIS 0 sebep {"plan":74,"yontem":21,"sonuc":116,"hata":1,"gizliTest":1} sayi 6 SAYI_FARK 0 YANLISSIZ 0
+YAVAS 8590 ms pg SELECT COUNT(*) AS satir, SUM(islem) AS islem, ROUND(SUM(toplam)) AS tutar FROM (SELECT DI
+YAVAS 8067 ms mysql SELECT COUNT(*) AS satir, SUM(islem) AS islem, ROUND(SUM(toplam)) AS tutar FROM (SELECT DI
+YAVAS 9800 ms oracle SELECT COUNT(*) AS satir, SUM(islem) AS islem, ROUND(SUM(toplam)) AS tutar FROM (SELECT DI
+YAVAS 10851 ms tsql SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
+YAVAS 17310 ms pg SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
+YAVAS 16405 ms mysql SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
+YAVAS 17554 ms oracle SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
+YAVAS 8861 ms bq SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
+YAVAS 7429 ms sqlite SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
+YAVAS 36598 ms sqlite SELECT s.name, (SELECT COUNT(*) FROM bk_trips t WHERE t.end_station = s.station_id) - (SEL
+YAVAS 6099 ms oracle SELECT u.user_id, m.ilk FROM bk_users u LEFT JOIN (SELECT user_id, MIN(started_at) AS ilk 
+YAVAS 6492 ms oracle SELECT a.login_name, COUNT(*) AS deneme FROM ops_access_log a LEFT JOIN ops_logins l ON l.
+YAVAS 6129 ms oracle SELECT CAST(EXTRACT(HOUR FROM CAST(logged_at AS TIMESTAMP)) AS NUMBER(10)) AS saat, SUM(lo
+YAVAS 7082 ms oracle WITH f AS (SELECT client_ip, event_at, LAG(event_at) OVER (PARTITION BY client_ip ORDER BY
+YAVAS 6553 ms oracle WITH s AS (SELECT login_name, client_ip, COUNT(*) AS n, ROW_NUMBER() OVER (PARTITION BY lo
+YAVAS 7014 ms oracle CREATE INDEX ix_log_hesap_zaman ON ops_query_log (login_name, logged_at);
+YAVAS 8237 ms oracle SELECT txn_type, COUNT(*) AS adet FROM bank_txns WHERE txn_time >= DATE '2024-11-01' AND t
+YAVAS 10236 ms oracle SELECT a.account_id, m.son FROM bank_accounts a LEFT JOIN (SELECT account_id, MAX(txn_time
+YAVAS 7761 ms oracle SELECT order_id, placed_at FROM lk_orders WHERE placed_at < TIMESTAMP '2024-11-15 12:00:00
+YAVAS 8917 ms oracle SELECT c.customer_id, c.city FROM customers c WHERE EXISTS (SELECT 1 FROM orders o WHERE o
+YAVAS 6401 ms tsql WITH giden AS (SELECT start_station AS st, COUNT(*) AS n FROM bk_trips GROUP BY start_stat
+YAVAS 10322 ms oracle WITH giden AS (SELECT start_station AS st, COUNT(*) AS n FROM bk_trips GROUP BY start_stat
+YAVAS 91200 ms sqlite SELECT s.name, (SELECT COUNT(*) FROM bk_trips t WHERE t.end_station = s.station_id) - (SEL
+cozum 785 COZUM_RED 0 yanlis 276 GECEN_YANLIS 0 sebep {"plan":83,"yontem":23,"sonuc":168,"hata":1,"gizliTest":1} sayi 12 SAYI_FARK 0 YANLISSIZ 0
