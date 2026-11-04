@@ -1,7 +1,7 @@
 dogru sik konum dagilimi (A..E): [ 192, 528, 111, 36, 0 ]
-dogru sik en uzun olan: 180 / 867
+dogru sik en uzun olan: 190 / 867
 {
-  hicbirPatikadaDegil: 2,
+  hicbirPatikadaDegil: 1,
   patikaSeviyeGeriDonus: 13,
   ayniCozumluPratik: 8,
   sinavAyniSecenek: 1

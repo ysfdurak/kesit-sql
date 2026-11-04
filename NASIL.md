@@ -148,6 +148,9 @@ Sunucu ve ağ isteği yoktur. Her şey `sqlpatika.v1` içindeki geri uyumlu `pil
 - **Sistem görünümleri:** Gerçek DMV yok. T-SQL modunda `sys.dm_*`, `sys.query_store_*`, `sys.database_*`, `msdb.dbo.*`, `sis.js` kopyalarına yönlenir (`revKatalog`). `sys.indexes` yalnız sorguda `object_id`, `index_id`, `fill_factor` gibi sütun geçiyorsa kopyaya gider, yoksa eski davranış.
 - **T-SQL'de eklenenler:** `UPDATE ... FROM JOIN`, `DELETE ... JOIN`, `DELETE/UPDATE TOP`, `UPDATE OUTPUT deleted`, `MERGE OUTPUT $action` ve `INTO`, parametresiz `THROW;`, `XACT_STATE`, `XACT_ABORT` ile işlenemez işlem, `@@NESTLEVEL` ve 32 sınırı, `WITH RECOMPILE` yazımı, çok ifadeli tablo işlevi, view üzerinde `INSTEAD OF`, tek tablolu view'e yazma ve `WITH CHECK OPTION` (son ikisi pg, mysql, oracle'da da).
 - Tarayıcıda: `qa` içinde `NODE_PATH=$(npm root -g) node motor_tarayici.js` (uyarı kutusu, FK, kopya görünüm, yeni dersler). Beklenen: `HATA 0`.
+- **Gizli varyant:** `DX.varyantFail`, sonuç doğru çıkınca görevin tablolarından satır silip (FK ile bağlı alt satırlar da silinir) çözüm ve cevabı yeniden karşılaştırır. Elle yazılmış sabit sonuç burada düşer. Yalnız silme yapıldığı için veride her zaman doğru olan koşul doğru kalır. Arayüzde ilk çalıştırma 2 saniyeyi aşarsa atlanır. TOP, LIMIT ya da başka SQL türünde eşitlikte sıra ve yuvarlama geçerli cevabı ayırabilir; orada yalnız cevabın veriye tepki vermesi aranır.
+- **Desteklenmeyen komut:** `DESTEKSIZ` listesi "Incorrect syntax" yerine "Bu motor desteklemiyor" der.
+- `node alternatif.js`: bağımsız denetimden gelen elle yazılmış yanlış ve geçerli cevaplar. Beklenen: `YANLIS_GECEN 0`, `DOGRU_RED 0`.
 - **Yok:** TVP, DDL trigger, trigger gövdesinde IF, `CROSS APPLY` ile çok ifadeli işlev, gerçek kilit ve eşzamanlılık.
 
 ### 4b. Önkoşul taraması
@@ -164,7 +167,7 @@ node pg_denetim.mjs              # FILTER='^ik-' ile daraltılır
 - Her çözüm dış bir işlem içinde çalışıp geri alınır. Kendi `BEGIN`/`COMMIT` komutları kayıt noktasına çevrilir, veri kalıcı değişmez.
 - İlk çalıştırmada veritabanını kurar ve `pg_taban.tgz` olarak saklar (`base.sqlite` yenilenince kendini yeniler). Tam tur yaklaşık 3 dakika.
 - 45 saniyeyi aşan sorgu `zamanasimi` diye yazılır. Tüm sonuç `pg_audit.json` dosyasındadır.
-- Gerekçesi yazılı farklar `pg_bilinen.json` dosyasındadır. Temiz sonuç: `BILINMEYEN 0` ve `gereksiz bilinen kayit 0` (son tur: 1.710 çözüm, 1.703 aynı, 7 bilinen; `sonuclar/pg.txt`).
+- Gerekçesi yazılı farklar `pg_bilinen.json` dosyasındadır. Temiz sonuç: `BILINMEYEN 0` ve `gereksiz bilinen kayit 0` (son tur: 1.717 çözüm, 1.710 aynı, 7 bilinen; `sonuclar/pg.txt`).
 - Yapısal denetimi SQLite kataloğuna bakan DDL görevlerinde (pragma_table_info) yalnız DDL'in çalıştığı sınanır.
 - Tarih türü ile yapılan sıralamalar ve yerel ayara bağlı `UPPER`/`LOWER` farkı karşılaştırmada i/İ/ı/I harfleri eşit sayılarak ele alınır.
 

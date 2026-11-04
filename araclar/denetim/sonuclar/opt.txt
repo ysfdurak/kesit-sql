@@ -1,19 +1,24 @@
-sik 149 dogru_en_uzun 27 %18 dogru_en_kisa 44 %30 SIVRI 0
+sik 149 dogru_en_uzun 37 %25 dogru_en_kisa 25 %17 SIVRI 0
+sik_dosya c37 43 uzun %21 kisa %16 
+sik_dosya c38 16 uzun %19 kisa %25 
+sik_dosya c39 26 uzun %31 kisa %27 
+sik_dosya c40 26 uzun %31 kisa %12 
+sik_dosya c41 40 uzun %23 kisa %15 
 SIRA_HATA 0
 hata ile red kisitlar#7 FOREIGN KEY constraint failed | CREATE TABLE siparis (siparis_id INTEGER PRIMARY KEY);
 CREATE TABLE satir (satir_id INTEGER PRIMARY KEY, sipar
 hata ile red opt-secicilik#4 no such table: sqlite_stat1 | CREATE INDEX ix_tip ON bank_txns (txn_type); SELECT idx, stat FROM sqlite_stat1 WHERE idx = 'ix_tip';
-YAVAS 7560 ms pg SELECT COUNT(*) AS satir, SUM(islem) AS islem, ROUND(SUM(toplam)) AS tutar FROM (SELECT DI
-YAVAS 7518 ms mysql SELECT COUNT(*) AS satir, SUM(islem) AS islem, ROUND(SUM(toplam)) AS tutar FROM (SELECT DI
-YAVAS 9360 ms oracle SELECT COUNT(*) AS satir, SUM(islem) AS islem, ROUND(SUM(toplam)) AS tutar FROM (SELECT DI
-YAVAS 8885 ms tsql SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
-YAVAS 15854 ms pg SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
-YAVAS 15364 ms mysql SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
-YAVAS 17085 ms oracle SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
-YAVAS 8987 ms bq SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
-YAVAS 7459 ms sqlite SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
-YAVAS 31740 ms sqlite SELECT s.name, (SELECT COUNT(*) FROM bk_trips t WHERE t.end_station = s.station_id) - (SEL
+YAVAS 7854 ms pg SELECT COUNT(*) AS satir, SUM(islem) AS islem, ROUND(SUM(toplam)) AS tutar FROM (SELECT DI
+YAVAS 8396 ms mysql SELECT COUNT(*) AS satir, SUM(islem) AS islem, ROUND(SUM(toplam)) AS tutar FROM (SELECT DI
+YAVAS 9429 ms oracle SELECT COUNT(*) AS satir, SUM(islem) AS islem, ROUND(SUM(toplam)) AS tutar FROM (SELECT DI
+YAVAS 9162 ms tsql SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
+YAVAS 16312 ms pg SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
+YAVAS 15906 ms mysql SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
+YAVAS 18870 ms oracle SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
+YAVAS 8627 ms bq SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
+YAVAS 7472 ms sqlite SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
+YAVAS 34307 ms sqlite SELECT s.name, (SELECT COUNT(*) FROM bk_trips t WHERE t.end_station = s.station_id) - (SEL
 hata ile red etl-hata#1 Msg 8114, Level 16, State 5: Error converting data type varchar to numeric. | SELECT stg_id, tutar FROM etl_stg_hareket WHERE CAST(tutar AS DECIMAL(12, 2)) IS NULL ORDER BY stg_id;
-YAVAS 24390 ms sqlite SELECT strftime('%Y-%m', o.order_date) AS ay, ROUND(SUM(i.quantity * i.unit_price * (1 - i
-YAVAS 31785 ms sqlite SELECT s.name, (SELECT COUNT(*) FROM bk_trips t WHERE t.end_station = s.station_id) - (SEL
-cozum 874 COZUM_RED 0 yanlis 367 GECEN_YANLIS 0 sebep {"hata":3,"sonuc":254,"plan":83,"yontem":26,"gizliTest":1} sayi 12 SAYI_FARK 0 YANLISSIZ 0
+YAVAS 25236 ms sqlite SELECT strftime('%Y-%m', o.order_date) AS ay, ROUND(SUM(i.quantity * i.unit_price * (1 - i
+YAVAS 32226 ms sqlite SELECT s.name, (SELECT COUNT(*) FROM bk_trips t WHERE t.end_station = s.station_id) - (SEL
+cozum 900 COZUM_RED 0 yanlis 376 GECEN_YANLIS 0 sebep {"hata":3,"sonuc":262,"plan":83,"yontem":27,"gizliTest":1} sayi 12 SAYI_FARK 0 YANLISSIZ 0
