@@ -248,3 +248,6 @@ python3 veri_tutarlilik.py                                    # Beklenen: SORUN 
 `veri_tutarlilik.py` uçak ve bisiklet ışınlanmasını, çakışmayı, dönüş süresini, bakımda yolculuğu ve bilerek bırakılan izlerin sayısını denetler. Yeni tablolar: `hv_repositioning` (Kanat), `bk_rebalancing` (Pedal).
 
 Veride bilerek bırakılanlar ve bilinen sınırlamalar `bilinen-sinirlar.js` içindedir; metin üç uygulamada aynıdır, sayılar değişirse üçünü birden güncelle.
+
+## Statik ders sayfaları
+Yayın paketi kurulduktan sonra paket klasörü sunulurken çalıştır: `BASE=http://localhost:PORT node araclar/statik.js <paket>`. Üç uygulamaya `ders/` ve `sitemap.xml`, paket köküne `sitemap.xml` ve `sitemap-ana.xml` yazar. Kök dosyalar ana sayfa reposuna, `robots.txt` kaydıyla birlikte gider.
