@@ -537,6 +537,7 @@ button.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink);
   <nav class="tabbar" id="tabbar" aria-label="Alt menü"></nav>
 </div>
 
+<script src="recovery.js"></script>
 <script src="vendor/sql-asm.js"></script>
 <script src="db.js"></script>
 <script src="hv.js"></script>
@@ -625,7 +626,7 @@ const EXTRA_MODS = ['Veri Analisti','BT İş Analizi','Veri Bilimi','Veri Mühen
 
 /* ---------- Depolama ---------- */
 const KEY='sqlpatika.v1';
-function load(){ try{ return JSON.parse(localStorage.getItem(KEY)) || {}; }catch(e){ return {}; } }
+function load(){ try{ return JSON.parse(KESIT_STORAGE.getItem(KEY)) || {}; }catch(e){ return {}; } }
 /* Pilot özeti: yalnız bu tarayıcıda durur, ağ isteği yok, kişisel veri yok. Kullanıcı kopyalarsa dışarı çıkar. */
 function pilotBos(){ return {tests:[], aktifDk:0, dersBaslangic:{}, dersBitis:{}, takilma:{}}; }
 function pilotKirp(t){ return t.length>20 ? [t[0]].concat(t.slice(-19)) : t; } /* ilk test silinmez */
@@ -642,8 +643,8 @@ let saveT=null;
 let persistAsked=false;
 function askPersist(){ if(persistAsked) return; persistAsked=true; try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persisted().then(ok=>ok||navigator.storage.persist()).catch(()=>{}); }catch(e){} }
 let quotaWarned=false;
-function save(){ askPersist(); clearTimeout(saveT); saveT=setTimeout(()=>{ try{ localStorage.setItem(KEY, JSON.stringify(P)); }catch(e){ if(!quotaWarned){ quotaWarned=true; try{ toast('İlerleme kaydedilemedi: tarayıcı depolaması dolu. Profil sayfasından dosyaya yedek al.'); }catch(er){} } } writeSummary(); },150); }
-function writeSummary(){ try{ localStorage.setItem('kesit.ozet.sql', JSON.stringify({bitti:Object.keys(P.done).filter(k=>LMAP[k]).length, toplam:LESSONS.length, alistirma:Object.keys(P.ex).filter(k=>exByKey(k)).length})); }catch(e){} }
+function save(){ if (KESIT_STORAGE.isBlocked()) return; askPersist(); clearTimeout(saveT); saveT=setTimeout(()=>{ try{ KESIT_STORAGE.setItem(KEY, JSON.stringify(P)); }catch(e){ if(!quotaWarned){ quotaWarned=true; try{ toast('İlerleme kaydedilemedi: tarayıcı depolaması dolu. Profil sayfasından dosyaya yedek al.'); }catch(er){} } } writeSummary(); },150); }
+function writeSummary(){ try{ KESIT_STORAGE.setItem('kesit.ozet.sql', JSON.stringify({bitti:Object.keys(P.done).filter(k=>LMAP[k]).length, toplam:LESSONS.length, alistirma:Object.keys(P.ex).filter(k=>exByKey(k)).length})); }catch(e){} }
 const ymd = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 const today = () => ymd(new Date());
 function streak(){ let n=0; const d=new Date(); if(!P.days[today()]) d.setDate(d.getDate()-1); for(;;){ if(P.days[ymd(d)]){ n++; d.setDate(d.getDate()-1);} else break; } return n; }
@@ -2184,7 +2185,7 @@ window.addEventListener('hashchange', fromHash);
 /* Aktif dakika: sayfa görünür ve son 60 saniyede etkileşim varsa */
 { let sonEtki=Date.now(); ['pointerdown','keydown','scroll','touchstart'].forEach(ev=>addEventListener(ev,()=>{ sonEtki=Date.now(); },{passive:true,capture:true}));
   setInterval(()=>{ if(!document.hidden && Date.now()-sonEtki<=60000){ P.pilot.aktifDk++; save(); } },60000); }
-window.KESIT_APP = { save:()=>save(), checkBackup,  event:(n,t)=>gcEvent(n,t), pathInfo:(id)=>{ const p=PMAP[id]; if(!p) return null; const ls=p.lessons.map(x=>LMAP[x]).filter(Boolean); return {id:p.id, name:p.name, short:p.short, color:p.color, skills:p.skills||[], lessons:ls.length, exercises:ls.reduce((a,l)=>a+(l.ex||[]).length,0), hours:saatAralik(ls).replace(/^yaklaşık | saat$/g,''), complete:ls.length>0&&ls.every(l=>P.done[l.id])}; }, getP:()=>P, replaceP:(np)=>{ P=Object.assign(DEFAULTS(), np||{}); applyTheme(); try{ localStorage.setItem(KEY, JSON.stringify(P)); }catch(e){} render(); renderStats(); }, fresh:()=>Object.assign(DEFAULTS(), {dialectChosen:false}), render:()=>{ render(); renderStats(); }, toast };
+window.KESIT_APP = { save:()=>save(), checkBackup,  event:(n,t)=>gcEvent(n,t), pathInfo:(id)=>{ const p=PMAP[id]; if(!p) return null; const ls=p.lessons.map(x=>LMAP[x]).filter(Boolean); return {id:p.id, name:p.name, short:p.short, color:p.color, skills:p.skills||[], lessons:ls.length, exercises:ls.reduce((a,l)=>a+(l.ex||[]).length,0), hours:saatAralik(ls).replace(/^yaklaşık | saat$/g,''), complete:ls.length>0&&ls.every(l=>P.done[l.id])}; }, getP:()=>P, replaceP:(np)=>{ P=Object.assign(DEFAULTS(), np||{}); applyTheme(); try{ KESIT_STORAGE.setItem(KEY, JSON.stringify(P)); }catch(e){} render(); renderStats(); }, fresh:()=>Object.assign(DEFAULTS(), {dialectChosen:false}), render:()=>{ render(); renderStats(); }, toast };
 gcInit();
 try{ if('serviceWorker' in navigator && /^https:|^http:\/\/localhost/.test(location.href) && !/claude|claudeusercontent/.test(location.host)) navigator.serviceWorker.register('sw.js').catch(()=>{}); }catch(e){}
 writeSummary();

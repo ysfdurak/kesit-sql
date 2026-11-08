@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "date": "2026-11-08",
+  "baseCommit": "b055ed31df7837f12ae6e83cf5ff1be79e73f4d2",
+  "scope": "Bu iyileştirme paketinde değişen dosyalar; tüm ürün için uzman onayı değildir.",
+  "checks": [
+    "Node kurtarma sözleşmesi",
+    "Chromium dört uygulama ilerleme kurtarma",
+    "Chromium ilk görev / ilk ekran axe kontrolü"
+  ],
+  "files": {
+    ".github/workflows/progress-quality.yml": "f13a61d4c771ff757bacb2b22b98e416fcdc8df5e0b2cff04f92c382146be9b4",
+    "recovery.js": "ef7fc7a695802e75e55d83e101a2e0ab472c88126607c28229c9cea0ea60f870",
+    "tests/artifact.cjs": "1ab82740817f37d2934e90f25997c4a6e7d07d50138d538c70de82f27fa0ddfc",
+    "tests/recovery.cjs": "9990ef25ded436773fef0d4659d287bdbb3a3caa94817eb768a0b4ac129a31f8",
+    "index.html": "44d119a35215932adbad0578f02b5b19eb8854eac549301677eae4ed99f34bb5",
+    "sw.js": "675e0c32d0d05b81ae38562946bfe2230d9811c7e75e2b69930fa332967d1aff"
+  },
+  "sourceCommit": "2d99b4a4e37018aabc09b2e7926e77590cd17210",
+  "sourceBranch": "kaynak"
+}
