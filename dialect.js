@@ -3159,9 +3159,39 @@ root.CODE = function (src, v, o) {
 };
 /* Yöntem kuralları: görev bir yöntem istiyorsa sonuç tek başına yetmez. Yorum ve metin sabitleri kuralları etkilemez.
    Arayüz (index.html) ve denetim (araclar/denetim/run.js) bu tek işlevi kullanır. */
+/* Göreve özgü sabit sonuç koruması. FROM tablo içeren bir sarmalayıcı, sabit
+   projeksiyonu veri hesabına dönüştürmez. Yorumlar ve AS takma adları sayılmaz.
+   Yıldız sarmalayıcıları da içeride gerçek bir hesap/sütun okuması gerektirir. */
+function literalResultOnly(code) {
+  const T = tokenize(code).filter(sigk); let selected = false;
+  const constants = new Set(('NULL TRUE FALSE DISTINCT ALL CASE WHEN THEN ELSE END AS ' +
+    'CAST CONVERT TRY_CAST TRY_CONVERT TEXT VARCHAR NVARCHAR CHAR NCHAR INTEGER INT REAL NUMERIC DECIMAL FLOAT DOUBLE PRECISION ' +
+    'COALESCE IFNULL ISNULL NULLIF ABS ROUND LOWER UPPER TRIM LTRIM RTRIM LENGTH LEN CONCAT REPLACE SUBSTR SUBSTRING ' +
+    'DATE DATETIME STRFTIME SOUNDEX DIFFERENCE').split(' '));
+  for (let i = 0; i < T.length; i++) {
+    if (!isW(T[i], 'SELECT')) continue;
+    selected = true; let j = i + 1;
+    if (isW(T[j], 'DISTINCT', 'ALL')) j++;
+    if (isW(T[j], 'TOP')) { j++; if (isP(T[j], '(')) j = closeP(T, j) + 1; else j++; if (isW(T[j], 'PERCENT')) j++; if (isW(T[j], 'WITH') && isW(T[j+1], 'TIES')) j += 2; }
+    let depth = 0;
+    for (; j < T.length; j++) {
+      const t = T[j];
+      if (!depth && (isW(t, 'FROM', 'WHERE', 'UNION', 'INTERSECT', 'EXCEPT', 'ORDER', 'GROUP', 'LIMIT', 'INTO') || isP(t, ';') || isP(t, ')'))) break;
+      if (isW(t, 'AS') && !depth) { j++; continue; }
+      if (isP(t, '(')) depth++;
+      if (isP(t, ')')) depth--;
+      if (t.k === 'var' || t.k === 'tmp') return false;
+      if (t.k === 'q') return false; // tanımlayıcı olabilir; kesin olmayanı engelleme
+      if (t.k === 'w' && !constants.has(t.u)) return false;
+    }
+  }
+  return selected;
+}
 function mustFail(e, code, d) {
   const bareOf = s => tokenize(s).filter(t => t.k !== 'com' && t.k !== 's').map(t => t.v).join('');
   const bare = bareOf(code);
+  if (e.noLiteralResult && literalResultOnly(code)) return 'Bu görevde sonucu tablolardan hesaplamalısın; tabloyu FROM içinde anıp sonuç değerlerini sabit yazmak yeterli değil.';
+  if (e.explainResult) { const statements = splitSemis(code).map(x => tokenize(x).filter(sigk)).filter(x => x.length); const last = statements[statements.length - 1] || []; if (!isW(last[0], 'EXPLAIN') || !isW(last[1], 'QUERY') || !isW(last[2], 'PLAN')) return 'Bu görevde son sonuç gerçek EXPLAIN QUERY PLAN komutundan gelmeli.'; }
   if (e.must) for (const m of e.must) { if (m.d && !m.d.includes(d)) continue; if (!new RegExp(m.re, 'i').test(bare)) return m.msg; }
   if (e.mustNot) for (const m of e.mustNot) { if (m.d && !m.d.includes(d)) continue; if (new RegExp(m.re, 'i').test(bare)) return m.msg; }
   /* Çözüm tablodan okuyorsa (FROM metin sabitinde değil, kodda) cevap da okumalı. Dinamik SQL'de FROM metnin içindedir, kural uygulanmaz. */
@@ -3178,14 +3208,29 @@ function varyantUygula(db, tablolar, mod, kalan) {
   for (let g = 0; g < 200 && kuyruk.length; g++) { const t = kuyruk.shift(); for (const [c, , f, u] of bag[t.toLowerCase()] || []) { const pk = u || 'rowid'; db.run(`DELETE FROM "${c}" WHERE "${f}" IS NOT NULL AND "${f}" NOT IN (SELECT "${pk}" FROM "${t}")`); if (db.getRowsModified() && !kuyruk.includes(c)) kuyruk.push(c); } }
 }
 function varyantFail(e, code, d, ctx) {
-  const taban = e.base || 'sqlite'; if (!e.sol || String(code).trim() === String(e.sol).trim()) return '';
+  const taban = e.base || 'sqlite'; if (!e.sol || (!e.variants && String(code).trim() === String(e.sol).trim())) return '';
   const son = (db, r) => { let s = r.sets && r.sets.length ? r.sets[r.sets.length - 1] : null; if (e.check) { try { s = db.exec(e.check).pop() || null; } catch (er) { s = null; } } return s; };
+  /* Göreve özgü senaryolar, ortak tabanı değiştirmeyen ayrı kopyalarda çalışır.
+     Hazırlık bozuksa ya da cevap yeni veride hata verirse başarı verilmez. */
+  for (const v of e.variants || []) {
+    const sets = [];
+    for (const [sql, dialect] of [[e.sol, taban], [code, d]]) {
+      const db = ctx.fresh();
+      try { if (v.sql) db.exec(v.sql); let query = sql; if (v.beforeLast) { const parts = splitSemis(query); const last = parts.pop(); if (parts.length) { const pre = ctx.run(db, parts.join(';') + ';', dialect); if (pre.error) return 'Başlangıç tabloları gizli senaryoda kurulamadı.'; } db.exec(v.beforeLast); query = last; } if (v.tail) query += '\n' + v.tail; const r = ctx.run(db, query, dialect); if (r.error) return 'Gizli veri senaryosu doğrulanamadı (' + v.ad + '). Sorguyu ve sınır durumlarını kontrol et.'; sets.push(son(db, r)); }
+      catch (er) { return 'Gizli veri senaryosu doğrulanamadı (' + v.ad + ').'; }
+      finally { db.close(); }
+    }
+    if (!ctx.esit(sets[1], sets[0], e.ord)) return 'Sonuç başlangıç verisinde doğru ama ' + v.ad + ' senaryosunda farklı. Değerleri sabitlemeden tablolardan hesapla.';
+  }
+  // Bu görevler için kapsayıcılığı sabit_regresyon.js ile doğrulanan senaryolar
+  // kullanılır; aynı göreve ilgisiz genel silme desenleri tekrar uygulanmaz.
+  if (e.variants && e.variants.length) return '';
   let tablolar; { const db = ctx.fresh(); try { tablolar = varyantTablolar(db, e.sol); } finally { db.close(); } } if (!tablolar.length) return '';
   for (const [mod, kalan] of [[5, 0], [3, 1], [2, 0]]) {
     const db = ctx.fresh(); let sb = null, hata = false; try { varyantUygula(db, tablolar, mod, kalan); const r = ctx.run(db, e.sol, taban); if (r.error) hata = true; else sb = son(db, r); } catch (er) { hata = true; } db.close();
     if (hata || ctx.esit(sb, ctx.beklenen, e.ord)) continue;
-    const db2 = ctx.fresh(); let ok = true; try { varyantUygula(db2, tablolar, mod, kalan); const r2 = ctx.run(db2, code, d); if (!r2.error) { const su = son(db2, r2); /* Eşitlikte sıra (TOP, LIMIT) ve tür farkı (yuvarlama) geçerli cevabı ayırabilir: bu durumda cevabın veriye tepki vermesi yeter */ const yumusak = d !== taban || /\b(TOP|LIMIT|FETCH|ROWNUM)\b/i.test(String(e.sol) + ' ' + String(code)); ok = yumusak ? !ctx.esit(su, ctx.beklenen, e.ord) : ctx.esit(su, sb, e.ord); } } catch (er) { /* cevap bu veride çalışmıyorsa reddetme */ } db2.close();
-    return ok ? '' : 'Sonuç bu veride doğru görünüyor ama aynı sorgu başka veride tutmuyor. Değerleri elle yazmış olabilirsin ya da koşul yalnız bugünkü satırlara uyuyor; sonucu tablolardan hesapla.';
+    const db2 = ctx.fresh(); let ok = false; try { varyantUygula(db2, tablolar, mod, kalan); const r2 = ctx.run(db2, code, d); if (!r2.error) { const su = son(db2, r2); /* TOP eşitlikleri ve lehçe farkları eski görevlerde farklı geçerli satırlar seçebilir. Göreve özgü senaryolar yukarıda tam karşılaştırılır. */ const yumusak = d !== taban || /\b(TOP|LIMIT|FETCH|ROWNUM)\b/i.test(String(e.sol) + ' ' + String(code)); ok = yumusak ? !ctx.esit(su, ctx.beklenen, e.ord) : ctx.esit(su, sb, e.ord); } } catch (er) { ok = false; } finally { db2.close(); }
+    if (!ok) return 'Sonuç bu veride doğru görünüyor ama aynı sorgu başka veride tutmuyor. Değerleri elle yazmış olabilirsin ya da koşul yalnız bugünkü satırlara uyuyor; sonucu tablolardan hesapla.';
   }
   return '';
 }
@@ -3202,6 +3247,7 @@ function planFail(e, db, res) {
   let q = p.q;
   if (!q) { const t = (res && res.translated) || []; for (let i = t.length - 1; i >= 0 && !q; i--) if (/^\s*(--[^\n]*\n\s*)*(SELECT|WITH)\b/i.test(t[i])) q = t[i]; }
   const msg = p.msg || 'Sonuç doğru ama plan beklenen gibi değil.';
+  if (p.index) { const ix = db.exec('PRAGMA index_info(' + lit(p.index.ad) + ')'); const cols = ix.length ? ix[0].values.map(x => x[2]) : []; if (cols.join(',') !== p.index.cols.join(',')) return { msg: 'İstenen indeks doğru sütunlarla oluşturulmalı.', plan: '' }; }
   if (!q) return { msg, plan: '' };
   let det = '';
   try { if (p.setup) db.exec(p.setup); det = planOf(db, q); } catch (er) { return { msg, plan: '' }; }
