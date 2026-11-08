@@ -1,0 +1,30 @@
+name: SQL cevap doğrulama
+on:
+  push:
+    branches: [kaynak]
+  pull_request:
+    branches: [kaynak]
+permissions:
+  contents: read
+jobs:
+  kontrol:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: araclar/denetim/package-lock.json
+      - run: npm ci
+        working-directory: araclar/denetim
+      - run: npm test
+        working-directory: araclar/denetim
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sql-denetim
+          path: |
+            araclar/denetim/sabit_regresyon.json
+            araclar/denetim/sql_audit.json

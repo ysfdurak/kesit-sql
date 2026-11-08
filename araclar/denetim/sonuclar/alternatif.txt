@@ -1,0 +1,43 @@
+ok                 ts-dml-join#4 | filtre yok | RED sonuc
+ok                 ts-dml-join#4 | yanlış cihaz | RED sonuc
+ok                 ts-dml-join#5 | hiç silmiyor | RED sonuc
+ok                 ts-dml-join#6 | şehri güncellemiyor | RED sonuc
+ok                 ts-dml-join#7 | MERGE yok (regex $action sınar) | RED yontem: Görev MERGE istiyor.
+ok                 ts-hata-ileri#2 | etl_red yazmıyor | RED sonuc
+ok                 ts-hata-ileri#3 | silme yok | RED yontem: İşlem içinde 7 numaralı departmanı silmen gerekiyor.
+ok                 etl-hata#7 | günlük ROLLBACK önce (ipucunun tuzağı) | RED sonuc
+ok                 etl-hata#2 | öncelik ters | RED sonuc
+ok                 etl-hata#4 | önce numaralandır sonra süz (ipucu tuzağı) | RED sonuc
+ok                 etl-boyut#5 | yalnız şehir | RED sonuc
+ok                 etl-boyut#5 | yalnız ad | RED sonuc
+ok                 dwh-tasarim#1 | boş dim_tarih, sabit FK | RED sonuc
+ok                 ts-proc-ileri#4 | dönüş kodu ve StokKontrol yok | RED yontem: Dönüş kodunu EXEC @k = yordam ile al.
+ok                 ts-proc-ileri#2 | iç içe yok | RED yontem: usp_Ust, usp_Orta yordamını çağırmalı.
+ok                 dba-yetki#4 | DENY sabit kimlikle düşüyor | RED yontem: Nesne kimliğini elle yazma, DENY satırından bul.
+ok                 P#sh03 | hep hata fırlatıyor | RED sonuc
+ok                 ts-nesne-ileri#3 | UPDATE yok | RED yontem: View üzerinden güncellemeyi dene.
+ok                 ts-proc-ileri#1 | parantezli PROC | GECTI
+ok                 ts-proc-ileri#1 | @p AS INT | GECTI
+ok                 ts-dml-join#3 | DELETE FROM a FROM | GECTI
+ok                 ts-dml-join#3 | tablo adıyla | GECTI
+ok                 ts-dml-join#1 | türetilmiş tablo | GECTI
+ok                 ts-dml-join#2 | tablo adıyla | GECTI
+ok                 ts-dml-join#4 | FROM yok | GECTI
+ok                 ts-dml-join#6 | inserted.dept_id | GECTI
+ok                 ts-dml-join#7 | VALUES kaynağı | GECTI
+ok                 ts-hata-ileri#1 | INTO yok, doğrudan | GECTI
+ok                 ts-hata-ileri#3 | TRAN, COMMIT yok | GECTI
+ok                 ts-nesne-ileri#1 | INSERT @t | GECTI
+ok                 ts-nesne-ileri#2 | CONCAT, OR ALTER | GECTI
+ok                 ts-nesne-ileri#2 | += ve FROM | GECTI
+ok                 ts-nesne-ileri#4 | Tetikleyicide UPDATE FROM JOIN (gerçek kod için dersin önerdiği) | GECTI
+ok                 P#sh07 | NOCOUNT tetikleyicide | GECTI
+ok                 etl-hata#1 | TRY_CAST | GECTI
+ok                 etl-boyut#3 | ISNULL, >= <= | GECTI
+ok                 dwh-tasarim#1 | bilinmeyen üyeli geçerli tasarım (etl-boyut dersi önerir) | GECTI
+ok                 dwh-fact#2 | status ile | GECTI
+ok                 dwh-fact#3 | NOT EXISTS | GECTI
+ok                 dba-engelleme#4 | farklı JOIN sırası | GECTI
+ok                 dba-dmv#2 | NULLIF, ORDER BY 2 | GECTI
+ok                 dba-indeks-bakim#1 | DETAILED | GECTI
+YANLIS_GECEN 0 DOGRU_RED 0

@@ -1,0 +1,361 @@
+{
+  "hedef": 70,
+  "dogru": 346,
+  "sahte": 146,
+  "senaryo": 65,
+  "HATA": 0,
+  "errors": [],
+  "details": [
+    {
+      "id": "alias-distinct#1",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "alias-distinct#3",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "alias-distinct#4",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "alias-distinct#7",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "in-between-like#8",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "null#2",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "ilk-gun#1",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "araclar#7",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "having#6",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "having#9",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "metin-birlestir#3",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "iliskiler#6",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "iliskiler#7",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "left-join#6",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "metin-benzerlik#2",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "metin-benzerlik#5",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "self-cross-join#8",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "set-ops#2",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "set-ops#5",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "set-ops#7",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "hata-ayiklama#1",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "hata-ayiklama#5",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "takvim#7",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "son-deger#6",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "zaman-araligi#5",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "normalizasyon#4",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "normalizasyon#6",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "performans-lab#1",
+      "variants": 0,
+      "changed": 0
+    },
+    {
+      "id": "performans-lab#8",
+      "variants": 0,
+      "changed": 0
+    },
+    {
+      "id": "bv-plan#1",
+      "variants": 0,
+      "changed": 0
+    },
+    {
+      "id": "bv-plan#2",
+      "variants": 0,
+      "changed": 0
+    },
+    {
+      "id": "mulakat-1#1",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "mk-topn#2",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "ts-degisken#2",
+      "variants": 2,
+      "changed": 1
+    },
+    {
+      "id": "ts-proc#3",
+      "variants": 2,
+      "changed": 1
+    },
+    {
+      "id": "ts-plan#5",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "ds-korelasyon#1",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "sql-test#1",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "sql-test#5",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "de-dbt#2",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "cert-gda#2",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "proje-tsql#4",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "ba-veri#6",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "ba-uat#6",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "opt-olc#3",
+      "variants": 0,
+      "changed": 0
+    },
+    {
+      "id": "opt-plan#1",
+      "variants": 0,
+      "changed": 0
+    },
+    {
+      "id": "opt-proje#2",
+      "variants": 0,
+      "changed": 0
+    },
+    {
+      "id": "P:t004",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "P:t005",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "P:t021",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "P:t025",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "P:t029",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "P:o135",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "P:i174",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "P:i258",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "P:k201",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "P:k211",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "P:z005",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "P:z013",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "P:z015",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "P:z026",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "P:h104",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "P:h205",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "P:g004",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "P:g102",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "P:n056",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "P:m002",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "P:op22",
+      "variants": 0,
+      "changed": 0
+    },
+    {
+      "id": "P:mk07",
+      "variants": 1,
+      "changed": 1
+    },
+    {
+      "id": "P:mk15",
+      "variants": 2,
+      "changed": 1
+    }
+  ],
+  "calistirma": "Tam turda 68 hedef temiz; iki ek kaynak görevinin ayırt edici senaryoları düzeltildi ve bu 2 hedef yeniden temiz geçti. Doğru/sahte sayıları benzersiz tam kapsamı gösterir."
+}

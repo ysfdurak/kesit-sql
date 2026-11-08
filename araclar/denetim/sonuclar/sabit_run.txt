@@ -1,0 +1,2 @@
+calistirilan 10230 oge 2059 { orderByVarOrdYok: 17, ordAmaOrderByYok: 4 }
+{}

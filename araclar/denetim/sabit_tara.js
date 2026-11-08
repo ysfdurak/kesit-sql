@@ -11,4 +11,4 @@ require('sql.js/dist/sql-asm.js')().then(SQL=>{ const BASE=require('./base.js')(
   const kod=S.values.map(x=>'SELECT '+x.map((v,i)=>lit(v)+' AS "'+String(S.columns[i]).replace(/"/g,'')+'"').join(', ')+' FROM (SELECT TOP (1) 1 AS x FROM '+ad+') q').join(' UNION ALL ')+';';
   const kod2=b==='tsql'?kod:kod.replace(/TOP \(1\) /g,'').replace(/\) q/g,' LIMIT 1) q');
   const db2=fresh(); const r2=DX.runDialect(db2,kod2,b,env()); db2.close(); if(r2.error) continue; const u=r2.sets&&r2.sets[r2.sets.length-1]; if(!esit(u,S,false)) continue; if(DX.mustFail(e,kod2,b)) continue; if(DX.varyantFail(e,kod2,b,{fresh,run:(x,q,dd)=>DX.runDialect(x,q,dd,env()),esit,beklenen:S})) continue; gec.push(id); }
- console.log('sinanan',n,'SABIT_GECEN',gec.length,gec.join(' ')); process.exit(0); });
+ console.log('sinanan',n,'SABIT_GECEN',gec.length,gec.join(' ')); process.exit(gec.length ? 1 : 0); });

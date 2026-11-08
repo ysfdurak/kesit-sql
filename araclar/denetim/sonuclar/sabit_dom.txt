@@ -1,0 +1,9 @@
+Loaded 67 targets
+Literal rejected, progress unchanged
+Variant control runs above 2 seconds
+Valid solution accepted
+Missing index rejected
+Real EXPLAIN with index accepted
+Code exam uses shared checks
+Valid plan exam accepted
+UI HATA 0

@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node sabit_regresyon.js && node alternatif.js && node sabit_tara.js && node run.js"
   },
   "keywords": [],
   "author": "",

@@ -9,7 +9,7 @@ Bu dal (`kaynak`), yayındaki sitenin (`main` dalı) bütün dosyalarını ve bu
 | `index.html` | Uygulama: arayüz, yönlendirme, ilerleme kaydı. Betikleri sırayla yükler. |
 | `db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js`, `ops.js`, `sis.js` | Veri setleri: e-ticaret ve banka, havayolu, yemek teslimatı, İK, bisiklet paylaşımı. `ops.js` kurgusal operasyon günlüğüdür (`ops_` tabloları), `sis.js` sistem görünümü kopyaları ve ETL senaryosudur (`sys_`, `msdb_`, `etl_`); ikisi yalnız bu uygulamada vardır, kendi tohumlu üretecini kullanır. |
 | `dialect.js` | SQL Server, PostgreSQL, MySQL, Oracle ve BigQuery yazımını SQLite'a çeviren katman. |
-| `c1.js` … `c42.js`, `cx.js` | Dersler, öğrenme yolları, pratik görevleri, sınavlar. Sonra yüklenen dosya öncekileri yerinde değiştirebilir. `c35.js` son düzeltme katmanıdır: yol sırası, seviye testi, yöntem kuralları, yeni dersler. `c36.js` BT İş Analisti yolu ve onun on bir dersidir; metindeki sayılar `SQLP_BA_SAYI` nesnesinden gelir, `ba_sayilar.js` denetler. `c37.js` Sorgu Optimizasyonu dersleri, `c38.js` mevcut performans derslerinin genişletilmesi, yeni bitirme projeleri (`opt-proje`, `bv-proje`, `ai-proje`), `op*` pratik görevleri, sözlük ve yol bağlantılarıdır. `c39.js` SQL Server Operasyon ve Güvenlik yolu (`ops-*` dersleri, `sg*` pratik görevleri). |
+| `c1.js` … `c43.js`, `cx.js` | Dersler, öğrenme yolları, pratik görevleri, sınavlar. Sonra yüklenen dosya öncekileri yerinde değiştirebilir. `c35.js` son düzeltme katmanıdır: yol sırası, seviye testi, yöntem kuralları, yeni dersler. `c36.js` BT İş Analisti yolu ve onun on bir dersidir; metindeki sayılar `SQLP_BA_SAYI` nesnesinden gelir, `ba_sayilar.js` denetler. `c37.js` Sorgu Optimizasyonu dersleri, `c38.js` mevcut performans derslerinin genişletilmesi, yeni bitirme projeleri (`opt-proje`, `bv-proje`, `ai-proje`), `op*` pratik görevleri, sözlük ve yol bağlantılarıdır. `c39.js` SQL Server Operasyon ve Güvenlik yolu (`ops-*` dersleri, `sg*` pratik görevleri). |
 | `plan-ciktilari.js` | Derslerdeki PostgreSQL plan çıktıları. Üretilen dosya: `araclar/denetim/opt_cikti.mjs` PGlite ile çalıştırır, sorgular `opt_sorgular.json` içinde. Elle düzenlenmez. |
 | `ipuclari.js` | Alıştırma ipuçları. `araclar/denetim/ipucu_uret.js` üretir; elle yazılanlar `araclar/denetim/ipucu_elle.json` içinde. |
 | `bilinen-sinirlar.js` | Veri setleri sayfasındaki “Bilerek bırakılanlar ve bilinen sınırlamalar” metinleri. |
@@ -148,7 +148,7 @@ Sunucu ve ağ isteği yoktur. Her şey `sqlpatika.v1` içindeki geri uyumlu `pil
 - **Sistem görünümleri:** Gerçek DMV yok. T-SQL modunda `sys.dm_*`, `sys.query_store_*`, `sys.database_*`, `msdb.dbo.*`, `sis.js` kopyalarına yönlenir (`revKatalog`). `sys.indexes` yalnız sorguda `object_id`, `index_id`, `fill_factor` gibi sütun geçiyorsa kopyaya gider, yoksa eski davranış.
 - **T-SQL'de eklenenler:** `UPDATE ... FROM JOIN`, `DELETE ... JOIN`, `DELETE/UPDATE TOP`, `UPDATE OUTPUT deleted`, `MERGE OUTPUT $action` ve `INTO`, parametresiz `THROW;`, `XACT_STATE`, `XACT_ABORT` ile işlenemez işlem, `@@NESTLEVEL` ve 32 sınırı, `WITH RECOMPILE` yazımı, çok ifadeli tablo işlevi, view üzerinde `INSTEAD OF`, tek tablolu view'e yazma ve `WITH CHECK OPTION` (son ikisi pg, mysql, oracle'da da).
 - Tarayıcıda: `qa` içinde `NODE_PATH=$(npm root -g) node motor_tarayici.js` (uyarı kutusu, FK, kopya görünüm, yeni dersler). Beklenen: `HATA 0`.
-- **Gizli varyant:** `DX.varyantFail`, sonuç doğru çıkınca görevin tablolarından satır silip (FK ile bağlı alt satırlar da silinir) çözüm ve cevabı yeniden karşılaştırır. Elle yazılmış sabit sonuç burada düşer. Yalnız silme yapıldığı için veride her zaman doğru olan koşul doğru kalır. Arayüzde ilk çalıştırma 2 saniyeyi aşarsa atlanır. TOP, LIMIT ya da başka SQL türünde eşitlikte sıra ve yuvarlama geçerli cevabı ayırabilir; orada yalnız cevabın veriye tepki vermesi aranır.
+- **Gizli varyant:** `DX.varyantFail`, sonuç doğru çıkınca görevin tablolarından satır silip (FK ile bağlı alt satırlar da silinir) çözüm ve cevabı yeniden karşılaştırır. Elle yazılmış sabit sonuç burada düşer. Yalnız silme yapıldığı için veride her zaman doğru olan koşul doğru kalır. Arayüzde ve kodlama sınavında ilk çalıştırmanın süresinden bağımsız uygulanır. TOP, LIMIT ya da başka SQL türünde eşitlikte sıra ve yuvarlama geçerli cevabı ayırabilir; orada yalnız cevabın veriye tepki vermesi aranır.
 - **Desteklenmeyen komut:** `DESTEKSIZ` listesi "Incorrect syntax" yerine "Bu motor desteklemiyor" der.
 - `node alternatif.js`: bağımsız denetimden gelen elle yazılmış yanlış ve geçerli cevaplar. Beklenen: `YANLIS_GECEN 0`, `DOGRU_RED 0`.
 - **Yok:** TVP, DDL trigger, trigger gövdesinde IF, `CROSS APPLY` ile çok ifadeli işlev, gerçek kilit ve eşzamanlılık.
@@ -235,7 +235,7 @@ Ders ve yol süreleri `index.html` içindeki `sureDk`, `dkAralik`, `saatAralik` 
 ## Yayına alma
 Site `main` dalından sunulur. `main` dalına **yalnız aşağıdaki dosyalar** gider; `araclar/` ve `NASIL.md` gitmez.
 
-Site dosyaları (tam liste): `index.html`, `db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js`, `ops.js`, `sis.js`, `dialect.js`, `c1.js` … `c42.js`, `cx.js`, `plan-ciktilari.js`, `ipuclari.js`, `arena-data.js`, `config.js`, `bilinen-sinirlar.js`, `belge.js`, `sw.js`, `base-<özet>.b64.txt`, `manifest.webmanifest`, `favicon.svg`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, `og.png`, `vendor/`, `ekran/`, `README.md`, `LICENSE`, `LICENSE-ICERIK.md`, `.nojekyll`.
+Site dosyaları (tam liste): `index.html`, `db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js`, `ops.js`, `sis.js`, `dialect.js`, `c1.js` … `c43.js`, `cx.js`, `plan-ciktilari.js`, `ipuclari.js`, `arena-data.js`, `config.js`, `bilinen-sinirlar.js`, `belge.js`, `sw.js`, `base-<özet>.b64.txt`, `manifest.webmanifest`, `favicon.svg`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, `og.png`, `vendor/`, `ekran/`, `README.md`, `LICENSE`, `LICENSE-ICERIK.md`, `.nojekyll`.
 
 Eski sürümden kaldırılacaklar: `hesap.js`, `hesap-secenegi/`, `YAYIN.md`.
 
@@ -274,3 +274,20 @@ Veride bilerek bırakılanlar ve bilinen sınırlamalar `bilinen-sinirlar.js` i�
 
 ## Statik ders sayfaları
 Yayın paketi kurulduktan sonra paket klasörü sunulurken çalıştır: `BASE=http://localhost:PORT node araclar/statik.js <paket>`. Üç uygulamaya `ders/` ve `sitemap.xml`, paket köküne `sitemap.xml` ve `sitemap-ana.xml` yazar. Kök dosyalar ana sayfa reposuna, `robots.txt` kaydıyla birlikte gider.
+
+## 8 Kasım 2026: sabit sonuç düzeltmesi
+
+`c43.js`, 4 Kasım yayınındaki 67 ve kaynak dalındaki ek 3 kayıt için doğrulama kuralları ekler; yeni ders oluşturmaz. Ders, pratik ve kodlama sınavı aynı `mustFail` / `varyantFail` denetimini kullanır.
+
+- `noLiteralResult`: gerçek tabloyu FROM içinde anıp bütün çıktı hücrelerini sabitlerden kurmayı engeller; tek başına genel SQL güvenlik sınırı değildir.
+- `variants`: her iki çözüm için ayrı taban kopyasında çalışır. `sql` veriyi hazırlar; `beforeLast` geçici tablo kurulduktan sonra son sorgudan önce bozuk veriyi ekler; `tail` aynı yordam ortamında ek çağrı yapar. Hata veren senaryoda başarı verilmez. Bütün özel senaryolar karşılaştırılır; bu görevlerde eski genel silme desenleri ayrıca tekrarlanmaz.
+- `explainResult`: son ifadenin gerçekten EXPLAIN QUERY PLAN olmasını ister. `plan.index`, gereken indeksin sütunlarını da katalogdan doğrular.
+- `node sabit_regresyon.js`: kayıtlı 70 hedefin izinli lehçelerdeki örnek ve alternatif çözümleri, sabit ve hesap görünümlü sahte cevaplar, sarmalayıcılar ve eksik indeks denetlenir. Veriye bağlı her hedefte en az bir özel senaryonun referans sonucunu değiştirmesi zorunludur. Ana yayında henüz olmayan üç hedef otomatik atlanır.
+- `node sabit_tara.js`: bulunan sahte geçişte çıkış kodu 1. Taramanın kapsam sınırları (check, boş sonuç, 300 satır üstü vb.) devam eder; sıfır bulgu bütün olası yanlış cevapların yokluğu anlamına gelmez.
+- `npm test`: regresyon, alternatifler, tam sabit taraması ve çözüm çalıştırması. GitHub Actions kaynak dalı ve ona açılan PR'larda bu kapıyı çalıştırır.
+
+Sonuçlar `araclar/denetim/sonuclar/` içinde saklanır.
+
+8 Kasım doğrulaması: 70 hedef, 346 doğru/alternatif çözüm, 146 sahte/eksik işlem kontrolü, 65 özel senaryo; hata 0. Tam sabit taraması: 1.835 deneme, geçiş 0. Plan denetimi: 70 çözüm ve 31 yanlış cevapta hata 0. DOM entegrasyonu (jsdom; gerçek tarayıcı çizimi değil): hata 0. `qa/sabit_dom.cjs` için `npm install --no-save jsdom` gerekir; `KESIT_KOK` ile yayın paketi seçilebilir. Tarayıcı ikilisi bu ortamda indirilemediği için görsel tarayıcı testi yapılmadı.
+
+Genel çözüm taraması: 10.230 çalıştırma, 2.059 SQL görev kaydı, hata 0. 17 orderByVarOrdYok ve 4 ordAmaOrderByYok uyarısı ayrı tutuldu; sıralama metadata uyarılarıdır.

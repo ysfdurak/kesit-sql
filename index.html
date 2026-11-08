@@ -590,6 +590,7 @@ button.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink);
 <script src="c40.js"></script>
 <script src="c41.js"></script>
 <script src="c42.js"></script>
+<script src="c43.js"></script>
 <script src="ipuclari.js"></script>
 <script src="arena-data.js"></script>
 <script src="config.js"></script>
@@ -631,7 +632,7 @@ function pilotBos(){ return {tests:[], aktifDk:0, dersBaslangic:{}, dersBitis:{}
 function pilotKirp(t){ return t.length>20 ? [t[0]].concat(t.slice(-19)) : t; } /* ilk test silinmez */
 function pilotNorm(p){ const b=pilotBos(); p=(p&&typeof p==='object')?p:{}; return {tests:Array.isArray(p.tests)?pilotKirp(p.tests):[], aktifDk:Math.max(0,+p.aktifDk||0), dersBaslangic:p.dersBaslangic||b.dersBaslangic, dersBitis:p.dersBitis||b.dersBitis, takilma:p.takilma||b.takilma}; }
 function pilotBirlestir(a,b){ a=pilotNorm(a); b=pilotNorm(b); const g={}; a.tests.concat(b.tests).forEach(t=>{ g[[t.tarih,t.puan,t.toplam,t.seviye].join('|')]=t; }); const ilk=(x,y)=>{ const o=Object.assign({},x); for(const k in y) if(!o[k]||String(y[k])<String(o[k])) o[k]=y[k]; return o; }; const tk=Object.assign({},a.takilma); for(const k in b.takilma) tk[k]=Math.max(tk[k]||0,b.takilma[k]); return {tests:pilotKirp(Object.values(g).sort((x,y)=>String(x.tarih)<String(y.tarih)?-1:1)), aktifDk:Math.max(a.aktifDk,b.aktifDk), dersBaslangic:ilk(a.dersBaslangic,b.dersBaslangic), dersBitis:ilk(a.dersBitis,b.dersBitis), takilma:tk}; }
-const PILOT_SURUM='v12'; /* sw.js önbellek sürümüyle birlikte artır */
+const PILOT_SURUM='v13'; /* sw.js önbellek sürümüyle birlikte artır */
 const DEFAULTS = () => ({done:{}, ex:{}, xp:0, days:{}, placement:null, drafts:{}, last:null, seen:{}, dialect:'pg', dialectChosen:false, goal:null, goalChosen:false, rv:{}, rvc:0, dl:{}, theme:'auto', pilot:pilotBos()});
 let P = Object.assign(DEFAULTS(), load()); P.pilot=pilotNorm(P.pilot);
 function applyTheme(){ const r=document.documentElement; if(P.theme==='light'||P.theme==='dark') r.setAttribute('data-theme',P.theme); else r.removeAttribute('data-theme'); }
@@ -1140,7 +1141,7 @@ function submitEx(){
   const c=compare(uset,s.set,e.ord); LS.tries++;
   if(!c.ok && e.check && /değerler farklı|satır|sütun var/.test(c.why)) c.why=/pragma_|sqlite_master|sqlite_schema/i.test(e.check)?'Tablonun yapısı beklenenle aynı değil. Sütunları, PRIMARY KEY, FOREIGN KEY ve CHECK kısıtlarını kontrol et.':'Tablonun son durumu beklenenle aynı değil. Hangi satırların değiştiğini ve koşulu kontrol et.';
   if(c.ok){ const mf=mustFail(e, code, d); if(mf){ $('#fb').innerHTML='<div class="msg err"><b>Sonuç doğru, yöntem eksik</b>'+esc(mf)+'<div class="row" style="margin-top:8px"></div></div>'; return; } }
-  if(c.ok && (r.ms||0)<=2000){ const vf=DX.varyantFail(e, code, d, {fresh, run:(x,q,dd)=>DX.runDialect(x,q,dd,{env:{procs:{},funcs:{},tvfs:{},tran:0,nocount:false}}), esit:(u,ss,o)=>compare(u,ss,o).ok, beklenen:s.set}); if(vf){ $('#fb').innerHTML='<div class="msg err"><b>Sonuç doğru, yöntem eksik</b>'+esc(vf)+'</div>'; return; } }
+  if(c.ok){ const vf=DX.varyantFail(e, code, d, {fresh, run:(x,q,dd)=>DX.runDialect(x,q,dd,{env:{procs:{},funcs:{},tvfs:{},tran:0,nocount:false}}), esit:(u,ss,o)=>compare(u,ss,o).ok, beklenen:s.set}); if(vf){ $('#fb').innerHTML='<div class="msg err"><b>Sonuç doğru, yöntem eksik</b>'+esc(vf)+'</div>'; return; } }
   if(c.ok&&pf){ $('#fb').innerHTML='<div class="msg err"><b>Sonuç doğru, plan beklenen gibi değil</b>'+esc(pf.msg)+(pf.plan?'<pre class="plan-cikti">'+esc(pf.plan)+'</pre>':'')+'</div>'; return; }
   if(c.ok){
     const first=!P.ex[k]; P.ex[k]=1; if(first) addXP(LS.shown?2:10);
@@ -1927,12 +1928,13 @@ function mountCode(){
 function codeRun(){ if(!engineReady()||!ED) return; const db=fresh(); const r=run(db,ED.get(),EX.d); $('#res').innerHTML=resultHTML(r); db.close(); }
 function gradeCode(){
   return EX.items.map((id,i)=>{ const p=PRMAP[id], code=(EX.codes[i]||'').trim(); if(!code) return {ok:false, why:'Boş bırakıldı.'};
-    const db=fresh(); const r=run(db,code,EX.d); let u=lastSet(r); if(!r.error&&p.check){ try{ u=db.exec(p.check).pop()||null; }catch(er){ u=null; } } db.close();
+    const db=fresh(); const r=run(db,code,EX.d); let u=lastSet(r); if(!r.error&&p.check){ try{ u=db.exec(p.check).pop()||null; }catch(er){ u=null; } } const pf=!r.error&&p.plan?DX.planFail(p,db,r):null; db.close();
     if(r.error) return {ok:false, why:r.error};
     const s=solResult(p, prKey(p)); if(s.error) return {ok:false, why:'Çözüm çalışmadı'};
     const c=compare(u,s.set,p.ord); if(!c.ok) return {ok:false, why:c.why};
     const mf=DX.mustFail(p,code,EX.d); if(mf) return {ok:false, why:mf};
-    if((r.ms||0)<=2000){ const vf=DX.varyantFail(p,code,EX.d,{fresh, run:(x,q,dd)=>DX.runDialect(x,q,dd,{env:{procs:{},funcs:{},tvfs:{},tran:0,nocount:false}}), esit:(a,b,o)=>compare(a,b,o).ok, beklenen:s.set}); if(vf) return {ok:false, why:vf}; }
+    if(pf) return {ok:false, why:pf.msg};
+    { const vf=DX.varyantFail(p,code,EX.d,{fresh, run:(x,q,dd)=>DX.runDialect(x,q,dd,{env:{procs:{},funcs:{},tvfs:{},tran:0,nocount:false}}), esit:(a,b,o)=>compare(a,b,o).ok, beklenen:s.set}); if(vf) return {ok:false, why:vf}; }
     return {ok:true, why:''}; });
 }
 function finishCode(){

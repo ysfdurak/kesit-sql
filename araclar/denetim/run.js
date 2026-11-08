@@ -38,4 +38,5 @@ initSqlJs().then(SQL=>{
   if(process.env.PROG) console.error('items done'); fs.writeFileSync('sql_audit.json',JSON.stringify(out,null,1));
   const by={}; out.forEach(o=>{by[o.kind]=(by[o.kind]||0)+1}); console.log('calistirilan',n,'oge',items.length,by);
   const byd={}; out.filter(o=>/lehce/.test(o.kind)).forEach(o=>byd[o.d]=(byd[o.d]||0)+1); console.log(byd);
+  process.exitCode = out.some(o => /^(cozumYok|cozumHata|ceviriYok|lehceHata|lehceFarkli|yontemKurali|planKurali|swTabanYok)$/.test(o.kind)) ? 1 : 0;
 });

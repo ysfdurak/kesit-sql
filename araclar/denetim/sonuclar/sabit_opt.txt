@@ -1,0 +1,18 @@
+sik 150 dogru_en_uzun 37 %25 dogru_en_kisa 26 %17 SIVRI 0
+sik_dosya c37 43 uzun %21 kisa %16 
+sik_dosya c38 16 uzun %19 kisa %25 
+sik_dosya c39 26 uzun %31 kisa %27 
+sik_dosya c40 26 uzun %31 kisa %12 
+sik_dosya c41 40 uzun %23 kisa %15 
+sik_dosya c42 1 uzun %0 kisa %100 
+SIRA_HATA 0
+YAVAS 6330 ms pg SELECT COUNT(*) AS satir, SUM(islem) AS islem, ROUND(SUM(toplam)) AS tutar FROM (SELECT DI
+YAVAS 6502 ms mysql SELECT COUNT(*) AS satir, SUM(islem) AS islem, ROUND(SUM(toplam)) AS tutar FROM (SELECT DI
+YAVAS 7373 ms oracle SELECT COUNT(*) AS satir, SUM(islem) AS islem, ROUND(SUM(toplam)) AS tutar FROM (SELECT DI
+YAVAS 6251 ms tsql SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
+YAVAS 11904 ms pg SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
+YAVAS 11943 ms mysql SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
+YAVAS 15984 ms oracle SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
+YAVAS 6043 ms bq SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) F
+alt_cozum 0
+cozum 70 COZUM_RED 0 yanlis 31 GECEN_YANLIS 0 sebep {"plan":12,"sonuc":18,"yontem":1} sayi 12 SAYI_FARK 0 YANLISSIZ -
