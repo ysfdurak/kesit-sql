@@ -38,7 +38,7 @@
 Her dersin başlığında **Geri bildirim** bağlantısı var; bu deponun [Issues](https://github.com/ysfdurak/kesit-sql/issues) sayfasını ders bilgisiyle açar.
 
 ## Kardeş projeler
-Aynı mantıkla hazırlanmış diğer eğitimler: **[Kesit Power BI](https://ysfdurak.github.io/kesit-powerbi/)** ve **[Kesit Python](https://ysfdurak.github.io/kesit-python/)**.
+Aynı mantıkla hazırlanmış diğer eğitimler: **[Kesit Power BI](https://ysfdurak.github.io/kesit-powerbi/)**, **[Kesit Python](https://ysfdurak.github.io/kesit-python/)** ve **[Kesit İstatistik](https://ysfdurak.github.io/kesit-istatistik/)**. Kesit İstatistik aynı veri setleriyle istatistik vakaları içerir.
 
 ## Sorumluluk notu
 Ücretsiz, ticari olmayan bir eğitim ve portföy projesidir; içerik “olduğu gibi” sunulur. Veri setlerindeki tüm şirketler, kişiler ve kayıtlar hayalidir. Sertifika denemeleri ilgili kurumların resmî sınavları değildir.

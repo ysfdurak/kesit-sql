@@ -19,6 +19,7 @@ window.KESIT_CONFIG = {
   sqlUrl: 'https://ysfdurak.github.io/kesit-sql/',
   pbiUrl: 'https://ysfdurak.github.io/kesit-powerbi/',
   pythonUrl: 'https://ysfdurak.github.io/kesit-python/',
+  statUrl: 'https://ysfdurak.github.io/kesit-istatistik/',
   license: '',           // boşsa: içerik CC BY-NC 4.0, kod MIT
 
   /* Geri bildirim: boşsa bağlantılar GitHub Issues'u açar (author.repo). Google Forms ya da Tally kullanılacaksa adresi buraya yaz; {ders} yerine ders adı gelir. */
