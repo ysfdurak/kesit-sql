@@ -13,7 +13,7 @@
     "recovery.js": "ef7fc7a695802e75e55d83e101a2e0ab472c88126607c28229c9cea0ea60f870",
     "tests/artifact.cjs": "1ab82740817f37d2934e90f25997c4a6e7d07d50138d538c70de82f27fa0ddfc",
     "tests/recovery.cjs": "9990ef25ded436773fef0d4659d287bdbb3a3caa94817eb768a0b4ac129a31f8",
-    "index.html": "1f4d8d6ae735b5df4a36efe4b9bc695bbcc380c786acb74ac4c1e6ba79b28f70",
+    "index.html": "6707dafcb0eb8721e53ecf7d8b6721c308dd3bfa20bf8c6969399ccae375f4d2",
     "sw.js": "2885935a8d44f9c554ffa36df6eca5e5fbff622594c463dcf6fcaec2a1edd123"
   },
   "sourceCommit": "2d99b4a4e37018aabc09b2e7926e77590cd17210",
@@ -26,6 +26,13 @@
         "sw.js"
       ],
       "note": "Kesit İstatistik Kesit ailesi bağlantılarına eklendi (config statUrl, menü ve Hakkında bağlantıları, README). Değişiklik kaynak dalında da uygulandı; kurtarma ve sözdizimi kontrolleri yeniden çalıştırıldı."
+    },
+    {
+      "date": "2026-11-10",
+      "files": [
+        "index.html"
+      ],
+      "note": "Genel Kesit denetimi: arama motoru açıklamasındaki ders ve alıştırma sayıları güncellendi."
     }
   ]
 }
