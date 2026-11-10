@@ -13,7 +13,17 @@
     "recovery.js": "ef7fc7a695802e75e55d83e101a2e0ab472c88126607c28229c9cea0ea60f870",
     "tests/artifact.cjs": "1ab82740817f37d2934e90f25997c4a6e7d07d50138d538c70de82f27fa0ddfc",
     "tests/recovery.cjs": "9990ef25ded436773fef0d4659d287bdbb3a3caa94817eb768a0b4ac129a31f8",
-    "index.html": "6b28c70869c8bfc6e7457eb4e2cda3469d57b3d3d04f432da582cafc522365fe",
-    "sw.js": "675e0c32d0d05b81ae38562946bfe2230d9811c7e75e2b69930fa332967d1aff"
-  }
+    "index.html": "b3e751b850b0177c5495e83f76c0baefca348cdaefb3d371e9dc276fd5a37539",
+    "sw.js": "2885935a8d44f9c554ffa36df6eca5e5fbff622594c463dcf6fcaec2a1edd123"
+  },
+  "patches": [
+    {
+      "date": "2026-11-10",
+      "files": [
+        "index.html",
+        "sw.js"
+      ],
+      "note": "Kesit İstatistik Kesit ailesi bağlantılarına eklendi; dosya özetleri güncellendi."
+    }
+  ]
 }
