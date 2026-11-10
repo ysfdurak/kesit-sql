@@ -13,7 +13,7 @@
     "recovery.js": "ef7fc7a695802e75e55d83e101a2e0ab472c88126607c28229c9cea0ea60f870",
     "tests/artifact.cjs": "1ab82740817f37d2934e90f25997c4a6e7d07d50138d538c70de82f27fa0ddfc",
     "tests/recovery.cjs": "9990ef25ded436773fef0d4659d287bdbb3a3caa94817eb768a0b4ac129a31f8",
-    "index.html": "b3e751b850b0177c5495e83f76c0baefca348cdaefb3d371e9dc276fd5a37539",
+    "index.html": "9a80289a2936e900715fe5db5656aec4d328ec84a7179c33c5e85e81ce9b5729",
     "sw.js": "2885935a8d44f9c554ffa36df6eca5e5fbff622594c463dcf6fcaec2a1edd123"
   },
   "patches": [
@@ -24,6 +24,13 @@
         "sw.js"
       ],
       "note": "Kesit İstatistik Kesit ailesi bağlantılarına eklendi; dosya özetleri güncellendi."
+    },
+    {
+      "date": "2026-11-10",
+      "files": [
+        "index.html"
+      ],
+      "note": "Genel Kesit denetimi: arama motoru açıklamasındaki ders ve alıştırma sayıları güncellendi."
     }
   ]
 }
