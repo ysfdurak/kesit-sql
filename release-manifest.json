@@ -14,8 +14,8 @@
     "tests/artifact.cjs": "1ab82740817f37d2934e90f25997c4a6e7d07d50138d538c70de82f27fa0ddfc",
     "tests/recovery.cjs": "9990ef25ded436773fef0d4659d287bdbb3a3caa94817eb768a0b4ac129a31f8",
     "index.html": "d2f2a0aab9a7d4ce3c0bdcc99b3b56c933cb3b5c8cc8841ef024d84f6c157a82",
-    "sw.js": "4f8200627a3f2bf471d85a6282b00713186b542e971745dd9da612eed9a3e562",
-    "en-tour.js": "528629d1e289d63da67b956d6f410bf5a14ca530ad3c062434f731b022852b53"
+    "sw.js": "24f23f1e1448003b9c18abd7959415c8b10842abb7ee340188df1694dac59b23",
+    "en-tour.js": "f97abb23c1f2a87da445765d45e886705eaf40903a2360f1e539a9b96a7a5860"
   },
   "sourceCommit": "2d99b4a4e37018aabc09b2e7926e77590cd17210",
   "sourceBranch": "kaynak",
