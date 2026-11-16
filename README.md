@@ -43,6 +43,19 @@ Her dersin başlığında **Geri bildirim** bağlantısı var; bu deponun [Issue
 ## Kardeş projeler
 Aynı mantıkla hazırlanmış diğer eğitimler: **[Kesit Power BI](https://ysfdurak.github.io/kesit-powerbi/)**, **[Kesit Python](https://ysfdurak.github.io/kesit-python/)** ve **[Kesit İstatistik](https://ysfdurak.github.io/kesit-istatistik/)**. Kesit İstatistik aynı veri setleriyle istatistik vakaları içerir.
 
+## English
+
+**Kesit SQL** teaches SQL from scratch to advanced level, in Turkish, entirely in the browser: no install, no account. A real SQLite database runs in the page (sql.js) and every query is checked instantly.
+
+- 295 lessons, 1,944 exercises and 578 practice tasks, from the first `SELECT` to window functions, query optimisation, data warehousing and interview patterns.
+- Six SQL dialects (SQL Server, PostgreSQL, MySQL, Oracle, BigQuery, SQLite): queries are shown and checked in the chosen dialect.
+- Six fictional datasets shared with the other Kesit apps, 21 learning paths (role, topic and certification), SQL Arena, detective cases, placement test, exams and spaced review.
+- Progress stays in the browser and can be backed up to a file; the site works offline after the first visit.
+
+The interface and lessons are in Turkish. Add `?lang=en` to the address ([ysfdurak.github.io/kesit-sql/?lang=en](https://ysfdurak.github.io/kesit-sql/?lang=en)) for an English guide that explains each screen, with English labels under the menus.
+
+Try it: https://ysfdurak.github.io/kesit-sql/ · Sister apps: [Power BI](https://github.com/ysfdurak/kesit-powerbi), [Python](https://github.com/ysfdurak/kesit-python), [Statistics](https://github.com/ysfdurak/kesit-istatistik).
+
 ## Sorumluluk notu
 Ücretsiz, ticari olmayan bir eğitim ve portföy projesidir; içerik “olduğu gibi” sunulur. Veri setlerindeki tüm şirketler, kişiler ve kayıtlar hayalidir. Sertifika denemeleri ilgili kurumların resmî sınavları değildir.
 
