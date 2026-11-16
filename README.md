@@ -24,6 +24,9 @@
 - Dış bağımlılık yok: SQL motoru ve yazı tipleri sitenin içinde. Site bir kez açıldıktan sonra internet yokken de çalışıyor.
 - Bir öğrenme yolunu bitirenler tamamlama belgesi oluşturabiliyor. Belge tarayıcıda üretilir, doğrulanabilir değildir ve resmî bir sertifika yerine geçmez.
 
+
+## İngilizce tanıtım turu
+Arayüz Türkçe kalır. İngilizce okuyan ziyaretçi için adresin sonuna `?lang=en` eklenir ([https://ysfdurak.github.io/kesit-sql/?lang=en](https://ysfdurak.github.io/kesit-sql/?lang=en)): her ekranı anlatan bir rehber paneli ve menü/başlıklarda İngilizce karşılıklar açılır; `?lang=tr` kapatır. Ayrıntı: [INGILIZCE-TUR.md](INGILIZCE-TUR.md).
 ## Nasıl doğrulandı?
 - Alıştırma ve Arena çözümleri otomatik denetimle **taklit katmanında** altı SQL türünde çalıştırılıyor.
 - **PostgreSQL için gerçek motorda** (PGlite, WASM) ayrıca çalıştırılıyor; veri değiştiren görevler ve bisiklet tabloları dahil.
