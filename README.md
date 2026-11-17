@@ -61,10 +61,10 @@ Try it: https://ysfdurak.github.io/kesit-sql/ · Sister apps: [Power BI](https:/
 
 ## Lisans
 - Uygulama kodu: [PolyForm Shield 1.0.0](LICENSE.md). Kişiler, okullar ve şirketler kendi işlerinde ücretsiz kullanabilir; satmak ya da rakip ürün yapmak yazılı izin gerektirir.
-- Ders içerikleri ve veri setleri: [CC BY-NC 4.0](LICENSE-ICERIK.md)
+- Ders içerikleri ve veri setleri: kodla aynı lisans, [PolyForm Shield 1.0.0](LICENSE.md) (özet: [LICENSE-ICERIK.md](LICENSE-ICERIK.md))
 - Açık kaynak bileşenler: [sql.js](https://github.com/sql-js/sql.js) (MIT), Bricolage Grotesque, IBM Plex Sans ve JetBrains Mono yazı tipleri (SIL Open Font License; lisans metinleri `vendor/fonts/` klasöründe). Denetimde: [PGlite](https://github.com/electric-sql/pglite) (Apache 2.0 / PostgreSQL), Playwright (Apache 2.0).
 - Ürün ve marka adları sahiplerine aittir.
 
 Kurumunuzda kullanıyorsanız haber verirseniz sevinirim: kurulumda yardımcı olabilir, kurumunuza özel ihtiyaçları birlikte değerlendirebiliriz. İletişim: iletisim@ysfdurak.com
 
-**English:** the app code is released under [PolyForm Shield 1.0.0](LICENSE.md): individuals, schools and companies may use, change and self-host it for free; selling it or offering a competing product needs written permission. Lesson content and datasets stay under [CC BY-NC 4.0](LICENSE-ICERIK.md). Contact: contact@ysfdurak.com
+**English:** the app code is released under [PolyForm Shield 1.0.0](LICENSE.md): individuals, schools and companies may use, change and self-host the app and its content for free; selling them or offering a competing product needs written permission. Lesson content and datasets are under the same licence. Contact: contact@ysfdurak.com
