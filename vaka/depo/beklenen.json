@@ -1,0 +1,113 @@
+{
+ "sql": {
+  "temiz": "CREATE VIEW toplama_temiz AS\nSELECT DISTINCT\n  satir_id,\n  tarih,\n  vardiya,\n  UPPER(TRIM(bolge)) AS bolge,\n  LOWER(TRIM(duzen)) AS duzen,\n  toplayici,\n  sure_sn\nFROM toplama_ham\nWHERE sure_sn IS NOT NULL\n  AND sure_sn BETWEEN 5 AND 600;",
+  "ozet": "SELECT duzen,\n       COUNT(*) AS satir,\n       ROUND(AVG(sure_sn), 2) AS ort_sure\nFROM toplama_temiz\nGROUP BY duzen\nORDER BY duzen;",
+  "ozet_sonuc": [
+   [
+    "eski",
+    1179,
+    42.44
+   ],
+   [
+    "yeni",
+    1183,
+    41.17
+   ]
+  ],
+  "eleme": {
+   "ham": 2425,
+   "bos_sure": 18,
+   "aralik_disi": 20,
+   "cift": 25,
+   "temiz": 2362
+  }
+ },
+ "python": {
+  "denetim": {
+   "satir_sayisi": 2362,
+   "bos_sure": 0,
+   "aralik_disi": 0,
+   "tekrar_eden_id": 0,
+   "duzen_degerleri": [
+    "eski",
+    "yeni"
+   ],
+   "bolge_degerleri": [
+    "A",
+    "B",
+    "C"
+   ]
+  },
+  "vardiya_payi": {
+   "eski": {
+    "Gece": 0.399,
+    "Gündüz": 0.601
+   },
+   "yeni": {
+    "Gece": 0.401,
+    "Gündüz": 0.599
+   }
+  },
+  "vardiya_ort": {
+   "Gece": {
+    "eski": 44.83,
+    "yeni": 43.45
+   },
+   "Gündüz": {
+    "eski": 40.85,
+    "yeni": 39.65
+   }
+  },
+  "grup": {
+   "eski": {
+    "count": 1179,
+    "mean": 42.438167938931294,
+    "std": 14.866321780993815
+   },
+   "yeni": {
+    "count": 1183,
+    "mean": 41.173457311918845,
+    "std": 14.319562499803611
+   }
+  }
+ },
+ "powerbi": {
+  "olcu": {
+   "Satir": 2362,
+   "Eski Ort": 42.438167938931294,
+   "Yeni Ort": 41.173457311918845,
+   "Kazanc sn": 1.2647106270124482,
+   "Kazanc %": 0.029801254117104495
+  },
+  "bolge": {
+   "A": {
+    "Eski Ort": 36.759023354564754,
+    "Yeni Ort": 35.52426160337553,
+    "Kazanc sn": 1.2347617511892253
+   },
+   "B": {
+    "Eski Ort": 42.56982968369829,
+    "Yeni Ort": 40.95145631067961,
+    "Kazanc sn": 1.6183733730186773
+   },
+   "C": {
+    "Eski Ort": 51.26228956228956,
+    "Yeni Ort": 50.4973063973064,
+    "Kazanc sn": 0.7649831649831569
+   }
+  }
+ },
+ "istatistik": {
+  "fark": 1.2647106270124482,
+  "t": 2.105560225253101,
+  "df": 2356.070257841491,
+  "p": 0.035348148393051386,
+  "alt": 0.08684769985191365,
+  "ust": 2.4425735541729825,
+  "esik": 4.0,
+  "karar": "istatistiksel fark var, operasyonel eşiğin altında",
+  "aylik_saat": 18.268042390179808,
+  "esik_saat": 57.77777777777778,
+  "satir_ay": 52000
+ }
+}
