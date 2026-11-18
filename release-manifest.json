@@ -13,7 +13,7 @@
     "recovery.js": "ef7fc7a695802e75e55d83e101a2e0ab472c88126607c28229c9cea0ea60f870",
     "tests/artifact.cjs": "1ab82740817f37d2934e90f25997c4a6e7d07d50138d538c70de82f27fa0ddfc",
     "tests/recovery.cjs": "9990ef25ded436773fef0d4659d287bdbb3a3caa94817eb768a0b4ac129a31f8",
-    "index.html": "4060bed8b728b19e3349db44be69db70245e32eaff6e893ef0905ff918d4d2b8",
+    "index.html": "6cae1675215646b215af857efb119ebebf10a4a2db4573871c93d6ba80b7b2b3",
     "sw.js": "24f23f1e1448003b9c18abd7959415c8b10842abb7ee340188df1694dac59b23",
     "en-tour.js": "f97abb23c1f2a87da445765d45e886705eaf40903a2360f1e539a9b96a7a5860"
   },
@@ -34,6 +34,13 @@
         "index.html"
       ],
       "note": "Genel Kesit denetimi: arama motoru açıklamasındaki ders ve alıştırma sayıları güncellendi."
+    },
+    {
+      "date": "2026-11-18",
+      "files": [
+        "index.html"
+      ],
+      "note": "En küçük yazı .75rem (12 px). Chrome 390/1366 px: ana sayfa ve ilk ders, axe hata yok."
     }
   ]
 }
