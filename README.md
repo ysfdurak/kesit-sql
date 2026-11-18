@@ -37,6 +37,13 @@
 ## Geri bildirim
 Her dersin başlığında **Geri bildirim** bağlantısı var; bu deponun [Issues](https://github.com/ysfdurak/kesit-sql/issues) sayfasını ders bilgisiyle açar.
 
+## Uçtan uca vaka: depo toplama süresi
+Dört Kesit uygulaması tek bir iş sorusunda birleşir: Anadolu Market Gebze deposunda raf düzeni değişti; toplama süresi kısaldı mı, kısaldıysa yaymaya yeter mi? SQL → Python → Power BI → İstatistik. Her adım öncekinin beklenen çıktısıyla başlar ve sonrakini açar; ilerleme tarayıcıda `kesit.vaka.depo` anahtarında ortaktır.
+
+- Bu uygulamadaki adım: [/kesit-sql/vaka/depo/](https://ysfdurak.github.io/kesit-sql/vaka/depo/). 1. adım: ham el terminali kayıtlarını `toplama_temiz` görünümüne indir ve düzene göre özetle. Sayfa sitedeki sql.js ile çalışır; çözüm `tests/vaka-depo.cjs` ile CI'da denetlenir.
+- Veri ve sayfa üreteci: [ysfdurak.github.io › vaka/depo-kaynak](https://github.com/ysfdurak/ysfdurak.github.io/tree/main/vaka/depo-kaynak). Sayfayı elle düzenleme; üreteçte değiştirip dört depoya yeniden yaz.
+
+
 ## Kardeş projeler
 Aynı mantıkla hazırlanmış diğer eğitimler: **[Kesit Power BI](https://ysfdurak.github.io/kesit-powerbi/)**, **[Kesit Python](https://ysfdurak.github.io/kesit-python/)** ve **[Kesit İstatistik](https://ysfdurak.github.io/kesit-istatistik/)**. Kesit İstatistik aynı veri setleriyle istatistik vakaları içerir.
 

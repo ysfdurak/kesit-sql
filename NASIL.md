@@ -291,3 +291,6 @@ Sonuçlar `araclar/denetim/sonuclar/` içinde saklanır.
 8 Kasım doğrulaması: 70 hedef, 346 doğru/alternatif çözüm, 146 sahte/eksik işlem kontrolü, 65 özel senaryo; hata 0. Tam sabit taraması: 1.835 deneme, geçiş 0. Plan denetimi: 70 çözüm ve 31 yanlış cevapta hata 0. DOM entegrasyonu (jsdom; gerçek tarayıcı çizimi değil): hata 0. `qa/sabit_dom.cjs` için `npm install --no-save jsdom` gerekir; `KESIT_KOK` ile yayın paketi seçilebilir. Tarayıcı ikilisi bu ortamda indirilemediği için görsel tarayıcı testi yapılmadı.
 
 Genel çözüm taraması: 10.230 çalıştırma, 2.059 SQL görev kaydı, hata 0. 17 orderByVarOrdYok ve 4 ordAmaOrderByYok uyarısı ayrı tutuldu; sıralama metadata uyarılarıdır.
+
+## Uçtan uca depo vakası (vaka/depo/)
+`vaka/depo/` Kesit'in dört uygulamasını birleştiren vakanın 1. adımıdır; derleme adımı yoktur, `main`'e olduğu gibi kopyalanır. Sayfa elle düzenlenmez: üreteç `ysfdurak.github.io` deposunda `vaka/depo-kaynak/` altındadır. Denetim `node tests/vaka-depo.cjs` (CI). `araclar/statik.js` site haritasına `vaka/depo/` adresini, sayfa varsa, ekler.
