@@ -71,7 +71,7 @@ for(const app of APPS){
  const idler=new Set(v.L.map(l=>l.id));
  v.L.forEach((l,i)=>{fs.mkdirSync(`${D}/${l.id}`,{recursive:true});fs.writeFileSync(`${D}/${l.id}/index.html`,sayfa(app,l,i,v.L,idler));});
  fs.writeFileSync(`${D}/index.html`,dizin(app,v.L));
- const urls=[`${SITE}/${app.dir}/`,`${SITE}/${app.dir}/ders/`,...v.L.map(l=>`${SITE}/${app.dir}/ders/${l.id}/`)];
+ const urls=[`${SITE}/${app.dir}/`,`${SITE}/${app.dir}/ders/`,...v.L.map(l=>`${SITE}/${app.dir}/ders/${l.id}/`),...(fs.existsSync(`${ST}/${app.dir}/vaka/depo/index.html`)?[`${SITE}/${app.dir}/vaka/depo/`]:[])];
  fs.writeFileSync(`${ST}/${app.dir}/sitemap.xml`,`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u=>`<url><loc>${u}</loc></url>`).join('\n')}\n</urlset>\n`);
  hat.push(`${app.dir}/sitemap.xml`);console.log(app.dir,v.L.length,'ders',Math.round(fs.readdirSync(D).length));
 }

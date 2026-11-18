@@ -9,12 +9,15 @@
     "Chromium ilk görev / ilk ekran axe kontrolü"
   ],
   "files": {
-    ".github/workflows/progress-quality.yml": "f13a61d4c771ff757bacb2b22b98e416fcdc8df5e0b2cff04f92c382146be9b4",
+    ".github/workflows/progress-quality.yml": "1eadf9db6acefed8d09998d738535fb4dd2bf20aeee8baa2412067197abc6f6a",
     "recovery.js": "ef7fc7a695802e75e55d83e101a2e0ab472c88126607c28229c9cea0ea60f870",
     "tests/artifact.cjs": "1ab82740817f37d2934e90f25997c4a6e7d07d50138d538c70de82f27fa0ddfc",
     "tests/recovery.cjs": "9990ef25ded436773fef0d4659d287bdbb3a3caa94817eb768a0b4ac129a31f8",
     "index.html": "e4985ed930a94e9afa227dc875c00b65e6aeb3e32e61255f41dc949db10e94ee",
-    "sw.js": "24f23f1e1448003b9c18abd7959415c8b10842abb7ee340188df1694dac59b23"
+    "sw.js": "24f23f1e1448003b9c18abd7959415c8b10842abb7ee340188df1694dac59b23",
+    "vaka/depo/index.html": "6ffcb3fde28d675b1edc5de1ed77a6cc72939ffb7585b373d11a482d75b1aaee",
+    "vaka/depo/beklenen.json": "491c33107a7dc22aaa897c1b219a012510b2e224e889e257b2be7a6342a426f3",
+    "tests/vaka-depo.cjs": "d877a3e8e06272e9f1c640ed5454540cd60a5cb93b2b0693d2958f36df309aeb"
   },
   "patches": [
     {
@@ -31,6 +34,16 @@
         "index.html"
       ],
       "note": "Genel Kesit denetimi: arama motoru açıklamasındaki ders ve alıştırma sayıları güncellendi."
+    },
+    {
+      "date": "2026-11-19",
+      "files": [
+        ".github/workflows/progress-quality.yml",
+        "vaka/depo/index.html",
+        "vaka/depo/beklenen.json",
+        "tests/vaka-depo.cjs"
+      ],
+      "note": "Uçtan uca depo vakası kaynak dalına eklendi (main'de 19 Kasım 2026'da yayımlandı). Ayrıntı NASIL.md › Uçtan uca depo vakası."
     }
   ]
 }
