@@ -13,7 +13,7 @@ jobs:
         run: |
           git fetch --depth=1 origin kaynak
           git diff --exit-code FETCH_HEAD:vaka/depo/index.html HEAD:vaka/depo/index.html || (echo "kaynak dalındaki vaka/depo/index.html main'deki vaka/depo/index.html ile aynı değil; kaynak dalını güncelle." && exit 1)
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - run: node tests/recovery.cjs recovery.js
