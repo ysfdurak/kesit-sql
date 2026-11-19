@@ -294,6 +294,10 @@ button.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink);
 .msg{padding:12px 14px; border-radius:8px; font-size:.92rem; border:1px solid}
 .msg.err{background:var(--err-soft); border-color:color-mix(in srgb, var(--err) 40%, transparent); color:var(--ink)}
 .msg.ok{background:var(--ok-soft); border-color:color-mix(in srgb, var(--ok) 40%, transparent)}
+.durum-satir{display:flex; flex-wrap:wrap; gap:6px; margin:0 0 6px}
+.durum-satir span{display:inline-flex; gap:4px; align-items:center; padding:2px 8px; border-radius:999px; font-size:.82rem; font-weight:600; border:1px solid}
+.durum-satir .evet{background:var(--ok-soft); border-color:color-mix(in srgb, var(--ok) 45%, transparent)}
+.durum-satir .hayir{background:var(--err-soft); border-color:color-mix(in srgb, var(--err) 45%, transparent)}
 .msg.info{background:var(--surface-2); border-color:var(--line)}
 .msg b{display:block}
 .msg .vend{font-family:var(--f-mono); font-size:.82rem; margin:4px 0; display:block; word-break:break-word}
@@ -1126,6 +1130,8 @@ function compare(u,s,ordered){
 }
 function errHTML(r){ return '<div class="msg err"><b>'+esc(DNAME[r.d]||'')+' hata verdi</b><span class="vend">'+esc(r.error)+'</span>'+(r.hint?esc(r.hint):'')+(r.d&&r.d!=='sqlite'&&!(LS&&LS.l&&LS.l.L==='temel')?'<button class="linkbtn" data-act="report">Bu sorgu gerçek '+esc(DNAME[r.d])+' sunucusunda çalışıyorsa bildir</button>':'')+'</div>'; }
 const mustFail = DX.mustFail; /* Yöntem kuralları dialect.js içinde; denetim de aynısını kullanır. */
+/* Denetimin parçaları ayrı gösterilir: "Sonuç doğru ✓ · Plan hedefi ✗" gibi. Kullanıcı neyin tuttuğunu, neyin eksik kaldığını tek bakışta görür. */
+function durumSatiri(items){ return '<div class="durum-satir" role="status">'+items.map(([ad,ok])=>'<span class="'+(ok?'evet':'hayir')+'">'+esc(ad)+' '+(ok?'✓':'✗')+'</span>').join('')+'</div>'; }
 function submitEx(){
   if(!engineReady()||!LS) return;
   const {l,e,k,d}=LS; const code=ED.get(); if(!code.trim()) return;
@@ -1138,13 +1144,13 @@ function submitEx(){
   if(s.error){ $('#fb').innerHTML='<div class="msg err"><b>Çözüm sorgusu çalışmadı</b>'+esc(s.error)+'</div>'; return; }
   const c=compare(uset,s.set,e.ord); LS.tries++;
   if(!c.ok && e.check && /değerler farklı|satır|sütun var/.test(c.why)) c.why=/pragma_|sqlite_master|sqlite_schema/i.test(e.check)?'Tablonun yapısı beklenenle aynı değil. Sütunları, PRIMARY KEY, FOREIGN KEY ve CHECK kısıtlarını kontrol et.':'Tablonun son durumu beklenenle aynı değil. Hangi satırların değiştiğini ve koşulu kontrol et.';
-  if(c.ok){ const mf=mustFail(e, code, d); if(mf){ $('#fb').innerHTML='<div class="msg err"><b>Sonuç doğru, yöntem eksik</b>'+esc(mf)+'<div class="row" style="margin-top:8px"></div></div>'; return; } }
-  if(c.ok){ const vf=DX.varyantFail(e, code, d, {fresh, run:(x,q,dd)=>DX.runDialect(x,q,dd,{env:{procs:{},funcs:{},tvfs:{},tran:0,nocount:false}}), esit:(u,ss,o)=>compare(u,ss,o).ok, beklenen:s.set}); if(vf){ $('#fb').innerHTML='<div class="msg err"><b>Sonuç doğru, yöntem eksik</b>'+esc(vf)+'</div>'; return; } }
-  if(c.ok&&pf){ $('#fb').innerHTML='<div class="msg err"><b>Sonuç doğru, plan beklenen gibi değil</b>'+esc(pf.msg)+(pf.plan?'<pre class="plan-cikti">'+esc(pf.plan)+'</pre>':'')+'</div>'; return; }
+  if(c.ok){ const mf=mustFail(e, code, d); if(mf){ $('#fb').innerHTML='<div class="msg err">'+durumSatiri([['Sonuç doğru',true],['İstenen yöntem',false]])+'<b>Sonuç doğru, yöntem eksik</b>'+esc(mf)+'<div class="row" style="margin-top:8px"></div></div>'; return; } }
+  if(c.ok){ const vf=DX.varyantFail(e, code, d, {fresh, run:(x,q,dd)=>DX.runDialect(x,q,dd,{env:{procs:{},funcs:{},tvfs:{},tran:0,nocount:false}}), esit:(u,ss,o)=>compare(u,ss,o).ok, beklenen:s.set}); if(vf){ $('#fb').innerHTML='<div class="msg err">'+durumSatiri([['Bu veride sonuç doğru',true],['Başka veride de doğru',false]])+'<b>Sonuç doğru, yöntem eksik</b>'+esc(vf)+'</div>'; return; } }
+  if(c.ok&&pf){ $('#fb').innerHTML='<div class="msg err">'+durumSatiri([['Sonuç doğru',true],['Plan hedefi',false]])+'<b>Sonuç doğru, plan beklenen gibi değil</b>'+esc(pf.msg)+(pf.plan?'<pre class="plan-cikti">'+esc(pf.plan)+'</pre>':'')+'</div>'; return; }
   if(c.ok){
     const first=!P.ex[k]; P.ex[k]=1; if(first) addXP(LS.shown?2:10);
     const extra=solvedHook(k, LS.tries===1 && !LS.shown);
-    $('#fb').innerHTML='<div class="msg ok"><b>Doğru! '+(first?'+'+(LS.shown?2:10)+' XP':'')+'</b>'+(e.why||'Sonucun beklenen sonuçla aynı.')+' <button class="btn sm" data-act="cmp" style="margin-left:6px">Diğer SQL türlerinde nasıl yazılır?</button>'+extra+'</div>';
+    $('#fb').innerHTML='<div class="msg ok">'+(e.plan?durumSatiri([['Sonuç doğru',true],['Plan hedefi',true]]):'')+'<b>Doğru! '+(first?'+'+(LS.shown?2:10)+' XP':'')+'</b>'+(e.why||'Sonucun beklenen sonuçla aynı.')+' <button class="btn sm" data-act="cmp" style="margin-left:6px">Diğer SQL türlerinde nasıl yazılır?</button>'+extra+'</div>';
     afterSolve(l);
   } else {
     if(!S.review){ P.pilot.takilma[k]=(P.pilot.takilma[k]||0)+1; save(); }
@@ -1478,7 +1484,7 @@ function arJudge(c, code, d){
     const dbS=fresh(); if(t.sql) try{ dbS.exec(t.sql); }catch(e){} const sr=run(dbS,c.sol,'sqlite'); dbS.close();
     const dbU=fresh(); if(t.sql) try{ dbU.exec(t.sql); }catch(e){} const ur=run(dbU,code,d); const apf=(!i&&!ur.error&&c.plan)?DX.planFail(c,dbU,ur):null; dbU.close(); if(!i) firstR=ur;
     if(ur.error){ out.push({ad:t.ad, ok:false, why:'Hata: '+ur.error+(ur.hint?' '+ur.hint:'')}); break; }
-    const cm=compare(lastSet(ur), lastSet(sr), c.ord ? (/eşitlikte/i.test(c.q) ? 'strict' : true) : false); if(cm.ok&&apf){ cm.ok=false; cm.why='Sonuç doğru, plan beklenen gibi değil. '+apf.msg+(apf.plan?' Planın: '+apf.plan.replace(/\n/g,' | '):''); } out.push({ad:t.ad, ok:cm.ok, why:cm.why}); }
+    const cm=compare(lastSet(ur), lastSet(sr), c.ord ? (/eşitlikte/i.test(c.q) ? 'strict' : true) : false); if(cm.ok&&apf){ cm.ok=false; cm.why='Sonuç doğru ✓ · plan hedefi ✗. '+apf.msg+(apf.plan?' Planın: '+apf.plan.replace(/\n/g,' | '):''); } out.push({ad:t.ad, ok:cm.ok, why:cm.why}); }
   const all=out.length===cases.length&&out.every(x=>x.ok);
   const html='<div class="msg '+(all?'ok':'err')+'"><b>'+(all?'Tüm testler geçti':'Bazı testler geçmedi')+'</b><div class="ar-tests">'+out.map((x,i)=>'<div class="ar-test '+(x.ok?'ok':'no')+'"><i>'+(x.ok?'✓':'✗')+'</i><span>'+(i?'Gizli test '+i:'Örnek veri')+(i&&!x.ok?': '+esc(x.ad):'')+(x.ok?'':'<br><span class="muted">'+esc(x.why)+'</span>')+'</span></div>').join('')+(out.length<cases.length?'<div class="ar-test no"><i>·</i><span class="muted">Kalan '+(cases.length-out.length)+' test çalıştırılmadı.</span></div>':'')+'</div>';
   return {out, all, firstR, html};
@@ -1885,7 +1891,7 @@ function gradeCode(){
     const s=solResult(p, prKey(p)); if(s.error) return {ok:false, why:'Çözüm çalışmadı'};
     const c=compare(u,s.set,p.ord); if(!c.ok) return {ok:false, why:c.why};
     const mf=DX.mustFail(p,code,EX.d); if(mf) return {ok:false, why:mf};
-    if(pf) return {ok:false, why:pf.msg};
+    if(pf) return {ok:false, why:'Sonuç doğru ✓ · plan hedefi ✗. '+pf.msg};
     const vf=DX.varyantFail(p,code,EX.d,{fresh, run:(x,q,dd)=>DX.runDialect(x,q,dd,{env:{procs:{},funcs:{},tvfs:{},tran:0,nocount:false}}), esit:(a,b,o)=>compare(a,b,o).ok, beklenen:s.set}); if(vf) return {ok:false, why:vf};
     return {ok:true, why:''}; });
 }
