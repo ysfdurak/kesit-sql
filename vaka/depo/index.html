@@ -66,7 +66,8 @@ details summary{cursor:pointer;font-weight:600}
 footer.vk-f{border-top:1px solid var(--line);margin-top:28px;padding-top:14px;font-size:.85rem;color:var(--muted)}
 .vk-sec{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 8px}
 .vk-sec button[aria-pressed="true"]{background:var(--pc);border-color:var(--pc);color:#fff}
-.vk-sec button:disabled{cursor:not-allowed;opacity:.55}
+.vk-sec button:disabled,.vk-sec button[aria-disabled="true"]{cursor:not-allowed;opacity:.55}
+.vk-uyar{color:var(--bad);background:#FBEDEC;border-radius:8px;padding:8px 12px}
 .vk-lnk{padding:0 4px;border:0;background:none;color:var(--c);text-decoration:underline;font:inherit;font-variant-numeric:tabular-nums;min-height:24px}.vk-lnk[aria-current="true"]{font-weight:700;background:var(--surface-2)}
 .vk-kay{padding:8px 12px;border-radius:8px;background:var(--surface-2);border-left:4px solid var(--warn)}.vk-kay.kendi{border-left-color:var(--ok)}
 .vk-soru{counter-reset:s;margin:0}.vk-soru h3{margin:12px 0 4px}
@@ -141,18 +142,21 @@ const vkCiktiYaz=(csv,n)=>{try{localStorage.setItem(VK_CSV,JSON.stringify({csv,n
 const vkCiktiOku=()=>{try{const o=JSON.parse(localStorage.getItem(VK_CSV)||'null');return o&&typeof o.csv==='string'?o:null}catch(e){return null}};
 function vkKaynak(el,ornek,degisti){
   const kendi=vkCiktiOku(),eksik=kendi?VK_SUTUN.filter(c=>!kendi.csv.split(/\r?\n/,1)[0].split(',').includes(c)):[];
-  let sec=kendi&&!eksik.length?'kendi':'ornek';
+  let sec=kendi&&!eksik.length?'kendi':'ornek',uyar=false;
   const durum=()=>({kaynak:sec,csv:sec==='kendi'?kendi.csv:ornek});
   const ciz=()=>{const n=sec==='kendi'?kendi.n:ornek.trim().split(/\r?\n/).length-1;
     el.innerHTML='<div class="vk-sec" role="group" aria-label="Bu adımda hangi veriyle çalışacaksın?">'
-      +'<button type="button" data-k="kendi" aria-pressed="'+(sec==='kendi')+'"'+(kendi?'':' disabled')+'>Kendi çıktımla devam et</button>'
+      +'<button type="button" data-k="kendi" aria-pressed="'+(sec==='kendi')+'"'+(kendi?(eksik.length?' aria-disabled="true" aria-describedby="kaynakEksik"':''):' disabled')+'>Kendi çıktımla devam et</button>'
       +'<button type="button" data-k="ornek" aria-pressed="'+(sec==='ornek')+'">Örnek veriyle dene</button></div>'
       +'<p class="vk-kay '+sec+'" role="status"><b>Kullanılan veri:</b> '+(sec==='kendi'
         ?'senin 1. adım (SQL) çıktın · '+vkSay(n)+' satır · '+vkEsc(new Date(kendi.at).toLocaleString('tr-TR',{dateStyle:'short',timeStyle:'short'}))+' kaydı.'
         :'örnek veri, yani 1. adımın beklenen çıktısı · '+vkSay(n)+' satır. Bu adımda göreceğin sonuçlar senin SQL çalışmana ait değil.')+'</p>'
       +(!kendi?'<p class="vk-not">Kendi çıktınla devam etmek için önce <a href="/kesit-sql/vaka/depo/">1. adımı</a> çöz; temiz tablon bu tarayıcıda saklanır.</p>'
-        :eksik.length?'<p class="vk-not">Kaydedilen çıktında şu sütunlar yok: '+eksik.map(vkEsc).join(', ')+'. Bu adım için örnek veriyle devam etmen daha sağlıklı.</p>':'');
-    el.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{if(b.disabled||b.dataset.k===sec)return;sec=b.dataset.k;ciz();degisti(durum());});};
+        :eksik.length?'<p class="vk-not'+(uyar?' vk-uyar':'')+'" id="kaynakEksik"'+(uyar?' role="alert"':'')+'>Kaydedilen SQL çıktında şu sütunlar yok: <b>'+eksik.map(vkEsc).join(', ')+'</b>. Bu adım bu sütunlarla çalışır; bu yüzden örnek veri seçili. <a href="/kesit-sql/vaka/depo/">1. adıma dön ve görünüme bu sütunları ekle →</a></p>':'');
+    el.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{if(b.disabled)return;
+      // Eksik sütunlu çıktı seçilemez: neden ve SQL adımına dönüş bağlantısı vurgulanır.
+      if(b.dataset.k==='kendi'&&eksik.length){uyar=true;ciz();const n=el.querySelector('#kaynakEksik a');if(n)n.focus();return;}
+      if(b.dataset.k===sec)return;sec=b.dataset.k;ciz();degisti(durum());});};
   ciz();return durum();}
 vkAdimlar();
 </script>
