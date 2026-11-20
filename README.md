@@ -7,7 +7,7 @@
 ![Alıştırma ekranı](ekran/alistirma.png)
 
 ## Neler var?
-- **295 ders, 1.944 alıştırma, 578 pratik görevi.** İlk sorgudan pencere fonksiyonlarına, sorgu optimizasyonuna, veri ambarına ve mülakat kalıplarına kadar.
+- **296 ders, 1.949 alıştırma, 602 pratik görevi.** İlk sorgudan pencere fonksiyonlarına, sorgu optimizasyonuna, veri ambarına ve mülakat kalıplarına kadar.
 - **Altı SQL türü:** SQL Server, PostgreSQL, MySQL, Oracle, BigQuery ve SQLite. Her sorgu seçtiğin türün yazımıyla gösterilir, alıştırmalar o türün kurallarına göre denetlenir.
 - **Altı hayali veri seti:** e-ticaret, banka, havayolu, yemek teslimatı, insan kaynakları ve 116.517 yolculukluk bisiklet paylaşımı. Ayrıca operasyon ve güvenlik dersleri için kurgusal bir sorgu ve erişim günlüğü.
 - **21 öğrenme yolu:** 9 rol yolu (veri analisti, BT iş analisti, veri mühendisi, veri bilimci, iş zekâsı, DBA, backend, SQL Server, SQL temelleri), 9 konu yolu (Sorgu Optimizasyonu, SQL Server Operasyon ve Güvenlik dahil) ve 3 sertifika hazırlık yolu.
@@ -24,9 +24,6 @@
 - Dış bağımlılık yok: SQL motoru ve yazı tipleri sitenin içinde. Site bir kez açıldıktan sonra internet yokken de çalışıyor.
 - Bir öğrenme yolunu bitirenler tamamlama belgesi oluşturabiliyor. Belge tarayıcıda üretilir, doğrulanabilir değildir ve resmî bir sertifika yerine geçmez.
 
-
-## İngilizce tanıtım turu
-Arayüz Türkçe kalır. İngilizce okuyan ziyaretçi için adresin sonuna `?lang=en` eklenir ([https://ysfdurak.github.io/kesit-sql/?lang=en](https://ysfdurak.github.io/kesit-sql/?lang=en)): her ekranı anlatan bir rehber paneli ve menü/başlıklarda İngilizce karşılıklar açılır; `?lang=tr` kapatır. Ayrıntı: [INGILIZCE-TUR.md](INGILIZCE-TUR.md).
 ## Nasıl doğrulandı?
 - Alıştırma ve Arena çözümleri otomatik denetimle **taklit katmanında** altı SQL türünde çalıştırılıyor.
 - **PostgreSQL için gerçek motorda** (PGlite, WASM) ayrıca çalıştırılıyor; veri değiştiren görevler ve bisiklet tabloları dahil.
@@ -46,21 +43,9 @@ Dört Kesit uygulaması tek bir iş sorusunda birleşir: Anadolu Market Gebze de
 - Bu uygulamadaki adım: [/kesit-sql/vaka/depo/](https://ysfdurak.github.io/kesit-sql/vaka/depo/). 1. adım: ham el terminali kayıtlarını `toplama_temiz` görünümüne indir ve düzene göre özetle. Sayfa sitedeki sql.js ile çalışır; çözüm `tests/vaka-depo.cjs` ile CI'da denetlenir.
 - Veri ve sayfa üreteci: [ysfdurak.github.io › vaka/depo-kaynak](https://github.com/ysfdurak/ysfdurak.github.io/tree/main/vaka/depo-kaynak). Sayfayı elle düzenleme; üreteçte değiştirip dört depoya yeniden yaz.
 
+
 ## Kardeş projeler
 Aynı mantıkla hazırlanmış diğer eğitimler: **[Kesit Power BI](https://ysfdurak.github.io/kesit-powerbi/)**, **[Kesit Python](https://ysfdurak.github.io/kesit-python/)** ve **[Kesit İstatistik](https://ysfdurak.github.io/kesit-istatistik/)**. Kesit İstatistik aynı veri setleriyle istatistik vakaları içerir.
-
-## English
-
-**Kesit SQL** teaches SQL from scratch to advanced level, in Turkish, entirely in the browser: no install, no account. A real SQLite database runs in the page (sql.js) and every query is checked instantly.
-
-- 295 lessons, 1,944 exercises and 578 practice tasks, from the first `SELECT` to window functions, query optimisation, data warehousing and interview patterns.
-- Six SQL dialects (SQL Server, PostgreSQL, MySQL, Oracle, BigQuery, SQLite): queries are shown and checked in the chosen dialect.
-- Six fictional datasets shared with the other Kesit apps, 21 learning paths (role, topic and certification), SQL Arena, detective cases, placement test, exams and spaced review.
-- Progress stays in the browser and can be backed up to a file; the site works offline after the first visit.
-
-The interface and lessons are in Turkish. Add `?lang=en` to the address ([ysfdurak.github.io/kesit-sql/?lang=en](https://ysfdurak.github.io/kesit-sql/?lang=en)) for an English guide that explains each screen, with English labels under the menus.
-
-Try it: https://ysfdurak.github.io/kesit-sql/ · Sister apps: [Power BI](https://github.com/ysfdurak/kesit-powerbi), [Python](https://github.com/ysfdurak/kesit-python), [Statistics](https://github.com/ysfdurak/kesit-istatistik).
 
 ## Sorumluluk notu
 Ücretsiz, ticari olmayan bir eğitim ve portföy projesidir; içerik “olduğu gibi” sunulur. Veri setlerindeki tüm şirketler, kişiler ve kayıtlar hayalidir. Sertifika denemeleri ilgili kurumların resmî sınavları değildir.
