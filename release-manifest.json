@@ -13,8 +13,9 @@
     "recovery.js": "ef7fc7a695802e75e55d83e101a2e0ab472c88126607c28229c9cea0ea60f870",
     "tests/artifact.cjs": "1ab82740817f37d2934e90f25997c4a6e7d07d50138d538c70de82f27fa0ddfc",
     "tests/recovery.cjs": "9990ef25ded436773fef0d4659d287bdbb3a3caa94817eb768a0b4ac129a31f8",
-    "index.html": "cd3ea3a38ec6526d9dc330d0cb3ee2af8f9928ba858820c1c3e253dad9f81780",
-    "sw.js": "24f23f1e1448003b9c18abd7959415c8b10842abb7ee340188df1694dac59b23",
+    "index.html": "f14ee36f4ec183bc588c2068ea3394bf9eb5eb50e1aa1a6d4240ba9db45e13ce",
+    "sw.js": "a3ac2b4c15c26ca7658e31ebe5d4032b8c0c5313c4937ef5637b4c219dfc3475",
+    "en-tour.js": "f97abb23c1f2a87da445765d45e886705eaf40903a2360f1e539a9b96a7a5860",
     "vaka/depo/index.html": "414eafdeaff416898e91b9ab2d657f8905af541e787e6cb21c561f90baed4f0f",
     "vaka/depo/beklenen.json": "491c33107a7dc22aaa897c1b219a012510b2e224e889e257b2be7a6342a426f3",
     "tests/vaka-depo.cjs": "d877a3e8e06272e9f1c640ed5454540cd60a5cb93b2b0693d2958f36df309aeb"
@@ -36,14 +37,11 @@
       "note": "Genel Kesit denetimi: arama motoru açıklamasındaki ders ve alıştırma sayıları güncellendi."
     },
     {
-      "date": "2026-11-19",
+      "date": "2026-11-18",
       "files": [
-        ".github/workflows/progress-quality.yml",
-        "vaka/depo/index.html",
-        "vaka/depo/beklenen.json",
-        "tests/vaka-depo.cjs"
+        "index.html"
       ],
-      "note": "Uçtan uca depo vakası kaynak dalına eklendi (main'de 19 Kasım 2026'da yayımlandı). Ayrıntı NASIL.md › Uçtan uca depo vakası."
+      "note": "En küçük yazı .75rem (12 px). Chrome 390/1366 px: ana sayfa ve ilk ders, axe hata yok."
     }
   ]
 }
