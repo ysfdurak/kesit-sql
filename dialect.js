@@ -270,7 +270,12 @@ function fwdCall(N, a, A, d) {
   switch (N) {
     case 'IFNULL': { const x = isDateCol(a[0]) && /^'/.test(a[1] || '') && !isDateLit(a[1]) ? toTextDate(a[0], d) : a[0]; return { tsql: `ISNULL(${x}, ${a[1]})`, pg: `COALESCE(${x}, ${a[1]})`, mysql: null, oracle: `NVL(${x}, ${a[1]})` }[d]; }
     case 'COALESCE': if (a.length === 2 && isDateCol(a[0]) && /^'/.test(a[1]) && !isDateLit(a[1]) && ['pg', 'tsql', 'oracle'].includes(d)) return `COALESCE(${toTextDate(a[0], d)}, ${a[1]})`; return null;
-    case 'SUM': case 'AVG': if (a.length === 1 && d !== 'mysql' && A && A[0] && hasTopCond(A[0])) return `${N}(CASE WHEN ${a[0]} THEN 1 ELSE 0 END)`; return null;
+    case 'SUM': case 'AVG': {
+      let x = a.length === 1 && d !== 'mysql' && A && A[0] && hasTopCond(A[0]) ? `CASE WHEN ${a[0]} THEN 1 ELSE 0 END` : null;
+      /* SQL Server tamsayının ortalamasını keser: AVG'yi ondalıklı yap (gerçek SQL Server ile karşılaştırıldı) */
+      if (N === 'AVG' && d === 'tsql' && a.length === 1 && !avgDecimal(x || a[0])) return `AVG(1.0 * ${x ? '(' + x + ')' : a[0]})`;
+      return x ? `${N}(${x})` : null;
+    }
     case 'DATETIME': {
       if (a.length === 1) return { tsql: `CAST(${a[0]} AS DATETIME2)`, pg: `CAST(${a[0]} AS TIMESTAMP)` }[d] || null;
       if (a.length !== 2) return null;
@@ -724,8 +729,35 @@ function forward(sql, d) {
   if (d === 'pg' || d === 'tsql') s = fwdBool(s, d);
   if (d === 'pg') s = s.replace(/\browid\b/gi, 'ctid');
   if (d === 'pg') s = pgDateLits(s);
+  if (d === 'tsql') { s = fwdTsqlReserved(s); s = fwdTsqlBatches(s); s = s.replace(/\bCEIL\s*\(/gi, 'CEILING('); }
   if (d === 'bq') { s = fwdBqSetOps(s); s = fwdBqCteCols(s); s = splitSemisKeep(s).map(st => /^\s*(UPDATE|DELETE)\b/i.test(st.replace(/^(\s|--[^\n]*\n)+/, '')) && !/\bWHERE\b/i.test(st) ? st.replace(/(\s*;?\s*)$/, ' WHERE true$1') : st).join(''); }
   return s;
+}
+/* SQL Server toplu işlem (batch) kuralları: CREATE VIEW/PROCEDURE/FUNCTION/TRIGGER kendi toplu işleminde olmalı,
+   aynı toplu işlemde ALTER TABLE ... ADD ile eklenen sütun derleme anında görünmez. Gösterilen T-SQL'e GO eklenir. */
+const TSQL_OBJ = /^\s*(CREATE|ALTER)\s+(OR\s+ALTER\s+)?(VIEW|PROC|PROCEDURE|FUNCTION|TRIGGER)\b/i;
+function fwdTsqlBatches(sql) {
+  if (/^\s*GO\s*$/im.test(sql)) return sql;
+  const parts = splitSemisKeep(sql); if (parts.length < 2) return sql;
+  const hd = p => p.replace(/^(\s|--[^\n]*\n?)+/, '');
+  const sig = parts.map(p => hd(p).trim() !== '');
+  let out = ''; let prevObj = false, prevAlter = false;
+  parts.forEach((p, i) => {
+    const h = hd(p); if (!sig[i]) { out += p; return; }
+    const obj = TSQL_OBJ.test(h), alt = /^\s*ALTER\s+TABLE\s+\S+\s+ADD\b/i.test(h);
+    if (out.trim() && (obj || prevObj || prevAlter)) out = out.replace(/\s*$/, '') + '\nGO\n';
+    out += out.endsWith('\n') ? p.replace(/^\s+/, '') : p;
+    prevObj = obj; prevAlter = alt;
+  });
+  return out;
+}
+/* T-SQL'de ayrılmış sözcükler (ör. top, key, user) takma ad olamaz: köşeli paranteze alınır */
+const TSQL_RES = new Set(['TOP', 'KEY', 'USER', 'PERCENT', 'FILE', 'PLAN', 'RULE', 'PUBLIC', 'OPEN', 'CLOSE', 'FILL', 'PIVOT', 'UNPIVOT', 'RESTORE', 'BACKUP', 'BROWSE', 'BULK', 'CURRENT', 'DATABASE', 'DUMP', 'EXIT', 'FUNCTION', 'IDENTITY', 'INDEX', 'LINENO', 'OFFSETS', 'OVER', 'PRINT', 'PROC', 'READ', 'SCHEMA', 'SESSION_USER', 'STATISTICS', 'SYSTEM_USER', 'TEXTSIZE', 'TRAN', 'TRIGGER', 'TRUNCATE', 'VIEW', 'WRITETEXT']);
+function fwdTsqlReserved(sql) {
+  const T = rt(sql); const bad = new Set();
+  for (let i = 0; i < T.length; i++) if (isW(T[i], 'AS')) { const n = T[nx(T, i)]; if (n && n.k === 'w' && TSQL_RES.has(n.u)) bad.add(n.u); }
+  if (!bad.size) return sql;
+  return T.map((t, i) => { if (t.k === 'w' && bad.has(t.u)) { const n = T[nx(T, i)]; if (t.u === 'TOP' && (isP(n, '(') || (n && n.k === 'n'))) return tv(t); return '[' + t.v + ']'; } return tv(t); }).join('');
 }
 function pgDateLits(sql) { // INTERVAL ile toplanan sabitlere DATE ekle
   const T = rt(sql); let out = '';
@@ -746,8 +778,30 @@ const VENDOR = {
 };
 function sigList(T) { return T.filter(sigk); }
 function isCursorFetchSig(T, i) { const n1 = T[i + 1], n2 = T[i + 2]; if (isW(n1, 'NEXT', 'PRIOR', 'FIRST', 'LAST')) return isW(n2, 'FROM'); if (isW(n1, 'ABSOLUTE', 'RELATIVE')) return true; return !!n1 && (n1.k === 'w' || n1.k === 'q' || n1.k === 'var') && !isW(n1, 'NEXT', 'FIRST'); }
+function tsqlBatchLint(sql) {
+  const batches = sql.split(/^\s*GO\s*;?\s*$/im);
+  const hd = p => p.replace(/^(\s|--[^\n]*\n?|\/\*[\s\S]*?\*\/)+/, '');
+  const hint = 'SQL Server bu nesneyi kendi toplu işleminde (batch) ister: önceki ve sonraki komutlarla arasına ayrı bir satırda GO yaz.';
+  for (const b of batches) {
+    const parts = splitSemisKeep(b).filter(p => hd(p).trim() && hd(p).trim() !== ';');
+    const added = [];
+    parts.forEach((p, i) => {
+      const h = hd(p); const m = h.match(TSQL_OBJ);
+      if (m) {
+        const what = (m[1] + ' ' + m[3]).toUpperCase().replace('PROC ', 'PROCEDURE ').replace(/PROC$/, 'PROCEDURE');
+        if (i > 0) throw new DErr(`Msg 111, Level 15, State 1: '${what}' must be the first statement in a query batch.`, hint);
+        if (/VIEW$/.test(what) && parts[i + 1]) { const w = (hd(parts[i + 1]).match(/^\w+/) || [''])[0]; throw new DErr(`Msg 156, Level 15, State 1: Incorrect syntax near the keyword '${w.toUpperCase()}'.`, hint); }
+      }
+      const am = h.match(/^\s*ALTER\s+TABLE\s+\S+\s+ADD\s+([\s\S]*)$/i);
+      if (am && !/^\s*(CONSTRAINT|PRIMARY|FOREIGN|UNIQUE|CHECK|INDEX)\b/i.test(am[1])) { const T = rt(am[1]); const D = depthAt(T); let expect = true; for (let k = 0; k < T.length; k++) { if (!sigk(T[k])) continue; if (expect && (T[k].k === 'w' || T[k].k === 'q')) { added.push(T[k].v.replace(/^\[|\]$/g, '').toLowerCase()); expect = false; } else if (D[k] === 0 && isP(T[k], ',')) expect = true; } }
+      else if (added.length) { const T = rt(p); for (const t of T) if ((t.k === 'w' || t.k === 'q') && added.includes(t.v.replace(/^\[|\]$/g, '').toLowerCase())) throw new DErr(`Msg 207, Level 16, State 1: Invalid column name '${t.v.replace(/^\[|\]$/g, '')}'.`, 'Aynı toplu işlemde ALTER TABLE ... ADD ile eklenen sütun derleme anında henüz yoktur. ALTER TABLE komutundan sonra ayrı bir satırda GO yaz.'); }
+    });
+  }
+  return null;
+}
 function lint(sql, d) {
   if (d === 'sqlite') return null;
+  if (d === 'tsql') { const bl = tsqlBatchLint(sql); if (bl) return bl; }
   const T = sigList(tokenize(sql)); const V = VENDOR[d];
   const call = (i, ...names) => T[i] && T[i].k === 'w' && names.includes(T[i].u) && isP(T[i + 1], '(') && !isP(T[i - 1], '.');
   const err = (w, hint, kind) => new DErr((kind === 'fn' ? V.fn : V.syntax)(w), hint);
@@ -771,6 +825,10 @@ function lint(sql, d) {
       if (isP(t, '::')) return err('::', 'SQL Server\'da tip dönüşümü CAST(x AS tip) veya CONVERT(tip, x) ile yapılır.');
       if (t.k === 'q' && t.v[0] === '`') return err(t.v, 'SQL Server\'da tanımlayıcılar [köşeli parantez] veya "çift tırnak" ile yazılır.');
       if (isW(t, 'RECURSIVE')) return err('RECURSIVE', 'SQL Server\'da özyinelemeli CTE için sadece WITH yazılır.');
+      if (call(i, 'CEIL')) return err('CEIL', 'SQL Server\'da yukarı yuvarlama CEILING() ile yapılır.', 'fn');
+      if (call(i, 'STRING_AGG')) { const c = closeP(T, i + 1); for (let k = i + 2; k < c; k++) if (isW(T[k], 'ORDER') && depthAt(T.slice(i + 1, k + 1))[k - i - 1] === 1) return new DErr("Msg 156, Level 15, State 1: Incorrect syntax near the keyword 'ORDER'.", 'SQL Server\'da STRING_AGG sıralaması parantezin dışında yazılır: STRING_AGG(ad, \', \') WITHIN GROUP (ORDER BY ad).'); }
+      if (call(i, 'SUM', 'AVG', 'COUNT', 'MIN', 'MAX', 'STDEV', 'VAR') && !isW(T[i - 1], 'OVER')) { const c = closeP(T, i + 1); if (T.slice(i + 2, c).some(x => isW(x, 'SELECT'))) return new DErr('Msg 130, Level 15, State 1: Cannot perform an aggregate function on an expression containing an aggregate or a subquery.', 'SQL Server toplama fonksiyonunun içinde alt sorgu kabul etmez. Alt sorguyu önce bir CTE ya da türetilmiş tabloda sütun olarak hesapla, sonra topla.'); }
+      if (isP(t, '(') && isW(T[i + 1], 'SELECT', 'WITH')) { const c = closeP(T, i); let dd = 0, ord = false, topOk = false; for (let k = i + 1; k < c; k++) { if (isP(T[k], '(')) dd++; else if (isP(T[k], ')')) dd--; else if (dd === 0) { if (isW(T[k], 'TOP', 'OFFSET') || (isW(T[k], 'FOR') && isW(T[k + 1], 'XML', 'JSON'))) topOk = true; if (isW(T[k], 'ORDER') && isW(T[k + 1], 'BY')) ord = true; } } if (ord && !topOk) return new DErr('Msg 1033, Level 15, State 1: The ORDER BY clause is invalid in views, inline functions, derived tables, subqueries, and common table expressions, unless TOP, OFFSET or FOR XML is also specified.', 'SQL Server alt sorgu ve CTE içinde ORDER BY kabul etmez (TOP ya da OFFSET yoksa). Sıralamayı en dıştaki SELECT\'e taşı.'); }
       if (isW(t, 'RETURNING')) return err('RETURNING', 'SQL Server\'da değişen satırlar OUTPUT inserted.* / deleted.* ile döndürülür.');
       if (isW(t, 'CONFLICT')) return err('ON CONFLICT', 'SQL Server\'da upsert için MERGE kullanılır.');
       if (isW(t, 'NULLS') && isW(T[i + 1], 'FIRST', 'LAST')) return err('NULLS', 'SQL Server NULLS FIRST/LAST desteklemez; ORDER BY CASE WHEN x IS NULL THEN 1 ELSE 0 END, x kullan.');
@@ -1051,7 +1109,7 @@ function revCall(N, a, A, d, ctx) {
     case 'LN': return `ln(${a[0]})`;
     case 'RAND': return `(abs(random()) % 1000000) / 1000000.0`;
     case 'NEWID': case 'UUID': case 'GEN_RANDOM_UUID': return `newid_()`;
-    case 'ROUND': if (d === 'oracle' && a.length === 2 && /^'/.test(a[1].trim())) return `round_date_(${a[0]}, ${a[1]})`; return null;
+    case 'ROUND': if (d === 'oracle' && a.length === 2 && /^'/.test(a[1].trim())) return `round_date_(${a[0]}, ${a[1]})`; if (d === 'tsql' && a.length >= 2) return `(CASE WHEN typeof(${a[0]}) = 'integer' THEN CAST(ROUND(${a[0]}, ${a[1]}) AS INTEGER) ELSE ROUND(${a[0]}, ${a[1]}) END)`; return null;
     case 'TRUNC': case 'TRUNCATE': return d === 'oracle' || d === 'pg' || d === 'mysql' ? `trunc_(${a.join(', ')})` : null;
     case 'ISNUMERIC': return `isnumeric_(${a[0]})`;
     case 'QUOTENAME': return `quotename_(${a.join(', ')})`;
@@ -1978,6 +2036,36 @@ function revIlike(sql) {
   }
   return txt(T);
 }
+const DEC_COLS = new Set();
+function avgDecimal(x) {
+  const t = String(x).trim();
+  if (/^DISTINCT\b/i.test(t)) return true; // AVG(DISTINCT ...) olduğu gibi kalır
+  if (/\d\.\d|\bCAST\s*\([\s\S]*\bAS\s+(DECIMAL|NUMERIC|FLOAT|REAL|MONEY|DOUBLE)/i.test(t)) return true;
+  const m = t.match(/^(?:\w+\.)?(\w+)$/); return !!(m && DEC_COLS.has(m[1].toLowerCase()));
+}
+/* SQL Server'da tamsayı ifadenin AVG'si tamsayıdır (bölme kesilir): AVG(siparis) 5,95 değil 5 verir. Gerçek SQL Server ile karşılaştırıldı.
+   Girdideki NULL olmayan değerlerin hepsi tamsayıysa sonuç kesilir; ROUND(tamsayı, n) de tamsayı kalır. */
+let tavgCut = false;
+function revTsqlAvg(sql) {
+  if (!/\bAVG\s*\(/i.test(sql)) return sql;
+  const T = rt(sql); let out = ''; let i = 0;
+  while (i < T.length) {
+    const t = T[i];
+    if (isW(t, 'AVG') && !isP(T[i - 1], '.')) {
+      const o = nx(T, i);
+      if (isP(T[o], '(')) {
+        const c = closeP(T, o); let inner = T.slice(o + 1, c); const k0 = inner.findIndex(sigk);
+        const arg = txt(k0 >= 0 && isW(inner[k0], 'DISTINCT', 'ALL') ? inner.slice(k0 + 1) : inner);
+        let j = nx(T, c), over = '';
+        if (isW(T[j], 'OVER')) { const o2 = nx(T, j); if (isP(T[o2], '(')) { const c2 = closeP(T, o2); over = ' ' + txt(T.slice(j, c2 + 1)); j = c2 + 1; } else j = c + 1; } else j = c + 1;
+        out += `tavg_(AVG(${revTsqlAvg(txt(inner))})${over}, MIN(CASE WHEN (${revTsqlAvg(arg)}) IS NULL OR typeof(${revTsqlAvg(arg)}) = 'integer' THEN 1 ELSE 0 END)${over})`;
+        i = j; continue;
+      }
+    }
+    out += tv(t); i++;
+  }
+  return out;
+}
 function revSimple(sql, d, ctx) {
   let s = sql;
   if (d === 'sqlite') return s;
@@ -2016,7 +2104,7 @@ function revSimple(sql, d, ctx) {
   s = revDateLits(s);
   if (d === 'pg' || d === 'oracle' || d === 'mysql') s = revInterval(s, d);
   if (d === 'oracle' || d === 'pg') s = revDateArith(s, d);
-  if (d === 'tsql') { s = revLikeBrackets(s); s = revTsqlPlus(s); s = revSelectInto(s); s = revOutput(s); s = s.replace(/\bTRAN\b/gi, 'TRANSACTION'); }
+  if (d === 'tsql') { s = revLikeBrackets(s); s = revTsqlPlus(s); s = revSelectInto(s); s = revOutput(s); s = s.replace(/\bTRAN\b/gi, 'TRANSACTION'); s = revTsqlAvg(s); }
   s = revInner(s, d, ctx);
   if (d === 'oracle') s = revOracleConcat(s);
   if (d === 'mysql' || d === 'oracle' || d === 'bq') s = revDivision(s);
@@ -2621,7 +2709,7 @@ function tsqlRun(db, sql, opt) {
     { const va = viewAyikla(text); if (/^\s*CREATE\s+VIEW\b/i.test(va.sql)) { const q = toSqlite(va.sql, ctx); R.translated.push(q); db.exec(q); viewTetik(db, q, va.check); R.messages.push('Komutlar başarıyla tamamlandı.'); return; } }
     if (viewMi(db, toSqlite(text, ctx))) { const q = toSqlite(text, ctx); R.translated.push(q); const on0 = toplamDegisen(db); const res = execOne(db, q); if (res) R.sets.push(res); const n = toplamDegisen(db) - on0; sc.rowcount = n; if (!env.nocount) R.messages.push(`(${n} satır etkilendi)`); return; }
     for (const part of splitSemis(text)) {
-      const q = toSqlite(part, ctx); R.translated.push(q);
+      const q = toSqlite(part, ctx); R.translated.push(q); tsqlUniqueCheck(db, q);
       const isSel = /^\s*(WITH|SELECT|VALUES)\b/i.test(q) || /\bRETURNING\b/i.test(q);
       const before = db.getRowsModified ? null : null; void before;
       const res = execOne(db, q);
@@ -2853,8 +2941,9 @@ function turkceIpucu(sql) {
   }
   return '';
 }
+function tsqlUniqueCheck(db, q) { const um = q.match(/^\s*CREATE\s+UNIQUE\s+INDEX\s+\[?(\w+)\]?\s+ON\s+\[?(\w+)\]?\s*\(([^)]*)\)\s*(WHERE\b[\s\S]*)?;?\s*$/i); if (um && !um[4]) { const cols = um[3].split(',').map(x => x.trim().replace(/\s+(ASC|DESC)$/i, '')); const dup = execOne(db, `SELECT ${cols.join(', ')} FROM ${um[2]} GROUP BY ${cols.join(', ')} HAVING COUNT(*) > 1 LIMIT 1`); if (dup && dup.values.length) throw new DErr(`Msg 1505, Level 16, State 1: The CREATE UNIQUE INDEX statement terminated because a duplicate key was found for the object name 'dbo.${um[2]}' and the index name '${um[1]}'. The duplicate key value is (${dup.values[0].map(v => v === null ? '<NULL>' : v).join(', ')}).`, 'SQL Server benzersiz indekste NULL\'u da bir değer sayar: iki NULL çakışır. NULL\'ları dışarıda bırakmak için süzülmüş indeks yaz: CREATE UNIQUE INDEX ... WHERE sütun IS NOT NULL.'); }}
 function runDialect(db, sql, d, opt) {
-  opt = opt || {};
+  opt = opt || {}; tavgCut = false;
   const env0 = opt.env || (opt.env = { procs: {}, funcs: {}, tvfs: {}, tran: 0, nocount: false }); env0.seqs = env0.seqs || {}; env0.fetchStatus = -1;
   if (d !== 'sqlite') bindSeq(db, env0, d);
   if (d === 'oracle') oracleBlankToNull(db);
@@ -2906,6 +2995,7 @@ function runDialect(db, sql, d, opt) {
   }
   res.ms = Math.round((typeof performance !== 'undefined' ? performance : Date).now() - t0);
   if (d !== 'sqlite') { const uy = etkisizUyari(sql); if (uy.length) res.uyari = uy; }
+  if (d === 'tsql' && tavgCut && !res.error) res.not = ['Tamsayı bir ifadenin AVG sonucu SQL Server\'da tamsayıdır; kesirli kısım atılır (ör. 5,95 yerine 5). Ondalıklı ortalama için AVG(1.0 * ifade) ya da AVG(CAST(ifade AS DECIMAL(10,2))) yaz.'];
   headerize(res.sets, d);
   return res;
 }
@@ -3064,6 +3154,7 @@ function register(db) {
   F('date_format_', (v, f) => mysqlFormat(v, f));
   F('convert_style_', (v, s) => convertStyle(v, s));
   F('len_', s => s === null ? null : String(s).replace(/\s+$/, '').length);
+  F('tavg_', (v, allInt) => { if (v === null || allInt !== 1) return v; const t = Math.trunc(v); if (t !== v) tavgCut = true; return t; });
   F('left_', (s, n) => s === null ? null : String(s).slice(0, Math.max(0, n)));
   F('right_', (s, n) => s === null ? null : (n <= 0 ? '' : String(s).slice(-n)));
   F('replicate_', (s, n) => s === null ? null : String(s).repeat(Math.max(0, n)));
@@ -3257,7 +3348,7 @@ function planFail(e, db, res) {
 }
 root.SQLP_DIALECT = { DIALECTS, DNAME, mustFail, varyantFail, planFail, planOf, tokenize, forward, reverse, lint, runDialect, register, splitSemis, execOne, friendly,
   convert, isProcedural, forwardCanon,
-  setSchemaHints(dateCols, textCols, allCols, dtCols) { (dtCols || []).forEach(c => DT_COLS.add(c)); dateCols.forEach(c => DATE_COLS.add(c)); textCols.forEach(c => TEXT_COLS.add(c)); (allCols || []).forEach(c => ALL_COLS.add(String(c).toLowerCase())); } };
+  setSchemaHints(dateCols, textCols, allCols, dtCols, decCols) { (decCols || []).forEach(c => { if (!/^!/.test(c)) DEC_COLS.add(String(c).toLowerCase()); }); (decCols || []).forEach(c => { if (/^!/.test(c)) DEC_COLS.delete(String(c).slice(1).toLowerCase()); }); (dtCols || []).forEach(c => DT_COLS.add(c)); dateCols.forEach(c => DATE_COLS.add(c)); textCols.forEach(c => TEXT_COLS.add(c)); (allCols || []).forEach(c => ALL_COLS.add(String(c).toLowerCase())); } };
 // T-SQL yolunda da önce denetim uygula
 root.SQLP_DIALECT._tsqlLint = true;
 void tsqlRunChecked; void DATE_TYPES;

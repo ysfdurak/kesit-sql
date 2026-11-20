@@ -3,7 +3,7 @@ global.window=global.window||{};
 eval(fs.readFileSync(require('./yol.js').ROOT+'arena-data.js','utf8'));
 const A=window.SQLP_ARENA; const DX=c.SQLP_DIALECT; const DIDS=DX.DIALECTS.map(d=>d.id);
 const initSqlJs=require('sql.js/dist/sql-asm.js');
-(function(){ const dc=[], tc=[], all=[], dt=[]; for(const t of Object.keys(c.SQLP_COLMETA)) for(const [col,ty] of c.SQLP_COLMETA[t]){ all.push(col); if(/date/.test(ty)) dc.push(col); if(ty==='datetime') dt.push(col); if(/^text/.test(ty)) tc.push(col);} DX.setSchemaHints(dc,tc,all,dt); })();
+(function(){ const dc=[], tc=[], all=[], dt=[], nc=[]; for(const t of Object.keys(c.SQLP_COLMETA)) for(const [col,ty] of c.SQLP_COLMETA[t]){ all.push(col); if(/date/.test(ty)) dc.push(col); if(ty==='datetime') dt.push(col); if(/^text/.test(ty)) tc.push(col); if(/^(money|dec|rate|coord|real)$|^decimal/.test(ty)) nc.push(col); else if(/^(int|bigint|bit)$/.test(ty)) nc.push('!'+col);} DX.setSchemaHints(dc,tc,all,dt, nc); })();
 function norm(v){ if(v===null||v===undefined) return '∅'; if(typeof v==='number') return String(Math.round(v*100)/100); if(typeof v==='string'){ const t=v.trim(); if(t!==''&&/^-?\d+(\.\d+)?$/.test(t)) return String(Math.round(+t*100)/100); return v;} return String(v); }
 const key=s=>s?s.values.map(r=>r.map(norm).join('␟')).sort().join('\n'):'NONE';
 const keyo=s=>s?s.values.map(r=>r.map(norm).join('␟')).join('\n'):'NONE';

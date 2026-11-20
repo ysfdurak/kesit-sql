@@ -1,7 +1,7 @@
 const c=require('./load.js'); const fs=require('fs');
 const initSqlJs=require('sql.js/dist/sql-asm.js');
 const DX=c.SQLP_DIALECT, DIDS=DX.DIALECTS.map(d=>d.id);
-(function hints(){ const dc=[], tc=[], all=[], dt=[]; for(const t of Object.keys(c.SQLP_COLMETA)) for(const [col,ty] of c.SQLP_COLMETA[t]){ all.push(col); if(/date/.test(ty)) dc.push(col); if(ty==='datetime') dt.push(col); if(/^text/.test(ty)) tc.push(col);} DX.setSchemaHints(dc,tc,all,dt); })();
+(function hints(){ const dc=[], tc=[], all=[], dt=[], nc=[]; for(const t of Object.keys(c.SQLP_COLMETA)) for(const [col,ty] of c.SQLP_COLMETA[t]){ all.push(col); if(/date/.test(ty)) dc.push(col); if(ty==='datetime') dt.push(col); if(/^text/.test(ty)) tc.push(col); if(/^(money|dec|rate|coord|real)$|^decimal/.test(ty)) nc.push(col); else if(/^(int|bigint|bit)$/.test(ty)) nc.push('!'+col);} DX.setSchemaHints(dc,tc,all,dt, nc); })();
 const exBase=e=>e.base||'sqlite';
 const exAllowed=e=>e.dl||(exBase(e)==='sqlite'?DIDS:[exBase(e)]);
 function exText(src,e,d,v){ if(!src) return ''; if(v&&v[d]) return v[d]; const b=exBase(e); if(b===d) return src; if(b==='sqlite') return DX.forward(src,d); return null; }

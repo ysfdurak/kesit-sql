@@ -8,7 +8,7 @@
 const c=require('./load.js'); const fs=require('fs'); const initSqlJs=require('sql.js/dist/sql-asm.js');
 require('vm').runInContext(fs.readFileSync(require('./yol.js').ROOT+'arena-data.js','utf8'),c);
 const DX=c.SQLP_DIALECT, DIDS=DX.DIALECTS.map(d=>d.id);
-{ const dc=[],tc=[],all=[],dt=[]; for(const t of Object.keys(c.SQLP_COLMETA)) for(const [col,ty] of c.SQLP_COLMETA[t]){ all.push(col); if(/date/.test(ty)) dc.push(col); if(ty==='datetime') dt.push(col); if(/^text/.test(ty)) tc.push(col);} DX.setSchemaHints(dc,tc,all,dt); }
+{ const dc=[],tc=[],all=[],dt=[], nc=[]; for(const t of Object.keys(c.SQLP_COLMETA)) for(const [col,ty] of c.SQLP_COLMETA[t]){ all.push(col); if(/date/.test(ty)) dc.push(col); if(ty==='datetime') dt.push(col); if(/^text/.test(ty)) tc.push(col); if(/^(money|dec|rate|coord|real)$|^decimal/.test(ty)) nc.push(col); else if(/^(int|bigint|bit)$/.test(ty)) nc.push('!'+col);} DX.setSchemaHints(dc,tc,all,dt, nc); }
 const FL=process.env.FILTER?new RegExp(process.env.FILTER):null;
 const norm=v=>{ if(v===null||v===undefined) return '∅'; if(typeof v==='number') return String(Math.round(v*100)/100); if(typeof v==='string'){ const t=v.trim(); if(t!==''&&/^-?\d+(\.\d+)?$/.test(t)) return String(Math.round(+t*100)/100); return v;} return String(v); };
 function esit(u,s,ord){ if(!s) return true; if(!u) return false; if(u.columns.length!==s.columns.length||u.values.length!==s.values.length) return false; const A=u.values.map(r=>r.map(norm).join('␟')),B=s.values.map(r=>r.map(norm).join('␟')); if(ord&&A.every((x,i)=>x===B[i])) return true; return [...A].sort().join('\n')===[...B].sort().join('\n'); }

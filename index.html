@@ -626,7 +626,7 @@ const lvOrder = id => LEVELS.findIndex(l=>l.id===id);
 const lvName = id => (LEVELS[lvOrder(id)]||{}).name || id;
 const lvBadge = id => '<span class="lv lv-'+id+'">'+lvName(id)+'</span>';
 const EXTRA_MODS = ['Veri Analisti','BT İş Analizi','Veri Bilimi','Veri Mühendisliği','Mülakat Hazırlığı','SQL Türlerine Özgü','İş Zekâsı ve Raporlama','Veritabanı Yönetimi (DBA)','Uygulama Geliştirme','Vaka Çalışmaları','Yapay Zekâ ile SQL','BigQuery ve Bulut Veri Ambarları','Sertifika Hazırlık','Alıştırma Kampı','Bitirme Projeleri','Kanat Havayolları','Büyük Sorgular','İK Analitiği','Büyük Veriyle Çalışmak','Sorgu Optimizasyonu','SQL Server Operasyon'];
-(function hints(){ const dc=[], tc=[], all=[], dt=[]; for(const t of TABLES) for(const [c,ty] of COLMETA[t]){ all.push(c); if(/date/.test(ty)) dc.push(c); if(ty==='datetime') dt.push(c); if(/^text/.test(ty)) tc.push(c); } DX.setSchemaHints(dc, tc, all, dt); })();
+(function hints(){ const dc=[], tc=[], all=[], dt=[], nc=[]; for(const t of TABLES) for(const [c,ty] of COLMETA[t]){ all.push(c); if(/date/.test(ty)) dc.push(c); if(ty==='datetime') dt.push(c); if(/^text/.test(ty)) tc.push(c); if(/^(money|dec|rate|coord|real)$|^decimal/.test(ty)) nc.push(c); else if(/^(int|bigint|bit)$/.test(ty)) nc.push('!'+c); } DX.setSchemaHints(dc, tc, all, dt, nc); })();
 
 /* ---------- Depolama ---------- */
 const KEY='sqlpatika.v1';
@@ -1201,6 +1201,7 @@ let trSeq=0;
 function resultHTML(r, o){
   o=o||{}; let h='';
   if(r.uyari && r.uyari.length) h+='<div style="padding:10px 10px 0"><div class="warn" role="status" style="margin:0"><b>Bu motorda etkisi yok</b>'+r.uyari.map(esc).join('<br>')+'</div></div>';
+  if(r.not && r.not.length) h+='<div style="padding:10px 10px 0"><div class="tip" role="status" style="margin:0"><b>SQL Server notu</b>'+r.not.map(esc).join('<br>')+'</div></div>';
   if(r.error && !(o&&o.noErr)) h+='<div style="padding:10px">'+errHTML(r)+'</div>';
   const sets=o.checkSet!==undefined ? (o.checkSet?[o.checkSet]:[]) : (r.sets||[]);
   const show=sets.slice(-4);
