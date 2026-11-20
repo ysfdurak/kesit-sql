@@ -2,13 +2,16 @@
    Güncellemeler hemen görünür. Kurulumda çekirdek dosyalar (sayfa, betikler, yazı tipleri, veritabanı) önbelleğe alınır;
    böylece site bir kez açıldıktan sonra internet yokken de çalışır.
    Sürüm değişince eski önbellek silinir. Kardeş uygulamalar aynı adreste olduğu için yalnız kesit-sql-* adlı önbelleklere dokunulur. */
-const CACHE = 'kesit-sql-v19';
+const CACHE = 'kesit-sql-v20';
 const BASE = 'base-165fb75e-7y749.b64.txt'; /* make_base.js günceller; denetim (run.js) dosyanın varlığını sınar */
 /* Liste elle tutulmaz: betikler index.html'den, yazı tipleri fonts.css'ten okunur. Tek dosyanın alınamaması kurulumu bozmaz; o dosya ilk kullanımda önbelleğe girer. */
 async function precache() {
   const res = await fetch('index.html'); if (!res.ok) return;
   const html = await res.clone().text();
-  const urls = new Set(['./', 'manifest.webmanifest', 'favicon.svg', 'icon-192.png', BASE]);
+  /* vendor/sql-asm.js index.html'de etiketle değil, sayfa çizildikten sonra yüklenir; çevrimdışı için ayrıca eklenir. */
+  /* Örnek veritabanı (BASE, ≈10 MB) kurulumda indirilmez: motor ilk kullanıldığında ağdan gelir ve fetch işleyicisi
+     önbelleğe koyar. Bir kez ders açan kullanıcı için çevrimdışı çalışma aynen sürer. */
+  const urls = new Set(['./', 'manifest.webmanifest', 'favicon.svg', 'icon-192.png', 'vendor/sql-asm.js']);
   for (const m of html.matchAll(/<(?:script|link)\b[^>]*?(?:src|href)="([^":?#]+\.(?:js|css))"/g)) urls.add(m[1]);
   const fr = await fetch('vendor/fonts.css');
   if (fr.ok) for (const m of (await fr.text()).matchAll(/url\(["']?([^"')]+\.woff2)/g)) urls.add('vendor/' + m[1].replace(/^\.\//, ''));
