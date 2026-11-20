@@ -9,7 +9,7 @@
     "Chromium ilk görev / ilk ekran axe kontrolü"
   ],
   "files": {
-    ".github/workflows/progress-quality.yml": "b9fa532038213eb11219ffc280bf4b2649b49d4d6b7396b035484f5546d215fc",
+    ".github/workflows/progress-quality.yml": "cc9b3115fb5ec457d3b973a9311817b6bdace28e5f4d453a562ba86d3eb9e2b3",
     "recovery.js": "ef7fc7a695802e75e55d83e101a2e0ab472c88126607c28229c9cea0ea60f870",
     "tests/artifact.cjs": "1ab82740817f37d2934e90f25997c4a6e7d07d50138d538c70de82f27fa0ddfc",
     "tests/recovery.cjs": "9990ef25ded436773fef0d4659d287bdbb3a3caa94817eb768a0b4ac129a31f8",
