@@ -406,7 +406,7 @@ add('an-pareto',
 
 add('an-kohort',
   sq('Kayıt yılına (<code>signup_date</code>) göre müşteri kohortları oluştur ve her kohortta en az bir siparişi olan müşterilerin oranını yüzde olarak (1 basamak) getir: <code>kayit_yili</code>, <code>musteri</code>, <code>siparisli</code>, <code>oran</code>.',
-    "SELECT strftime('%Y', c.signup_date) AS kayit_yili, COUNT(*) AS musteri, SUM(CASE WHEN EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id) THEN 1 ELSE 0 END) AS siparisli, ROUND(100.0 * SUM(CASE WHEN EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id) THEN 1 ELSE 0 END) / COUNT(*), 1) AS oran FROM customers c GROUP BY strftime('%Y', c.signup_date);",
+    "WITH k AS (SELECT strftime('%Y', c.signup_date) AS kayit_yili, CASE WHEN EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id) THEN 1 ELSE 0 END AS siparis_var FROM customers c) SELECT kayit_yili, COUNT(*) AS musteri, SUM(siparis_var) AS siparisli, ROUND(100.0 * SUM(siparis_var) / COUNT(*), 1) AS oran FROM k GROUP BY kayit_yili;",
     { hint: 'Kohort = kayıt yılı. Siparişli müşteriyi EXISTS ile koşullu say.' }));
 
 add('an-funnel',
@@ -442,7 +442,7 @@ add('ds-outlier',
 
 add('ds-korelasyon',
   sq('Çalışanların işe giriş yılı (x) ile maaşı (y) arasındaki Pearson korelasyonunu hesapla (3 basamak). Tek değer: <code>r</code>. İşe giriş yılını tarihten tam sayı olarak çıkar.',
-    "WITH t AS (SELECT CAST(strftime('%Y', hire_date) AS INTEGER) AS x, salary AS y FROM employees) SELECT ROUND((COUNT(*) * SUM(x * y) - SUM(x) * SUM(y)) / (SQRT(COUNT(*) * SUM(x * x) - SUM(x) * SUM(x)) * SQRT(COUNT(*) * SUM(y * y) - SUM(y) * SUM(y))), 3) AS r FROM t;",
+    "WITH t AS (SELECT 1.0 * CAST(strftime('%Y', hire_date) AS INTEGER) AS x, 1.0 * salary AS y FROM employees) SELECT ROUND((COUNT(*) * SUM(x * y) - SUM(x) * SUM(y)) / (SQRT(COUNT(*) * SUM(x * x) - SUM(x) * SUM(x)) * SQRT(COUNT(*) * SUM(y * y) - SUM(y) * SUM(y))), 3) AS r FROM t;",
     { hint: 'Ders anlatımındaki formülü kullan; önce x ve y\'yi bir CTE\'de hazırla.' }));
 
 add('ds-ab',

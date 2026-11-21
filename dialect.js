@@ -270,7 +270,12 @@ function fwdCall(N, a, A, d) {
   switch (N) {
     case 'IFNULL': { const x = isDateCol(a[0]) && /^'/.test(a[1] || '') && !isDateLit(a[1]) ? toTextDate(a[0], d) : a[0]; return { tsql: `ISNULL(${x}, ${a[1]})`, pg: `COALESCE(${x}, ${a[1]})`, mysql: null, oracle: `NVL(${x}, ${a[1]})` }[d]; }
     case 'COALESCE': if (a.length === 2 && isDateCol(a[0]) && /^'/.test(a[1]) && !isDateLit(a[1]) && ['pg', 'tsql', 'oracle'].includes(d)) return `COALESCE(${toTextDate(a[0], d)}, ${a[1]})`; return null;
-    case 'SUM': case 'AVG': if (a.length === 1 && d !== 'mysql' && A && A[0] && hasTopCond(A[0])) return `${N}(CASE WHEN ${a[0]} THEN 1 ELSE 0 END)`; return null;
+    case 'SUM': case 'AVG': {
+      let x = a.length === 1 && d !== 'mysql' && A && A[0] && hasTopCond(A[0]) ? `CASE WHEN ${a[0]} THEN 1 ELSE 0 END` : null;
+      /* SQL Server tamsayının ortalamasını keser: AVG'yi ondalıklı yap (gerçek SQL Server ile karşılaştırıldı) */
+      if (N === 'AVG' && d === 'tsql' && a.length === 1 && !avgDecimal(x || a[0])) return `AVG(1.0 * ${x ? '(' + x + ')' : a[0]})`;
+      return x ? `${N}(${x})` : null;
+    }
     case 'DATETIME': {
       if (a.length === 1) return { tsql: `CAST(${a[0]} AS DATETIME2)`, pg: `CAST(${a[0]} AS TIMESTAMP)` }[d] || null;
       if (a.length !== 2) return null;
@@ -289,7 +294,7 @@ function fwdCall(N, a, A, d) {
     case '__MINDIFF': return { tsql: `DATEDIFF(minute, ${a[1]}, ${a[0]})`, mysql: `TIMESTAMPDIFF(MINUTE, ${a[1]}, ${a[0]})`, pg: `(EXTRACT(EPOCH FROM (CAST(${a[0]} AS TIMESTAMP) - CAST(${a[1]} AS TIMESTAMP))) / 60)`, oracle: `((CAST(${a[0]} AS DATE) - CAST(${a[1]} AS DATE)) * 1440)` }[d];
     case '__HRDIFF': return { tsql: `(DATEDIFF(minute, ${a[1]}, ${a[0]}) / 60.0)`, mysql: `(TIMESTAMPDIFF(MINUTE, ${a[1]}, ${a[0]}) / 60.0)`, pg: `(EXTRACT(EPOCH FROM (CAST(${a[0]} AS TIMESTAMP) - CAST(${a[1]} AS TIMESTAMP))) / 3600)`, oracle: `((CAST(${a[0]} AS DATE) - CAST(${a[1]} AS DATE)) * 24)` }[d];
     case '__SECDIFF': return { tsql: `DATEDIFF(second, ${a[1]}, ${a[0]})`, mysql: `TIMESTAMPDIFF(SECOND, ${a[1]}, ${a[0]})`, pg: `EXTRACT(EPOCH FROM (CAST(${a[0]} AS TIMESTAMP) - CAST(${a[1]} AS TIMESTAMP)))`, oracle: `((CAST(${a[0]} AS DATE) - CAST(${a[1]} AS DATE)) * 86400)` }[d];
-    case 'GROUP_CONCAT': { const sep = a[1] || "','"; return { tsql: `STRING_AGG(${a[0]}, ${sep})`, pg: `STRING_AGG(${a[0]}, ${sep})`, mysql: `GROUP_CONCAT(${a[0]} SEPARATOR ${sep})`, oracle: `LISTAGG(${a[0]}, ${sep}) WITHIN GROUP (ORDER BY ${a[0]})` }[d]; }
+    case 'GROUP_CONCAT': { const gm = (a[1] || '').match(/^([\s\S]*?)\s+(ORDER\s+BY[\s\S]*)$/i); if (gm && d === 'tsql') return `STRING_AGG(${a[0]}, ${gm[1]}) WITHIN GROUP (${gm[2]})`; const sep = a[1] || "','"; return { tsql: `STRING_AGG(${a[0]}, ${sep})`, pg: `STRING_AGG(${a[0]}, ${sep})`, mysql: `GROUP_CONCAT(${a[0]} SEPARATOR ${sep})`, oracle: `LISTAGG(${a[0]}, ${sep}) WITHIN GROUP (ORDER BY ${a[0]})` }[d]; }
     case 'IIF': return d === 'tsql' ? null : d === 'mysql' ? `IF(${a.join(', ')})` : `CASE WHEN ${a[0]} THEN ${a[1]} ELSE ${a[2]} END`;
     case 'MEDIAN': return d === 'pg' ? `PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ${a[0]})` : null;
     case 'STDDEV': case 'STDDEV_SAMP': return { tsql: `STDEV(${a[0]})`, mysql: `STDDEV_SAMP(${a[0]})`, pg: `STDDEV(${a[0]})`, oracle: `STDDEV(${a[0]})` }[d];
@@ -724,8 +729,54 @@ function forward(sql, d) {
   if (d === 'pg' || d === 'tsql') s = fwdBool(s, d);
   if (d === 'pg') s = s.replace(/\browid\b/gi, 'ctid');
   if (d === 'pg') s = pgDateLits(s);
+  if (d === 'tsql') s = s.replace(/(\bALTER\s+TABLE\s+\S+\s+ADD\s+\[?\w+\]?\s+)TEXT\b/gi, '$1NVARCHAR(MAX)');
+  if (d === 'tsql') { s = fwdTsqlReserved(s); s = fwdTsqlFmtWin(s); s = fwdTsqlBatches(s); s = s.replace(/\bCEIL\s*\(/gi, 'CEILING('); }
   if (d === 'bq') { s = fwdBqSetOps(s); s = fwdBqCteCols(s); s = splitSemisKeep(s).map(st => /^\s*(UPDATE|DELETE)\b/i.test(st.replace(/^(\s|--[^\n]*\n)+/, '')) && !/\bWHERE\b/i.test(st) ? st.replace(/(\s*;?\s*)$/, ' WHERE true$1') : st).join(''); }
   return s;
+}
+/* SQL Server toplu işlem (batch) kuralları: CREATE VIEW/PROCEDURE/FUNCTION/TRIGGER kendi toplu işleminde olmalı,
+   aynı toplu işlemde ALTER TABLE ... ADD ile eklenen sütun derleme anında görünmez. Gösterilen T-SQL'e GO eklenir. */
+const TSQL_OBJ = /^\s*(CREATE|ALTER)\s+(OR\s+ALTER\s+)?(VIEW|PROC|PROCEDURE|FUNCTION|TRIGGER)\b/i;
+/* FORMAT nvarchar(4000) döndürür; varsayılan RANGE çerçeveli pencerenin ORDER BY'ında 900 bayt sınırını aşar (Msg 8729).
+   FORMAT(...) AS ad ile tanımlanıp pencere ORDER BY'ında çerçevesiz kullanılan adları bulur. */
+function fmtWinAliases(sql) {
+  const T = rt(sql); const al = new Set(); const out = [];
+  const D = depthAt(T);
+  for (let i = 0; i < T.length; i++) if (isW(T[i], 'AS')) { const n = T[nx(T, i)]; if (!n || !(n.k === 'w' || n.k === 'q')) continue; let k = i - 1, hasF = false; for (; k >= 0; k--) { if (D[k] < D[i]) break; if (D[k] === D[i] && (isP(T[k], ',') || isW(T[k], 'SELECT', 'DISTINCT'))) break; if (isW(T[k], 'FORMAT')) hasF = true; } const st = nx(T, k); if (hasF && !isW(T[st], 'CAST', 'CONVERT')) al.add(n.v.replace(/^\[|\]$/g, '').toLowerCase()); }
+  if (!al.size) return out;
+  for (let i = 0; i < T.length; i++) if (isW(T[i], 'OVER') && isP(T[nx(T, i)], '(')) {
+    const o = nx(T, i), c = closeP(T, o); const body = T.slice(o + 1, c);
+    if (body.some(t => isW(t, 'ROWS'))) continue;
+    const ob = body.findIndex((t, k) => isW(t, 'ORDER') && isW(body[nx(body, k)], 'BY')); if (ob < 0) continue;
+    const pv0 = (() => { let k = i - 1; while (k >= 0 && !sigk(T[k])) k--; return k; })(); let f = pv0; if (isP(T[f], ')')) { let dd = 0; for (; f >= 0; f--) { if (isP(T[f], ')')) dd++; else if (isP(T[f], '(')) { dd--; if (dd === 0) break; } } f--; while (f >= 0 && !sigk(T[f])) f--; }
+    if (!isW(T[f], 'SUM', 'AVG', 'COUNT', 'MIN', 'MAX', 'FIRST_VALUE', 'LAST_VALUE', 'STDEV', 'VAR')) continue;
+    for (let k = nx(body, nx(body, ob)); k < body.length; k++) { const t = body[k]; if ((t.k === 'w' || t.k === 'q') && al.has(t.v.replace(/^\[|\]$/g, '').toLowerCase())) { let p1 = k - 1; while (p1 >= 0 && !sigk(body[p1])) p1--; let p2 = p1 - 1; while (p2 >= 0 && !sigk(body[p2])) p2--; if (isP(body[p1], '(') && isW(body[p2], 'CAST', 'CONVERT')) continue; out.push({ name: t.v, at: o + 1 + k }); } }
+  }
+  return out;
+}
+function fwdTsqlFmtWin(sql) { const hits = fmtWinAliases(sql); if (!hits.length) return sql; const T = rt(sql); const at = new Set(hits.map(h => h.at)); return T.map((t, i) => at.has(i) ? `CAST(${t.v} AS VARCHAR(20))` : tv(t)).join(''); }
+function fwdTsqlBatches(sql) {
+  if (/^\s*GO\s*$/im.test(sql)) return sql;
+  const parts = splitSemisKeep(sql); if (parts.length < 2) return sql;
+  const hd = p => p.replace(/^(\s|--[^\n]*\n?)+/, '');
+  const sig = parts.map(p => hd(p).trim() !== '');
+  let out = ''; let prevObj = false, prevAlter = false;
+  parts.forEach((p, i) => {
+    const h = hd(p); if (!sig[i]) { out += p; return; }
+    const obj = TSQL_OBJ.test(h), alt = /^\s*ALTER\s+TABLE\s+\S+\s+ADD\b/i.test(h);
+    if (out.trim() && (obj || prevObj || prevAlter)) out = out.replace(/\s*$/, '') + '\nGO\n';
+    out += out.endsWith('\n') ? p.replace(/^\s+/, '') : p;
+    prevObj = obj; prevAlter = alt;
+  });
+  return out;
+}
+/* T-SQL'de ayrılmış sözcükler (ör. top, key, user) takma ad olamaz: köşeli paranteze alınır */
+const TSQL_RES = new Set(['TOP', 'KEY', 'USER', 'PERCENT', 'FILE', 'PLAN', 'RULE', 'PUBLIC', 'OPEN', 'CLOSE', 'FILL', 'PIVOT', 'UNPIVOT', 'RESTORE', 'BACKUP', 'BROWSE', 'BULK', 'CURRENT', 'DATABASE', 'DUMP', 'EXIT', 'FUNCTION', 'IDENTITY', 'INDEX', 'LINENO', 'OFFSETS', 'OVER', 'PRINT', 'PROC', 'READ', 'SCHEMA', 'SESSION_USER', 'STATISTICS', 'SYSTEM_USER', 'TEXTSIZE', 'TRAN', 'TRIGGER', 'TRUNCATE', 'VIEW', 'WRITETEXT']);
+function fwdTsqlReserved(sql) {
+  const T = rt(sql); const bad = new Set();
+  for (let i = 0; i < T.length; i++) if (isW(T[i], 'AS')) { const n = T[nx(T, i)]; if (n && n.k === 'w' && TSQL_RES.has(n.u)) bad.add(n.u); }
+  if (!bad.size) return sql;
+  return T.map((t, i) => { if (t.k === 'w' && bad.has(t.u)) { const n = T[nx(T, i)]; if (t.u === 'TOP' && (isP(n, '(') || (n && n.k === 'n'))) return tv(t); return '[' + t.v + ']'; } return tv(t); }).join('');
 }
 function pgDateLits(sql) { // INTERVAL ile toplanan sabitlere DATE ekle
   const T = rt(sql); let out = '';
@@ -746,8 +797,30 @@ const VENDOR = {
 };
 function sigList(T) { return T.filter(sigk); }
 function isCursorFetchSig(T, i) { const n1 = T[i + 1], n2 = T[i + 2]; if (isW(n1, 'NEXT', 'PRIOR', 'FIRST', 'LAST')) return isW(n2, 'FROM'); if (isW(n1, 'ABSOLUTE', 'RELATIVE')) return true; return !!n1 && (n1.k === 'w' || n1.k === 'q' || n1.k === 'var') && !isW(n1, 'NEXT', 'FIRST'); }
+function tsqlBatchLint(sql) {
+  const batches = sql.split(/^\s*GO\s*;?\s*$/im);
+  const hd = p => p.replace(/^(\s|--[^\n]*\n?|\/\*[\s\S]*?\*\/)+/, '');
+  const hint = 'SQL Server bu nesneyi kendi toplu işleminde (batch) ister: önceki ve sonraki komutlarla arasına ayrı bir satırda GO yaz.';
+  for (const b of batches) {
+    const parts = splitSemisKeep(b).filter(p => hd(p).trim() && hd(p).trim() !== ';');
+    const added = [];
+    parts.forEach((p, i) => {
+      const h = hd(p); const m = h.match(TSQL_OBJ);
+      if (m) {
+        const what = (m[1] + ' ' + m[3]).toUpperCase().replace('PROC ', 'PROCEDURE ').replace(/PROC$/, 'PROCEDURE');
+        if (i > 0) throw new DErr(`Msg 111, Level 15, State 1: '${what}' must be the first statement in a query batch.`, hint);
+        if (/VIEW$/.test(what) && parts[i + 1]) { const w = (hd(parts[i + 1]).match(/^\w+/) || [''])[0]; throw new DErr(`Msg 156, Level 15, State 1: Incorrect syntax near the keyword '${w.toUpperCase()}'.`, hint); }
+      }
+      const am = h.match(/^\s*ALTER\s+TABLE\s+\S+\s+ADD\s+([\s\S]*)$/i);
+      if (am && !/^\s*(CONSTRAINT|PRIMARY|FOREIGN|UNIQUE|CHECK|INDEX)\b/i.test(am[1])) { const T = rt(am[1]); const D = depthAt(T); let expect = true; for (let k = 0; k < T.length; k++) { if (!sigk(T[k])) continue; if (expect && (T[k].k === 'w' || T[k].k === 'q')) { added.push(T[k].v.replace(/^\[|\]$/g, '').toLowerCase()); expect = false; } else if (D[k] === 0 && isP(T[k], ',')) expect = true; } }
+      else if (added.length) { const T = rt(p); for (const t of T) if ((t.k === 'w' || t.k === 'q') && added.includes(t.v.replace(/^\[|\]$/g, '').toLowerCase())) throw new DErr(`Msg 207, Level 16, State 1: Invalid column name '${t.v.replace(/^\[|\]$/g, '')}'.`, 'Aynı toplu işlemde ALTER TABLE ... ADD ile eklenen sütun derleme anında henüz yoktur. ALTER TABLE komutundan sonra ayrı bir satırda GO yaz.'); }
+    });
+  }
+  return null;
+}
 function lint(sql, d) {
   if (d === 'sqlite') return null;
+  if (d === 'tsql') { const bl = tsqlBatchLint(sql); if (bl) return bl; const fw = fmtWinAliases(sql); if (fw.length) return new DErr('Msg 8729, Level 16, State 1: ORDER BY list of RANGE window frame has total size of 8000 bytes. Largest size supported is 900 bytes.', `FORMAT nvarchar(4000) döndürür ve varsayılan (RANGE) pencere çerçevesinin sıralamasında kullanılamaz. Pencerede ORDER BY CAST(${fw[0].name} AS VARCHAR(20)) yaz ya da ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW çerçevesi ekle.`); }
   const T = sigList(tokenize(sql)); const V = VENDOR[d];
   const call = (i, ...names) => T[i] && T[i].k === 'w' && names.includes(T[i].u) && isP(T[i + 1], '(') && !isP(T[i - 1], '.');
   const err = (w, hint, kind) => new DErr((kind === 'fn' ? V.fn : V.syntax)(w), hint);
@@ -771,6 +844,10 @@ function lint(sql, d) {
       if (isP(t, '::')) return err('::', 'SQL Server\'da tip dönüşümü CAST(x AS tip) veya CONVERT(tip, x) ile yapılır.');
       if (t.k === 'q' && t.v[0] === '`') return err(t.v, 'SQL Server\'da tanımlayıcılar [köşeli parantez] veya "çift tırnak" ile yazılır.');
       if (isW(t, 'RECURSIVE')) return err('RECURSIVE', 'SQL Server\'da özyinelemeli CTE için sadece WITH yazılır.');
+      if (call(i, 'CEIL')) return err('CEIL', 'SQL Server\'da yukarı yuvarlama CEILING() ile yapılır.', 'fn');
+      if (call(i, 'STRING_AGG')) { const c = closeP(T, i + 1); for (let k = i + 2; k < c; k++) if (isW(T[k], 'ORDER') && depthAt(T.slice(i + 1, k + 1))[k - i - 1] === 1) return new DErr("Msg 156, Level 15, State 1: Incorrect syntax near the keyword 'ORDER'.", 'SQL Server\'da STRING_AGG sıralaması parantezin dışında yazılır: STRING_AGG(ad, \', \') WITHIN GROUP (ORDER BY ad).'); }
+      if (call(i, 'SUM', 'AVG', 'COUNT', 'MIN', 'MAX', 'STDEV', 'VAR') && !isW(T[i - 1], 'OVER')) { const c = closeP(T, i + 1); if (T.slice(i + 2, c).some(x => isW(x, 'SELECT'))) return new DErr('Msg 130, Level 15, State 1: Cannot perform an aggregate function on an expression containing an aggregate or a subquery.', 'SQL Server toplama fonksiyonunun içinde alt sorgu kabul etmez. Alt sorguyu önce bir CTE ya da türetilmiş tabloda sütun olarak hesapla, sonra topla.'); }
+      if (isP(t, '(') && isW(T[i + 1], 'SELECT', 'WITH')) { const c = closeP(T, i); let dd = 0, ord = false, topOk = false; for (let k = i + 1; k < c; k++) { if (isP(T[k], '(')) dd++; else if (isP(T[k], ')')) dd--; else if (dd === 0) { if (isW(T[k], 'TOP', 'OFFSET') || (isW(T[k], 'FOR') && isW(T[k + 1], 'XML', 'JSON'))) topOk = true; if (isW(T[k], 'ORDER') && isW(T[k + 1], 'BY')) ord = true; } } if (ord && !topOk) return new DErr('Msg 1033, Level 15, State 1: The ORDER BY clause is invalid in views, inline functions, derived tables, subqueries, and common table expressions, unless TOP, OFFSET or FOR XML is also specified.', 'SQL Server alt sorgu ve CTE içinde ORDER BY kabul etmez (TOP ya da OFFSET yoksa). Sıralamayı en dıştaki SELECT\'e taşı.'); }
       if (isW(t, 'RETURNING')) return err('RETURNING', 'SQL Server\'da değişen satırlar OUTPUT inserted.* / deleted.* ile döndürülür.');
       if (isW(t, 'CONFLICT')) return err('ON CONFLICT', 'SQL Server\'da upsert için MERGE kullanılır.');
       if (isW(t, 'NULLS') && isW(T[i + 1], 'FIRST', 'LAST')) return err('NULLS', 'SQL Server NULLS FIRST/LAST desteklemez; ORDER BY CASE WHEN x IS NULL THEN 1 ELSE 0 END, x kullan.');
@@ -981,7 +1058,8 @@ function revType(type, d, tryMode) { // CAST hedef tipi → {fn} ya da SQLite ti
     if (/^(DATETIME2?|SMALLDATETIME)(\(\d+\))?$/.test(T)) return { wrap: x => `tsql_date_(${x}, ${tryMode ? 1 : 0}, 1)` };
     if ((m = T.match(/^(DECIMAL|NUMERIC)\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)$/))) return { wrap: x => `ROUND(tsql_dec_(${x}, ${tryMode ? 1 : 0}, ${m[2]}, ${m[3]}), ${m[3]})` };
     if (/^(FLOAT|REAL|MONEY|DECIMAL|NUMERIC)$/.test(T)) return { wrap: x => `tsql_num_(${x}, ${tryMode ? 1 : 0})` };
-    if ((m = T.match(/^N?VARCHAR\s*\(\s*(\d+)\s*\)$/))) return { wrap: x => `substr(CAST(${x} AS TEXT), 1, ${m[1]})` };
+    if ((m = T.match(/^(N?)VARCHAR\s*\(\s*(\d+)\s*\)$/))) { const cp = !m[1] && TSQL_COLL && !collInfo(TSQL_COLL).tr; return { wrap: x => cp ? `cp1252_(substr(CAST(${x} AS TEXT), 1, ${m[2]}))` : `substr(CAST(${x} AS TEXT), 1, ${m[2]})` }; }
+    if ((m = T.match(/^VARCHAR\s*\(\s*MAX\s*\)$|^VARCHAR$|^CHAR(\s*\(\s*\d+\s*\))?$/)) && TSQL_COLL && !collInfo(TSQL_COLL).tr) return { wrap: x => `cp1252_(CAST(${x} AS TEXT))` };
   }
   if (d === 'bq') {
     if (/^(INT64|INTEGER|INT|BIGINT|SMALLINT|TINYINT|BYTEINT)$/.test(T)) return { wrap: x => `bq_int_(${x}, ${tryMode ? 1 : 0})` };
@@ -1051,7 +1129,9 @@ function revCall(N, a, A, d, ctx) {
     case 'LN': return `ln(${a[0]})`;
     case 'RAND': return `(abs(random()) % 1000000) / 1000000.0`;
     case 'NEWID': case 'UUID': case 'GEN_RANDOM_UUID': return `newid_()`;
-    case 'ROUND': if (d === 'oracle' && a.length === 2 && /^'/.test(a[1].trim())) return `round_date_(${a[0]}, ${a[1]})`; return null;
+    case 'SOUNDEX': if (d === 'tsql' && a.length === 1) return `tsoundex_(${a[0]})`; return null;
+    case 'DIFFERENCE': if (d === 'tsql' && a.length === 2) return `tdifference_(${a[0]}, ${a[1]})`; return null;
+    case 'ROUND': if (d === 'oracle' && a.length === 2 && /^'/.test(a[1].trim())) return `round_date_(${a[0]}, ${a[1]})`; if (d === 'tsql' && a.length >= 2) return `(CASE WHEN typeof(${a[0]}) = 'integer' THEN CAST(ROUND(${a[0]}, ${a[1]}) AS INTEGER) ELSE tround_(${a[0]}, ${a[1]}) END)`; return null;
     case 'TRUNC': case 'TRUNCATE': return d === 'oracle' || d === 'pg' || d === 'mysql' ? `trunc_(${a.join(', ')})` : null;
     case 'ISNUMERIC': return `isnumeric_(${a[0]})`;
     case 'QUOTENAME': return `quotename_(${a.join(', ')})`;
@@ -1338,6 +1418,7 @@ function revTsqlPlus(sql) { // '+' metin birleştirme sezgisi
   return out;
 }
 function revLikeBrackets(sql) { // T-SQL LIKE '[a-c]%' → GLOB
+  if (TSQL_COLL) return sql; // harmanlama taklidi açıkken LIKE köşeli parantezleri tlike_ ile çözülür
   const T = rt(sql); let out = '';
   for (let i = 0; i < T.length; i++) {
     if (isW(T[i], 'LIKE')) { const r = nx(T, i); if (T[r] && T[r].k === 's' && /\[[^\]]+\]/.test(T[r].v)) { const p = unq(T[r].v).toLowerCase().replace(/\*/g, '[*]').replace(/\?/g, '[?]').replace(/%/g, '*').replace(/_/g, '?').replace(/\[\^/g, '[^'); const neg = isW(T[pv(T, i)], 'NOT'); const le = pv(T, neg ? pv(T, i) : i); const ls = primStartBack(T, le); out = out.slice(0, out.length - txt(T.slice(ls, i)).length); out += `${neg ? 'NOT ' : ''}lower(${txt(T.slice(ls, le + 1))}) GLOB ${lit(p)}`; i = r; continue; } }
@@ -1375,11 +1456,20 @@ function revNullsOrder(sql) { // PG/Oracle: ASC'de NULL sonda, DESC'de başta
 function revOracleEmpty(sql) { const T = rt(sql); return T.map(t => t.k === 's' && t.v === "''" ? 'NULL' : tv(t)).join(''); }
 function revOracleConcat(sql) { return rewriteChains(sql, '||', ops => 'concat(' + ops.join(', ') + ')'); }
 function revDateLits(sql) { const T = rt(sql); let out = ''; for (let i = 0; i < T.length; i++) { if (isW(T[i], 'DATE', 'TIMESTAMP') && T[nx(T, i)] && T[nx(T, i)].k === 's') { const k = nx(T, i); const op = nx(T, k), num = nx(T, op); if (T[op] && (isP(T[op], '+') || isP(T[op], '-')) && T[num] && T[num].k === 'n' && !(T[nx(T, num)] && (isP(T[nx(T, num)], '*') || isP(T[nx(T, num)], '/')))) { const fn = isW(T[i], 'TIMESTAMP') ? 'datetime' : 'date'; out += fn + '(' + T[k].v + ", '" + (isP(T[op], '-') ? '-' : '+') + T[num].v + " days')"; i = num; continue; } out += T[k].v; i = k; continue; } out += tv(T[i]); } return out; }
+let IDENT_PENDING = [];
+function identFlush(db) { const L = IDENT_PENDING; IDENT_PENDING = []; for (const x of L) { const ag = x.inc >= 0 ? 'MAX' : 'MIN'; db.exec(`CREATE TRIGGER "__ident_${x.t}_${x.col}" AFTER INSERT ON "${x.t}" WHEN NEW."${x.col}" IS NULL BEGIN UPDATE "${x.t}" SET "${x.col}" = COALESCE((SELECT ${ag}("${x.col}") FROM "${x.t}"), ${x.sd - x.inc}) + ${x.inc} WHERE rowid = NEW.rowid; END`); } }
 function revDdlTsql(sql) {
   let s = sql;
   s = s.replace(/\b(N?VARCHAR|VARBINARY)\s*\(\s*MAX\s*\)/gi, 'TEXT');
-  s = s.replace(/\bINT\s+IDENTITY\s*(\(\s*\d+\s*,\s*\d+\s*\))?\s+(NOT\s+NULL\s+)?PRIMARY\s+KEY\b/gi, 'INTEGER PRIMARY KEY');
-  s = s.replace(/\bIDENTITY\s*(\(\s*\d+\s*,\s*\d+\s*\))?/gi, '');
+  /* IDENTITY(başlangıç, artış): başlangıç/artış 1 değilse ya da sütun anahtar değilse, ekleme sonrası tetikleyiciyle numara verilir (gerçek SQL Server: IDENTITY(100, 10) → 100, 110) */
+  const cm = s.match(/^\s*CREATE\s+TABLE\s+\[?(\w+)\]?/i);
+  if (cm) s = s.replace(/(\[?\w+\]?)\s+(INT|INTEGER|BIGINT|SMALLINT)\s+IDENTITY\s*(?:\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\))?(\s+NOT\s+NULL)?(\s+PRIMARY\s+KEY)?/gi, (m, col, ty, sd, inc, nn, pk) => {
+    sd = sd === undefined ? 1 : +sd; inc = inc === undefined ? 1 : +inc;
+    if (pk && sd === 1 && inc === 1) return `${col} INTEGER PRIMARY KEY`;
+    IDENT_PENDING.push({ t: cm[1], col: col.replace(/^\[|\]$/g, ''), sd, inc });
+    return `${col} INT${pk ? ' PRIMARY KEY' : ''}`;
+  });
+  s = s.replace(/\bIDENTITY\s*(\(\s*-?\d+\s*,\s*-?\d+\s*\))?/gi, '');
   s = s.replace(/\bGETDATE\s*\(\s*\)/gi, 'CURRENT_TIMESTAMP').replace(/\bSYSDATETIME\s*\(\s*\)/gi, 'CURRENT_TIMESTAMP');
   s = s.replace(/ALTER\s+TABLE\s+(\S+)\s+ADD\s+(?!COLUMN\b|CONSTRAINT\b|PRIMARY\b|FOREIGN\b|UNIQUE\b|CHECK\b)/gi, 'ALTER TABLE $1 ADD COLUMN ');
   s = s.replace(/ALTER\s+TABLE\s+(\S+)\s+ALTER\s+COLUMN\b[^;]*/gi, m => { throw new DErr('ALTER COLUMN bu tarayıcı motorunda desteklenmiyor (SQLite sınırlaması).', 'Gerçek SQL Server\'da çalışır: ' + m.trim()); });
@@ -1680,7 +1770,8 @@ function revForJsonXml(sql, db) {
     let agg;
     if (kind === 'JSON') {
       if (cols.some(c => !c.name)) throw new DErr('Msg 13605, Level 16: Column expressions and data sources without names or aliases cannot be formatted as JSON text using FOR JSON clause. Add alias to the unnamed column or table.', 'Hesaplanan her sütuna AS ile bir ad ver.');
-      const tree = {}; cols.forEach((c, k) => { const parts = mode === 'PATH' ? c.name.split('.') : [c.name]; let node = tree; parts.slice(0, -1).forEach(pp => { node = node[pp] = node[pp] || {}; }); node[parts[parts.length - 1]] = `__c${k}`; });
+      const scOf = e => { const m = String(e).trim().match(/^(?:\w+\.)?(\w+)$/); const v = m && DEC_SCALE.get(m[1].toLowerCase()); return v > 0 ? v : 0; };
+      const tree = {}; cols.forEach((c, k) => { const parts = mode === 'PATH' ? c.name.split('.') : [c.name]; let node = tree; parts.slice(0, -1).forEach(pp => { node = node[pp] = node[pp] || {}; }); const sc = scOf(c.expr); node[parts[parts.length - 1]] = sc ? `(CASE WHEN __c${k} IS NULL THEN NULL ELSE json(printf('%.${sc}f', __c${k})) END)` : `__c${k}`; });
       const build = n => 'json_object(' + Object.keys(n).map(key => `'${key.replace(/'/g, "''")}', ${typeof n[key] === 'string' ? n[key] : build(n[key])}`).join(', ') + ')';
       let obj = build(tree); if (!inclNull) obj = `json_patch('{}', ${obj})`;
       agg = noWrap ? `group_concat(${obj}, ',')` : `json_group_array(json(${obj}))`;
@@ -1978,6 +2069,37 @@ function revIlike(sql) {
   }
   return txt(T);
 }
+const DEC_COLS = new Set();
+const DEC_SCALE = new Map(); // sütun → SQL Server ondalık ölçeği (FOR JSON çıktısı için); çakışan adlar -1
+function avgDecimal(x) {
+  const t = String(x).trim();
+  if (/^DISTINCT\b/i.test(t)) return true; // AVG(DISTINCT ...) olduğu gibi kalır
+  if (/\d\.\d|\bCAST\s*\([\s\S]*\bAS\s+(DECIMAL|NUMERIC|FLOAT|REAL|MONEY|DOUBLE)/i.test(t)) return true;
+  const m = t.match(/^(?:\w+\.)?(\w+)$/); return !!(m && DEC_COLS.has(m[1].toLowerCase()));
+}
+/* SQL Server'da tamsayı ifadenin AVG'si tamsayıdır (bölme kesilir): AVG(siparis) 5,95 değil 5 verir. Gerçek SQL Server ile karşılaştırıldı.
+   Girdideki NULL olmayan değerlerin hepsi tamsayıysa sonuç kesilir; ROUND(tamsayı, n) de tamsayı kalır. */
+let tavgCut = false;
+function revTsqlAvg(sql) {
+  if (!/\bAVG\s*\(/i.test(sql)) return sql;
+  const T = rt(sql); let out = ''; let i = 0;
+  while (i < T.length) {
+    const t = T[i];
+    if (isW(t, 'AVG') && !isP(T[i - 1], '.')) {
+      const o = nx(T, i);
+      if (isP(T[o], '(')) {
+        const c = closeP(T, o); let inner = T.slice(o + 1, c); const k0 = inner.findIndex(sigk);
+        const arg = txt(k0 >= 0 && isW(inner[k0], 'DISTINCT', 'ALL') ? inner.slice(k0 + 1) : inner);
+        let j = nx(T, c), over = '';
+        if (isW(T[j], 'OVER')) { const o2 = nx(T, j); if (isP(T[o2], '(')) { const c2 = closeP(T, o2); over = ' ' + txt(T.slice(j, c2 + 1)); j = c2 + 1; } else j = c + 1; } else j = c + 1;
+        out += `tavg_(AVG(${revTsqlAvg(txt(inner))})${over}, MIN(CASE WHEN (${revTsqlAvg(arg)}) IS NULL OR typeof(${revTsqlAvg(arg)}) = 'integer' THEN 1 ELSE 0 END)${over})`;
+        i = j; continue;
+      }
+    }
+    out += tv(t); i++;
+  }
+  return out;
+}
 function revSimple(sql, d, ctx) {
   let s = sql;
   if (d === 'sqlite') return s;
@@ -2016,7 +2138,7 @@ function revSimple(sql, d, ctx) {
   s = revDateLits(s);
   if (d === 'pg' || d === 'oracle' || d === 'mysql') s = revInterval(s, d);
   if (d === 'oracle' || d === 'pg') s = revDateArith(s, d);
-  if (d === 'tsql') { s = revLikeBrackets(s); s = revTsqlPlus(s); s = revSelectInto(s); s = revOutput(s); s = s.replace(/\bTRAN\b/gi, 'TRANSACTION'); }
+  if (d === 'tsql') { s = revLikeBrackets(s); s = revTsqlPlus(s); s = revSelectInto(s); s = revOutput(s); s = s.replace(/\bTRAN\b/gi, 'TRANSACTION'); s = revTsqlAvg(s); }
   s = revInner(s, d, ctx);
   if (d === 'oracle') s = revOracleConcat(s);
   if (d === 'mysql' || d === 'oracle' || d === 'bq') s = revDivision(s);
@@ -2453,7 +2575,7 @@ function tsqlRun(db, sql, opt) {
   }
   function toSqlite(text, ctx) {
     const sq = reverse(udfExpand(text), 'tsql', db, { err: ctx && ctx.err, udf: env.funcs });
-    return sq;
+    if (!TSQL_COLL) return sq; const cq = collateSql(sq); if (cq !== sq) COLL_RAW.set(cq, sq); return cq;
   }
   function evalExpr(exprToks, sc, ctx) {
     const e = subst(exprToks, sc, ctx);
@@ -2621,10 +2743,10 @@ function tsqlRun(db, sql, opt) {
     { const va = viewAyikla(text); if (/^\s*CREATE\s+VIEW\b/i.test(va.sql)) { const q = toSqlite(va.sql, ctx); R.translated.push(q); db.exec(q); viewTetik(db, q, va.check); R.messages.push('Komutlar başarıyla tamamlandı.'); return; } }
     if (viewMi(db, toSqlite(text, ctx))) { const q = toSqlite(text, ctx); R.translated.push(q); const on0 = toplamDegisen(db); const res = execOne(db, q); if (res) R.sets.push(res); const n = toplamDegisen(db) - on0; sc.rowcount = n; if (!env.nocount) R.messages.push(`(${n} satır etkilendi)`); return; }
     for (const part of splitSemis(text)) {
-      const q = toSqlite(part, ctx); R.translated.push(q);
+      IDENT_PENDING = []; const q = toSqlite(part, ctx); R.translated.push(q); tsqlUniqueCheck(db, q);
       const isSel = /^\s*(WITH|SELECT|VALUES)\b/i.test(q) || /\bRETURNING\b/i.test(q);
       const before = db.getRowsModified ? null : null; void before;
-      const res = execOne(db, q);
+      const res = execOne(db, q); identFlush(db);
       if (res) { R.sets.push(res); sc.rowcount = res.values.length; }
       if (!isSel || /\bRETURNING\b/i.test(q)) { const ch = db.getRowsModified(); if (/^\s*(INSERT|UPDATE|DELETE|CREATE\s+TABLE\s+\S+\s+AS)/i.test(q)) { const n = /^\s*CREATE/i.test(q) ? (execOne(db, 'SELECT COUNT(*) FROM ' + q.match(/CREATE\s+TABLE\s+(\S+)/i)[1]).values[0][0]) : ch; sc.rowcount = n; R.changes += n; if (!env.nocount) R.messages.push(`(${n} satır etkilendi)`); } }
     }
@@ -2853,8 +2975,9 @@ function turkceIpucu(sql) {
   }
   return '';
 }
+function tsqlUniqueCheck(db, q) { const um = q.match(/^\s*CREATE\s+UNIQUE\s+INDEX\s+\[?(\w+)\]?\s+ON\s+\[?(\w+)\]?\s*\(([^)]*)\)\s*(WHERE\b[\s\S]*)?;?\s*$/i); if (um && !um[4]) { const cols = um[3].split(',').map(x => x.trim().replace(/\s+(ASC|DESC)$/i, '')); const dup = execOne(db, `SELECT ${cols.join(', ')} FROM ${um[2]} GROUP BY ${cols.join(', ')} HAVING COUNT(*) > 1 LIMIT 1`); if (dup && dup.values.length) throw new DErr(`Msg 1505, Level 16, State 1: The CREATE UNIQUE INDEX statement terminated because a duplicate key was found for the object name 'dbo.${um[2]}' and the index name '${um[1]}'. The duplicate key value is (${dup.values[0].map(v => v === null ? '<NULL>' : v).join(', ')}).`, 'SQL Server benzersiz indekste NULL\'u da bir değer sayar: iki NULL çakışır. NULL\'ları dışarıda bırakmak için süzülmüş indeks yaz: CREATE UNIQUE INDEX ... WHERE sütun IS NOT NULL.'); }}
 function runDialect(db, sql, d, opt) {
-  opt = opt || {};
+  opt = opt || {}; tavgCut = false;
   const env0 = opt.env || (opt.env = { procs: {}, funcs: {}, tvfs: {}, tran: 0, nocount: false }); env0.seqs = env0.seqs || {}; env0.fetchStatus = -1;
   if (d !== 'sqlite') bindSeq(db, env0, d);
   if (d === 'oracle') oracleBlankToNull(db);
@@ -2868,7 +2991,9 @@ function runDialect(db, sql, d, opt) {
   try {
     if (d === 'tsql') {
       { const dk = desteksizKomut(sql, d); if (dk) throw dk; }
-      const r = tsqlRunChecked(db, sql, opt);
+      COLL_RAW.clear();
+      const r = tsqlRunChecked(db, (TSQL_COLL && !collInfo(TSQL_COLL).tr) ? latinLiterals(sql) : sql, opt);
+      if (r && r.translated) r.translated = r.translated.map(q => COLL_RAW.get(q) || q); // plan ve gösterim harmanlama sarmalayıcısız sorguyu kullanır
       Object.assign(res, r);
     } else {
       const le = lint(sql, d); if (le) throw le;
@@ -2906,6 +3031,7 @@ function runDialect(db, sql, d, opt) {
   }
   res.ms = Math.round((typeof performance !== 'undefined' ? performance : Date).now() - t0);
   if (d !== 'sqlite') { const uy = etkisizUyari(sql); if (uy.length) res.uyari = uy; }
+  if (d === 'tsql' && tavgCut && !res.error) res.not = ['Tamsayı bir ifadenin AVG sonucu SQL Server\'da tamsayıdır; kesirli kısım atılır (ör. 5,95 yerine 5). Ondalıklı ortalama için AVG(1.0 * ifade) ya da AVG(CAST(ifade AS DECIMAL(10,2))) yaz.'];
   headerize(res.sets, d);
   return res;
 }
@@ -3041,6 +3167,277 @@ function convertStyle(v, style) {
 function likeToRe(pat) { let s = ''; for (let i = 0; i < pat.length; i++) { const c = pat[i]; if (c === '%') s += '.*'; else if (c === '_') s += '.'; else if (c === '[') { const j = pat.indexOf(']', i); s += pat.slice(i, j + 1); i = j; } else s += c.replace(/[.*+?^${}()|\\]/g, '\\$&'); } return new RegExp('^' + s, 'i'); }
 function trUpper(s) { if (s === null || s === undefined) return s === undefined ? null : s; s = String(s); return (s.includes('@') ? s : s.replace(/i/g, 'İ').replace(/ı/g, 'I')).toUpperCase(); }
 function trLower(s) { if (s === null || s === undefined) return s === undefined ? null : s; s = String(s); return (s.includes('@') ? s.replace(/İ/g, 'i') : s.replace(/İ/g, 'i').replace(/I/g, 'ı')).toLowerCase(); }
+/* ===== SQL Server harmanlama (collation) taklidi =====
+   sql.js'te create_collation yok. Bu yüzden T-SQL kipinde karşılaştırma, sıralama, gruplama ve DISTINCT
+   noktalarında metin ck_() anahtar işlevinden geçirilir. Anahtar, Windows harmanlamalarının katmanlarını taklit eder:
+   1) birincil (harf; Türkçe'de ç ğ ı ö ş ü ayrı harf), 2) aksan, 3) büyük/küçük harf (yalnız _CS), 4) kelime sıralaması
+   (kesme işareti ve kısa çizgi birincil düzeyde yok sayılır). Kurallar gerçek SQL Server 2019 ile karşılaştırılarak çıkarıldı. */
+let TSQL_COLL = 'Turkish_CI_AS';
+const COLL_RAW = new Map(); // harmanlamalı sorgu → sarmalayıcısız hâli (plan ve çeviri gösterimi için)
+const COLL_LIST = ['Turkish_CI_AS', 'SQL_Latin1_General_CP1_CI_AS'];
+const collInfoCache = new Map();
+function collInfo(name) {
+  const k = String(name || TSQL_COLL); let c = collInfoCache.get(k.toUpperCase()); if (c) return c;
+  c = { name: k, tr: /^Turkish/i.test(k), bin: /_BIN2?$/i.test(k), cs: /_CS(_|$)/i.test(k), ai: /_AI(_|$)/i.test(k), known: /^(Turkish|SQL_Latin1_General|Latin1_General)/i.test(k) };
+  collInfoCache.set(k.toUpperCase(), c); return c;
+}
+const CK_PUNCT = ' \t!"#$%&()*,./:;?@[\\]^_`{|}~+<=>';
+const CK_TR = 'abcçdefgğhıijklmnoöpqrsştuüvwxyz', CK_LAT = 'abcdefghijklmnopqrstuvwxyz';
+const CK_MARK = { '\u0301': 1, '\u0300': 2, '\u0306': 3, '\u0302': 4, '\u0308': 5, '\u0304': 6, '\u0303': 7, '\u030A': 8, '\u030B': 9, '\u0328': 10, '\u0131': 11, '\u0307': 12, '\u030C': 13, '\u0327': 14, '\u0338': 15 };
+const CK_SPECIAL = { 'ø': ['o', 15], 'đ': ['d', 15], 'ł': ['l', 15], 'ħ': ['h', 15], 'ŧ': ['t', 15] };
+const CK_EXPAND = { 'ß': 'ss', 'æ': 'ae', 'œ': 'oe', 'ﬁ': 'fi', 'ﬂ': 'fl', 'ǆ': 'dž', 'ǅ': 'dž', 'Ǆ': 'dž', 'Æ': 'ae', 'Œ': 'oe', 'ĳ': 'ij', 'Ĳ': 'ij' };
+/* Harfin harmanlamaya göre küçük hâli (tek karakter döner) */
+function collLowerCh(c, tr) { if (c === 'I') return tr ? 'ı' : 'i'; if (c === 'İ') return 'i'; const l = c.toLowerCase(); return l.length === 1 ? l : c; }
+function collUpperCh(c, tr) { if (c === 'i') return tr ? 'İ' : 'I'; if (c === 'ı') return 'I'; if (c === 'ß') return 'ß'; const u = c.toUpperCase(); return u.length === 1 ? u : c; }
+function collUpper(s, name) { if (s === null || s === undefined) return null; if (typeof s !== 'string') s = String(s); const tr = collInfo(name).tr; let o = ''; for (const c of s) o += collUpperCh(c, tr); return o; }
+function collLower(s, name) { if (s === null || s === undefined) return null; if (typeof s !== 'string') s = String(s); const tr = collInfo(name).tr; let o = ''; for (const c of s) o += collLowerCh(c, tr); return o; }
+const ckCache = new Map();
+function collKey(s, name) {
+  if (s === null || s === undefined) return null;
+  if (typeof s !== 'string') return s;
+  const ci = collInfo(name);
+  const s0 = s.replace(/ +$/, '');
+  if (ci.bin) return s0;
+  const ck = ci.name + '\u0000' + s0; const hit = ckCache.get(ck); if (hit !== undefined) return hit;
+  const ALPHA = ci.tr ? CK_TR : CK_LAT;
+  let P = '', S = '', C = '', L = '', pos = 0;
+  const prim = (b, w2, up) => {
+    let p;
+    const ai = ALPHA.indexOf(b);
+    if (ai >= 0) p = 0x100 + ai * 4;
+    else if (/[0-9]/.test(b)) p = 0x60 + (+b);
+    else { const pi = CK_PUNCT.indexOf(b); p = pi >= 0 ? 0x30 + pi : (b.codePointAt(0) < 0x9000 ? 0x1000 + b.codePointAt(0) : 0xE000 + (b.codePointAt(0) & 0xFFF)); }
+    P += String.fromCharCode(p); S += String.fromCharCode(0x21 + (ci.ai ? 0 : w2)); C += up ? 'b' : 'a';
+  };
+  for (const ch0 of s0) {
+    if (ch0 === "'" || ch0 === '-') { L += String.fromCharCode(0x21 + Math.min(pos, 0xF000)) + (ch0 === "'" ? 'a' : 'b'); pos++; continue; }
+    pos++;
+    const exp = CK_EXPAND[ch0]; if (exp) { for (const e of exp.normalize('NFD')) { if (CK_MARK[e]) { S = S.slice(0, -1) + String.fromCharCode(0x21 + (ci.ai ? 0 : CK_MARK[e])); continue; } prim(e, 0, ch0 !== ch0.toLowerCase()); } continue; }
+    if (!ci.tr && ch0 === 'ı') { prim('i', CK_MARK['\u0131'], false); continue; }
+    if (!ci.tr && ch0 === 'İ') { prim('i', CK_MARK['\u0307'], true); continue; }
+    const up = ch0 !== collLowerCh(ch0, ci.tr);
+    let c = collLowerCh(ch0, ci.tr);
+    if (ci.tr && 'çğıöşü'.includes(c)) { prim(c, 0, up); continue; }
+    const sp = CK_SPECIAL[c]; if (sp) { prim(sp[0], sp[1], up); continue; }
+    const d = c.normalize('NFD'); const b = d[0]; let w2 = 0; for (const m of d.slice(1)) w2 = Math.max(w2, CK_MARK[m] || 16);
+    prim(b, w2, up);
+  }
+  const key = P + '\u0001' + S + (ci.cs ? '\u0001' + C : '') + '\u0001' + L;
+  if (ckCache.size > 200000) ckCache.clear(); ckCache.set(ck, key);
+  return key;
+}
+/* Harmanlamaya göre tek karakter eşitliği için katlama (büyük/küçük ve gerekirse aksan) */
+function collFoldCh(c, ci) { if (ci.bin) return c; if (!ci.tr && (c === 'İ' || c === 'ı')) return c; let x = ci.cs ? c : collLowerCh(c, ci.tr); if (ci.ai) { const d = x.normalize('NFD'); x = d[0]; } return x; }
+function collFold(s, ci) { let o = []; for (const c of s) o.push(collFoldCh(c, ci)); return o; }
+/* LIKE: % _ [abc] [a-z] [^x] ve ESCAPE; karakterler harmanlamaya göre eşleşir */
+function collLike(s, pat, esc, name) {
+  if (s === null || pat === null) return null;
+  const ci = collInfo(name); s = String(s); pat = String(pat);
+  const items = []; const P = [...pat];
+  for (let i = 0; i < P.length; i++) {
+    const c = P[i];
+    if (esc && c === esc && i + 1 < P.length) { items.push({ lit: P[++i] }); continue; }
+    if (c === '%') { items.push({ any: true }); continue; }
+    if (c === '_') { items.push({ one: true }); continue; }
+    if (c === '[') { const j = P.indexOf(']', i + 2); if (j > i) { let body = P.slice(i + 1, j); let neg = false; if (body[0] === '^') { neg = true; body = body.slice(1); } const set = []; for (let k = 0; k < body.length; k++) { if (body[k + 1] === '-' && k + 2 < body.length) { set.push([body[k], body[k + 2]]); k += 2; } else set.push([body[k], body[k]]); } items.push({ set, neg }); i = j; continue; } }
+    items.push({ lit: c });
+  }
+  const S = [...s.replace(/ +$/, '')], SF = S.map(c => collFoldCh(c, ci));
+  const inSet = (c, set) => { const k = collKey(c, ci.name); return set.some(([a, b]) => a === b ? collFoldCh(a, ci) === collFoldCh(c, ci) : (k >= collKey(a, ci.name) && k <= collKey(b, ci.name))); };
+  const memo = new Map();
+  const m = (i, j) => {
+    const key = i * 100000 + j; if (memo.has(key)) return memo.get(key);
+    let r;
+    if (j === items.length) r = i === S.length || S.slice(i).every(c => c === ' ');
+    else { const it = items[j];
+      if (it.any) r = m(i, j + 1) || (i < S.length && m(i + 1, j));
+      else if (i >= S.length) r = false;
+      else if (it.one) r = m(i + 1, j + 1);
+      else if (it.set) r = (inSet(S[i], it.set) !== it.neg) && m(i + 1, j + 1);
+      else r = collFoldCh(it.lit, ci) === SF[i] && m(i + 1, j + 1); }
+    memo.set(key, r); return r;
+  };
+  return m(0, 0) ? 1 : 0;
+}
+function collIndexOf(hay, needle, from, ci) {
+  const H = collFold(hay, ci), N = collFold(needle, ci);
+  if (!N.length) return -1;
+  for (let i = Math.max(0, from); i + N.length <= H.length; i++) { let ok = true; for (let k = 0; k < N.length; k++) if (H[i + k] !== N[k]) { ok = false; break; } if (ok) return i; }
+  return -1;
+}
+function collReplace(s, f, r, name) {
+  if (s === null || f === null || r === null) return null; s = String(s); f = String(f); r = String(r);
+  const ci = collInfo(name); if (!f.length) return s;
+  const A = [...s], n = [...f].length; let out = '', i = 0;
+  while (true) { const k = collIndexOf(A.slice(i).join(''), f, 0, ci); if (k < 0) { out += A.slice(i).join(''); break; } out += A.slice(i, i + k).join('') + r; i += k + n; }
+  return out;
+}
+function collCharIndex(sub, s, st, name) { if (s === null || sub === null) return null; const ci = collInfo(name); const A = [...String(s)]; const k = collIndexOf(A.join(''), String(sub), Math.max(0, (st || 1) - 1), ci); return k + 1; }
+
+/* Latin harmanlamalı veritabanında N öneki olmayan metin sabiti 1252 kod sayfasına iner: ı ş ğ İ Ş Ğ gibi harfler en yakın
+   ASCII harfe döner ('kısa' → 'kisa'), karşılığı olmayan karakter '?' olur. Gerçek sunucuda görülen davranış. */
+const CP1252_EXTRA = new Set([...'ŒœŠšŽžŸƒˆ˜–—‘’‚“”„†‡•…‰‹›€™']);
+function cp1252Fit(str) { let o = ''; for (const c of str) { const k = c.codePointAt(0); if (k <= 0xFF || CP1252_EXTRA.has(c)) { o += c; continue; } const m = { 'ı': 'i', 'İ': 'I', 'ş': 's', 'Ş': 'S', 'ğ': 'g', 'Ğ': 'G' }[c]; if (m) { o += m; continue; } const b = c.normalize('NFD')[0]; o += b.codePointAt(0) <= 0x7F ? b : '?'; } return o; }
+function latinLiterals(text) {
+  if (!/'/.test(text)) return text;
+  const T = tokenize(text); let ch = false;
+  const S = T.filter(sigk);
+  for (let i = 0; i < S.length; i++) { const t = S[i]; if (t.k !== 's' || t.np) continue;
+    if (i >= 3 && isP(S[i - 1], ',') && isW(S[i - 3], 'THROW')) continue; // THROW iletisi nvarchar parametredir (gerçek sunucuda Türkçe harf korunuyor)
+    const v = cp1252Fit(t.v); if (v !== t.v) { t.v = v; ch = true; } }
+  return ch ? T.map(t => t.k === 's' && t.np ? 'N' + t.v : tv(t)).join('') : text;
+}
+/* T-SQL'den çevrilmiş SQLite metninde harmanlama noktalarını ck_() ile sarar. */
+const CK_STOP = new Set(['AND', 'OR', 'NOT', 'WHERE', 'ON', 'WHEN', 'THEN', 'ELSE', 'SELECT', 'FROM', 'GROUP', 'ORDER', 'HAVING', 'LIMIT', 'OFFSET', 'UNION', 'EXCEPT', 'INTERSECT', 'IS', 'IN', 'BETWEEN', 'LIKE', 'GLOB', 'ESCAPE', 'AS', 'BY', 'ASC', 'DESC', 'JOIN', 'INNER', 'LEFT', 'RIGHT', 'FULL', 'CROSS', 'SET', 'VALUES', 'RETURNING', 'DISTINCT', 'ALL', 'NULLS', 'FIRST', 'LAST', 'ROWS', 'RANGE', 'GROUPS', 'PARTITION', 'OVER', 'WINDOW', 'USING', 'INTO', 'EXISTS', 'COLLATE', 'DO', 'UPDATE', 'DELETE', 'INSERT', 'WITH', 'RECURSIVE', 'FILTER']);
+const CK_CMP = new Set(['=', '==', '<>', '!=', '<', '>', '<=', '>=']);
+const CK_TEXTFN = /^(LOWER|UPPER|TLOWER_|TUPPER_|TRIM|LTRIM|RTRIM|SUBSTR|SUBSTRING|SUBSTRING_|REPLACE|TREPLACE_|LEFT_|RIGHT_|LEFT|RIGHT|CONCAT|CONCAT_WS|FORMAT_|REPLICATE_|STUFF_|REVERSE_|STR_|DATENAME_|CHAR|NCHAR|QUOTENAME_|SOUNDEX|TSOUNDEX_|PRINTF|STRING_AGG|GROUP_CONCAT|TRANSLATE_|INITCAP_)$/;
+function collateSql(sql) {
+  if (!/['"\w]/.test(sql)) return sql;
+  if (/^\s*(CREATE\s+(UNIQUE\s+)?(TABLE|INDEX|TEMP|TEMPORARY)|ALTER\s+TABLE|DROP|PRAGMA)\b/i.test(sql) && !/^\s*CREATE\s+(TEMP\s+|TEMPORARY\s+)?TABLE\s+[\w"\[\].]+\s+AS\s/i.test(sql)) return sql;
+  const T = tokenize(sql);
+  const N = T.length;
+  const pre = new Map(), suf = new Map(), rep = new Map();
+  const addWrap = (a, b, open, close) => { if (!pre.has(a)) pre.set(a, []); pre.get(a).push({ b, s: open }); if (!suf.has(b)) suf.set(b, []); suf.get(b).push({ a, s: close }); };
+  const isStop = t => t && ((t.k === 'w' && CK_STOP.has(t.u)) || ((t.k === 'p' || t.k === 'o') && (CK_CMP.has(t.v) || t.v === ',' || t.v === ';')));
+  const caseEnd = i => { let d = 0; for (let j = i; j < N; j++) { const t = T[j]; if (isP(t, '(')) { j = closeP(T, j); continue; } if (isW(t, 'CASE')) d++; else if (isW(t, 'END')) { d--; if (d === 0) return j; } } return N - 1; };
+  const caseStart = i => { let d = 0; for (let j = i; j >= 0; j--) { const t = T[j]; if (isP(t, ')')) { j = openP(T, j); continue; } if (isW(t, 'END')) d++; else if (isW(t, 'CASE')) { d--; if (d === 0) return j; } } return 0; };
+  const leftOf = i => { let j = pv(T, i), a = -1; while (j >= 0) { const t = T[j]; if (isP(t, '(')) break; if (isP(t, ')')) { j = openP(T, j); a = j; j = pv(T, j); continue; } if (isW(t, 'END')) { j = caseStart(j); a = j; j = pv(T, j); continue; } if (isStop(t) || isW(t, 'CASE')) break; a = j; j = pv(T, j); } return a; };
+  const rightOf = i => { let j = nx(T, i), b = -1; while (j < N) { const t = T[j]; if (isP(t, ')')) break; if (isP(t, '(')) { j = closeP(T, j); b = j; j = nx(T, j); continue; } if (isW(t, 'CASE')) { j = caseEnd(j); b = j; j = nx(T, j); continue; } if ((isStop(t) && !isW(t, 'COLLATE')) || isW(t, 'END')) break; if (isW(t, 'COLLATE')) { const k = nx(T, j); b = k; j = nx(T, k); continue; } b = j; j = nx(T, j); } return b; };
+  const sig = (a, b) => { const o = []; for (let k = a; k <= b; k++) if (sigk(T[k])) o.push(k); return o; };
+  const isDateLit = t => t.k === 's' && /^'\d{4}-\d\d(-\d\d)?([ T]\d\d:\d\d(:\d\d(\.\d+)?)?)?'$/.test(t.v);
+  const isNumLit = t => t.k === 's' && /^'-?\d+(\.\d+)?'$/.test(t.v);
+  const textish = (a, b) => {
+    if (a < 0 || b < a) return 0;
+    let tx = 0;
+    for (let k = a; k <= b; k++) { const t = T[k]; if (!sigk(t)) continue;
+      if (isP(t, '(')) { const c = closeP(T, k); const f = nx(T, k); if (!isW(T[f], 'SELECT', 'WITH') && !(k > a && T[pv(T, k)].k === 'w')) { const r = textish(f, pv(T, c)); if (r < 0) return -1; if (r) tx = 1; } k = c; continue; }
+      if (isW(t, 'CASE')) { const e = caseEnd(k); let st = -1; for (let j = k; j <= e; j++) { if (isP(T[j], '(')) { j = closeP(T, j); continue; } if (isW(T[j], 'THEN', 'ELSE')) st = nx(T, j); else if (isW(T[j], 'WHEN', 'END') && st >= 0) { const r = textish(st, pv(T, j)); if (r < 0) return -1; if (r) tx = 1; st = -1; } } k = e; continue; }
+      if (t.k === 's') { if (isDateLit(t)) return -1; if (!isNumLit(t)) tx = 1; continue; }
+      if (t.k === 'w') { const nt = T[nx(T, k)]; const low = t.u.toLowerCase();
+        if (isP(nt, '(')) { if (/^(CK_|TMIN_|TMAX_|TYPEOF)$/.test(t.u)) return -1; if (CK_TEXTFN.test(t.u) || (/^(CAST|CONVERT)$/.test(t.u) && /\bAS\s+(N?VARCHAR|N?CHAR|TEXT|NTEXT)\b/i.test(txt(T.slice(nx(T, k), closeP(T, nx(T, k)) + 1))))) tx = 1; k = closeP(T, nx(T, k)); continue; }
+        if (DATE_COLS.has(low) || DT_COLS.has(low)) return -1;
+        if (TEXT_COLS.has(low) && !isP(nt, '.')) tx = 1; }
+      if (isP(t, '||')) tx = 1; }
+    return tx;
+  };
+  /* Sıralama/gruplama öğesi metin olabilir mi? Bilinen sayısal/tarih sütunu ve metin içermeyen ifade sarılmaz; bilinmeyen takma ad sarılır. */
+  const needCk = (a, b) => { const t = textish(a, b); if (t < 0) return false; if (t === 1) return true; const ks = sig(a, b); if (collateIn(a, b)) return true;
+    const lastW = ks.length && T[ks[ks.length - 1]]; const simple = ks.length === 1 || (ks.length === 3 && isP(T[ks[1]], '.'));
+    if (simple && lastW && (lastW.k === 'w' || lastW.k === 'q')) { const nm = lastW.v.replace(/^[\["`]|[\]"`]$/g, '').toLowerCase(); return !ALL_COLS.has(nm) || TEXT_COLS.has(nm); }
+    return false; };
+  /* COLLATE adı (sağdaki) */
+  const collateIn = (a, b) => { for (const k of sig(a, b)) if (isW(T[k], 'COLLATE')) { const nk = nx(T, k); return { k, nk, name: T[nk].v.replace(/^\[|\]$/g, '') }; } return null; };
+  const wrapOp = (a, b, coll) => { const c = collateIn(a, b); const nm = c ? c.name : coll; if (c) { rep.set(c.k, ''); rep.set(c.nk, ''); } addWrap(a, b, 'ck_(', nm ? `, '${nm}')` : ')'); };
+  const distinctJobs = [];
+  let setDepth = -1; const D = depthAt(T);
+  for (let i = 0; i < N; i++) {
+    const t = T[i]; if (!sigk(t)) continue;
+    if (isW(t, 'SET')) { setDepth = D[i]; continue; }
+    if (setDepth === D[i] && isW(t, 'WHERE', 'FROM', 'RETURNING')) setDepth = -1;
+    /* karşılaştırma */
+    if ((t.k === 'o' || t.k === 'p') && CK_CMP.has(t.v) && setDepth !== D[i]) {
+      const a = leftOf(i), b = rightOf(i); if (a < 0 || b < 0) continue;
+      const lt = textish(a, pv(T, i)), rt2 = textish(nx(T, i), b);
+      if (lt < 0 || rt2 < 0 || (lt + rt2) === 0) continue;
+      const cl = collateIn(a, pv(T, i)) || collateIn(nx(T, i), b);
+      wrapOp(a, pv(T, i), cl && cl.name); wrapOp(nx(T, i), b, cl && cl.name); continue;
+    }
+    /* [NOT] IN (liste) */
+    if (isW(t, 'IN') && isP(T[nx(T, i)], '(') && !isW(T[nx(T, nx(T, i))], 'SELECT', 'WITH', 'VALUES')) {
+      let op = pv(T, i); const notK = isW(T[op], 'NOT') ? op : -1; const a = leftOf(notK >= 0 ? notK : i); if (a < 0) continue;
+      const o = nx(T, i), c = closeP(T, o); const items = []; let s0 = nx(T, o);
+      for (let k = s0; k <= c; k++) { if (isP(T[k], '(')) { k = closeP(T, k); continue; } if (k === c || (isP(T[k], ',') && D[k] === D[o] + 1)) { items.push([s0, pv(T, k)]); s0 = nx(T, k); } }
+      const lt = textish(a, pv(T, notK >= 0 ? notK : i)); const anyT = items.some(([x, y]) => textish(x, y) === 1);
+      if (lt < 0 || items.some(([x, y]) => textish(x, y) < 0) || (!lt && !anyT)) continue;
+      const cl = collateIn(a, pv(T, notK >= 0 ? notK : i));
+      wrapOp(a, pv(T, notK >= 0 ? notK : i), cl && cl.name); for (const [x, y] of items) if (y >= x) wrapOp(x, y, cl && cl.name); continue;
+    }
+    /* BETWEEN */
+    if (isW(t, 'BETWEEN')) {
+      const nk = pv(T, i); const notK = isW(T[nk], 'NOT') ? nk : -1; const a = leftOf(notK >= 0 ? notK : i); if (a < 0) continue;
+      let j = nx(T, i), andK = -1; for (; j < N; j++) { if (isP(T[j], '(')) { j = closeP(T, j); continue; } if (isW(T[j], 'AND') && D[j] === D[i]) { andK = j; break; } }
+      if (andK < 0) continue; const b = rightOf(andK); if (b < 0) continue;
+      const xs = [[a, pv(T, notK >= 0 ? notK : i)], [nx(T, i), pv(T, andK)], [nx(T, andK), b]];
+      const tt = xs.map(([x, y]) => textish(x, y)); if (tt.some(v => v < 0) || !tt.some(v => v > 0)) continue;
+      for (const [x, y] of xs) wrapOp(x, y); continue;
+    }
+    /* [NOT] LIKE */
+    if (isW(t, 'LIKE')) {
+      const nk = pv(T, i); const notK = isW(T[nk], 'NOT') ? nk : -1; const a = leftOf(notK >= 0 ? notK : i); if (a < 0) continue;
+      const b = rightOf(i); if (b < 0) continue; let e = b, escK = -1; const nn = nx(T, b); if (isW(T[nn], 'ESCAPE')) { escK = nn; e = nx(T, nn); }
+      const cl = collateIn(a, pv(T, notK >= 0 ? notK : i)) || collateIn(nx(T, i), b);
+      if (cl) { rep.set(cl.k, ''); rep.set(cl.nk, ''); }
+      addWrap(a, e, notK >= 0 ? '(NOT tlike_(' : 'tlike_(', (escK < 0 ? ', NULL' : '') + (cl ? `, '${cl.name}'` : '') + (notK >= 0 ? '))' : ')'));
+      if (notK >= 0) rep.set(notK, ''); rep.set(i, ','); if (escK >= 0) rep.set(escK, ','); continue;
+    }
+    /* basit CASE x WHEN 'a' */
+    if (isW(t, 'CASE') && !isW(T[nx(T, i)], 'WHEN')) {
+      const ce = caseEnd(i); const xs = []; let s0 = nx(T, i);
+      for (let k = s0; k <= ce; k++) { if (isP(T[k], '(')) { k = closeP(T, k); continue; } if (isW(T[k], 'CASE') && k !== i) { k = caseEnd(k); continue; } if (isW(T[k], 'WHEN', 'THEN', 'ELSE', 'END')) { if (isW(T[k], 'WHEN', 'THEN') && s0 <= pv(T, k)) xs.push([s0, pv(T, k), T[k].u]); s0 = nx(T, k); } }
+      const opers = xs.filter(x => x[2] === 'WHEN'); // [önce: case ifadesi (WHEN'den önceki), sonra WHEN değerleri (THEN'den önceki)]
+      const vals = xs.filter(x => x[2] === 'THEN').map(x => [x[0], x[1]]);
+      if (!opers.length) continue; const head = [opers[0][0], opers[0][1]];
+      const all = [head, ...vals]; const tt = all.map(([x, y]) => textish(x, y)); if (tt.some(v => v < 0) || !tt.some(v => v > 0)) continue;
+      for (const [x, y] of all) wrapOp(x, y); continue;
+    }
+    /* ORDER BY / PARTITION BY / GROUP BY öğeleri */
+    if (isW(t, 'BY') && isW(T[pv(T, i)], 'ORDER', 'PARTITION', 'GROUP')) {
+      const kind = T[pv(T, i)].u;
+      if (kind === 'ORDER') { // birleşik sorguda (UNION) ORDER BY yalnız sütun adı kabul eder: dokunma
+        let k = pv(T, pv(T, i)), comp = false; for (; k >= 0; k--) { if (isP(T[k], ')')) { k = openP(T, k); continue; } if (isP(T[k], '(')) break; if (isW(T[k], 'UNION', 'EXCEPT', 'INTERSECT')) { comp = true; break; } } if (comp) continue; }
+      let s0 = nx(T, i);
+      const ends = j => { const x = T[j]; return !x || isP(x, ')') || isP(x, ';') || isW(x, 'LIMIT', 'OFFSET', 'HAVING', 'UNION', 'EXCEPT', 'INTERSECT', 'ROWS', 'RANGE', 'GROUPS', 'WINDOW', 'ORDER', 'FETCH', 'FOR', 'SELECT', 'FROM', 'WHERE'); };
+      let j = s0; const items = []; let cur = s0;
+      for (; j < N; j = nx(T, j)) { if (j >= N) break; const x = T[j]; if (isP(x, '(')) { j = closeP(T, j); continue; } if (isW(x, 'CASE')) { j = caseEnd(j); continue; } if (ends(j)) break; if (isP(x, ',')) { items.push([cur, pv(T, j)]); cur = nx(T, j); } }
+      items.push([cur, pv(T, j)]);
+      for (let [x, y] of items) { if (y < x) continue;
+        let ks = sig(x, y); while (ks.length > 1 && (isW(T[ks[ks.length - 1]], 'ASC', 'DESC', 'FIRST', 'LAST', 'NULLS'))) { ks.pop(); } y = ks[ks.length - 1];
+        if (ks.length === 1 && T[ks[0]].k === 'n') continue; // sıra numarası
+        if (!needCk(x, y)) continue;
+        wrapOp(x, y); }
+      continue;
+    }
+    /* COUNT(DISTINCT x) */
+    if (isW(t, 'COUNT') && isP(T[nx(T, i)], '(') && isW(T[nx(T, nx(T, i))], 'DISTINCT')) {
+      const o = nx(T, i), c = closeP(T, o), s0 = nx(T, nx(T, o)); if (pv(T, c) >= s0 && needCk(s0, pv(T, c))) wrapOp(s0, pv(T, c)); continue;
+    }
+    /* MIN/MAX(metin) */
+    if (isW(t, 'MIN', 'MAX') && isP(T[nx(T, i)], '(')) {
+      const o = nx(T, i), c = closeP(T, o); const inner = sig(nx(T, o), pv(T, c)); if (inner.some(k => isP(T[k], ',') && D[k] === D[o] + 1)) continue;
+      if (isW(T[nx(T, c)], 'OVER')) continue; // pencere: sql.js toplamı pencere işlevi olamaz
+      { const f = inner[0], L = inner[inner.length - 1]; const plain = (inner.length === 1 || (inner.length === 3 && isP(T[inner[1]], '.'))) && T[L].k === 'w' && TEXT_COLS.has(T[L].u.toLowerCase()); const fn = T[f] && T[f].k === 'w' && CK_TEXTFN.test(T[f].u) && isP(T[nx(T, f)], '(') && closeP(T, nx(T, f)) === L; if (!plain && !fn) continue; }
+      if (textish(nx(T, o), pv(T, c)) === 1) rep.set(i, t.u === 'MIN' ? 'tmin_' : 'tmax_'); continue;
+    }
+    /* UPPER/LOWER/REPLACE/CHARINDEX harmanlamaya göre */
+    if (isW(t, 'UPPER', 'LOWER', 'REPLACE') && isP(T[nx(T, i)], '(')) { rep.set(i, { UPPER: 'tupper_', LOWER: 'tlower_', REPLACE: 'treplace_' }[t.u]); continue; }
+    /* SELECT DISTINCT → GROUP BY anahtarlar */
+    if (isW(t, 'DISTINCT') && isW(T[pv(T, i)], 'SELECT')) {
+      const d = D[i]; let fromK = -1, endK = N, hasGroup = false, ordK = -1;
+      for (let k = nx(T, i); k < N; k++) { const x = T[k]; if (isP(x, '(')) { k = closeP(T, k); continue; } if (isP(x, ')') || isP(x, ';')) { endK = k; break; } if (D[k] !== d) continue; if (isW(x, 'FROM') && fromK < 0) fromK = k; if (isW(x, 'GROUP')) hasGroup = true; if ((isW(x, 'ORDER', 'LIMIT', 'UNION', 'EXCEPT', 'INTERSECT', 'WINDOW')) && ordK < 0) ordK = k; }
+      if (hasGroup || fromK < 0) continue;
+      const list = T.slice(nx(T, i), fromK); if (/\b(COUNT|SUM|AVG|MIN|MAX|GROUP_CONCAT|STRING_AGG|TOTAL|OVER|MEDIAN|VARIANCE|VAR_\w+|STDDEV\w*|STDEV\w*|PERCENTILE\w*|APPROX\w*|TAVG_|TMIN_|TMAX_|JSON_GROUP_\w+|ANY_VALUE)\s*\(|\bOVER\b|\*/i.test(txt(list).replace(/'[^']*'/g, ''))) continue;
+      const exprRanges = []; let st = nx(T, i), ok = true;
+      for (let k = st; k <= fromK; k++) { if (isP(T[k], '(')) { k = closeP(T, k); continue; } if (k === fromK || (isP(T[k], ',') && D[k] === d)) { const ks = sig(st, pv(T, k)); const n = ks.length; if (!n) { ok = false; break; } let e = ks[n - 1]; if (n >= 3 && isW(T[ks[n - 2]], 'AS')) e = ks[n - 3]; else if (n >= 2 && (T[ks[n - 1]].k === 'w' || T[ks[n - 1]].k === 'q') && !isP(T[ks[n - 2]], '.') && T[ks[n - 2]].k !== 'o' && !isP(T[ks[n - 2]], '(') && !isW(T[ks[n - 1]], 'END')) e = ks[n - 2]; exprRanges.push([ks[0], e]); st = nx(T, k); } }
+      if (!ok || !exprRanges.length) continue;
+      if (!exprRanges.some(([x, y]) => needCk(x, y))) continue; // metin yok: SQLite DISTINCT yeterli
+      distinctJobs.push({ at: ordK >= 0 ? ordK : endK, ranges: exprRanges });
+      continue;
+    }
+    /* sütun ifadesindeki kalan COLLATE ad → kaldır */
+    if (isW(t, 'COLLATE') && !rep.has(i)) { rep.set(i, ''); rep.set(nx(T, i), ''); }
+  }
+  const render = (a, b) => { let o = ''; for (let k = a; k <= b; k++) { const p = (pre.get(k) || []).filter(w => w.b <= b && w.b >= 0); o += p.slice().sort((x, y) => y.b - x.b).map(w => w.s).join(''); o += rep.has(k) ? rep.get(k) : tv(T[k]); const s = (suf.get(k) || []).filter(w => w.a >= a); o += s.slice().sort((x, y) => y.a - x.a).map(w => w.s).join(''); } return o; };
+  for (const j of distinctJobs) { const gb = ' GROUP BY ' + j.ranges.map(([x, y]) => `ck_(${render(x, y)})`).join(', ') + ' '; if (j.at >= N) suf.set(N - 1, [...(suf.get(N - 1) || []), { a: -1, s: gb }]); else { if (!pre.has(j.at)) pre.set(j.at, []); pre.get(j.at).unshift({ b: -1, s: gb }); } }
+  if (!pre.size && !suf.size && !rep.size) return sql;
+  let out = '';
+  for (let i = 0; i < N; i++) {
+    const p = pre.get(i); if (p) out += p.slice().sort((x, y) => y.b - x.b).map(w => w.s).join('');
+    out += rep.has(i) ? rep.get(i) : tv(T[i]);
+    const s = suf.get(i); if (s) out += s.slice().sort((x, y) => y.a - x.a).map(w => w.s).join('');
+  }
+  return out;
+}
+
 function register(db) {
   const F = (name, fn, variadic) => { if (variadic) Object.defineProperty(fn, 'length', { value: -1 }); db.create_function(name, fn); };
   /* SQLite'ın UPPER ve LOWER'ı yalnız ASCII dönüştürür; Türkçe metinler bozulmasın diye yerine yazılır. E-posta içeren metinlerde i/I İngilizce kurala göre çevrilir. */
@@ -3064,12 +3461,27 @@ function register(db) {
   F('date_format_', (v, f) => mysqlFormat(v, f));
   F('convert_style_', (v, s) => convertStyle(v, s));
   F('len_', s => s === null ? null : String(s).replace(/\s+$/, '').length);
+  /* SQL Server ondalık (DECIMAL) aritmetiği kesindir: 57922,35 → 57922,4. Kayan noktadaki 57922,349999… payını 15 anlamlı basamakla giderir */
+  F('cp1252_', s => s === null || s === undefined ? null : typeof s === 'string' ? cp1252Fit(s) : s);
+  F('ck_', function (x, c) { return collKey(x, c); }, true);
+  F('tlike_', function (x, p, e, c) { return collLike(x, p, e, c); }, true);
+  F('tupper_', function (x, c) { return collUpper(x, c); }, true);
+  F('tlower_', function (x, c) { return collLower(x, c); }, true);
+  F('treplace_', function (x, f, r, c) { return collReplace(x, f, r, c); }, true);
+  try {
+    const best = dir => ({ init: () => ({ v: null, k: null }), step: (st, v) => { if (v === null || v === undefined) return st; const k = collKey(v); if (st.k === null || (typeof k === typeof st.k ? (dir < 0 ? k < st.k : k > st.k) : (dir < 0 ? typeof k === 'number' : typeof k !== 'number'))) { st.v = v; st.k = k; } return st; }, finalize: st => st.v });
+    db.create_aggregate('tmin_', best(-1)); db.create_aggregate('tmax_', best(1));
+  } catch (e) { /* eski sql.js: create_aggregate yok */ }
+  F('tsoundex_', s => tsoundex(s));
+  F('tdifference_', (a, b) => { const x = tsoundex(a), y = tsoundex(b); if (x === null || y === null) return null; if (x === '0000' || y === '0000') return x === y ? 4 : 0; let n = 0; for (let i = 0; i < 4; i++) if (x[i] === y[i]) n++; return n; });
+  F('tround_', (x, n) => { if (x === null || n === null) return null; const p = Math.pow(10, n); const v = Number((Math.abs(x) * p).toPrecision(15)); return Math.sign(x) * Math.floor(v + 0.5) / p; });
+  F('tavg_', (v, allInt) => { if (v === null || allInt !== 1) return v; const t = Math.trunc(v); if (t !== v) tavgCut = true; return t; });
   F('left_', (s, n) => s === null ? null : String(s).slice(0, Math.max(0, n)));
   F('right_', (s, n) => s === null ? null : (n <= 0 ? '' : String(s).slice(-n)));
   F('replicate_', (s, n) => s === null ? null : String(s).repeat(Math.max(0, n)));
   F('reverse_', s => s === null ? null : [...String(s)].reverse().join(''));
   F('stuff_', (s, st, ln, ins) => s === null ? null : String(s).slice(0, st - 1) + (ins === null ? '' : ins) + String(s).slice(st - 1 + ln));
-  F('charindex_', function (sub, s, st) { if (s === null || sub === null) return null; return String(s).toLowerCase().indexOf(String(sub).toLowerCase(), (st || 1) - 1) + 1; }, true);
+  F('charindex_', function (sub, s, st) { return collCharIndex(sub, s, st); }, true);
   F('patindex_', (pat, s) => { if (s === null) return null; const p = String(pat); const re = likeToRe(p.replace(/^%/, '').replace(/%$/, '')); const str = String(s); for (let i = 0; i < str.length; i++) if (re.test(str.slice(i))) return i + 1; return 0; });
   F('lpad_', function (s, n, c) { if (s === null) return null; s = String(s); c = c === undefined ? ' ' : String(c); if (s.length >= n) return s.slice(0, n); return (c.repeat(n)).slice(0, n - s.length) + s; }, true);
   F('rpad_', function (s, n, c) { if (s === null) return null; s = String(s); c = c === undefined ? ' ' : String(c); if (s.length >= n) return s.slice(0, n); return s + (c.repeat(n)).slice(0, n - s.length); }, true);
@@ -3142,6 +3554,16 @@ function mkRe(p, f, g) {
   try { return new RegExp(src, fl); } catch (e) { try { return new RegExp(src, fl.replace('u', '')); } catch (e2) { return fnErr('Geçersiz düzenli ifade: ' + p); } }
 }
 function jsRepl(r) { if (r === null || r === undefined) return ''; return String(r).replace(/\$/g, '$$$$').replace(/\\(\d)/g, '$$$1'); }
+/* SQL Server SOUNDEX: ilk karakter ASCII harf değilse '0000'; ilk ASCII olmayan/harf olmayan karakterde durur; H ve W ünlü gibi ayırıcıdır (gerçek sunucuyla karşılaştırıldı). */
+function tsoundex(s) {
+  if (s === null || s === undefined) return null;
+  const o = String(s); if (!/^[A-Za-z]/.test(o)) return '0000';
+  const t = o.replace(/[a-z]/g, c => c.toUpperCase());
+  const code = c => 'BFPV'.includes(c) ? '1' : 'CGJKQSXZ'.includes(c) ? '2' : 'DT'.includes(c) ? '3' : c === 'L' ? '4' : 'MN'.includes(c) ? '5' : c === 'R' ? '6' : '';
+  let out = t[0], last = code(t[0]);
+  for (let i = 1; i < t.length && out.length < 4; i++) { const c = t[i]; if (!/[A-Z]/.test(c)) break; const k = code(c); if (k && k !== last) out += k; last = k; }
+  return (out + '000').slice(0, 4);
+}
 function soundex(s) {
   if (s === null || s === undefined) return null;
   const t = String(s).replace(/[çÇ]/g, 'C').replace(/[şŞ]/g, 'S').replace(/[ğĞ]/g, 'G').replace(/[üÜ]/g, 'U').replace(/[öÖ]/g, 'O').replace(/[ıİ]/g, 'I').toUpperCase().replace(/[^A-Z]/g, '');
@@ -3212,9 +3634,12 @@ function varyantFail(e, code, d, ctx) {
   const son = (db, r) => { let s = r.sets && r.sets.length ? r.sets[r.sets.length - 1] : null; if (e.check) { try { s = db.exec(e.check).pop() || null; } catch (er) { s = null; } } return s; };
   /* Göreve özgü senaryolar, ortak tabanı değiştirmeyen ayrı kopyalarda çalışır.
      Hazırlık bozuksa ya da cevap yeni veride hata verirse başarı verilmez. */
+  /* SQL Server kipinde çözüm de T-SQL'e çevrilip aynı motorda (harmanlamayla) çalışır */
+  let solRef = [e.sol, taban];
+  if (d === 'tsql' && taban !== 'tsql' && TSQL_COLL) { const tq = (e.solv && e.solv.tsql) || (taban === 'sqlite' ? (() => { try { return forward(e.sol, 'tsql'); } catch (er) { return null; } })() : null); if (tq) solRef = [tq, 'tsql']; }
   for (const v of e.variants || []) {
     const sets = [];
-    for (const [sql, dialect] of [[e.sol, taban], [code, d]]) {
+    for (const [sql, dialect] of [solRef, [code, d]]) {
       const db = ctx.fresh();
       try { if (v.sql) db.exec(v.sql); let query = sql; if (v.beforeLast) { const parts = splitSemis(query); const last = parts.pop(); if (parts.length) { const pre = ctx.run(db, parts.join(';') + ';', dialect); if (pre.error) return 'Başlangıç tabloları gizli senaryoda kurulamadı.'; } db.exec(v.beforeLast); query = last; } if (v.tail) query += '\n' + v.tail; const r = ctx.run(db, query, dialect); if (r.error) return 'Gizli veri senaryosu doğrulanamadı (' + v.ad + '). Sorguyu ve sınır durumlarını kontrol et.'; sets.push(son(db, r)); }
       catch (er) { return 'Gizli veri senaryosu doğrulanamadı (' + v.ad + ').'; }
@@ -3257,7 +3682,8 @@ function planFail(e, db, res) {
 }
 root.SQLP_DIALECT = { DIALECTS, DNAME, mustFail, varyantFail, planFail, planOf, tokenize, forward, reverse, lint, runDialect, register, splitSemis, execOne, friendly,
   convert, isProcedural, forwardCanon,
-  setSchemaHints(dateCols, textCols, allCols, dtCols) { (dtCols || []).forEach(c => DT_COLS.add(c)); dateCols.forEach(c => DATE_COLS.add(c)); textCols.forEach(c => TEXT_COLS.add(c)); (allCols || []).forEach(c => ALL_COLS.add(String(c).toLowerCase())); } };
+  setCollation(c) { TSQL_COLL = c || null; ckCache.clear(); }, getCollation() { return TSQL_COLL; }, COLLATIONS: COLL_LIST, collKey, collateSql,
+  setSchemaHints(dateCols, textCols, allCols, dtCols, decCols) { decCols = (decCols || []).map(c => { const m = String(c).match(/^(!?[^:]+):(\d+)$/); if (!m) return c; const k = m[1].toLowerCase(), v = +m[2]; DEC_SCALE.set(k, DEC_SCALE.has(k) && DEC_SCALE.get(k) !== v ? -1 : v); return m[1]; }); (decCols || []).forEach(c => { if (!/^!/.test(c)) DEC_COLS.add(String(c).toLowerCase()); }); (decCols || []).forEach(c => { if (/^!/.test(c)) DEC_COLS.delete(String(c).slice(1).toLowerCase()); }); (dtCols || []).forEach(c => DT_COLS.add(c)); dateCols.forEach(c => DATE_COLS.add(c)); textCols.forEach(c => TEXT_COLS.add(c)); (allCols || []).forEach(c => ALL_COLS.add(String(c).toLowerCase())); } };
 // T-SQL yolunda da önce denetim uygula
 root.SQLP_DIALECT._tsqlLint = true;
 void tsqlRunChecked; void DATE_TYPES;

@@ -18,7 +18,7 @@ window.SQLP_TYPEMAP.rate = { tsql: 'DECIMAL(10,4)', pg: 'NUMERIC(10,4)', mysql: 
 /* Eşit sched_dep satırları: sıra belirsiz kalmasın */
 { const p = PR('k204'); SUB(p, 'sol', 'SELECT f.tail_no, f.sched_dep,', 'SELECT f.tail_no, f.flight_id, f.sched_dep,'); SUB(p, 'sol', 'ORDER BY sched_dep)', 'ORDER BY sched_dep, flight_id)'); }
 /* Özyinelemeli CTE: iki kolun tipi aynı olmalı */
-SUB(PR('i158'), 'sol', 'first_name AS zincir', 'CAST(first_name AS TEXT) AS zincir');
+{ const p = PR('i158'); SUB(p, 'sol', 'first_name AS zincir', 'CAST(first_name AS VARCHAR(500)) AS zincir'); SUB(p, 'sol', "e.first_name || ' > ' || h.zincir", "CAST(e.first_name || ' > ' || h.zincir AS VARCHAR(500))"); } /* SQL Server iki kolda aynı tip ve uzunluğu ister (gerçek SQL Server ile doğrulandı) */
 { const p = PR('n016'); SUB(p, 'sol', "SELECT 'IST', 0", "SELECT CAST('IST' AS TEXT), 0"); SUB(p, 'sol', 'SELECT r.dest, y.adim', 'SELECT CAST(r.dest AS TEXT), y.adim'); }
 /* rowid yalnız SQLite ve Oracle'da var; PostgreSQL'de ctid */
 { const e = EX('de-dedup', 0); e.q = "<p><code>raw_signups</code> için normalize edilmiş e-posta (<code>LOWER(TRIM(email))</code>) başına <b>tek satır</b> bırak; en küçük <code>id</code>'yi seç. Sütunlar: <code>id</code>, <code>email</code> (normalize).</p>"; e.sol = 'WITH s AS (SELECT id, LOWER(TRIM(email)) AS email, ROW_NUMBER() OVER (PARTITION BY LOWER(TRIM(email)) ORDER BY id) AS rn FROM raw_signups) SELECT id, email FROM s WHERE rn = 1;'; }
