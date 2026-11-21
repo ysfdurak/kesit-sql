@@ -5,7 +5,8 @@
 const fs = require('fs'), path = require('path');
 const OUT = process.argv[2] || 'mssql_out'; fs.mkdirSync(OUT, { recursive: true });
 const c = require('./load.js'); const initSqlJs = require('sql.js/dist/sql-asm.js'); const DX = c.SQLP_DIALECT;
-{ const dc = [], tc = [], all = [], dt = [], nc=[]; for (const t of Object.keys(c.SQLP_COLMETA)) for (const [col, ty] of c.SQLP_COLMETA[t]) { all.push(col); if (/date/.test(ty)) dc.push(col); if (ty === 'datetime') dt.push(col); if (/^text/.test(ty)) tc.push(col); if(/^(money|dec|rate|coord|real)$|^decimal/.test(ty)) nc.push(col); else if(/^(int|bigint|bit)$/.test(ty)) nc.push('!'+col); } DX.setSchemaHints(dc, tc, all, dt, nc); }
+const KOLL = process.argv[3] || 'Turkish_CI_AS'; DX.setCollation(KOLL); // ikinci argüman: SQL_Latin1_General_CP1_CI_AS → beklenen_L.json
+{ const dc = [], tc = [], all = [], dt = [], nc=[]; for (const t of Object.keys(c.SQLP_COLMETA)) for (const [col, ty] of c.SQLP_COLMETA[t]) { all.push(col); if (/date/.test(ty)) dc.push(col); if (ty === 'datetime') dt.push(col); if (/^text/.test(ty)) tc.push(col); if(/^(money|dec|rate|coord|real)$|^decimal/.test(ty)) nc.push(col+({money:':2',dec:':2',rate:':4',coord:':6'}[ty]||(/,\s*(\d+)\)/.test(ty)?':'+ty.match(/,\s*(\d+)\)/)[1]:''))); else if(/^(int|bigint|bit)$/.test(ty)) nc.push('!'+col); } DX.setSchemaHints(dc, tc, all, dt, nc); }
 require('vm').runInContext(fs.readFileSync(require('./yol.js').ROOT + 'arena-data.js', 'utf8'), c);
 const p2 = x => String(x).padStart(2, '0');
 function nv(v) { if (v === null || v === undefined) return null; if (typeof v === 'number') return Math.round(v * 1e6) / 1e6; return String(v); }
@@ -47,6 +48,6 @@ initSqlJs().then(SQL => {
     if (r.error) rec.error = String(r.error).slice(0, 300); else if (set) { rec.cols = set.columns; rec.rows = set.values.map(x => x.map(nv)); }
     out.push(rec); n++;
   }
-  fs.writeFileSync(path.join(OUT, 'beklenen.json'), JSON.stringify(out));
+  fs.writeFileSync(path.join(OUT, /^Turkish/i.test(KOLL) ? 'beklenen.json' : 'beklenen_L.json'), JSON.stringify(out));
   console.log(JSON.stringify({ tablolar: tabs.length, madde: n, motorHata: out.filter(x => x.error).length, ortam: out.filter(x => x.env).length, check: out.filter(x => x.check).length }));
 });

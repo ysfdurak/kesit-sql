@@ -186,14 +186,18 @@ ${box(`WITH s AS (
          CASE WHEN ${SN} > 2700 THEN 'geç' ELSE 'zamanında' END AS durum
   FROM lk_orders
   WHERE status = 'teslim' AND placed_at >= '2024-10-01' AND placed_at < '2024-12-01'
+), t AS (
+  SELECT durum,
+         CASE WHEN EXISTS (
+           SELECT 1 FROM lk_orders n
+           WHERE n.customer_id = s.customer_id AND n.placed_at > s.placed_at
+             AND (julianday(n.placed_at) - julianday(s.placed_at)) * 86400 <= 2592000
+         ) THEN 1 ELSE 0 END AS dondu
+  FROM s
 )
 SELECT durum, COUNT(*) AS teslimat,
-       ROUND(100.0 * SUM(CASE WHEN EXISTS (
-         SELECT 1 FROM lk_orders n
-         WHERE n.customer_id = s.customer_id AND n.placed_at > s.placed_at
-           AND (julianday(n.placed_at) - julianday(s.placed_at)) * 86400 <= 2592000
-       ) THEN 1 ELSE 0 END) / COUNT(*), 1) AS donus_yuzde
-FROM s
+       ROUND(100.0 * SUM(dondu) / COUNT(*), 1) AS donus_yuzde
+FROM t
 GROUP BY durum;`)}
 <p>Fark küçük. Müşteri puanı ise belirgin düşüyor: geç teslimlerde kurye puanı ortalaması ${N.puanGec}, diğerlerinde ${N.puanZaman}. Dürüst özet: <i>geç teslim memnuniyeti düşürüyor; yeniden siparişe etkisi bu veride küçük görünüyor.</i> Bu gözlemdir, neden-sonuç kanıtı değildir ve kuponun getirisini garanti etmez. Bunu talep sahibine söylemek senin işindir. Kupon yine yapılabilir, ama başarı ölçüsü buna göre yazılır.</p>
 <h3>Başarı ölçüsü: sayı, kaynak, hedef, süre</h3>

@@ -178,7 +178,28 @@ node pg_denetim.mjs              # FILTER='^ik-' ile daraltılır
 - Yapısal denetimi SQLite kataloğuna bakan DDL görevlerinde (pragma_table_info) yalnız DDL'in çalıştığı sınanır.
 - Tarih türü ile yapılan sıralamalar ve yerel ayara bağlı `UPPER`/`LOWER` farkı karşılaştırmada i/İ/ı/I harfleri eşit sayılarak ele alınır.
 
-SQL Server, MySQL, Oracle ve BigQuery için bu denetimin karşılığı yoktur; bu türler yalnız taklit katmanında sınanır.
+MySQL, Oracle ve BigQuery için bu denetimin karşılığı yoktur; bu türler yalnız taklit katmanında sınanır. SQL Server için aşağıdaki 5a'ya bak.
+
+### 5a. Gerçek SQL Server denetimi (Windows bilgisayarda)
+Gerçek sunucu bu kapsayıcıda çalışmaz; denetim iki adımdır.
+```bash
+node mssql_gen.js /tmp/mssql                                   # ddl.json + beklenen.json (Turkish_CI_AS)
+node mssql_gen.js /tmp/mssql SQL_Latin1_General_CP1_CI_AS      # beklenen_L.json
+```
+- `ddl.json`, `beklenen*.json`, `base.sqlite` ve `mssql_kontrol.py` aynı klasöre, SQL Server kurulu bilgisayara kopyalanır (pyodbc gerekir).
+- `python mssql_kontrol.py` → KesitSQL veritabanını (sunucunun varsayılan harmanlaması, Türkçe kurulumda Turkish_CI_AS) kurar, her çözümü bir işlem içinde çalıştırıp geri alır ve sonucu taklit motorla karşılaştırır. `--yukle` veritabanını yeniden kurar.
+- `python mssql_kontrol.py beklenen_L.json --latin` → aynı işi `COLLATE SQL_Latin1_General_CP1_CI_AS` ile kurulan KesitSQL_L veritabanında yapar (ilk kurulum yaklaşık 10 dakika).
+- Çıktı: `sonuc.txt` / `sonuc.json` (Latin için `sonuc_L.*`). Sınıflar: `ayni`, `fark`, `sira` (aynı satırlar, sıra farklı), `sqlHata` (gerçek sunucu reddetti), `emuHata`, `surum` (yalnız SQL Server 2022 ve sonrası özellik), `(ortam)` (DMV ve msdb gibi taklit ortamı), `(işlem)` (işlem komutlu, sarmalayıcıdan etkilenen madde). Farklı maddelerde gerçek sunucunun ilk 40 satırı `ss` alanına yazılır.
+- Son tur (21 Kasım 2026, SQL Server 2019): 1.917 madde. Kalanlar ortam, işlem sarmalayıcısı ve `DIFFERENCE` puanıdır.
+
+### 5b. SQL Server harmanlama (collation) taklidi
+sql.js'te `create_collation` olmadığı için T-SQL kipinde metin karşılaştırmaları `dialect.js` içindeki `collateSql` geçişiyle yeniden yazılır:
+- `=`, `<>`, `<`, `IN (...)`, `BETWEEN`, basit `CASE x WHEN`, `ORDER BY`, `GROUP BY`, `PARTITION BY`, `COUNT(DISTINCT ...)` ve `SELECT DISTINCT` noktalarında metin `ck_(x)` anahtar işlevinden geçer. `MIN`/`MAX(metin)` → `tmin_`/`tmax_`, `LIKE` → `tlike_`, `UPPER`/`LOWER`/`REPLACE`/`CHARINDEX` harmanlamaya göre çalışır.
+- `collKey` dört katmanlı anahtar üretir: harf (Türkçe'de ç ğ ı ö ş ü ayrı harf; Latin'de aksanlı harf), aksan, büyük/küçük (yalnız `_CS`), kelime sıralaması (kesme işareti ve kısa çizgi en sona bırakılır). Sondaki boşluk yok sayılır. `_BIN` harmanlamasında anahtar metnin kendisidir.
+- Kurallar gerçek sunucudaki yoklamayla (`araclar/denetim/sorgu.py` + `sorgu.json`) çıkarıldı: 220 dizenin iki harmanlamadaki sırası, `UPPER`/`LOWER`, 13 `LIKE` deseni, `REPLACE` ve `CHARINDEX` birebir tutuyor.
+- Uygulamada kenar çubuğundaki **Harmanlama** seçimi (yalnız SQL Server seçiliyken görünür) `DX.setCollation` çağırır: Turkish_CI_AS (varsayılan) veya SQL_Latin1_General_CP1_CI_AS. Sorgudaki `x COLLATE Ad` o karşılaştırmada seçimi ezer.
+- Bilinen sınırlar: birleşik sorgunun (`UNION`) `ORDER BY`'ı ve `IN (SELECT ...)` harmanlamasız kalır; `MIN`/`MAX` pencere işlevinde ikili karşılaştırma kullanır; `DIFFERENCE` 4'ün altındaki puanlarda gerçek sunucudan ayrılabilir (gerçek sunucuda puan, argümanların sırasına göre değişiyor). `SOUNDEX` birebir tutar.
+- `run.js` SQL Server sonucu SQLite referansından yalnız harmanlama ya da son basamak yuvarlamasıyla ayrılıyorsa bunu `tsqlHarmanlama` (harmanlama kapatılınca SQLite ile aynı) ya da `tsqlYuvarlama` diye ayrı yazar; bunlar hata sayılmaz.
 
 ### 6. İpucu kapsamı
 ```bash

@@ -21,7 +21,7 @@ if(!process.argv.includes('--child')){
 }
 const c=require('./load.js'); const initSqlJs=require('sql.js/dist/sql-asm.js');
 const DX=c.SQLP_DIALECT;
-{ const dc=[],tc=[],all=[],dt=[], nc=[]; for(const t of Object.keys(c.SQLP_COLMETA)) for(const [col,ty] of c.SQLP_COLMETA[t]){ all.push(col); if(/date/.test(ty)) dc.push(col); if(ty==='datetime') dt.push(col); if(/^text/.test(ty)) tc.push(col); if(/^(money|dec|rate|coord|real)$|^decimal/.test(ty)) nc.push(col); else if(/^(int|bigint|bit)$/.test(ty)) nc.push('!'+col); } DX.setSchemaHints(dc,tc,all,dt, nc); }
+{ const dc=[],tc=[],all=[],dt=[], nc=[]; for(const t of Object.keys(c.SQLP_COLMETA)) for(const [col,ty] of c.SQLP_COLMETA[t]){ all.push(col); if(/date/.test(ty)) dc.push(col); if(ty==='datetime') dt.push(col); if(/^text/.test(ty)) tc.push(col); if(/^(money|dec|rate|coord|real)$|^decimal/.test(ty)) nc.push(col+({money:':2',dec:':2',rate:':4',coord:':6'}[ty]||(/,\s*(\d+)\)/.test(ty)?':'+ty.match(/,\s*(\d+)\)/)[1]:''))); else if(/^(int|bigint|bit)$/.test(ty)) nc.push('!'+col); } DX.setSchemaHints(dc,tc,all,dt, nc); }
 require('vm').runInContext(fs.readFileSync(require('./yol.js').ROOT+'arena-data.js','utf8'),c);
 const SQL=await initSqlJs(); const BASE=require('./base.js')(SQL,c);
 const fresh=()=>{ const db=new SQL.Database(BASE); c.SQLP_REGISTER(db); DX.register(db); return db; };

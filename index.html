@@ -530,6 +530,7 @@ button.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink);
     <a class="brand" href="#" data-go="home"><span class="marker" aria-hidden="true"><svg viewBox="0 0 26 26" width="26" height="26"><rect x="0.5" y="0.5" width="25" height="25" rx="7" fill="var(--accent)"/><path d="M0.5 15.5 L15.5 0.5 H20.5 L0.5 20.5 Z" fill="var(--bg)"/><rect x="13" y="13" width="8" height="2.2" rx="1.1" fill="#fff" opacity=".9"/><rect x="13" y="17.5" width="5" height="2.2" rx="1.1" fill="#fff" opacity=".9"/></svg></span><b>Kesit<span>SQL</span></b></a>
     <div class="side-search"><input id="sideQ" type="search" placeholder="Ders veya terim ara (Ctrl+K)" aria-label="Ders veya terim ara" autocomplete="off"><div class="sq-res" id="sideRes" hidden></div></div>
     <div class="dsel"><label for="dialectSide">SQL türü</label><select id="dialectSide" data-dsel></select></div>
+    <div class="dsel" id="collWrap" hidden><label for="collSide" title="SQL Server'da metinlerin nasıl karşılaştırılıp sıralanacağı">Harmanlama</label><select id="collSide" data-csel><option value="Turkish_CI_AS">Turkish_CI_AS (Türkçe)</option><option value="SQL_Latin1_General_CP1_CI_AS">SQL_Latin1_General_CP1_CI_AS</option></select></div>
     <nav class="nav" id="nav"></nav>
     <div class="side-stats" id="sideStats"></div>
     <div class="fam" id="famLinks"></div>
@@ -626,7 +627,7 @@ const lvOrder = id => LEVELS.findIndex(l=>l.id===id);
 const lvName = id => (LEVELS[lvOrder(id)]||{}).name || id;
 const lvBadge = id => '<span class="lv lv-'+id+'">'+lvName(id)+'</span>';
 const EXTRA_MODS = ['Veri Analisti','BT İş Analizi','Veri Bilimi','Veri Mühendisliği','Mülakat Hazırlığı','SQL Türlerine Özgü','İş Zekâsı ve Raporlama','Veritabanı Yönetimi (DBA)','Uygulama Geliştirme','Vaka Çalışmaları','Yapay Zekâ ile SQL','BigQuery ve Bulut Veri Ambarları','Sertifika Hazırlık','Alıştırma Kampı','Bitirme Projeleri','Kanat Havayolları','Büyük Sorgular','İK Analitiği','Büyük Veriyle Çalışmak','Sorgu Optimizasyonu','SQL Server Operasyon'];
-(function hints(){ const dc=[], tc=[], all=[], dt=[], nc=[]; for(const t of TABLES) for(const [c,ty] of COLMETA[t]){ all.push(c); if(/date/.test(ty)) dc.push(c); if(ty==='datetime') dt.push(c); if(/^text/.test(ty)) tc.push(c); if(/^(money|dec|rate|coord|real)$|^decimal/.test(ty)) nc.push(c); else if(/^(int|bigint|bit)$/.test(ty)) nc.push('!'+c); } DX.setSchemaHints(dc, tc, all, dt, nc); })();
+(function hints(){ const dc=[], tc=[], all=[], dt=[], nc=[]; for(const t of TABLES) for(const [c,ty] of COLMETA[t]){ all.push(c); if(/date/.test(ty)) dc.push(c); if(ty==='datetime') dt.push(c); if(/^text/.test(ty)) tc.push(c); if(/^(money|dec|rate|coord|real)$|^decimal/.test(ty)) nc.push(c+({money:':2',dec:':2',rate:':4',coord:':6'}[ty]||(/,\s*(\d+)\)/.test(ty)?':'+ty.match(/,\s*(\d+)\)/)[1]:''))); else if(/^(int|bigint|bit)$/.test(ty)) nc.push('!'+c); } DX.setSchemaHints(dc, tc, all, dt, nc); })();
 
 /* ---------- Depolama ---------- */
 const KEY='sqlpatika.v1';
@@ -642,6 +643,8 @@ let P = Object.assign(DEFAULTS(), load()); P.pilot=pilotNorm(P.pilot);
 function applyTheme(){ const r=document.documentElement; if(P.theme==='light'||P.theme==='dark') r.setAttribute('data-theme',P.theme); else r.removeAttribute('data-theme'); }
 applyTheme();
 if(!DIDS.includes(P.dialect)) P.dialect='pg';
+if(!['Turkish_CI_AS','SQL_Latin1_General_CP1_CI_AS'].includes(P.coll)) P.coll='Turkish_CI_AS';
+try{ DX.setCollation(P.coll); }catch(e){}
 if(P.placement && LVMAP[P.placement]) P.placement = LVMAP[P.placement];
 let saveT=null;
 let persistAsked=false;
@@ -800,6 +803,7 @@ function renderNav(){
   const inMenu=!['home','paths','path','curr','lesson','pratik','pratiksoru'].includes(S.view);
   $('#tabbar').innerHTML = tab('home','Ana sayfa','home',cur==='home')+tab(goal?'path':'paths','Yolum','path',cur==='paths',goal?' data-id="'+goal+'"':'')+tab('curr','Dersler','book',cur==='curr')+tab('pratik','Pratik','gym',cur==='pratik')+tab('menu','Menü','menu',inMenu);
   document.querySelectorAll('[data-dsel]').forEach(s=>{ s.innerHTML = DIAL.map(d=>'<option value="'+d.id+'"'+(d.id===P.dialect?' selected':'')+'>'+d.name+'</option>').join(''); });
+  { const cw=$('#collWrap'); if(cw){ cw.hidden = P.dialect!=='tsql'; const cs=$('#collSide'); if(cs) cs.value=P.coll||'Turkish_CI_AS'; } }
   const f=$('#famLinks'); if(f) f.innerHTML=famHTML();
 }
 function renderStats(){
@@ -1113,7 +1117,9 @@ function solvedHook(k, ok1st){
   if(S.review){ const days=rvMark(k, ok1st); addXP(3); renderNav(); return '<span class="muted" style="display:block;margin-top:4px">Tekrar kaydedildi (+3 XP). Bir sonraki tekrar: <b>'+days+' gün sonra</b>. <button class="btn sm" data-act="rv-next" style="margin-left:6px">Sıradaki tekrar</button></span>'; }
   if(!(LS && LS.e && LS.e.norv)) rvFirst(k); save(); return '';
 }
-function solResult(e,k){
+function solResult(e,k,d){
+  /* SQL Server kipinde beklenen sonuç da aynı motorda (harmanlama taklidiyle) hesaplanır; yoksa büyük/küçük harf ve Türkçe sıralama farkı doğru cevabı yanlış gösterirdi. */
+  if(d==='tsql' && exBase(e)!=='tsql'){ const t=exText(e.sol,e,'tsql',e.solv); if(t){ const kk=k+'|tsql|'+(P.coll||''); if(solCache[kk]===undefined){ const db=fresh(); const r=run(db,t,'tsql'); let set=lastSet(r); if(!r.error && e.check){ try{ set=db.exec(e.check).pop()||null; }catch(er){ r.error=String(er.message); } } solCache[kk]= r.error? null : {set}; db.close(); } if(solCache[kk]) return solCache[kk]; } }
   if(!solCache[k]){ const db=fresh(); const r=run(db,e.sol,exBase(e)); let set=lastSet(r); if(!r.error && e.check){ try{ set=db.exec(e.check).pop()||null; }catch(er){ r.error=String(er.message); } } solCache[k]= r.error? {error:r.error} : {set}; db.close(); }
   return solCache[k];
 }
@@ -1154,7 +1160,7 @@ function submitEx(){
   const pf=(!r.error&&e.plan)?DX.planFail(e,db,r):null;
   $('#res').innerHTML=resultHTML(r, Object.assign({noErr:!!r.error}, e.check?{checkSet:uset}:{})); db.close();
   if(r.error){ if(!S.review){ P.pilot.takilma[k]=(P.pilot.takilma[k]||0)+1; save(); } $('#fb').innerHTML=errHTML(r); return; }
-  const s=solResult(e,k);
+  const s=solResult(e,k,LS.d);
   if(s.error){ $('#fb').innerHTML='<div class="msg err"><b>Çözüm sorgusu çalışmadı</b>'+esc(s.error)+'</div>'; return; }
   const c=compare(uset,s.set,e.ord); LS.tries++;
   if(!c.ok && e.check && /değerler farklı|satır|sütun var/.test(c.why)) c.why=/pragma_|sqlite_master|sqlite_schema/i.test(e.check)?'Tablonun yapısı beklenenle aynı değil. Sütunları, PRIMARY KEY, FOREIGN KEY ve CHECK kısıtlarını kontrol et.':'Tablonun son durumu beklenenle aynı değil. Hangi satırların değiştiğini ve koşulu kontrol et.';
@@ -1541,7 +1547,7 @@ function arChSubmit(){
 function arJudge(c, code, d){
   const cases=[{ad:'Örnek veri', sql:''}].concat(c.tests); const out=[]; let firstR=null;
   for(let i=0;i<cases.length;i++){ const t=cases[i];
-    const dbS=fresh(); if(t.sql) try{ dbS.exec(t.sql); }catch(e){} const sr=run(dbS,c.sol,'sqlite'); dbS.close();
+    let dbS=fresh(); if(t.sql) try{ dbS.exec(t.sql); }catch(e){} let sr=null; if(d==='tsql'){ const tq=exText(c.sol,c,'tsql',c.solv); if(tq){ sr=run(dbS,tq,'tsql'); if(sr.error){ sr=null; dbS.close(); dbS=fresh(); if(t.sql) try{ dbS.exec(t.sql); }catch(e){} } } } if(!sr) sr=run(dbS,c.sol,'sqlite'); dbS.close();
     const dbU=fresh(); if(t.sql) try{ dbU.exec(t.sql); }catch(e){} const ur=run(dbU,code,d); const apf=(!i&&!ur.error&&c.plan)?DX.planFail(c,dbU,ur):null; dbU.close(); if(!i) firstR=ur;
     if(ur.error){ out.push({ad:t.ad, ok:false, why:'Hata: '+ur.error+(ur.hint?' '+ur.hint:'')}); break; }
     const cm=compare(lastSet(ur), lastSet(sr), c.ord ? (/eşitlikte/i.test(c.q) ? 'strict' : true) : false); if(cm.ok&&apf){ cm.ok=false; cm.why='Sonuç doğru ✓ · plan hedefi ✗. '+apf.msg+(apf.plan?' Planın: '+apf.plan.replace(/\n/g,' | '):''); } out.push({ad:t.ad, ok:cm.ok, why:cm.why}); }
@@ -1601,7 +1607,7 @@ function arSpeedSubmit(){
   const p=PRMAP[ARS.items[ARS.cur]], code=ED.get(); if(!code.trim()) return;
   const db=fresh(); const r=run(db,code,ARS.d); db.close(); $('#res').innerHTML=resultHTML(r,{noErr:!!r.error});
   if(r.error){ $('#arFb').innerHTML=errHTML(r); return; }
-  const s=solResult(p,'pr:'+p.id); const cm=compare(lastSet(r), s.set, p.ord);
+  const s=solResult(p,'pr:'+p.id,ARS.d); const cm=compare(lastSet(r), s.set, p.ord);
   if(cm.ok){ toast('Doğru!'); arSpeedNext(true); } else $('#arFb').innerHTML='<div class="msg err"><b>Henüz değil</b>'+esc(cm.why)+'</div>';
 }
 function arSpeedEnd(){ if(!ARS||ARS.mode!=='hiz') return; arStop(); const a=arP(); ARS.state='done'; a.speed.runs=(a.speed.runs||0)+1; ARS.rec=ARS.ok>(a.speed.best||0); if(ARS.rec) a.speed.best=ARS.ok; save(); if(ARS.ok) arGain(ARS.ok*3,'Hız turu'); if(S.view==='play') render(); }
@@ -1949,7 +1955,7 @@ function gradeCode(){
   return EX.items.map((id,i)=>{ const p=PRMAP[id], code=(EX.codes[i]||'').trim(); if(!code) return {ok:false, why:'Boş bırakıldı.'};
     const db=fresh(); const r=run(db,code,EX.d); let u=lastSet(r); if(!r.error&&p.check){ try{ u=db.exec(p.check).pop()||null; }catch(er){ u=null; } } const pf=!r.error&&p.plan?DX.planFail(p,db,r):null; db.close();
     if(r.error) return {ok:false, why:r.error};
-    const s=solResult(p, prKey(p)); if(s.error) return {ok:false, why:'Çözüm çalışmadı'};
+    const s=solResult(p, prKey(p), EX.d); if(s.error) return {ok:false, why:'Çözüm çalışmadı'};
     const c=compare(u,s.set,p.ord); if(!c.ok) return {ok:false, why:c.why};
     const mf=DX.mustFail(p,code,EX.d); if(mf) return {ok:false, why:mf};
     if(pf) return {ok:false, why:'Sonuç doğru ✓ · plan hedefi ✗. '+pf.msg};
@@ -2109,7 +2115,7 @@ document.addEventListener('click', ev=>{
   else if(a==='pg-cmp'){ if(!engineReady()) return; const code=ED.get(); if(!code.trim()) return; openCompare(code, playD, $('#cmpBox'), (d,text)=>{ playD=d; S.pending=text; render(); }); }
   else if(a==='cmp-close'){ CMP.host.innerHTML=''; CMP=null; }
   else if(a==='cmp-take'){ const c=CMP; c.onTake(c.cur, c.text); }
-  else if(a==='expected'){ const s=solResult(LS.e,LS.k); $('#res').innerHTML=resultHTML({sets:s.set?[s.set]:[]},{checkSet:s.set}).replace('Kontrol sorgusunun sonucu','Beklenen sonuç'); }
+  else if(a==='expected'){ const s=solResult(LS.e,LS.k,LS.d); $('#res').innerHTML=resultHTML({sets:s.set?[s.set]:[]},{checkSet:s.set}).replace('Kontrol sorgusunun sonucu','Beklenen sonuç'); }
   else if(a==='reset-code'){ const st=exText(LS.e.start,LS.e,LS.d)||''; ED.set(st); delete P.drafts[LS.k+':'+LS.d]; save(); $('#fb').innerHTML=''; }
   else if(a==='read-done'){ const l=LMAP[S.id]; if(!P.done[l.id]){ dersBitti(l.id); addXP(15); gcEvent('ders-bitti/'+l.id, 'Ders bitti: '+l.title); toast('Ders tamamlandı (+15 XP)'); } render(); }
   else if(a==='ex-run'){ runBox(t.closest('.codebox')); }
@@ -2233,6 +2239,7 @@ document.addEventListener('input', ev=>{
 });
 document.addEventListener('change', ev=>{
   const t=ev.target;
+  if(t.matches('[data-csel]')) { P.coll=t.value; save(); try{ DX.setCollation(P.coll); }catch(e){} toast('Harmanlama: '+P.coll+'. Karşılaştırma, sıralama ve gruplama bu kurala göre yapılır.'); return; }
   if(t.matches('[data-dsel]')) { const keepPlay = S.view==='serbest'; if(keepPlay) playD=t.value; setDialect(t.value); return; }
   if(t.id==='exD'){ switchExDialect(t.value); return; }
   if(t.id==='prT'){ prFilter.t=t.value; $('#prList').innerHTML=prListHTML(); return; }

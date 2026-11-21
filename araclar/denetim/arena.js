@@ -3,7 +3,7 @@ global.window=global.window||{};
 eval(fs.readFileSync(require('./yol.js').ROOT+'arena-data.js','utf8'));
 const A=window.SQLP_ARENA; const DX=c.SQLP_DIALECT; const DIDS=DX.DIALECTS.map(d=>d.id);
 const initSqlJs=require('sql.js/dist/sql-asm.js');
-(function(){ const dc=[], tc=[], all=[], dt=[], nc=[]; for(const t of Object.keys(c.SQLP_COLMETA)) for(const [col,ty] of c.SQLP_COLMETA[t]){ all.push(col); if(/date/.test(ty)) dc.push(col); if(ty==='datetime') dt.push(col); if(/^text/.test(ty)) tc.push(col); if(/^(money|dec|rate|coord|real)$|^decimal/.test(ty)) nc.push(col); else if(/^(int|bigint|bit)$/.test(ty)) nc.push('!'+col);} DX.setSchemaHints(dc,tc,all,dt, nc); })();
+(function(){ const dc=[], tc=[], all=[], dt=[], nc=[]; for(const t of Object.keys(c.SQLP_COLMETA)) for(const [col,ty] of c.SQLP_COLMETA[t]){ all.push(col); if(/date/.test(ty)) dc.push(col); if(ty==='datetime') dt.push(col); if(/^text/.test(ty)) tc.push(col); if(/^(money|dec|rate|coord|real)$|^decimal/.test(ty)) nc.push(col+({money:':2',dec:':2',rate:':4',coord:':6'}[ty]||(/,\s*(\d+)\)/.test(ty)?':'+ty.match(/,\s*(\d+)\)/)[1]:''))); else if(/^(int|bigint|bit)$/.test(ty)) nc.push('!'+col);} DX.setSchemaHints(dc,tc,all,dt, nc); })();
 function norm(v){ if(v===null||v===undefined) return '∅'; if(typeof v==='number') return String(Math.round(v*100)/100); if(typeof v==='string'){ const t=v.trim(); if(t!==''&&/^-?\d+(\.\d+)?$/.test(t)) return String(Math.round(+t*100)/100); return v;} return String(v); }
 const key=s=>s?s.values.map(r=>r.map(norm).join('␟')).sort().join('\n'):'NONE';
 const keyo=s=>s?s.values.map(r=>r.map(norm).join('␟')).join('\n'):'NONE';
@@ -13,6 +13,8 @@ initSqlJs().then(SQL=>{
  const fresh=()=>{ const db=new SQL.Database(B); c.SQLP_REGISTER(db); DX.register(db); return db; };
  const runD=(db,code,d)=>{ const r=DX.runDialect(db,code,d,{env:{procs:{},funcs:{},tvfs:{},tran:0,nocount:false}}); return r.error?{error:r.error}:{set:r.sets&&r.sets.length?r.sets[r.sets.length-1]:null}; };
  let prob=0;
+ /* SQL Server sonucu yalnız harmanlama taklidi yüzünden ayrılıyorsa (taklit kapatılınca aynı) bilinen farktır; gerçek sunucuda doğrulandı. */
+ const harmFark=(ch,tx,d,seed,want)=>{ if(d!=='tsql') return false; const k0=DX.getCollation(); DX.setCollation(null); try{ const db=fresh(); if(seed) db.exec(seed); const r=runD(db,tx,d); db.close(); return !r.error && (ch.ord?keyo:key)(r.set)===(ch.ord?keyo:key)(want); } finally { DX.setCollation(k0); } };
  if(!ONLY||ONLY==='ch') for(const ch of A.ch.filter(x=>!process.env.SETS||process.env.SETS.split(',').includes(x.set))){
    const db=fresh(); const base=runD(db,ch.sol,'sqlite'); db.close();
    if(base.error){ console.log('CH ERR',ch.id,base.error); prob++; continue; }
@@ -21,9 +23,9 @@ initSqlJs().then(SQL=>{
    ch.tests.forEach((t,i)=>{ const db=fresh(); try{ db.exec(t.sql); }catch(e){ console.log('TEST SQL ERR',ch.id,i,e.message); prob++; db.close(); return; } const r=runD(db,ch.sol,'sqlite');
      if(r.error){ console.log('TEST SOL ERR',ch.id,i,r.error); prob++; }
      else if(key(r.set)===key(base.set) && keyo(r.set)===keyo(base.set)){ console.log('test no effect (bilinçli olabilir)',ch.id,i,t.ad); }
-     for(const d of DIDS){ if(d==='sqlite') continue; const tx=DX.forward(ch.sol,d); const db2=fresh(); db2.exec(t.sql); const r2=runD(db2,tx,d); db2.close(); if(r2.error){ console.log('DIAL ERR',ch.id,'t'+i,d,r2.error.slice(0,120)); prob++; } else if((ch.ord?keyo:key)(r2.set)!==(ch.ord?keyo:key)(r.set)){ console.log('DIAL DIFF',ch.id,'t'+i,d); prob++; } }
+     for(const d of DIDS){ if(d==='sqlite') continue; const tx=DX.forward(ch.sol,d); const db2=fresh(); db2.exec(t.sql); const r2=runD(db2,tx,d); db2.close(); if(r2.error){ console.log('DIAL ERR',ch.id,'t'+i,d,r2.error.slice(0,120)); prob++; } else if((ch.ord?keyo:key)(r2.set)!==(ch.ord?keyo:key)(r.set)){ if(harmFark(ch,tx,d,t.sql,r.set)) console.log('DIAL HARMANLAMA',ch.id,'t'+i); else { console.log('DIAL DIFF',ch.id,'t'+i,d); prob++; } } }
      db.close(); });
-   for(const d of DIDS){ if(d==='sqlite') continue; const tx=DX.forward(ch.sol,d); const db2=fresh(); const r2=runD(db2,tx,d); db2.close(); if(r2.error){ console.log('DIAL ERR',ch.id,d,r2.error.slice(0,120)); prob++; } else if((ch.ord?keyo:key)(r2.set)!==(ch.ord?keyo:key)(base.set)){ console.log('DIAL DIFF',ch.id,d); prob++; } }
+   for(const d of DIDS){ if(d==='sqlite') continue; const tx=DX.forward(ch.sol,d); const db2=fresh(); const r2=runD(db2,tx,d); db2.close(); if(r2.error){ console.log('DIAL ERR',ch.id,d,r2.error.slice(0,120)); prob++; } else if((ch.ord?keyo:key)(r2.set)!==(ch.ord?keyo:key)(base.set)){ if(harmFark(ch,tx,d,'',base.set)) console.log('DIAL HARMANLAMA',ch.id); else { console.log('DIAL DIFF',ch.id,d); prob++; } } }
    console.log(line.slice(0,160));
  }
  if(!ONLY||ONLY==='pred') for(const p of A.pred.filter(x=>!process.env.IDS||new RegExp(process.env.IDS).test(x.id))){ for(const d of DIDS){ const vals=[p.sql,...p.traps].map(s=>{ const db=fresh(); const r=runD(db,d==='sqlite'?s:DX.forward(s,d),d); db.close(); return r.error?'ERR:'+r.error.slice(0,60):r.set&&r.set.values[0]?norm(r.set.values[0][0]):'∅'; }); const uniq=new Set(vals); if(vals.some(v=>/^ERR/.test(v))||uniq.size<3||vals.slice(1).includes(vals[0])){ console.log('PRED',p.id,d,vals.join(' | ')); prob++; } else if(d==='sqlite') console.log('pred',p.id,vals.join(' | ')); } }

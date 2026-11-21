@@ -6,7 +6,10 @@ import json, os, re, sys, time, sqlite3, decimal, datetime
 import pyodbc
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DB = "KesitSQL"
+LATIN = "--latin" in sys.argv
+DB = "KesitSQL_L" if LATIN else "KesitSQL"
+COLL = "SQL_Latin1_General_CP1_CI_AS" if LATIN else None
+SUF = "_L" if LATIN else ""
 DRV = next((d for d in ["ODBC Driver 18 for SQL Server", "ODBC Driver 17 for SQL Server", "SQL Server Native Client 11.0"] if d in pyodbc.drivers()), "SQL Server")
 CS = "DRIVER={%s};SERVER=localhost;Trusted_Connection=yes;TrustServerCertificate=yes;Encrypt=no" % DRV
 
@@ -25,7 +28,7 @@ def load(force):
         return
     if has:
         cur.execute("ALTER DATABASE [%s] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [%s]" % (DB, DB))
-    cur.execute("CREATE DATABASE [%s]" % DB)
+    cur.execute("CREATE DATABASE [%s]" % DB + (" COLLATE " + COLL if COLL else ""))
     cur.execute("ALTER DATABASE [%s] SET RECOVERY SIMPLE" % DB)
     cn.close()
     cn = connect(DB)
@@ -199,6 +202,8 @@ def main():
         rec["st"] = st
         if st != "ayni":
             rec["sql"] = it["sql"][:1500]
+            if last is not None and st in ("fark", "sira"):
+                rec["ss"] = [[nv(x) for x in r] for r in last[1][:40]]
         res.append(rec)
         if i % 100 == 0:
             print(i, "/", len(items), round(time.time() - t0), "sn")
