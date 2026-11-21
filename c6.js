@@ -99,6 +99,7 @@ LIMIT 5;</pre>
 <tr><td><code>POWER(x, y)</code>, <code>SQRT(x)</code></td><td>Üs alma, karekök</td></tr>
 </table>
 <div class="warn"><b>NULL ile aritmetik</b>Bir işlemde değerlerden biri NULL ise sonuç da NULL olur: <code>100 + NULL = NULL</code>. Bunu COALESCE dersinde çözeceğiz.</div>
+<div class="note"><b>Sunucuya göre değişir: MySQL'de bölme</b>MySQL tam sayıları bölünce ondalıklı sonuç verir ve sonucu 4 ondalık basamağa yuvarlar: <code>7 / 2</code> → <code>3.5000</code>, <code>1 / 3</code> → <code>0.3333</code>. Bu yuvarlama ara adımlarda da olur; zincirli hesaplarda (oran, standart sapma) son basamak diğer sunuculardan farklı çıkabilir. Hassas hesaplarda sonucu en sonda <code>ROUND</code> ile yuvarla.</div>
 `,
   ex: [
     { t: 'sql', q: '<p>Her ürünün <code>name</code>, <code>price</code>, <code>cost</code> değerlerini ve birim kârını (<code>kar</code> = fiyat − maliyet) getir. Kâra göre büyükten küçüğe sıralayıp <b>ilk 5</b> ürünü göster.</p>', sol: 'SELECT name, price, cost, price - cost AS kar FROM products ORDER BY kar DESC LIMIT 5;', ord: true },

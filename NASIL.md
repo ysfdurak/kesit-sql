@@ -336,3 +336,11 @@ Genel çözüm taraması: 10.230 çalıştırma, 2.059 SQL görev kaydı, hata 0
 
 ## Uçtan uca depo vakası (vaka/depo/)
 `vaka/depo/` Kesit'in dört uygulamasını birleştiren vakanın 1. adımıdır; derleme adımı yoktur, `main`'e olduğu gibi kopyalanır. Sayfa elle düzenlenmez: üreteç `ysfdurak.github.io` deposunda `vaka/depo-kaynak/` altındadır. Denetim `node tests/vaka-depo.cjs` (CI). `araclar/statik.js` site haritasına `vaka/depo/` adresini, sayfa varsa, ekler.
+
+### BigQuery'nin yeri (21.11.2026)
+- BigQuery genel "SQL türü" seçiminde yok: `index.html` içinde `GENEL_DISI = ['bq']`. Kenar çubuğu, ilk seçim ekranı, Arena, sorgu editörü ve paylaşılabilir deneme yalnız `DIAL`/`DIDS` (BigQuery'siz) listesini kullanır.
+- BigQuery modülü (`bq-*`), `cert-gda`, `lab-gda` ve `base: 'bq'` ya da `dl`'inde `bq` olan görevler BigQuery'de çalışmaya devam eder (`exAllowed`).
+- Kod kutularındaki sekmeler ve "Diğer SQL türlerinde gör" paneli `DIDS_ALL` kullanır; BigQuery sekmesi yalnız yazımı gösterir, çalıştırmaz.
+- Geri açmak için `GENEL_DISI` dizisini boşalt. Denetim betikleri (run.js vb.) BigQuery çevirisini sınamaya devam eder.
+- Sessiz farklar: `where`, `order-limit`, `aggregate`, `hesaplama`, `ranking`, `metin`, `json`, `collation` derslerinde "Sunucuya göre değişir" kutuları; `lehceler` dersinde özet tablo.
+

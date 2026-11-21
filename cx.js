@@ -43,6 +43,7 @@ ORDER BY price DESC
 LIMIT 5 OFFSET 5;</pre>
 <div class="note"><b>NULL'lar nerede?</b>SQL Server, MySQL ve SQLite'ta NULL'lar artan sıralamada başa gelir; PostgreSQL ve Oracle'da sona. PostgreSQL, Oracle ve SQLite <code>NULLS FIRST / NULLS LAST</code> ile bunu kontrol etmene izin verir. Şehre göre sıralayıp SQL türü sekmesini PostgreSQL'e çevirerek dene:</div>
 ${CODE("SELECT first_name, city\nFROM customers\nORDER BY city\nLIMIT 8;", null, { diff: ['pg', 'oracle'] })}
+<div class="note"><b>Sunucuya göre değişir: eşit değerlerin sırası</b><code>ORDER BY salary DESC</code> derken iki çalışanın maaşı aynıysa, hangisinin önce geleceğini hiçbir SQL türü garanti etmez; aynı sorgu farklı sunucularda, hatta aynı sunucuda farklı zamanlarda farklı sırayla dönebilir. <code>LIMIT</code> / <code>TOP</code> ile ilk N satırı alırken bu, <b>hangi satırların</b> geleceğini de değiştirir. Kural: sıralamanın sonuna benzersiz bir sütun ekle: <code>ORDER BY salary DESC, emp_id</code>.</div>
 `
 });
 
@@ -75,6 +76,7 @@ FROM employees;</pre>
 <div class="warn"><b>Birleştirme ve NULL</b><code>||</code> ve SQL Server'daki <code>+</code>, bir taraf NULL ise sonucu NULL yapar. <code>CONCAT()</code> ise SQL Server, PostgreSQL ve Oracle'da NULL'ı boş metin sayar; MySQL'de CONCAT yine NULL döner. Oracle'da boş metin <code>''</code> zaten NULL'dır.</div>
 <div class="warn" data-d="mysql"><b>MySQL tuzağı</b>MySQL'de <code>||</code> varsayılan olarak mantıksal VEYA (OR) demektir: <code>'a' || 'b'</code> sonuç olarak 0 döner. Metin birleştirmek için her zaman <code>CONCAT</code> kullan.</div>
 <div class="note"><b>Türkçe karakterler</b>SQLite'ın UPPER/LOWER fonksiyonları yalnızca İngilizce harfleri dönüştürür. SQL Server, PostgreSQL ve Oracle'da doğru <i>collation</i> (harmanlama) ile Türkçe <code>İ/ı</code> düzgün çalışır; yine de “i” ile “İ” dönüşümünü mutlaka test et.</div>
+<div class="note"><b>Sunucuya göre değişir: metin ile sayı</b>SQL Server'da <code>+</code> hem toplama hem birleştirmedir: <code>'Sipariş: ' + order_id</code> metni sayıya çevirmeye çalışır ve hata verir (Msg 245). Sayıyı önce metne çevir: <code>'Sipariş: ' + CAST(order_id AS NVARCHAR(20))</code> ya da <code>CONCAT('Sipariş: ', order_id)</code>. PostgreSQL ve Oracle'da <code>||</code> sayıyı kendiliğinden metne çevirir.</div>
 `
 });
 
@@ -489,6 +491,7 @@ ${CODE("SELECT json_object('id', customer_id, 'ad', first_name, 'sehir', city) A
   mysql: "SELECT JSON_OBJECT('id', customer_id, 'ad', first_name, 'sehir', city) AS musteri_json\nFROM customers ORDER BY customer_id LIMIT 3;",
   oracle: "SELECT JSON_OBJECT('id' VALUE customer_id, 'ad' VALUE first_name, 'sehir' VALUE city) AS musteri_json\nFROM customers ORDER BY customer_id FETCH FIRST 3 ROWS ONLY;"
 }, { nr: ['tsql'] })}
+<div class="note"><b>Sunucuya göre değişir: JSON çıktısının biçimi</b>Aynı JSON sorgusu sunucuya göre farklı metin üretir. MySQL nesnenin anahtarlarını yeniden sıralar (önce kısa anahtarlar) ve virgülden sonra boşluk koyar; PostgreSQL <code>json_agg</code> çıktısında da boşluk vardır. Dizi içindeki sıra: PostgreSQL'de <code>json_agg(ad ORDER BY id)</code> ile verilir; MySQL'in <code>JSON_ARRAYAGG</code>'ı alt sorgudaki <code>ORDER BY</code>'ı dikkate almaz. JSON'u metin olarak karşılaştırma; değerleri çıkarıp karşılaştır.</div>
 `,
   ex: [
     { t: 'sql', q: '<p>Her müşteri için <code>{"id": ..., "ad": ..., "sehir": ...}</code> biçiminde bir JSON metni üret. İlk 3 müşteriyi <code>customer_id</code> sırasıyla getir. (SQL Server modunda <code>JSON_OBJECT(\'id\': customer_id, ...)</code> yazımı kullanılabilir.)</p>', sol: "SELECT json_object('id', customer_id, 'ad', first_name, 'sehir', city) FROM customers ORDER BY customer_id LIMIT 3;", ord: true },

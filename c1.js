@@ -69,7 +69,7 @@
 <tr><td><code>web_events</code>, <code>ab_test</code></td><td>Web sitesi olayları ve A/B testi (analitik dersleri için)</td></tr>
 </table>
 <p>Tüm tabloları, sütunlarını ve verinin kendisini <b>Veri setleri</b> sayfasında inceleyebilirsin. Bir tablonun tamamını görmek için aşağıdaki sorguyu çalıştır. Kod kutularındaki <b>Çalıştır</b> düğmesi sorguyu gerçek veritabanında çalıştırır.</p>
-<div class="tip"><b>Hangi SQL türü kullanıyorsun?</b>SQL bir standarttır ama SQL Server, PostgreSQL, MySQL, Oracle, BigQuery ve SQLite onu biraz farklı yazar. Menüden <b>varsayılan SQL türünü</b> seç; tüm kodlar o SQL türünün yazımıyla gösterilir. Bir kod kutusunun üstündeki sekmelerle, varsayılanı değiştirmeden aynı sorgunun başka bir SQL türündeki yazılışını ve çıktısını görebilirsin.</div>
+<div class="tip"><b>Hangi SQL türü kullanıyorsun?</b>SQL bir standarttır ama SQL Server, PostgreSQL, MySQL, Oracle, BigQuery ve SQLite onu biraz farklı yazar. Menüden <b>varsayılan SQL türünü</b> seç; tüm kodlar o SQL türünün yazımıyla gösterilir. Bir kod kutusunun üstündeki sekmelerle, varsayılanı değiştirmeden aynı sorgunun başka bir SQL türündeki yazılışını ve çıktısını görebilirsin. BigQuery sekmesi yalnız okumak içindir; BigQuery alıştırmaları kendi modülündedir.</div>
 <pre class="code">SELECT * FROM departments;</pre>
 <div class="tip"><b>SQL komut grupları</b>SQL komutları dört aileye ayrılır: <b>DQL</b> (sorgulama: SELECT), <b>DML</b> (veri değiştirme: INSERT, UPDATE, DELETE), <b>DDL</b> (yapı tanımlama: CREATE, ALTER, DROP), <b>DCL/TCL</b> (yetki ve işlem: GRANT, COMMIT, ROLLBACK). Önce DQL ile başlıyoruz.</div>
 `,
@@ -169,6 +169,7 @@ WHERE city = 'İzmir';</pre>
 <pre class="code">SELECT order_id, order_date
 FROM orders
 WHERE order_date >= '2024-12-01';</pre>
+<div class="note"><b>Sunucuya göre değişir: büyük/küçük harf</b>Aynı <code>WHERE city = 'izmir'</code> sorgusu her sunucuda aynı sonucu vermez. SQL Server (Türkiye kurulumlarında genellikle <code>Turkish_CI_AS</code>) ve MySQL'in varsayılan harmanlaması büyük/küçük harf duyarsızdır: <code>'izmir'</code> ile <code>'İzmir'</code> eşleşir. PostgreSQL, Oracle ve SQLite'ta duyarlıdır: eşleşmez. Sorgu hata vermez, yalnızca farklı sayıda satır döner. SQL türü sekmelerini değiştirip dene; ayrıntısı <b>Harmanlama</b> dersinde.</div>
 `,
   ex: [
     { t: 'sql', q: '<p>Stok miktarı (<code>stock</code>) <b>20\'den az</b> olan ürünlerin adını ve stok miktarını getir.</p>', sol: 'SELECT name, stock FROM products WHERE stock < 20;' },
@@ -341,6 +342,7 @@ FROM products;</pre>
 FROM orders
 WHERE status = 'cancelled';</pre>
 <div class="warn"><b>AVG ve NULL</b>AVG, NULL değerleri paydaya katmaz. NULL'ları 0 saymak istiyorsan <code>AVG(COALESCE(x, 0))</code> kullanmalısın. Bu fark raporlarda büyük sapmalara yol açabilir.</div>
+<div class="note"><b>Sunucuya göre değişir: tam sayı sütunun ortalaması</b><code>AVG</code> tam sayı bir sütunda her sunucuda aynı sonucu vermez. SQL Server sonucu da tam sayı yapar ve küsuratı atar (3,8 yerine 3). PostgreSQL ve Oracle tam duyarlıkla, MySQL 4 ondalık basamakla döner. Taşınabilir yazım: <code>AVG(1.0 * sutun)</code> ya da <code>AVG(CAST(sutun AS DECIMAL(10,2)))</code>. Bu uygulamada SQL Server seçiliyken kesme davranışını görürsün.</div>
 `,
   ex: [
     { t: 'sql', q: '<p>Toplam <b>sipariş sayısını</b> bul.</p>', sol: 'SELECT COUNT(*) FROM orders;' },
@@ -363,7 +365,7 @@ GROUP BY category;</pre>
 <p>SELECT listesindeki her sütun ya <b>GROUP BY'da yer almalı</b> ya da bir <b>toplama fonksiyonunun içinde</b> olmalıdır.</p>
 <pre class="code" data-err>-- Hatalı: name gruplanmamış
 SELECT category, name, COUNT(*) FROM products GROUP BY category;</pre>
-<p>PostgreSQL, SQL Server, MySQL, Oracle ve BigQuery bu sorguyu reddeder; bu uygulamada da o türleri seçince aynı hatayı alırsın. Yalnız SQLite çalıştırır ve rastgele bir <code>name</code> döndürür. Doğru alışkanlık: kuralı her zaman uygula.</p>
+<p>PostgreSQL, SQL Server, MySQL, Oracle ve BigQuery bu sorguyu reddeder; bu uygulamada da SQL Server, PostgreSQL, MySQL ya da Oracle seçince aynı hatayı alırsın. Yalnız SQLite çalıştırır ve rastgele bir <code>name</code> döndürür. Doğru alışkanlık: kuralı her zaman uygula.</p>
 <h2>Birden fazla sütunla gruplama</h2>
 <pre class="code">SELECT status, channel, COUNT(*) AS adet
 FROM orders
