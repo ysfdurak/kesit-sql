@@ -392,7 +392,7 @@ after('metin-benzerlik', [{
 <tr><th>SQL türü</th><th>Varsayılan davranış</th><th>Türkçe için</th></tr>
 <tr><td>SQL Server</td><td>Kurulumda seçilir (çoğunlukla CI_AS)</td><td><code>Turkish_CI_AS</code>; sorguda <code>COLLATE Turkish_CI_AS</code></td></tr>
 <tr><td>PostgreSQL</td><td>Büyük/küçük harf <b>duyarlı</b></td><td>ICU collation (<code>tr-x-icu</code>), duyarsız arama için <code>ILIKE</code> veya <code>LOWER()</code></td></tr>
-<tr><td>MySQL</td><td><code>utf8mb4_0900_ai_ci</code>: duyarsız</td><td><code>utf8mb4_turkish_ci</code></td></tr>
+<tr><td>MySQL</td><td><code>utf8mb4_0900_ai_ci</code>: büyük/küçük harf <b>ve aksan</b> duyarsız ('Şahin' = 'Sahin')</td><td><code>utf8mb4_tr_0900_ai_ci</code>: ç, ğ, ı, ö, ş, ü ayrı harf sayılır</td></tr>
 <tr><td>Oracle</td><td>Duyarlı</td><td><code>NLS_SORT = XTURKISH</code>, <code>NLS_COMP = LINGUISTIC</code></td></tr>
 <tr><td>BigQuery</td><td>Duyarlı</td><td><code>COLLATE(metin, 'und:ci')</code></td></tr>
 </table>
@@ -401,6 +401,7 @@ after('metin-benzerlik', [{
 ${NR("-- SQL Server: sorguda harmanlama belirtmek\nSELECT *\nFROM customers\nWHERE city = N'istanbul' COLLATE Turkish_CI_AS;\n\n-- Türkçe alfabeye göre sıralama (ç, ğ, ı, ö, ş, ü doğru yerde)\nSELECT name FROM products ORDER BY name COLLATE Turkish_CI_AS;\n\n-- PostgreSQL: Türkçe ICU harmanlama\nSELECT name FROM products ORDER BY name COLLATE \"tr-x-icu\";")}
 <div class="tip"><b>Taşınabilir çözüm</b>Harmanlamaya güvenemiyorsan karşılaştırmadan önce iki tarafı da aynı biçime getir: kırp, Türkçe karakterleri sadeleştir (TRANSLATE), büyük harfe çevir. Metin benzerliği dersindeki “anahtar” yöntemi budur.</div>
 <div class="warn"><b>Indeks uyarısı</b>Sütunu <code>UPPER(city)</code> gibi bir fonksiyona sokmak indeks kullanımını engeller. Sık yapılan aramalar için doğru collation'lı sütun veya normalleştirilmiş ek sütun daha iyidir.</div>
+<div class="note"><b>Bu uygulamada</b>Kenar çubuğundaki <b>Harmanlama</b> seçimi SQL Server (Turkish_CI_AS / SQL_Latin1_General_CP1_CI_AS), MySQL (utf8mb4_0900_ai_ci / utf8mb4_tr_0900_ai_ci) ve PostgreSQL (C / Turkish) için karşılaştırma, sıralama, gruplama ve UPPER/LOWER davranışını değiştirir. Bu davranışlar gerçek sunucularla tek tek karşılaştırılarak kuruldu. PostgreSQL'in standart (deterministik) harmanlamalarında harmanlama yalnız sıralamayı etkiler; eşitlik harf harf karşılaştırılır, bu yüzden <code>'istanbul' = 'İstanbul'</code> yanlıştır. Duyarsız eşitlik için ICU ile <code>deterministic = false</code> bir harmanlama tanımlamak gerekir.</div>
 `,
   ex: [
     { t: 'sql', q: '<p>Collation\'a güvenmeden, büyük/küçük harf ve baştaki/sondaki boşluk farkını yok sayarak <code>raw_signups</code>\'ta e-postası <b>CEREN.YILMAZ@GMAIL.COM</b> olan kayıtları bul: <code>id</code>, <code>email</code>.</p>', sol: "SELECT id, email FROM raw_signups WHERE LOWER(TRIM(email)) = 'ceren.yilmaz@gmail.com';", hint: 'Her iki tarafı da LOWER(TRIM(...)) ile aynı biçime getir.' },

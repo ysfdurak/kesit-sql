@@ -8,7 +8,7 @@
 
 ## Neler var?
 - **296 ders, 1.949 alıştırma, 602 pratik görevi.** İlk sorgudan pencere fonksiyonlarına, sorgu optimizasyonuna, veri ambarına ve mülakat kalıplarına kadar.
-- **Altı SQL türü:** SQL Server, PostgreSQL, MySQL, Oracle, BigQuery ve SQLite. Her sorgu seçtiğin türün yazımıyla gösterilir, alıştırmalar o türün kurallarına göre denetlenir.
+- **Beş SQL türü ve BigQuery modülü:** SQL Server, PostgreSQL, MySQL, Oracle ve SQLite. Her sorgu seçtiğin türün yazımıyla gösterilir, alıştırmalar o türün kurallarına göre (harmanlama dahil) denetlenir. BigQuery kendi modülünde ve Google Data Analytics hazırlığında alıştırılır; diğer derslerde yazılışı okunmak için gösterilir.
 - **Altı hayali veri seti:** e-ticaret, banka, havayolu, yemek teslimatı, insan kaynakları ve 116.517 yolculukluk bisiklet paylaşımı. Ayrıca operasyon ve güvenlik dersleri için kurgusal bir sorgu ve erişim günlüğü.
 - **21 öğrenme yolu:** 9 rol yolu (veri analisti, BT iş analisti, veri mühendisi, veri bilimci, iş zekâsı, DBA, backend, SQL Server, SQL temelleri), 9 konu yolu (Sorgu Optimizasyonu, SQL Server Operasyon ve Güvenlik dahil) ve 3 sertifika hazırlık yolu.
 - **SQL Arena:** gizli testli meydan okumalar, SQL dedektif vakaları, sonuç tahmini, sorgu bulmacaları ve haftalık turnuva.
@@ -19,17 +19,18 @@
 | ![](ekran/karsilama.png) | ![](ekran/veri-seti.png) | ![](ekran/dedektif.png) |
 
 ## Nasıl çalışıyor?
-- Sunucu yok: SQLite, [sql.js](https://github.com/sql-js/sql.js) ile tarayıcıda çalışıyor. Diğer beş SQL türünün yazımı bir çeviri katmanıyla SQLite'ta taklit ediliyor; yazım kuralları, sık hata mesajları ve belirli davranış farkları denetleniyor.
+- Sunucu yok: SQLite, [sql.js](https://github.com/sql-js/sql.js) ile tarayıcıda çalışıyor. Diğer SQL türlerinin yazımı bir çeviri katmanıyla SQLite'ta taklit ediliyor; yazım kuralları, sık hata mesajları ve belirli davranış farkları denetleniyor.
 - İlerleme yalnızca kullanıcının tarayıcısında saklanıyor; Profil sayfasından dosyaya kaydedilip başka cihazda yüklenebiliyor. Kişisel veri toplanmıyor.
 - Dış bağımlılık yok: SQL motoru ve yazı tipleri sitenin içinde. Bir ders ya da alıştırma bir kez açıldıktan sonra site internet yokken de çalışıyor.
 - Hızlı ilk açılış: SQL motoru (1,3 MB) ve örnek veritabanı (≈10 MB) ana sayfada indirilmez; ana sayfadan başka bir ekrana geçildiği anda yüklenir (yarım saniye civarı). Yalnızca göz atan ziyaretçi 10 MB indirmez.
 - Bir öğrenme yolunu bitirenler tamamlama belgesi oluşturabiliyor. Belge tarayıcıda üretilir, doğrulanabilir değildir ve resmî bir sertifika yerine geçmez.
 
 ## Nasıl doğrulandı?
-- Alıştırma ve Arena çözümleri otomatik denetimle **taklit katmanında** altı SQL türünde çalıştırılıyor.
+- Alıştırma ve Arena çözümleri otomatik denetimle **taklit katmanında** her SQL türünde çalıştırılıyor.
 - **PostgreSQL için gerçek motorda** (PGlite, WASM) ayrıca çalıştırılıyor; veri değiştiren görevler ve bisiklet tabloları dahil.
 - Sorgu Optimizasyonu derslerindeki PostgreSQL plan çıktıları PGlite ile üretildi, alıştırmaların plan denetimi SQLite planına bakar. Yavaş cevap, sonuç doğru olsa da reddedilir.
-- SQL Server, MySQL, Oracle ve BigQuery için gerçek sunucuda test yapılmadı. Bu türlerle ilgili anlatımlar belgelere ve taklit katmanına dayanıyor.
+- **Gerçek sunucu karşılaştırması:** bütün çözümler SQL Server 2019 (Turkish_CI_AS ve SQL_Latin1_General_CP1_CI_AS), PostgreSQL 15 (C ve Turkish) ve MySQL 9.7 (utf8mb4_0900_ai_ci ve utf8mb4_tr_0900_ai_ci) üzerinde çalıştırılıp taklit katmanıyla karşılaştırıldı. PostgreSQL 1.738/1.738, MySQL 1.726/1.726 aynı; SQL Server'da 1.917 çözümden 1.865'i aynı, kalanlar sunucu ortamı (sistem görünümleri, yedek geçmişi), sürüm (2019'da olmayan REGEXP işlevleri) ve test düzeneğinden kaynaklanıyor.
+- Oracle ve BigQuery gerçek sunucuda henüz sınanmadı; bu türlerle ilgili anlatımlar belgelere ve taklit katmanına dayanıyor.
 - Denetim betikleri ve komutları `kaynak` dalındaki `araclar/denetim/` ile `NASIL.md` içinde.
 
 ## Nasıl yapıldı?

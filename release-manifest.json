@@ -13,9 +13,9 @@
     "recovery.js": "ef7fc7a695802e75e55d83e101a2e0ab472c88126607c28229c9cea0ea60f870",
     "tests/artifact.cjs": "1ab82740817f37d2934e90f25997c4a6e7d07d50138d538c70de82f27fa0ddfc",
     "tests/recovery.cjs": "9990ef25ded436773fef0d4659d287bdbb3a3caa94817eb768a0b4ac129a31f8",
-    "index.html": "4ebf37f78db0d6270c581188f0db25d39b9ce16435500d303f3190be3a82257b",
+    "index.html": "50b36345f2b95a0d387003e2c7f3e96b6d967820bc7a2750f3c7d669f0f0c779",
     "sw.js": "050ee76dff68d4063157061a17cab0b5c90d223dbaf0de82480ac83234d2f423",
-    "en-tour.js": "f97abb23c1f2a87da445765d45e886705eaf40903a2360f1e539a9b96a7a5860",
+    "en-tour.js": "e5f8a233e77e1c34369a580128eb1f6bcde969ff089986c4f0022089b29a5955",
     "vaka/depo/index.html": "414eafdeaff416898e91b9ab2d657f8905af541e787e6cb21c561f90baed4f0f",
     "vaka/depo/beklenen.json": "491c33107a7dc22aaa897c1b219a012510b2e224e889e257b2be7a6342a426f3",
     "tests/vaka-depo.cjs": "d877a3e8e06272e9f1c640ed5454540cd60a5cb93b2b0693d2958f36df309aeb",
@@ -82,6 +82,14 @@
         "c38.js"
       ],
       "note": "Gerçek sunucu bulguları giderildi: PostgreSQL C/Turkish 1738/1738, MySQL ai/tr 1726/1726 aynı. MySQL ondalık bölme ölçeği, işaretsiz çıkarma hatası, JSON dizi sırası çözümleri, PG CREATE EXTENSION, harmanlamalı birleştirme hızlandırması, T-SQL metin+sayı hatası."
+    },
+    {
+      "date": "2026-11-21",
+      "files": [
+        "index.html",
+        "en-tour.js"
+      ],
+      "note": "BigQuery genel SQL türü seçiminden çıkarıldı (kendi modülünde ve Google Data Analytics hazırlığında kalır; diğer derslerde salt okunur sekme). Sessiz farklar: 8 derse 'Sunucuya göre değişir' kutusu, lehçeler dersine özet tablo. Hakkında ve README gerçek sunucu sonuçlarıyla güncellendi."
     }
   ]
 }
