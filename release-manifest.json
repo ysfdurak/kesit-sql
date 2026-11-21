@@ -70,6 +70,18 @@
         "index.html"
       ],
       "note": "MySQL (utf8mb4_0900_ai_ci / utf8mb4_tr_0900_ai_ci) ve PostgreSQL (C / Turkish_Türkiye.1254) harmanlama seçimi. Gerçek sunucu karşılaştırması: PostgreSQL 15 1.733 / 1.732 (1.738), MySQL 9.7 1.723 / 1.723 (1.726) aynı."
+    },
+    {
+      "date": "2026-11-21",
+      "files": [
+        "dialect.js",
+        "c3.js",
+        "cx.js",
+        "c6.js",
+        "c13.js",
+        "c38.js"
+      ],
+      "note": "Gerçek sunucu bulguları giderildi: PostgreSQL C/Turkish 1738/1738, MySQL ai/tr 1726/1726 aynı. MySQL ondalık bölme ölçeği, işaretsiz çıkarma hatası, JSON dizi sırası çözümleri, PG CREATE EXTENSION, harmanlamalı birleştirme hızlandırması, T-SQL metin+sayı hatası."
     }
   ]
 }
