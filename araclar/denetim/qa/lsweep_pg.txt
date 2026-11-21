@@ -1,3 +1,11 @@
-{"ok":1154,"bad":0,"skip":795}
-
-ERRS:
+engine not ready?
+bv-giris#5 SLOW 9714ms
+bv-plan#4 SLOW 8498ms
+bv-gelir#2 SLOW 11592ms
+bv-gelir#4 SLOW 8741ms
+bs-kohort#6 SLOW 9954ms
+mk-ardisik#2 SLOW 8781ms
+mk-medyan#6 SLOW 9454ms
+opt-proje#1 SLOW 13865ms
+opt-proje#7 SLOW 15562ms
+DONE pg { ok: 1154, bad: 0, skip: 795 } errs 0

@@ -1,3 +1,9 @@
-{"ok":1145,"bad":0,"skip":804}
-
-ERRS:
+engine not ready?
+bv-plan#4 SLOW 11038ms
+bv-istasyon#8 SLOW 9467ms
+bv-gelir#2 SLOW 11888ms
+bs-kohort#6 SLOW 10983ms
+proje-bilimci#8 SLOW 8719ms
+opt-proje#1 SLOW 13563ms
+opt-proje#7 SLOW 16362ms
+DONE mysql { ok: 1145, bad: 0, skip: 804 } errs 0

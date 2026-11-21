@@ -15,7 +15,7 @@ const D=process.argv[2]||'pg'; const ONLY=process.argv[3]?process.argv[3].split(
    if(cur!==D){ const has=await page.$eval('#exD',(e,D)=>[...e.options].map(o=>o.value).includes(D),D); if(!has){ const opts=await page.$eval('#exD',e=>[...e.options].map(o=>o.value).join(',')); out.push(id+' SKIP: dialect not offered; options='+opts); continue; } await page.selectOption('#exD',D);}
    await page.click('[data-act=sol]'); await page.waitForTimeout(80);
    const solTxt=await page.evaluate(()=>document.querySelector('#solBox pre')?.innerText||document.querySelector('#solBox').innerText);
-   const cp=await page.$('#solBox >> text=Editöre kopyala'); if(cp) await cp.click(); else out.push(id+' NO COPY BTN');
+   let cpOk=false; for(let k=0;k<3&&!cpOk;k++){ const cp=await page.$('#solBox >> text=Editöre kopyala'); if(!cp) break; cpOk=await cp.click().then(()=>true).catch(()=>false); if(!cpOk) await page.waitForTimeout(150); } if(!cpOk) out.push(id+' NO COPY BTN');
    await page.waitForTimeout(80);
    await page.click('[data-act=submit]').catch(()=>{});
    let fb='';
