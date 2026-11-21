@@ -38,6 +38,54 @@ def connect(db=None, auto=True):
     return cn
 
 
+
+# Uygulamadaki keyCols (index.html) ile aynı: sıralamayı belirleyen sütunlar. Yalnız bu sütunlarda aynı sırada olan
+# sonuçlar eşit değerlerin farklı dizilişidir; uygulama da öğrencinin cevabını böyle kabul eder.
+def _cmpv(a, b):
+    if a == b: return 0
+    if a is None: return -1
+    if b is None: return 1
+    if isinstance(a, (int, float)) and isinstance(b, (int, float)): return -1 if a < b else 1
+    return -1 if str(a) < str(b) else 1
+
+
+def _mono(arr):
+    up = dn = True; v = 0
+    for i in range(1, len(arr)):
+        c = _cmpv(arr[i - 1], arr[i])
+        if c > 0: up = False
+        if c < 0: dn = False
+        if c: v += 1
+    return (0 if not v else 1 if up else -1 if dn else None), v
+
+
+def key_cols(vals):
+    if not vals: return []
+    n = len(vals[0]); keys = []; groups = [list(range(len(vals)))]
+    while groups and len(keys) < n:
+        found = -1
+        for c in range(n):
+            if c in keys: continue
+            ms = [_mono([vals[i][c] for i in g]) for g in groups]
+            if any(m[0] is None for m in ms): continue
+            dirs = {m[0] for m in ms if m[0]}
+            v = sum(m[1] for m in ms)
+            if len(dirs) != 1: continue
+            if keys and v < 3: continue
+            found = c; break
+        if found < 0: break
+        keys.append(found); ng = []
+        for g in groups:
+            r = [g[0]]
+            for q in g[1:]:
+                if _cmpv(vals[q][found], vals[r[0]][found]) == 0: r.append(q)
+                else:
+                    if len(r) > 1: ng.append(r)
+                    r = [q]
+            if len(r) > 1: ng.append(r)
+        groups = ng
+    return keys
+
 def qi(n):
     return '"%s"' % n if D == "pg" else "`%s`" % n
 
@@ -261,6 +309,10 @@ def main():
                     st = "fark"; rec["diff"] = "satır sayısı: motor %d, sunucu %d" % (len(B), len(A))
                 elif A == B or sorted(A) == sorted(B):
                     st = "ayni" if (A == B or not it.get("ord")) else "sira"
+                    if st == "sira":
+                        ks = key_cols(want)
+                        if ks and [[nv(r[c]) for c in ks] for r in last[1]] == [[nv(r[c]) for c in ks] for r in want]:
+                            st = "ayni"; rec["not"] = "eşit değerlerin sırası (uygulama da kabul eder)"
                 else:
                     sa, sb = sorted(A), sorted(B)
                     k = next(j for j, (x, y) in enumerate(zip(sa, sb)) if x != y)

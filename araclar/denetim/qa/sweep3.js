@@ -20,7 +20,7 @@ const D=process.argv[2]||'pg'; const ONLY=process.argv[3]?process.argv[3].split(
    await page.click('[data-act=submit]').catch(()=>{});
    let fb='';
    for(let k=0;k<60;k++){ await page.waitForTimeout(100); fb=await page.evaluate(()=>{const w=document.querySelector('.work'); const fbs=[...w.querySelectorAll('.fb,.feedback,[class*="fb-"],.ok,.bad')]; const t=[...w.children].filter(d=>!d.classList.contains('ed-shell')&&!d.classList.contains('ed-actions')&&!d.classList.contains('result')).map(d=>d.innerText).join('|'); return t.replace(/\n/g,' ').slice(0,300);}); if(/Doğru|Henüz|hata|Hata/.test(fb)) break; }
-   if(/^\s*\|?\s*Doğru/.test(fb)||/^Doğru/.test(fb.trim())) stat.ok++; else { stat.bad++; out.push(id+' :: '+fb+'\n   SOL: '+solTxt.replace(/\n/g,' ').slice(0,400)); console.log(id, fb.slice(0,200)); }
+   if(/^\s*\|?\s*Doğru/.test(fb)||/^Doğru/.test(fb.trim())||(/Doğru!/.test(fb)&&!/✗/.test(fb))) stat.ok++; else { stat.bad++; out.push(id+' :: '+fb+'\n   SOL: '+solTxt.replace(/\n/g,' ').slice(0,400)); console.log(id, fb.slice(0,200)); }
  }
  fs.writeFileSync('sweepB_'+D+'.txt', out.join('\n')+'\nERRS:\n'+errs.join('\n'));
  console.log('DONE',D,stat,'errs',errs.length, errs.slice(0,5));

@@ -1,7 +1,3 @@
 ÖZET
 Sunucu: 9.7.4
-Madde: 1726 | ayni: 1723 | fark: 2 | sira: 1
-
-== sira ranking#0 | 
-== fark json#1 | ilk fark: motor ["Ev & Yaşam", "[\"Türk Kahvesi Makinesi\",\"Çaydanlık Seti\",\"Pamuk Nevresim Takımı\",\"Bakır Cezve\",\"Seramik Kupa Seti\",\"Robot Süpürge\"]"] / sunucu ["Ev & Yaşam", "[\"Robot Süpürge\",\"Türk Kahvesi Makinesi\",\"Çaydanlık Seti\",\"Pamuk Nevresim Takımı\",\"Bakır Cezve\",\"Seramik Kupa Seti\"]"]
-== fark ds-ab#1 | ilk fark: motor [2.52] / sunucu [2.51]
+Madde: 1726 | ayni: 1726

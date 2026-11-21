@@ -1,16 +1,87 @@
-engine not ready?
-op01 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
-op02 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
-op03 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
-op04 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
-op05 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
-op06 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
-op07 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
-op08 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
-op09 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
-op11 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
-op12 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
-op14 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
-op16 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
-sg08 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
-DONE mysql { ok: 502, bad: 14 } errs 0 []
+t186 SKIP: dialect not offered; options=tsql
+t187 SKIP: dialect not offered; options=tsql
+t188 SKIP: dialect not offered; options=tsql
+t189 SKIP: dialect not offered; options=bq
+t190 SKIP: dialect not offered; options=bq
+t193 SKIP: dialect not offered; options=oracle
+t194 SKIP: dialect not offered; options=oracle
+t195 SKIP: dialect not offered; options=pg
+t196 SKIP: dialect not offered; options=pg
+o197 SKIP: dialect not offered; options=tsql
+o198 SKIP: dialect not offered; options=tsql
+o199 SKIP: dialect not offered; options=tsql
+o200 SKIP: dialect not offered; options=bq
+o201 SKIP: dialect not offered; options=bq
+o202 SKIP: dialect not offered; options=bq
+o203 SKIP: dialect not offered; options=pg
+o204 SKIP: dialect not offered; options=pg
+o206 SKIP: dialect not offered; options=oracle
+o207 SKIP: dialect not offered; options=oracle
+i208 SKIP: dialect not offered; options=tsql
+i209 SKIP: dialect not offered; options=tsql
+i210 SKIP: dialect not offered; options=bq
+i211 SKIP: dialect not offered; options=pg
+ora01 SKIP: dialect not offered; options=oracle
+ora02 SKIP: dialect not offered; options=oracle
+ora03 SKIP: dialect not offered; options=oracle
+ora04 SKIP: dialect not offered; options=oracle
+ora05 SKIP: dialect not offered; options=oracle
+ora06 SKIP: dialect not offered; options=oracle
+ora07 SKIP: dialect not offered; options=oracle
+ora08 SKIP: dialect not offered; options=oracle
+ora09 SKIP: dialect not offered; options=oracle
+ora10 SKIP: dialect not offered; options=oracle
+ora11 SKIP: dialect not offered; options=oracle
+ora12 SKIP: dialect not offered; options=oracle
+tsq01 SKIP: dialect not offered; options=tsql
+tsq02 SKIP: dialect not offered; options=tsql
+tsq03 SKIP: dialect not offered; options=tsql
+tsq04 SKIP: dialect not offered; options=tsql
+tsq05 SKIP: dialect not offered; options=tsql
+tsq06 SKIP: dialect not offered; options=tsql
+tsq07 SKIP: dialect not offered; options=tsql
+tsq08 SKIP: dialect not offered; options=tsql
+tsq09 SKIP: dialect not offered; options=tsql
+tsq10 SKIP: dialect not offered; options=tsql
+tsq11 SKIP: dialect not offered; options=tsql
+tsq12 SKIP: dialect not offered; options=tsql
+bqk01 SKIP: dialect not offered; options=bq
+bqk02 SKIP: dialect not offered; options=bq
+bqk03 SKIP: dialect not offered; options=bq
+bqk04 SKIP: dialect not offered; options=bq
+bqk05 SKIP: dialect not offered; options=bq
+bqk06 SKIP: dialect not offered; options=bq
+bqk07 SKIP: dialect not offered; options=bq
+bqk08 SKIP: dialect not offered; options=bq
+bqk09 SKIP: dialect not offered; options=bq
+bqk10 SKIP: dialect not offered; options=bq
+bqk11 SKIP: dialect not offered; options=bq
+bqk12 SKIP: dialect not offered; options=bq
+y105 SKIP: dialect not offered; options=sqlite
+z020 SKIP: dialect not offered; options=sqlite
+z021 SKIP: dialect not offered; options=sqlite
+z022 SKIP: dialect not offered; options=sqlite
+z027 SKIP: dialect not offered; options=sqlite
+h204 SKIP: dialect not offered; options=sqlite
+g203 SKIP: dialect not offered; options=sqlite
+op17 SKIP: dialect not offered; options=sqlite
+op18 SKIP: dialect not offered; options=sqlite
+op22 SKIP: dialect not offered; options=sqlite
+sh01 SKIP: dialect not offered; options=tsql
+sh02 SKIP: dialect not offered; options=tsql
+sh03 SKIP: dialect not offered; options=tsql
+sh04 SKIP: dialect not offered; options=tsql
+sh05 SKIP: dialect not offered; options=tsql
+sh06 SKIP: dialect not offered; options=tsql
+sh07 SKIP: dialect not offered; options=tsql
+sh08 SKIP: dialect not offered; options=tsql
+mk08 SKIP: dialect not offered; options=sqlite
+mk10 SKIP: dialect not offered; options=sqlite,pg
+mk11 SKIP: dialect not offered; options=sqlite,pg
+mk13 SKIP: dialect not offered; options=sqlite
+mk17 SKIP: dialect not offered; options=sqlite
+mk18 SKIP: dialect not offered; options=sqlite
+mk20 SKIP: dialect not offered; options=sqlite
+mk21 SKIP: dialect not offered; options=sqlite
+mk23 SKIP: dialect not offered; options=sqlite
+ERRS:

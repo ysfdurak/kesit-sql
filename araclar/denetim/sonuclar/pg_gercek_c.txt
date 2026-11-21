@@ -1,9 +1,3 @@
 ÖZET
 Sunucu: PostgreSQL 15.17, compiled by Visual C++ build 1944, 64-bit
-Madde: 1738 | ayni: 1733 | sira: 4 | sqlHata: 1
-
-== sira order-limit#0 | 
-== sqlHata metin-benzerlik#1 | function soundex(character varying) does not exist
-== sira ranking#0 | 
-== sira proje-bilimci#1 | 
-== sira A:ilk-kanal | 
+Madde: 1738 | ayni: 1738

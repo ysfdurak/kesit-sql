@@ -24,7 +24,7 @@ const D=process.argv[2]||'pg';
    let fb='';
    for(let k=0;k<60;k++){ await page.waitForTimeout(100); fb=await page.evaluate(()=>{const w=document.querySelector('.work'); if(!w) return ''; return [...w.children].filter(d=>!/ed-shell|ed-actions|result/.test(d.className)).map(d=>d.innerText).join('|').replace(/\n/g,' ').slice(0,300);}); if(/Doğru|Henüz|hata|Hata/.test(fb)) break; }
    if(Date.now()-t0>8000) console.log(id+'#'+s+' SLOW '+(Date.now()-t0)+'ms');
-   if(/^\|?\s*Doğru/.test(fb.trim())) stat.ok++; else { stat.bad++; const sol=await page.evaluate(()=>document.querySelector('#solBox pre')?.innerText||''); out.push(id+'#'+s+' :: '+fb+'\n   SOL: '+sol.replace(/\n/g,' ').slice(0,400)); console.log(id+'#'+s, fb.slice(0,160)); }
+   if(/^\|?\s*Doğru/.test(fb.trim())||(/Doğru!/.test(fb)&&!/✗/.test(fb))) stat.ok++; else { stat.bad++; const sol=await page.evaluate(()=>document.querySelector('#solBox pre')?.innerText||''); out.push(id+'#'+s+' :: '+fb+'\n   SOL: '+sol.replace(/\n/g,' ').slice(0,400)); console.log(id+'#'+s, fb.slice(0,160)); }
   }
  }
  fs.writeFileSync('lsweep_'+D+'.txt', JSON.stringify(stat)+'\n'+out.join('\n')+'\nERRS:\n'+errs.join('\n'));

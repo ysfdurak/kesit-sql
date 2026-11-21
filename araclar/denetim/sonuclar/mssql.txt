@@ -1,19 +1,16 @@
 ÖZET
-Madde: 1917 | ayni: 1860 | fark(işlem): 1 | fark(ortam): 31 | sira: 4 | sqlHata(işlem): 3 | sqlHata(ortam): 1 | surum: 17
+Madde: 1917 | ayni: 1864 | fark(işlem): 1 | fark(ortam): 31 | sqlHata(işlem): 3 | sqlHata(ortam): 1 | surum: 17
 
-SIRA  order-limit#0 :: 
 SURUM  null-guvenli#2 :: [42000] Incorrect syntax near the keyword 'DISTINCT'. (156) (SQLExecDirectW)
 SURUM  null-guvenli#3 :: [42000] Incorrect syntax near the keyword 'DISTINCT'. (156) (SQLExecDirectW)
 SURUM  regex#0 :: [42000] 'REGEXP_LIKE' is not a recognized built-in function name. (195) (SQLExecDirectW)
 SURUM  regex#1 :: [42000] 'REGEXP_REPLACE' is not a recognized built-in function name. (195) (SQLExecDirectW)
 SURUM  regex#2 :: [42000] 'REGEXP_SUBSTR' is not a recognized built-in function name. (195) (SQLExecDirectW)
 SQLHATA(işlem)  hv-veri#1 :: [22018] Conversion failed when converting the nvarchar value 'cancelled|' to data type int. (245) (SQLExecDirectW)
-SIRA  ranking#0 :: 
 SURUM  json#0 :: [42000] Incorrect syntax near ':'. (102) (SQLExecDirectW)
 SURUM  json#3 :: [42000] Incorrect syntax near ':'. (102) (SQLExecDirectW)
 SURUM  json#4 :: [42000] Incorrect syntax near ':'. (102) (SQLExecDirectW)
 FARK(işlem)  ts-izolasyon#4 :: ilk fark: motor [2.0, 0.0] / SQL Server [1.0, 1.0]
-SIRA  proje-bilimci#1 :: 
 SURUM  ops-parmak-izi#0 :: [42000] 'REGEXP_REPLACE' is not a recognized built-in function name. (195) (SQLExecDirectW)
 SURUM  ops-parmak-izi#1 :: [42000] 'REGEXP_REPLACE' is not a recognized built-in function name. (195) (SQLExecDirectW)
 SURUM  ops-parmak-izi#3 :: [42000] 'REGEXP_REPLACE' is not a recognized built-in function name. (195) (SQLExecDirectW)
@@ -28,9 +25,9 @@ FARK(ortam)  dba-indeks-bakim#1 :: satır sayısı: motor 3, SQL Server 9
 FARK(ortam)  dba-indeks-bakim#2 :: ilk fark: motor [55.0] / SQL Server [-11484.0]
 FARK(ortam)  dba-indeks-bakim#3 :: satır sayısı: motor 3, SQL Server 0
 FARK(ortam)  dba-indeks-bakim#4 :: satır sayısı: motor 3, SQL Server 0
-FARK(ortam)  dba-dmv#0 :: ilk fark: motor ["EXEC etl_gunluk_yukleme @gun", 2.0, 176000.0] / SQL Server ["SELECT FORMAT(started_at, 'yyyy-MM') AS ay, COUNT(*) AS yolculuk FROM bk_trips GROUP BY FORMAT(started_at, 'yyyy-MM') ORDER BY ay;", 2.0, 10230.0]
+FARK(ortam)  dba-dmv#0 :: ilk fark: motor ["EXEC etl_gunluk_yukleme @gun", 2.0, 176000.0] / SQL Server ["SELECT CASE WHEN w.rain_mm > 0 THEN 1 ELSE 0 END AS yagmur, COUNT(*) AS yolculuk FROM bk_trips t JOIN bk_weather w ON w.obs_hour = FORMAT(t.started_at, 'yyyy-MM-dd HH:00:00') GROUP BY CASE WHEN w.ra
 FARK(ortam)  dba-dmv#1 :: ilk fark: motor ["EXEC etl_gunluk_yukleme @gun", 1900000.0] / SQL Server ["SELECT (SELECT COUNT(*) FROM (SELECT DISTINCT c.customer_id, c.segment, (SELECT COUNT(*) FROM bank_txns t WHERE t.account_id IN (SELECT a.account_id FROM bank_accounts a WHERE a.customer_id = c.cust
-FARK(ortam)  dba-dmv#2 :: satır sayısı: motor 1, SQL Server 3955
+FARK(ortam)  dba-dmv#2 :: satır sayısı: motor 1, SQL Server 1213
 FARK(ortam)  dba-dmv#3 :: satır sayısı: motor 7, SQL Server 1066
 SQLHATA(ortam)  dba-dmv#4 :: [22012] Divide by zero error encountered. (8134) (SQLExecDirectW)
 FARK(ortam)  dba-dmv#5 :: satır sayısı: motor 2, SQL Server 0
@@ -55,6 +52,5 @@ FARK(ortam)  kopru-agent#1 :: satır sayısı: motor 4, SQL Server 1
 FARK(ortam)  kopru-agent#2 :: satır sayısı: motor 5, SQL Server 0
 FARK(ortam)  kopru-kurulum#0 :: satır sayısı: motor 3, SQL Server 0
 FARK(ortam)  kopru-kurulum#1 :: ilk fark: motor [1.0] / SQL Server [null]
-SIRA  P:i272 :: 
 SURUM  P:sg05 :: [42000] 'REGEXP_REPLACE' is not a recognized built-in function name. (195) (SQLExecDirectW)
 SURUM  A:ops-pencere :: [42000] 'REGEXP_REPLACE' is not a recognized built-in function name. (195) (SQLExecDirectW)
