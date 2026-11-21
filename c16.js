@@ -316,9 +316,9 @@ add('ts-index',
   ts('Yalnızca iptal edilen siparişleri kapsayan, <code>order_date</code> üzerinde <code>ix_orders_iptal</code> adlı <b>filtreli</b> bir nonclustered indeks oluştur.',
     "CREATE NONCLUSTERED INDEX ix_orders_iptal ON orders (order_date) WHERE status = 'cancelled';",
     { check: "SELECT name, tbl_name FROM sqlite_master WHERE type = 'index' AND name = 'ix_orders_iptal'", hint: 'Filtreli indeks: CREATE INDEX ... ON tablo (sütun) WHERE koşul;' }),
-  ts('Çalışan e-postalarının tekrar etmemesi için <code>employees</code> tablosunda <code>email</code> üzerinde <code>ux_employees_email</code> adlı benzersiz nonclustered indeks oluştur.',
-    'CREATE UNIQUE NONCLUSTERED INDEX ux_employees_email ON employees (email);',
-    { check: "SELECT name, \"unique\" FROM pragma_index_list('employees') WHERE name = 'ux_employees_email'", hint: 'CREATE UNIQUE NONCLUSTERED INDEX ad ON tablo (sütun);' }));
+  ts('Çalışan e-postalarının tekrar etmemesi için <code>employees</code> tablosunda <code>email</code> üzerinde <code>ux_employees_email</code> adlı benzersiz nonclustered indeks oluştur. E-postası boş (NULL) olan çalışanlar var; SQL Server benzersiz indekste iki NULL\'u çakışma sayar, bu yüzden indeks yalnız dolu e-postaları kapsasın (süzülmüş indeks).',
+    'CREATE UNIQUE NONCLUSTERED INDEX ux_employees_email ON employees (email) WHERE email IS NOT NULL;',
+    { check: "SELECT name, \"unique\", partial FROM pragma_index_list('employees') WHERE name = 'ux_employees_email'", hint: 'CREATE UNIQUE NONCLUSTERED INDEX ad ON tablo (sütun) WHERE sütun IS NOT NULL;' }));
 
 add('ts-plan',
   ts('Aşağıdaki SARGable olmayan sorguyu aynı sonucu verecek ve indeks kullanabilecek biçimde yeniden yaz: <code>SELECT COUNT(*) AS adet FROM products WHERE LEFT(name, 3) = N\'Kot\';</code>',
@@ -500,9 +500,9 @@ add('bq-maliyet',
     { base: 'bq', dl: ['bq'], hint: 'SELECT * yerine yalnızca device sütunu okunur; bölümlenmiş tabloda tarih filtresi yalnızca o günün bölümünü taratır.' }));
 
 add('metin-benzerlik',
-  sq('SQL Server yazımıyla: <code>DIFFERENCE</code> fonksiyonu “Elif” ile en az 3 puan benzerlik veren çalışan adlarını getir: <code>emp_id</code>, <code>first_name</code>, <code>puan</code>. Puana göre azalan, eşitlikte emp_id\'ye göre sırala.',
-    "SELECT emp_id, first_name, DIFFERENCE(first_name, 'Elif') AS puan FROM employees WHERE DIFFERENCE(first_name, 'Elif') >= 3 ORDER BY puan DESC, emp_id;",
-    { base: 'tsql', dl: ['tsql'], ord: true, hint: 'DIFFERENCE iki SOUNDEX kodunu karşılaştırır ve 0–4 arası puan verir (4 en benzer).' }));
+  sq('SQL Server yazımıyla: <code>DIFFERENCE</code> fonksiyonu “Kerem” ile en az 3 puan benzerlik veren çalışan adlarını getir: <code>emp_id</code>, <code>first_name</code>, <code>puan</code>. Puana göre azalan, eşitlikte emp_id\'ye göre sırala.',
+    "SELECT emp_id, first_name, DIFFERENCE(first_name, 'Kerem') AS puan FROM employees WHERE DIFFERENCE(first_name, 'Kerem') >= 3 ORDER BY puan DESC, emp_id;",
+    { base: 'tsql', dl: ['tsql'], ord: true, hint: 'DIFFERENCE iki SOUNDEX kodunu karşılaştırır ve 0–4 arası puan verir (4 en benzer). Gerçek sunucuda 4\'ün altındaki puan, argümanların sırasına göre değişebilir; ölçütü hep aynı sırayla yaz.' }));
 })();
 
 /* ======================= Son eklemeler: çerçeve, ara toplam, görünüm ======================= */

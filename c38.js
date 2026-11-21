@@ -421,7 +421,7 @@ ${box(YZ_TASLAK + ';')}
       'Kurye başına say, dışta topla, skaler alt sorguyla karşılaştır.',
       { ynl: ["SELECT COUNT(*) AS kurye, COUNT(*) AS ozet_toplam, COUNT(*) AS kaynak FROM lk_orders WHERE status = 'teslim';", "SELECT COUNT(*) AS kurye, SUM(n) AS ozet_toplam, (SELECT COUNT(*) FROM lk_orders) AS kaynak FROM (SELECT courier_id, COUNT(*) AS n FROM lk_orders GROUP BY courier_id) t;"] }),
     sq('<b>Adım 7.</b> Hata kimi etkiledi? Taslağa göre prim alan kişi sayısı (<code>taslak</code>), doğru listeye göre (<code>dogru</code>), ve doğru listede olup taslakta olmayanlar (<code>haksiz_elenen</code>). Ad üzerinden karşılaştır.',
-      inl(`WITH ta AS (${YZ_TASLAK}), dg AS (${YZ_DOGRU}) SELECT (SELECT COUNT(*) FROM ta) AS taslak, (SELECT COUNT(*) FROM dg) AS dogru, (SELECT COUNT(*) FROM dg WHERE full_name NOT IN (SELECT full_name FROM ta)) AS haksiz_elenen;`),
+      inl(`WITH ta AS (${YZ_TASLAK.replace(/\s*ORDER BY oran DESC\s*$/, '')}), dg AS (${YZ_DOGRU}) SELECT (SELECT COUNT(*) FROM ta) AS taslak, (SELECT COUNT(*) FROM dg) AS dogru, (SELECT COUNT(*) FROM dg WHERE full_name NOT IN (SELECT full_name FROM ta)) AS haksiz_elenen;`),
       'İki sorguyu CTE yap, sonra karşılaştır.',
       { ynl: ['SELECT 0 AS taslak, 0 AS dogru, 0 AS haksiz_elenen FROM lk_couriers;', inl(`WITH ta AS (${YZ_TASLAK}) SELECT (SELECT COUNT(*) FROM ta) AS taslak, (SELECT COUNT(*) FROM ta) AS dogru, 0 AS haksiz_elenen;`)] }),
     sq("<b>Adım 8.</b> Tek tanım. Asistan ve raporlar hep aynı hesabı kullansın: <code>v_kurye_performans</code> görünümünü oluştur (kurye başına <code>courier_id</code>, <code>teslimat</code>, <code>oran</code>; yalnız teslim, sınır 2.700 saniye, filtre yok). Sonra görünümden primi hak eden kurye sayısını getir: <code>prim_alan</code>.",

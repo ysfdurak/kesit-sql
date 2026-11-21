@@ -19,7 +19,8 @@ add('araclar#7', "UPDATE hv_aircraft SET model = 'Yeni model' WHERE tail_no = (S
 add('having#6', "UPDATE lk_orders SET customer_id = (SELECT MIN(customer_id) FROM lk_customers) WHERE status = 'teslim';", 'müşteri eşiği');
 add('having#9', "UPDATE ik_leaves SET days = 30 WHERE leave_type = 'hastalık' AND start_date >= '2024-01-01';", 'izin günü eşiği');
 add('metin-birlestir#3', "UPDATE bank_customers SET city = 'Yenişehir' WHERE customer_id = (SELECT MIN(customer_id) FROM bank_customers);", 'yeni şube şehri');
-add('metin-benzerlik#2 metin-benzerlik#5', "UPDATE employees SET first_name = 'Elif' WHERE emp_id = (SELECT MIN(emp_id) FROM employees WHERE first_name <> 'Elif');", 'yeni benzer ad');
+add('metin-benzerlik#2', "UPDATE employees SET first_name = 'Elif' WHERE emp_id = (SELECT MIN(emp_id) FROM employees WHERE first_name <> 'Elif');", 'yeni benzer ad');
+add('metin-benzerlik#5', "UPDATE employees SET first_name = 'Kerem' WHERE emp_id = (SELECT MIN(emp_id) FROM employees WHERE first_name <> 'Kerem');", 'yeni benzer ad');
 add('self-cross-join#8', "UPDATE ik_employees SET term_date = NULL, manager_id = 1 WHERE emp_id = 2; UPDATE ik_employees SET term_date = '2024-12-01' WHERE emp_id = 1;", 'ayrılan yönetici');
 add('set-ops#2 set-ops#7 P:t004', "UPDATE customers SET city = 'Yenişehir' WHERE customer_id = (SELECT MIN(customer_id) FROM customers);", 'yeni müşteri şehri');
 add('set-ops#5', "UPDATE lk_restaurants SET city = 'Yenişehir'; UPDATE lk_couriers SET city = 'Yenişehir';", 'şehir kesişimi');
