@@ -453,6 +453,7 @@ FROM s
 WHERE rn <= 2
 ORDER BY category, rn;</pre>
 <div class="tip"><b>Tekilleştirme</b>Aynı kaydın birden çok versiyonu varken en günceli seçmek için de bu kalıp kullanılır: <code>ROW_NUMBER() OVER (PARTITION BY anahtar ORDER BY guncelleme DESC) = 1</code>.</div>
+<div class="note"><b>Sunucuya göre değişir: eşitlikler ve MySQL</b><code>ROW_NUMBER()</code> eşit değerli satırlara rastgele sırayla numara verir; sunucuya göre farklı satır 1 olabilir. Tekil bir kayıt seçerken <code>OVER</code> içindeki <code>ORDER BY</code>'a benzersiz bir sütun ekle. MySQL'de <code>ROW_NUMBER</code>, <code>RANK</code>, <code>DENSE_RANK</code> ve <code>NTILE</code> işaretsiz (UNSIGNED) tam sayı döndürür: <code>ROW_NUMBER() OVER (...) - 5</code> gibi sonucu eksiye düşen bir çıkarma hata verir (ERROR 1690). Önce <code>CAST(ROW_NUMBER() OVER (...) AS SIGNED)</code> yaz.</div>
 `,
   ex: [
     { t: 'sql', q: '<p>Ürünleri fiyata göre pahalıdan ucuza <code>DENSE_RANK</code> ile sırala: <code>name</code>, <code>price</code>, <code>sira</code>. Sonuç sıraya göre sıralı olsun.</p>', sol: 'SELECT name, price, DENSE_RANK() OVER (ORDER BY price DESC) AS sira FROM products ORDER BY sira;', ord: true },
