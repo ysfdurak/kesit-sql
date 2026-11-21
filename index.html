@@ -530,7 +530,7 @@ button.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink);
     <a class="brand" href="#" data-go="home"><span class="marker" aria-hidden="true"><svg viewBox="0 0 26 26" width="26" height="26"><rect x="0.5" y="0.5" width="25" height="25" rx="7" fill="var(--accent)"/><path d="M0.5 15.5 L15.5 0.5 H20.5 L0.5 20.5 Z" fill="var(--bg)"/><rect x="13" y="13" width="8" height="2.2" rx="1.1" fill="#fff" opacity=".9"/><rect x="13" y="17.5" width="5" height="2.2" rx="1.1" fill="#fff" opacity=".9"/></svg></span><b>Kesit<span>SQL</span></b></a>
     <div class="side-search"><input id="sideQ" type="search" placeholder="Ders veya terim ara (Ctrl+K)" aria-label="Ders veya terim ara" autocomplete="off"><div class="sq-res" id="sideRes" hidden></div></div>
     <div class="dsel"><label for="dialectSide">SQL türü</label><select id="dialectSide" data-dsel></select></div>
-    <div class="dsel" id="collWrap" hidden><label for="collSide" title="SQL Server'da metinlerin nasıl karşılaştırılıp sıralanacağı">Harmanlama</label><select id="collSide" data-csel><option value="Turkish_CI_AS">Turkish_CI_AS (Türkçe)</option><option value="SQL_Latin1_General_CP1_CI_AS">SQL_Latin1_General_CP1_CI_AS</option></select></div>
+    <div class="dsel" id="collWrap" hidden><label for="collSide" title="SQL Server'da metinlerin nasıl karşılaştırılıp sıralanacağı">Harmanlama</label><select id="collSide" data-csel></select></div>
     <nav class="nav" id="nav"></nav>
     <div class="side-stats" id="sideStats"></div>
     <div class="fam" id="famLinks"></div>
@@ -643,8 +643,14 @@ let P = Object.assign(DEFAULTS(), load()); P.pilot=pilotNorm(P.pilot);
 function applyTheme(){ const r=document.documentElement; if(P.theme==='light'||P.theme==='dark') r.setAttribute('data-theme',P.theme); else r.removeAttribute('data-theme'); }
 applyTheme();
 if(!DIDS.includes(P.dialect)) P.dialect='pg';
-if(!['Turkish_CI_AS','SQL_Latin1_General_CP1_CI_AS'].includes(P.coll)) P.coll='Turkish_CI_AS';
-try{ DX.setCollation(P.coll); }catch(e){}
+/* Harmanlama (collation) seçenekleri: gerçek sunucularla doğrulandı (NASIL.md 5b) */
+const COLL_OPTS={ tsql:[['Turkish_CI_AS','Turkish_CI_AS (Türkçe)'],['SQL_Latin1_General_CP1_CI_AS','SQL_Latin1_General_CP1_CI_AS']],
+  mysql:[['utf8mb4_0900_ai_ci','utf8mb4_0900_ai_ci (varsayılan)'],['utf8mb4_tr_0900_ai_ci','utf8mb4_tr_0900_ai_ci (Türkçe)']],
+  pg:[['C','C (ikili, varsayılan)'],['Turkish_Türkiye.1254','Turkish_Türkiye.1254 (Windows Türkçe)']] };
+const COLL_DL=Object.keys(COLL_OPTS);
+P.colls=Object.assign({}, P.colls); if(P.coll && !P.colls.tsql) P.colls.tsql=P.coll; delete P.coll;
+function collOf(d){ const o=COLL_OPTS[d]; if(!o) return null; const v=P.colls[d]; return o.some(x=>x[0]===v)?v:o[0][0]; }
+try{ for(const d of COLL_DL) DX.setCollation(collOf(d),d); }catch(e){}
 if(P.placement && LVMAP[P.placement]) P.placement = LVMAP[P.placement];
 let saveT=null;
 let persistAsked=false;
@@ -803,7 +809,7 @@ function renderNav(){
   const inMenu=!['home','paths','path','curr','lesson','pratik','pratiksoru'].includes(S.view);
   $('#tabbar').innerHTML = tab('home','Ana sayfa','home',cur==='home')+tab(goal?'path':'paths','Yolum','path',cur==='paths',goal?' data-id="'+goal+'"':'')+tab('curr','Dersler','book',cur==='curr')+tab('pratik','Pratik','gym',cur==='pratik')+tab('menu','Menü','menu',inMenu);
   document.querySelectorAll('[data-dsel]').forEach(s=>{ s.innerHTML = DIAL.map(d=>'<option value="'+d.id+'"'+(d.id===P.dialect?' selected':'')+'>'+d.name+'</option>').join(''); });
-  { const cw=$('#collWrap'); if(cw){ cw.hidden = P.dialect!=='tsql'; const cs=$('#collSide'); if(cs) cs.value=P.coll||'Turkish_CI_AS'; } }
+  { const cw=$('#collWrap'); if(cw){ const o=COLL_OPTS[P.dialect]; cw.hidden = !o; const cs=$('#collSide'); if(cs&&o){ cs.innerHTML=o.map(([v,t])=>'<option value="'+v+'">'+t+'</option>').join(''); cs.value=collOf(P.dialect); } } }
   const f=$('#famLinks'); if(f) f.innerHTML=famHTML();
 }
 function renderStats(){
@@ -1118,8 +1124,8 @@ function solvedHook(k, ok1st){
   if(!(LS && LS.e && LS.e.norv)) rvFirst(k); save(); return '';
 }
 function solResult(e,k,d){
-  /* SQL Server kipinde beklenen sonuç da aynı motorda (harmanlama taklidiyle) hesaplanır; yoksa büyük/küçük harf ve Türkçe sıralama farkı doğru cevabı yanlış gösterirdi. */
-  if(d==='tsql' && exBase(e)!=='tsql'){ const t=exText(e.sol,e,'tsql',e.solv); if(t){ const kk=k+'|tsql|'+(P.coll||''); if(solCache[kk]===undefined){ const db=fresh(); const r=run(db,t,'tsql'); let set=lastSet(r); if(!r.error && e.check){ try{ set=db.exec(e.check).pop()||null; }catch(er){ r.error=String(er.message); } } solCache[kk]= r.error? null : {set}; db.close(); } if(solCache[kk]) return solCache[kk]; } }
+  /* SQL Server, MySQL ve PostgreSQL kipinde beklenen sonuç da aynı motorda (harmanlama taklidiyle) hesaplanır; yoksa büyük/küçük harf ve Türkçe sıralama farkı doğru cevabı yanlış gösterirdi. */
+  if(COLL_DL.includes(d) && exBase(e)!==d){ const t=exText(e.sol,e,d,e.solv); if(t){ const kk=k+'|'+d+'|'+(collOf(d)||''); if(solCache[kk]===undefined){ const db=fresh(); const r=run(db,t,d); let set=lastSet(r); if(!r.error && e.check){ try{ set=db.exec(e.check).pop()||null; }catch(er){ r.error=String(er.message); } } solCache[kk]= r.error? null : {set}; db.close(); } if(solCache[kk]) return solCache[kk]; } }
   if(!solCache[k]){ const db=fresh(); const r=run(db,e.sol,exBase(e)); let set=lastSet(r); if(!r.error && e.check){ try{ set=db.exec(e.check).pop()||null; }catch(er){ r.error=String(er.message); } } solCache[k]= r.error? {error:r.error} : {set}; db.close(); }
   return solCache[k];
 }
@@ -1547,7 +1553,7 @@ function arChSubmit(){
 function arJudge(c, code, d){
   const cases=[{ad:'Örnek veri', sql:''}].concat(c.tests); const out=[]; let firstR=null;
   for(let i=0;i<cases.length;i++){ const t=cases[i];
-    let dbS=fresh(); if(t.sql) try{ dbS.exec(t.sql); }catch(e){} let sr=null; if(d==='tsql'){ const tq=exText(c.sol,c,'tsql',c.solv); if(tq){ sr=run(dbS,tq,'tsql'); if(sr.error){ sr=null; dbS.close(); dbS=fresh(); if(t.sql) try{ dbS.exec(t.sql); }catch(e){} } } } if(!sr) sr=run(dbS,c.sol,'sqlite'); dbS.close();
+    let dbS=fresh(); if(t.sql) try{ dbS.exec(t.sql); }catch(e){} let sr=null; if(COLL_DL.includes(d)){ const tq=exText(c.sol,c,d,c.solv); if(tq){ sr=run(dbS,tq,d); if(sr.error){ sr=null; dbS.close(); dbS=fresh(); if(t.sql) try{ dbS.exec(t.sql); }catch(e){} } } } if(!sr) sr=run(dbS,c.sol,'sqlite'); dbS.close();
     const dbU=fresh(); if(t.sql) try{ dbU.exec(t.sql); }catch(e){} const ur=run(dbU,code,d); const apf=(!i&&!ur.error&&c.plan)?DX.planFail(c,dbU,ur):null; dbU.close(); if(!i) firstR=ur;
     if(ur.error){ out.push({ad:t.ad, ok:false, why:'Hata: '+ur.error+(ur.hint?' '+ur.hint:'')}); break; }
     const cm=compare(lastSet(ur), lastSet(sr), c.ord ? (/eşitlikte/i.test(c.q) ? 'strict' : true) : false); if(cm.ok&&apf){ cm.ok=false; cm.why='Sonuç doğru ✓ · plan hedefi ✗. '+apf.msg+(apf.plan?' Planın: '+apf.plan.replace(/\n/g,' | '):''); } out.push({ad:t.ad, ok:cm.ok, why:cm.why}); }
@@ -2239,7 +2245,7 @@ document.addEventListener('input', ev=>{
 });
 document.addEventListener('change', ev=>{
   const t=ev.target;
-  if(t.matches('[data-csel]')) { P.coll=t.value; save(); try{ DX.setCollation(P.coll); }catch(e){} toast('Harmanlama: '+P.coll+'. Karşılaştırma, sıralama ve gruplama bu kurala göre yapılır.'); return; }
+  if(t.matches('[data-csel]')) { const d=P.dialect; if(!COLL_OPTS[d]) return; P.colls=Object.assign({},P.colls,{[d]:t.value}); save(); try{ DX.setCollation(t.value,d); }catch(e){} toast('Harmanlama: '+t.value+'. '+(d==='pg'?'Sıralama ve büyük/küçük harf dönüşümü':'Karşılaştırma, sıralama ve gruplama')+' bu kurala göre yapılır.'); return; }
   if(t.matches('[data-dsel]')) { const keepPlay = S.view==='serbest'; if(keepPlay) playD=t.value; setDialect(t.value); return; }
   if(t.id==='exD'){ switchExDialect(t.value); return; }
   if(t.id==='prT'){ prFilter.t=t.value; $('#prList').innerHTML=prListHTML(); return; }

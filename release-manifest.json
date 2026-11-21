@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "date": "2026-11-08",
+  "date": "2026-11-21",
   "baseCommit": "ef8f33be75f044e216d86ad7bc10ba1ff7a8926b",
   "scope": "Bu iyileştirme paketinde değişen dosyalar; tüm ürün için uzman onayı değildir.",
   "checks": [
@@ -13,7 +13,7 @@
     "recovery.js": "ef7fc7a695802e75e55d83e101a2e0ab472c88126607c28229c9cea0ea60f870",
     "tests/artifact.cjs": "1ab82740817f37d2934e90f25997c4a6e7d07d50138d538c70de82f27fa0ddfc",
     "tests/recovery.cjs": "9990ef25ded436773fef0d4659d287bdbb3a3caa94817eb768a0b4ac129a31f8",
-    "index.html": "3a6f727d84690809cb4c2f827a7c94ddd190d065e676c20bc7bbaae1b5a0973d",
+    "index.html": "4ebf37f78db0d6270c581188f0db25d39b9ce16435500d303f3190be3a82257b",
     "sw.js": "050ee76dff68d4063157061a17cab0b5c90d223dbaf0de82480ac83234d2f423",
     "en-tour.js": "f97abb23c1f2a87da445765d45e886705eaf40903a2360f1e539a9b96a7a5860",
     "vaka/depo/index.html": "414eafdeaff416898e91b9ab2d657f8905af541e787e6cb21c561f90baed4f0f",
@@ -42,6 +42,13 @@
         "index.html"
       ],
       "note": "En küçük yazı .75rem (12 px). Chrome 390/1366 px: ana sayfa ve ilk ders, axe hata yok."
+    },
+    {
+      "date": "2026-11-21",
+      "files": [
+        "index.html"
+      ],
+      "note": "MySQL (utf8mb4_0900_ai_ci / tr_0900_ai_ci) ve PostgreSQL (C / Turkish) harmanlama seçimi. Gerçek sunucu: PG C 1733/1738, Turkish 1732/1738; MySQL ai 1723/1726, tr 1723/1726 aynı. run.js, arena.js, boxes.js, sabit_regresyon.js, pg_denetim.mjs temiz; tarayıcı taraması mysql/pg."
     }
   ]
 }

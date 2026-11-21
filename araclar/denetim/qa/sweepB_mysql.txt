@@ -1,0 +1,16 @@
+engine not ready?
+op01 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
+op02 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
+op03 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
+op04 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
+op05 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
+op06 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
+op07 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
+op08 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
+op09 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
+op11 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
+op12 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
+op14 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
+op16 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
+sg08 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalites
+DONE mysql { ok: 502, bad: 14 } errs 0 []

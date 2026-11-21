@@ -36,9 +36,10 @@ initSqlJs().then(SQL=>{
       const mf=mustFail(e,t,d); if(mf) out.push({id:it.id,src:it.src,kind:'yontemKurali',d,err:mf,sql:t.slice(0,200)});
       if(r.error) out.push({id:it.id,src:it.src,kind:'lehceHata',d,err:String(r.error).slice(0,160),sql:t.slice(0,300)});
       else if(!same(r.set,ref.set,e.ord)) { let kind='lehceFarkli';
-        if(d==='tsql'){ const k0=DX.getCollation(); DX.setCollation(null); let r0; try{ r0=runOne(t,d,e); } finally { DX.setCollation(k0); }
-          if(!r0.error && same(r0.set,ref.set,e.ord)) kind='tsqlHarmanlama'; // fark yalnız harmanlama taklidinden (gerçek SQL Server'la doğrulandı: araclar/denetim/sonuc*.json)
-          else if(yuvarlamaFarki(r.set,ref.set)) kind='tsqlYuvarlama'; }
+        if(['tsql','mysql','pg'].includes(d)){ const k0=DX.getCollation(d); DX.setCollation(null,d); let r0; try{ r0=runOne(t,d,e); } finally { DX.setCollation(k0,d); }
+          if(!r0.error && same(r0.set,ref.set,e.ord)) kind='harmanlama'; // fark yalnız harmanlama taklidinden (gerçek sunucularla doğrulandı: sonuclar/mssql*.txt, pg.txt, mysql.txt)
+          else if(yuvarlamaFarki(r.set,ref.set)) kind=d+'Yuvarlama';
+          else if(d==='mysql' && /\b(TIMESTAMPDIFF|JSON_OBJECT)\s*\(/i.test(t)) kind='mysqlSemantik'; } // MySQL TIMESTAMPDIFF tam birime keser, JSON_OBJECT anahtarları sıralar (gerçek sunucuyla doğrulandı: sonuclar/mysql_gercek_*.txt)
         out.push({id:it.id,src:it.src,kind,d,sql:t.slice(0,300)}); }
     } }
   if(process.env.PROG) console.error('items done'); fs.writeFileSync('sql_audit.json',JSON.stringify(out,null,1));

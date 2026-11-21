@@ -1,0 +1,46 @@
+engine not ready?
+index#6 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (7 / 8)||Yapay zekâ koçuÇözümü vermede
+index#7 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (8 / 8)||Yapay zekâ koçuÇözümü vermede
+performans#2 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (3 / 7)||Yapay zekâ koçuÇözümü vermede
+performans#6 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (7 / 7)||Yapay zekâ koçuÇözümü vermede
+sargable#1 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (2 / 5)||Yapay zekâ koçuÇözümü vermede
+sargable#2 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (3 / 5)||Yapay zekâ koçuÇözümü vermede
+performans-lab#6 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (7 / 8)||Yapay zekâ koçuÇözümü vermede
+bv-giris#5 SLOW 10418ms
+bv-plan#3 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (4 / 6)||Yapay zekâ koçuÇözümü vermede
+bv-istasyon#8 SLOW 10300ms
+bv-gelir#2 SLOW 11772ms
+bv-gelir#4 SLOW 9151ms
+bv-gelir#6 SLOW 8376ms
+be-sayfalama#4 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (5 / 6)||Yapay zekâ koçuÇözümü vermede
+bs-kohort#6 SLOW 16024ms
+mk-medyan#6 SLOW 10514ms
+de-partition#3 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (4 / 10)||Yapay zekâ koçuÇözümü vermed
+de-partition#6 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (7 / 10)||Yapay zekâ koçuÇözümü vermed
+proje-dba#1 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (2 / 8)||Yapay zekâ koçuÇözümü vermede
+proje-backend#7 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır?||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdük
+opt-olc#5 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (6 / 8)||Yapay zekâ koçuÇözümü vermede
+opt-plan#7 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (8 / 8)||Yapay zekâ koçuÇözümü vermede
+opt-tur#1 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (2 / 8)||Yapay zekâ koçuÇözümü vermede
+opt-tur#2 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (3 / 8)||Yapay zekâ koçuÇözümü vermede
+opt-tur#3 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (4 / 8)||Yapay zekâ koçuÇözümü vermede
+opt-indeks#1 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (2 / 8)||Yapay zekâ koçuÇözümü vermede
+opt-indeks#3 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (4 / 8)||Yapay zekâ koçuÇözümü vermede
+opt-join#1 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (2 / 8)||Yapay zekâ koçuÇözümü vermede
+opt-join#5 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (6 / 8)||Yapay zekâ koçuÇözümü vermede
+opt-toplama#1 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (2 / 8)||Yapay zekâ koçuÇözümü vermede
+opt-toplama#2 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (3 / 8)||Yapay zekâ koçuÇözümü vermede
+opt-toplama#3 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (4 / 8)||Yapay zekâ koçuÇözümü vermede
+opt-yanlis#4 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (5 / 8)||Yapay zekâ koçuÇözümü vermede
+mk-opt#7 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (8 / 12)||Yapay zekâ koçuÇözümü vermed
+mk-opt#8 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (9 / 12)||Yapay zekâ koçuÇözümü vermed
+opt-proje#1 SLOW 11622ms
+opt-proje#4 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (5 / 9)||Yapay zekâ koçuÇözümü vermede
+opt-proje#6 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (7 / 9)||Yapay zekâ koçuÇözümü vermede
+opt-proje#7 CLICK TIMEOUT
+opt-proje#7 SLOW 20683ms
+bv-proje#2 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (3 / 11)||Yapay zekâ koçuÇözümü vermed
+ops-kaynak#1 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (2 / 9)||Yapay zekâ koçuÇözümü vermede
+ops-parmak-izi#3 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (4 / 9)||Yapay zekâ koçuÇözümü vermede
+ops-anomali#5 Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (6 / 9)||Yapay zekâ koçuÇözümü vermede
+DONE pg { ok: 1120, bad: 34, skip: 795 } errs 0

@@ -492,7 +492,7 @@ ${CODE("SELECT json_object('id', customer_id, 'ad', first_name, 'sehir', city) A
 `,
   ex: [
     { t: 'sql', q: '<p>Her müşteri için <code>{"id": ..., "ad": ..., "sehir": ...}</code> biçiminde bir JSON metni üret. İlk 3 müşteriyi <code>customer_id</code> sırasıyla getir. (SQL Server modunda <code>JSON_OBJECT(\'id\': customer_id, ...)</code> yazımı kullanılabilir.)</p>', sol: "SELECT json_object('id', customer_id, 'ad', first_name, 'sehir', city) FROM customers ORDER BY customer_id LIMIT 3;", ord: true },
-    { t: 'sql', q: '<p>Her kategori için ürün adlarını bir <b>JSON dizisi</b> olarak topla: <code>category</code>, <code>urunler</code>. Kategorilere göre sırala; dizi içindeki sıra <code>product_id</code>\'ye göre olsun.</p>', sol: 'SELECT category, json_group_array(name) AS urunler FROM (SELECT * FROM products ORDER BY product_id) GROUP BY category ORDER BY category;', ord: true, dl: ['sqlite', 'pg', 'mysql'], hint: 'SQLite: json_group_array, PostgreSQL: json_agg, MySQL: JSON_ARRAYAGG. Dizi sırasını sabitlemek için alt sorguda ORDER BY product_id yap.' }
+    { t: 'sql', q: '<p>Her kategori için ürün adlarını bir <b>JSON dizisi</b> olarak topla: <code>category</code>, <code>urunler</code>. Kategorilere göre sırala; dizi içindeki sıra <code>product_id</code>\'ye göre olsun.</p>', sol: 'SELECT category, json_group_array(name) AS urunler FROM (SELECT * FROM products ORDER BY product_id) AS p GROUP BY category ORDER BY category;', ord: true, dl: ['sqlite', 'pg', 'mysql'], hint: 'SQLite: json_group_array, PostgreSQL: json_agg, MySQL: JSON_ARRAYAGG. Dizi sırasını sabitlemek için alt sorguda ORDER BY product_id yap.' }
   ]
 });
 

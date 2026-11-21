@@ -1,0 +1,80 @@
+{"ok":1281,"bad":37,"skip":631}
+zaman-araligi#5 CLICK TIMEOUT (page frozen?)
+index#6 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (7 / 8)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: CREATE INDEX ix_siparis_musteri ON orders (customer_id);
+index#7 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (8 / 8)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: CREATE INDEX ix_durum_tarih ON orders (status, order_date);
+performans#2 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (3 / 7)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT COUNT(*) FROM orders WHERE order_date >= '2024-11-01' AND order_date < '2024-12-01';
+performans#6 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (7 / 7)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT account_id, COUNT(*) AS adet FROM bank_txns GROUP BY account_id;
+sargable#1 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (2 / 5)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT COUNT(*) AS adet FROM orders WHERE order_date >= '2024-11-01' AND order_date < '2024-12-01';
+sargable#2 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (3 / 5)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT COUNT(*) AS adet FROM products WHERE price > 5000;
+performans-lab#6 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (7 / 8)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT COUNT(*) AS islem FROM bank_txns WHERE txn_time >= '2024-11-01' AND txn_time < '2024-12-01';
+bv-plan#3 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (4 / 6)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT COUNT(*) AS yolculuk FROM bk_trips WHERE started_at >= '2024-07-15' AND started_at < '2024-07-16';
+bv-gelir#2 CLICK TIMEOUT (page frozen?)
+be-sayfalama#4 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (5 / 6)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT TOP 10 order_id, placed_at FROM lk_orders WHERE order_id > 5000 ORDER BY order_id;
+mk-ardisik#1 :: SQL Server hata verdi Aborted(OOM). Build with -sASSERTIONS for more info. Bu sorgu gerçek SQL Server sunucusunda çalışıyorsa bildir||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: WITH g AS (SELECT DISTINCT account_id, CAST(txn_time AS DATE) AS gun FROM bank_txns), n AS (SELECT account_id, DATEDIFF(day, '2000-01-01', gun) - ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY gun) AS seri FROM g), s AS (SELECT account_id FROM n GROUP BY account_id, seri HAVING COUNT(*) >= 3) SELECT COUNT(DISTINCT account_id) AS hesap FROM s;
+mk-ardisik#2 :: SQL Server hata verdi Aborted(OOM). Build with -sASSERTIONS for more info. Bu sorgu gerçek SQL Server sunucusunda çalışıyorsa bildir||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: WITH g AS (SELECT DISTINCT account_id, CAST(txn_time AS DATE) AS gun FROM bank_txns), n AS (SELECT account_id, DATEDIFF(day, '2000-01-01', gun) - ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY gun) AS seri FROM g), s AS (SELECT account_id, COUNT(*) AS uzunluk FROM n GROUP BY account_id, seri) SELECT TOP 5 account_id, MAX(uzunluk) AS en_uzun FROM s GROUP BY account_id ORDER BY en_uzun DESC, ac
+ts-plan#1 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (2 / 6)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT COUNT(*) AS adet FROM orders WHERE order_date >= '2024-12-01' AND order_date < '2025-01-01';
+de-partition#3 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (4 / 10)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT COUNT(*) AS adet FROM lk_orders WHERE placed_at >= '2024-12-01' AND placed_at < '2025-01-01';
+de-partition#6 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (7 / 10)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT COUNT(*) AS adet, ROUND(SUM(amount), 0) AS toplam FROM bank_txns WHERE txn_time >= '2024-03-01' AND txn_time < '2024-04-01';
+proje-dba#1 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (2 / 8)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT CAST(txn_time AS DATE) AS gun, txn_type, COUNT(*) AS adet, ROUND(SUM(amount), 0) AS toplam FROM bank_txns WHERE txn_time >= '2024-12-01' AND txn_time < '2025-01-01' GROUP BY CAST(txn_time AS DATE), txn_type ORDER BY gun, txn_type;
+proje-backend#7 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır?||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: CREATE INDEX ix_kategori_fiyat ON products (category, price);
+opt-olc#5 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (6 / 8)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT txn_type, COUNT(*) AS adet, ROUND(SUM(amount), 0) AS toplam FROM bank_txns WHERE txn_time >= '2024-11-01' AND txn_time < '2024-12-01' GROUP BY txn_type;
+opt-plan#7 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (8 / 8)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: CREATE INDEX ix_hesap_musteri ON bank_accounts (customer_id);
+opt-tur#1 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (2 / 8)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT COUNT(*) AS adet FROM bank_txns WHERE txn_time >= '2024-12-31' AND txn_time < '2025-01-01';
+opt-tur#2 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (3 / 8)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT COUNT(*) AS adet FROM bank_txns WHERE amount < -1000;
+opt-tur#3 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (4 / 8)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT COUNT(*) AS adet FROM bank_txns WHERE merchant_category = 'market';
+opt-indeks#1 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (2 / 8)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: CREATE INDEX ix_kanal_zaman ON bank_txns (channel, txn_time);
+opt-indeks#3 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (4 / 8)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: CREATE INDEX ix_hesap_zaman ON bank_txns (account_id, txn_time);
+opt-join#1 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (2 / 8)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT c.customer_id, c.city, COALESCE(o.siparis, 0) AS siparis FROM customers c LEFT JOIN (SELECT customer_id, COUNT(*) AS siparis FROM orders GROUP BY customer_id) o ON o.customer_id = c.customer_id;
+opt-join#5 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (6 / 8)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT order_id FROM lk_orders WHERE courier_id = 5;
+opt-toplama#1 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (2 / 8)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: CREATE INDEX ix_bitis ON bk_trips (end_station);
+opt-toplama#2 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (3 / 8)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: CREATE INDEX ix_kullanici_zaman ON bk_trips (user_id, started_at);
+opt-toplama#3 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (4 / 8)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT a.account_id, m.son FROM bank_accounts a LEFT JOIN (SELECT account_id, MAX(txn_time) AS son FROM bank_txns GROUP BY account_id) m ON m.account_id = a.account_id;
+opt-yanlis#4 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (5 / 8)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT COUNT(*) AS adet FROM bank_txns WHERE txn_time >= '2024-12-01' AND txn_time < '2025-01-01';
+mk-opt#7 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (8 / 12)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT COUNT(*) AS adet FROM lk_orders WHERE placed_at >= '2024-12-01' AND placed_at < '2025-01-01';
+mk-opt#8 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (9 / 12)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: CREATE INDEX ix_rest_durum_zaman ON lk_orders (restaurant_id, status, placed_at);
+opt-proje#4 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (5 / 9)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT a.customer_id, COUNT(*) AS islem, ROUND(SUM(t.amount), 0) AS toplam FROM bank_txns t JOIN bank_accounts a ON a.account_id = t.account_id WHERE t.txn_type = 'kart_harcama' AND t.txn_time >= '2024-12-01' AND t.txn_time < '2025-01-01' GROUP BY a.customer_id;
+opt-proje#6 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (7 / 9)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT c.customer_id, c.segment, COALESCE(k.islem, 0) AS islem, k.toplam FROM bank_customers c LEFT JOIN (SELECT a.customer_id, COUNT(*) AS islem, ROUND(SUM(t.amount), 0) AS toplam FROM bank_txns t JOIN bank_accounts a ON a.account_id = t.account_id WHERE t.txn_type = 'kart_harcama' AND t.txn_time >= '2024-12-01' AND t.txn_time < '2025-01-01' GROUP BY a.customer_id) k ON k.customer_id = c.customer
+bv-proje#2 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (3 / 11)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: WITH giden AS (SELECT start_station AS st, COUNT(*) AS n FROM bk_trips GROUP BY start_station), gelen AS (SELECT end_station AS st, COUNT(*) AS n FROM bk_trips WHERE end_station IS NOT NULL GROUP BY end_station) SELECT TOP 5 s.name, COALESCE(gelen.n, 0) - COALESCE(giden.n, 0) AS net FROM bk_stations s LEFT JOIN giden ON giden.st = s.station_id LEFT JOIN gelen ON gelen.st = s.station_id ORDER BY ne
+ops-kaynak#1 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (2 / 9)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: CREATE INDEX ix_hesap_zaman ON ops_access_log (login_name, event_at);
+ops-parmak-izi#3 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (4 / 9)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT COUNT(*) AS calisma, SUM(logical_reads) AS toplam_okuma FROM ops_query_log WHERE logged_at >= '2024-11-12 09:00:00' AND logged_at < '2024-11-12 11:00:00';
+ops-anomali#5 :: Sonuç doğru ✓ Plan hedefi ✓ Doğru! +2 XP Sonucun beklenen sonuçla aynı. Diğer SQL türlerinde nasıl yazılır? Sonraki görev (6 / 9)||Yapay zekâ koçuÇözümü vermeden yol gösterir; çözdükten sonra sorgunun kalitesini değerlendirir.İpucu verHatamı açıklaSorgumu değerlendir
+   SOL: SELECT login_name, client_ip, COUNT(*) AS okuma FROM ops_access_log WHERE event_type = 'read' AND event_at >= '2024-11-12' AND client_ip NOT LIKE '10.%' GROUP BY login_name, client_ip;
+ERRS:
+CONSOLE Aborted(OOM)
+CONSOLE Aborted(OOM)

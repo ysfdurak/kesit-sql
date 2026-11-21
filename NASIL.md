@@ -192,14 +192,31 @@ node mssql_gen.js /tmp/mssql SQL_Latin1_General_CP1_CI_AS      # beklenen_L.json
 - Çıktı: `sonuc.txt` / `sonuc.json` (Latin için `sonuc_L.*`). Sınıflar: `ayni`, `fark`, `sira` (aynı satırlar, sıra farklı), `sqlHata` (gerçek sunucu reddetti), `emuHata`, `surum` (yalnız SQL Server 2022 ve sonrası özellik), `(ortam)` (DMV ve msdb gibi taklit ortamı), `(işlem)` (işlem komutlu, sarmalayıcıdan etkilenen madde). Farklı maddelerde gerçek sunucunun ilk 40 satırı `ss` alanına yazılır.
 - Son tur (21 Kasım 2026, SQL Server 2019): 1.917 madde. Kalanlar ortam, işlem sarmalayıcısı ve `DIFFERENCE` puanıdır.
 
+### 5a-2. Gerçek PostgreSQL ve MySQL denetimi (Windows bilgisayarda)
+PostgreSQL 15 ve MySQL 9.7, Anaconda ile `D:\Users\YsF\kesitdb` klasörüne taşınabilir kuruldu (hizmet ve parola yok). Bilgisayar yeniden başlarsa `db_baslat.py` ikisini de açar.
+```bash
+node db_gen.js /tmp/dbk pg          # ddl_pg.json + beklenen_pg.json (C harmanlaması)
+node db_gen.js /tmp/dbk pg tr       # beklenen_pg_tr.json (Turkish_Türkiye.1254)
+node db_gen.js /tmp/dbk mysql       # ddl_mysql.json + beklenen_mysql.json (utf8mb4_0900_ai_ci)
+node db_gen.js /tmp/dbk mysql tr    # beklenen_mysql_tr.json (utf8mb4_tr_0900_ai_ci)
+```
+- PC'de: `python db_karsilastir.py pg|mysql [tr] [--yukle]`. Veritabanları: PostgreSQL `kesitsql_c` / `kesitsql_tr`, MySQL `kesitsql` / `kesitsql_tr`.
+- PostgreSQL'de her çözüm bir işlem içinde çalışıp geri alınır. MySQL'de DDL işlemi kapattığı için veri değiştiren çözüm, kullandığı tabloların `kx_tmp` kopyasında çalışır.
+- Çıktı `sonuc_<tür>[_tr].txt/json`; sınıflar SQL Server'dakiyle aynı. `db_yokla2.py` harmanlama yoklamasıdır (sıralama, UPPER/LOWER/INITCAP, LIKE/ILIKE, REPLACE, LOCATE).
+- Bulunup giderilenler: MySQL `TIMESTAMPDIFF` tam birim sayar (kesme), JSON nesne anahtarları uzunluğa sonra ikili sıraya dizilir, `CAST(x AS VARCHAR)` MySQL'de hatadır (CHAR), `ROW_NUMBER()` işaretsizdir (çıkarmada SIGNED), `ROUND` NUMERIC/DECIMAL'de tam yarıda yukarı; PostgreSQL 15 alt sorguya takma ad ister, boolean doğrudan sayıya çevrilmez.
+- Son sonuçlar (21.11.2026): PostgreSQL C 1.733/1.738, Turkish 1.732/1.738; MySQL 0900_ai_ci 1.723/1.726, tr_0900_ai_ci 1.723/1.726 aynı (`sonuclar/pg_gercek_*.txt`, `sonuclar/mysql_gercek_*.txt`). MySQL turunda ayrıca bulunup giderilenler: tamsayı `AVG`'sinin 4 basamağa yuvarlanması yalnız dış sorgunun doğrudan seçim sütununda olur (`ROUND(AVG(x), 2)` ve CTE'de tam duyarlık kalır); birleşik sorgunun `ORDER BY`'ı artık `SELECT * FROM (...)` içine alınıp harmanlamaya göre sıralanır; karşılaştırma betiği bağlantı harmanlamasını veritabanınınkine eşitler.
+- Bilinen farklar: MySQL'de bölme sonucunun ölçeği bölünenin ölçeği + 4'tür (zincirli bölmelerde son basamak); PostgreSQL'de `soundex` için fuzzystrmatch eklentisi gerekir; eşit değerlerin sırası.
+
 ### 5b. SQL Server harmanlama (collation) taklidi
 sql.js'te `create_collation` olmadığı için T-SQL kipinde metin karşılaştırmaları `dialect.js` içindeki `collateSql` geçişiyle yeniden yazılır:
 - `=`, `<>`, `<`, `IN (...)`, `BETWEEN`, basit `CASE x WHEN`, `ORDER BY`, `GROUP BY`, `PARTITION BY`, `COUNT(DISTINCT ...)` ve `SELECT DISTINCT` noktalarında metin `ck_(x)` anahtar işlevinden geçer. `MIN`/`MAX(metin)` → `tmin_`/`tmax_`, `LIKE` → `tlike_`, `UPPER`/`LOWER`/`REPLACE`/`CHARINDEX` harmanlamaya göre çalışır.
 - `collKey` dört katmanlı anahtar üretir: harf (Türkçe'de ç ğ ı ö ş ü ayrı harf; Latin'de aksanlı harf), aksan, büyük/küçük (yalnız `_CS`), kelime sıralaması (kesme işareti ve kısa çizgi en sona bırakılır). Sondaki boşluk yok sayılır. `_BIN` harmanlamasında anahtar metnin kendisidir.
 - Kurallar gerçek sunucudaki yoklamayla (`araclar/denetim/sorgu.py` + `sorgu.json`) çıkarıldı: 220 dizenin iki harmanlamadaki sırası, `UPPER`/`LOWER`, 13 `LIKE` deseni, `REPLACE` ve `CHARINDEX` birebir tutuyor.
 - Uygulamada kenar çubuğundaki **Harmanlama** seçimi (yalnız SQL Server seçiliyken görünür) `DX.setCollation` çağırır: Turkish_CI_AS (varsayılan) veya SQL_Latin1_General_CP1_CI_AS. Sorgudaki `x COLLATE Ad` o karşılaştırmada seçimi ezer.
-- Bilinen sınırlar: birleşik sorgunun (`UNION`) `ORDER BY`'ı ve `IN (SELECT ...)` harmanlamasız kalır; `MIN`/`MAX` pencere işlevinde ikili karşılaştırma kullanır; `DIFFERENCE` 4'ün altındaki puanlarda gerçek sunucudan ayrılabilir (gerçek sunucuda puan, argümanların sırasına göre değişiyor). `SOUNDEX` birebir tutar.
-- `run.js` SQL Server sonucu SQLite referansından yalnız harmanlama ya da son basamak yuvarlamasıyla ayrılıyorsa bunu `tsqlHarmanlama` (harmanlama kapatılınca SQLite ile aynı) ya da `tsqlYuvarlama` diye ayrı yazar; bunlar hata sayılmaz.
+- Bilinen sınırlar: birleşik sorgunun (`UNION`) sıra numarasıyla `ORDER BY 1` ve `IN (SELECT ...)` harmanlamasız kalır; `MIN`/`MAX` pencere işlevinde ikili karşılaştırma kullanır; `DIFFERENCE` 4'ün altındaki puanlarda gerçek sunucudan ayrılabilir (gerçek sunucuda puan, argümanların sırasına göre değişiyor). `SOUNDEX` birebir tutar.
+- MySQL: `utf8mb4_0900_ai_ci` (varsayılan) ve `utf8mb4_tr_0900_ai_ci` büyük/küçük harf ve aksan duyarsızdır, sondaki boşluk sayılır (NO PAD); karşılaştırma, gruplama, DISTINCT, LIKE, LOCATE/INSTR harmanlamaya göre, REPLACE ikilidir. UPPER/LOWER iki harmanlamada da Türkçe kural kullanmaz (UPPER('i') = 'I'). 309 dizenin sırası, harf dönüşümü ve LIKE gerçek MySQL 9.7 ile birebir tuttu.
+- PostgreSQL: eşitlik her zaman ikilidir; harmanlama yalnız sıralamayı (ORDER BY, <, >, MIN/MAX) ve UPPER/LOWER/INITCAP/ILIKE'ı etkiler. `C`: ikili sıra, harf dönüşümü yalnız ASCII. `Turkish_Türkiye.1254` (Windows kurulumunun varsayılanı): ç ğ ö ş ü ayrı harf, ı ve İ'ye harf dönüşümünde dokunulmaz. Gerçek PostgreSQL 15 (Windows) ile 309 dizede yalnız `ab-` gibi sondaki kısa çizgi sırası ayrıldı. Linux'taki tr_TR/en_US yerel ayarları farklı davranır.
+- `run.js` SQL Server sonucu SQLite referansından yalnız harmanlama ya da son basamak yuvarlamasıyla ayrılıyorsa bunu `harmanlama` (harmanlama kapatılınca SQLite ile aynı) ya da `<tür>Yuvarlama` diye ayrı yazar; MySQL'in `TIMESTAMPDIFF` kesmesi ve `JSON_OBJECT` anahtar sırası `mysqlSemantik` olarak ayrılır. Bunlar hata sayılmaz.
 
 ### 6. İpucu kapsamı
 ```bash

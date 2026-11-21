@@ -14,7 +14,7 @@ initSqlJs().then(SQL=>{
  const runD=(db,code,d)=>{ const r=DX.runDialect(db,code,d,{env:{procs:{},funcs:{},tvfs:{},tran:0,nocount:false}}); return r.error?{error:r.error}:{set:r.sets&&r.sets.length?r.sets[r.sets.length-1]:null}; };
  let prob=0;
  /* SQL Server sonucu yalnız harmanlama taklidi yüzünden ayrılıyorsa (taklit kapatılınca aynı) bilinen farktır; gerçek sunucuda doğrulandı. */
- const harmFark=(ch,tx,d,seed,want)=>{ if(d!=='tsql') return false; const k0=DX.getCollation(); DX.setCollation(null); try{ const db=fresh(); if(seed) db.exec(seed); const r=runD(db,tx,d); db.close(); return !r.error && (ch.ord?keyo:key)(r.set)===(ch.ord?keyo:key)(want); } finally { DX.setCollation(k0); } };
+ const harmFark=(ch,tx,d,seed,want)=>{ if(!['tsql','mysql','pg'].includes(d)) return false; const k0=DX.getCollation(d); DX.setCollation(null,d); try{ const db=fresh(); if(seed) db.exec(seed); const r=runD(db,tx,d); db.close(); return !r.error && (ch.ord?keyo:key)(r.set)===(ch.ord?keyo:key)(want); } finally { DX.setCollation(k0,d); } };
  if(!ONLY||ONLY==='ch') for(const ch of A.ch.filter(x=>!process.env.SETS||process.env.SETS.split(',').includes(x.set))){
    const db=fresh(); const base=runD(db,ch.sol,'sqlite'); db.close();
    if(base.error){ console.log('CH ERR',ch.id,base.error); prob++; continue; }
