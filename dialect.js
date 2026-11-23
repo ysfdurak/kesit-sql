@@ -508,8 +508,8 @@ function fwdDdl(sql, d) {
     const t = T[i];
     if (isW(t, 'CREATE')) { const k = nx(T, i); if (isW(T[k], 'TABLE')) { const nm = nx(T, nx(T, k)); if (isP(T[nm], '(')) inCreate = nm; } }
     if (inCreate >= 0 && i === closeP(T, inCreate)) inCreate = -1;
-    /* ALTER TABLE t ADD [COLUMN] ad TEXT: tür eşlemesi CREATE TABLE'daki gibi */
-    if (d === 'oracle' && t.k === 'w' && /^(TEXT|INTEGER|REAL)$/.test(t.u)) { const p = pv(T, i), pp = pv(T, p); if ((T[p] && (T[p].k === 'w' || T[p].k === 'q')) && (isW(T[pp], 'ADD', 'COLUMN') || (isP(T[pp], '(') && isW(T[pv(T, pp)], 'ADD'))) && T.some(x => isW(x, 'ALTER'))) { out += fwdDdlType(t.u, d); continue; } }
+    /* ALTER TABLE t ADD [COLUMN] ad TEXT: Oracle'da TEXT türü yok (ORA-00902); INTEGER ve REAL Oracle'da geçerli, dokunulmaz */
+    if (d === 'oracle' && t.k === 'w' && t.u === 'TEXT') { const p = pv(T, i), pp = pv(T, p); if ((T[p] && (T[p].k === 'w' || T[p].k === 'q')) && (isW(T[pp], 'ADD', 'COLUMN') || (isP(T[pp], '(') && isW(T[pv(T, pp)], 'ADD'))) && T.some(x => isW(x, 'ALTER'))) { out += fwdDdlType(t.u, d); continue; } }
     if (inCreate >= 0 && t.k === 'w' && D[i] === D[inCreate] + 1) {
       const p = pv(T, i);
       if ((T[p].k === 'w' || T[p].k === 'q') && /^(TEXT|INTEGER|REAL)$/.test(t.u)) {
@@ -2333,7 +2333,7 @@ function revSimple(sql, d, ctx) {
   if (d === 'oracle') s = s.replace(/\b(\w+)\s*\.\s*NEXTVAL\b/gi, "seq_next_('$1')").replace(/\b(\w+)\s*\.\s*CURRVAL\b/gi, "seq_curr_('$1')");
   if (d === 'mysql') { s = s.replace(/\bRLIKE\b/gi, 'REGEXP'); if (s.includes('\\')) s = rt(s).map(t => t.k === 's' && t.v.includes('\\') ? "'" + t.v.slice(1, -1).replace(/\\(.)/g, (m, c) => c === 'n' ? '\n' : c === 't' ? '\t' : c === "'" ? "''" : (c === '%' || c === '_') ? m : c) + "'" : tv(t)).join(''); }
   /* Oracle UPPER/LOWER dilden bağımsızdır: i ve ı -> I, İ ve I -> i (gerçek Oracle 23 ile yoklandı); Türkçe kural NLS_UPPER ile */
-  if (d === 'oracle') { const T = rt(s); s = T.map((t, i) => t.k === 'w' && (t.u === 'UPPER' || t.u === 'LOWER') && isP(T[nx(T, i)], '(') ? 'ora_' + t.u.toLowerCase() + '_' : tv(t)).join(''); }
+  if (d === 'oracle' && !ORA_TR_HARF) { const T = rt(s); s = T.map((t, i) => t.k === 'w' && (t.u === 'UPPER' || t.u === 'LOWER') && isP(T[nx(T, i)], '(') ? 'ora_' + t.u.toLowerCase() + '_' : tv(t)).join(''); }
   if (d === 'oracle') { s = s.replace(/\bFROM\s+dual\b/gi, '').replace(/\bMINUS\b/gi, 'EXCEPT'); s = revRownum(s); s = revOracleEmpty(s); s = s.replace(/\bSYSDATE\b(?!\s*\()/gi, 'SYSDATE()').replace(/\bSYSTIMESTAMP\b(?!\s*\()/gi, 'SYSDATE()').replace(/\bDBMS_RANDOM\s*\.\s*VALUE\b/gi, '((abs(random()) % 1000000) / 1000000.0)').replace(/\bROWID\b/g, 'rowid'); }
   if (d === 'mysql') { s = s.replace(/([\w.)]+)\s+DIV\s+([\w.(]+)/gi, 'CAST($1 / $2 AS INTEGER)'); s = revMysqlLimit(s).replace(/\bFROM\s+dual\b/gi, ''); s = s.replace(/\bON\s+DUPLICATE\s+KEY\s+UPDATE\b/gi, 'ON CONFLICT DO UPDATE SET').replace(/\bVALUES\s*\(\s*(\w+)\s*\)(?=\s*(,|;|$))/gi, 'excluded.$1'); s = s.replace(/\bINSERT\s+IGNORE\s+INTO\b/gi, 'INSERT OR IGNORE INTO'); }
   if (d === 'oracle') s = s.replace(/(ALTER\s+TABLE\s+\S+\s+ADD)\s*\(([\s\S]*)\)\s*$/i, '$1 COLUMN $2');
@@ -3420,6 +3420,7 @@ function trLower(s) { if (s === null || s === undefined) return s === undefined 
    1) birincil (harf; Türkçe'de ç ğ ı ö ş ü ayrı harf), 2) aksan, 3) büyük/küçük harf (yalnız _CS), 4) kelime sıralaması
    (kesme işareti ve kısa çizgi birincil düzeyde yok sayılır). Kurallar gerçek SQL Server 2019 ile karşılaştırılarak çıkarıldı. */
 let TSQL_COLL = 'Turkish_CI_AS';
+let ORA_TR_HARF = false; /* yalnız denetim için: Oracle UPPER/LOWER'ı Türkçe kuralla çalıştırıp farkın harf dönüşümünden geldiğini ayırmak */
 const COLL_D = { mysql: 'utf8mb4_0900_ai_ci', pg: 'C' }; // MySQL ve PostgreSQL için seçili harmanlama
 /* Birleştirme hızlandırması: iki temel tablo sütunu arasındaki = / <> karşılaştırmasında, iki sütunun değerleri
    harmanlamada çakışmıyorsa (farklı iki değer aynı anahtara düşmüyorsa) ikili karşılaştırma aynı sonucu verir.
@@ -4068,6 +4069,7 @@ function planFail(e, db, res) {
 }
 root.SQLP_DIALECT = { DIALECTS, DNAME, mustFail, varyantFail, planFail, planOf, tokenize, forward, reverse, lint, runDialect, register, splitSemis, execOne, friendly,
   convert, isProcedural, forwardCanon,
+  setOraTrHarf(b) { ORA_TR_HARF = !!b; },
   setCollation(c, d) { if (!d || d === 'tsql') TSQL_COLL = c || null; else COLL_D[d] = c || null; ckCache.clear(); }, getCollation(d) { return !d || d === 'tsql' ? TSQL_COLL : COLL_D[d]; }, COLLATIONS: COLL_LIST, collKey, collateSql,
   setSchemaHints(dateCols, textCols, allCols, dtCols, decCols) { decCols = (decCols || []).map(c => { const m = String(c).match(/^(!?[^:]+):(\d+)$/); if (!m) return c; const k = m[1].toLowerCase(), v = +m[2]; DEC_SCALE.set(k, DEC_SCALE.has(k) && DEC_SCALE.get(k) !== v ? -1 : v); return m[1]; }); (decCols || []).forEach(c => { if (!/^!/.test(c)) DEC_COLS.add(String(c).toLowerCase()); }); (decCols || []).forEach(c => { if (/^!/.test(c)) DEC_COLS.delete(String(c).slice(1).toLowerCase()); }); (dtCols || []).forEach(c => DT_COLS.add(c)); dateCols.forEach(c => DATE_COLS.add(c)); textCols.forEach(c => TEXT_COLS.add(c)); (allCols || []).forEach(c => ALL_COLS.add(String(c).toLowerCase())); } };
 // T-SQL yolunda da önce denetim uygula
