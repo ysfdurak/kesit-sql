@@ -47,6 +47,8 @@ def connect(db=None, auto=True):
         cn = oracledb.connect(user=db or "KESIT", password=ora_sifre(), dsn=ORA_DSN)
         cn.autocommit = auto
         cn.call_timeout = 60000
+        # VARCHAR2(n) uzunluğu bayt değil karakter: Türkçe harfler UTF-8'de 2 bayt, aksi halde 'İstifa...' sığmıyor (ORA-12899)
+        cn.cursor().execute("ALTER SESSION SET NLS_LENGTH_SEMANTICS = CHAR")
         return cn
     if D == "pg":
         cn = psycopg2.connect(host="127.0.0.1", port=5432, user="postgres", dbname=db or "postgres", connect_timeout=10)
