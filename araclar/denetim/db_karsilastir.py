@@ -49,6 +49,9 @@ def connect(db=None, auto=True):
         cn.call_timeout = 60000
         # VARCHAR2(n) uzunluğu bayt değil karakter: Türkçe harfler UTF-8'de 2 bayt, aksi halde 'İstifa...' sığmıyor (ORA-12899)
         cn.cursor().execute("ALTER SESSION SET NLS_LENGTH_SEMANTICS = CHAR")
+        # Kesit'in Oracle kipi tarihleri ISO biçiminde gösterir ve metinle karşılaştırır; aynı varsayım oturuma da verilir
+        # (varsayılan DD-MON-RR ile '2024-12-27' gibi metinler tarihe çevrilemez)
+        cn.cursor().execute("ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD' NLS_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SS'")
         return cn
     if D == "pg":
         cn = psycopg2.connect(host="127.0.0.1", port=5432, user="postgres", dbname=db or "postgres", connect_timeout=10)

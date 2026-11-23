@@ -5,6 +5,7 @@ on:
   pull_request:
     branches: [kaynak]
     paths:
+      - dialect.js
       - araclar/denetim/db_gen.js
       - araclar/denetim/db_karsilastir.py
       - araclar/denetim/ora_yokla.*
