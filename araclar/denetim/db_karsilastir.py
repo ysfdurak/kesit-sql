@@ -1,9 +1,12 @@
-"""Kesit SQL <-> gerçek PostgreSQL / MySQL karşılaştırması.
-python db_karsilastir.py pg|mysql [--yukle]
+"""Kesit SQL <-> gerçek PostgreSQL / MySQL / Oracle karşılaştırması.
+python db_karsilastir.py pg|mysql|oracle [--yukle]
+Oracle'da ilk kez: python db_karsilastir.py oracle --kur (SYSTEM parolasını sorar, KESIT ve KESIT_TMP kullanıcılarını açar).
 İlk çalıştırmada (ya da --yukle ile) kesitsql veritabanını kurar ve base.sqlite'tan yükler.
 PostgreSQL: her çözüm bir işlem içinde çalışır ve geri alınır (çözümün BEGIN/COMMIT/ROLLBACK'i kayıt noktasına çevrilmiştir).
-MySQL: DDL işlemi kapattığı için veri değiştiren çözüm, kullandığı tabloların geçici bir kopyasında (kx_tmp veritabanı) çalışır."""
-import json, os, re, sys, time, sqlite3, decimal, datetime
+MySQL: DDL işlemi kapattığı için veri değiştiren çözüm, kullandığı tabloların geçici bir kopyasında (kx_tmp veritabanı) çalışır.
+Oracle: DDL de işlemi kapatır; veri ya da nesne değiştiren çözüm KESIT_TMP şemasında, kullandığı tabloların kopyası üzerinde
+çalışır ve sonra o şemadaki her nesne silinir. Oracle boş metni ('') NULL sayar; taklit motor da aynı kuralla çalışır."""
+import json, os, re, sys, time, sqlite3, decimal, datetime, getpass, secrets
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 # Sürücüler (libpq, OpenSSL) ortamın kendi Library\bin klasöründen yüklensin; yoksa sistemdeki başka bir libpq sürecin çökmesine yol açıyor
@@ -14,7 +17,7 @@ if os.name == "nt":
         os.add_dll_directory(os.path.join(_E, "Library", "bin"))
     except Exception:
         pass
-D = next((a for a in sys.argv[1:] if a in ("pg", "mysql")), "pg")
+D = next((a for a in sys.argv[1:] if a in ("pg", "mysql", "oracle")), "pg")
 TR = "tr" in sys.argv[1:]
 SUF = "_tr" if TR else ""
 # PostgreSQL: kesitsql_c (C yerel ayarı) / kesitsql_tr (Windows Türkçe); MySQL: kesitsql (utf8mb4_0900_ai_ci) / kesitsql_tr (utf8mb4_tr_0900_ai_ci)
@@ -22,11 +25,29 @@ DB = ("kesitsql_tr" if TR else "kesitsql_c") if D == "pg" else ("kesitsql_tr" if
 MYCOLL = "utf8mb4_tr_0900_ai_ci" if TR else "utf8mb4_0900_ai_ci"
 if D == "pg":
     import psycopg2, psycopg2.extras
+elif D == "oracle":
+    import oracledb  # ince kip: Oracle istemcisi gerekmez (pip install oracledb)
+    oracledb.defaults.fetch_lobs = False  # CLOB/BLOB doğrudan metin/bayt gelsin
+    ORA_DSN = os.environ.get("KESIT_ORA_DSN", "127.0.0.1:1521/FREEPDB1")
+    # Parola yalnız bu makinede, depoya girmeyen dosyada durur (--kur rastgele üretir)
+    ORA_DOSYA = os.path.join(os.environ.get("LOCALAPPDATA") or os.path.expanduser("~"), "kesit_ora.json")
 else:
     import pymysql, pymysql.constants.CLIENT as CL
 
 
+def ora_sifre():
+    try:
+        return json.load(open(ORA_DOSYA, encoding="utf-8"))["sifre"]
+    except Exception:
+        sys.exit("Önce: python db_karsilastir.py oracle --kur")
+
+
 def connect(db=None, auto=True):
+    if D == "oracle":
+        cn = oracledb.connect(user=db or "KESIT", password=ora_sifre(), dsn=ORA_DSN)
+        cn.autocommit = auto
+        cn.call_timeout = 60000
+        return cn
     if D == "pg":
         cn = psycopg2.connect(host="127.0.0.1", port=5432, user="postgres", dbname=db or "postgres", connect_timeout=10)
         cn.autocommit = auto
@@ -87,10 +108,111 @@ def key_cols(vals):
     return keys
 
 def qi(n):
+    if D == "oracle":
+        return '"%s"' % n.upper()
     return '"%s"' % n if D == "pg" else "`%s`" % n
 
 
+ORA_HAK = ["CREATE SESSION", "CREATE TABLE", "CREATE VIEW", "CREATE PROCEDURE", "CREATE SEQUENCE", "CREATE TRIGGER", "CREATE TYPE", "CREATE SYNONYM", "CREATE MATERIALIZED VIEW"]
+
+
+def ora_kur():
+    """SYSTEM ile FREEPDB1'e bağlanıp KESIT (veri) ve KESIT_TMP (yazan çözümlerin kumu) kullanıcılarını açar."""
+    # CI'da ortam değişkeninden; elle çalıştırmada ekranda görünmeden sorulur
+    sp = os.environ.get("KESIT_ORA_SYSTEM") or getpass.getpass("Oracle SYSTEM parolası (kurulumda verdiğiniz, ekranda görünmez): ")
+    sifre = "K" + secrets.token_hex(12) + "x9"
+    cn = oracledb.connect(user="SYSTEM", password=sp, dsn=ORA_DSN)
+    cur = cn.cursor()
+    for u in ("KESIT_TMP", "KESIT"):
+        cur.execute("SELECT COUNT(*) FROM dba_users WHERE username = :u", u=u)
+        if cur.fetchone()[0]:
+            cur.execute("DROP USER %s CASCADE" % u)
+        cur.execute('CREATE USER %s IDENTIFIED BY "%s" DEFAULT TABLESPACE USERS QUOTA UNLIMITED ON USERS' % (u, sifre))
+        cur.execute("GRANT %s TO %s" % (", ".join(ORA_HAK), u))
+    cn.close()
+    fd = os.open(ORA_DOSYA, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        json.dump({"sifre": sifre}, f)
+    print("KESIT ve KESIT_TMP hazır; parola", ORA_DOSYA, "dosyasında.")
+
+
+def ora_bosalt(cur):
+    """Geçerli kullanıcının bütün nesnelerini siler (KESIT_TMP kumu ya da yeniden yükleme için)."""
+    for _ in range(3):
+        cur.execute("SELECT object_name, object_type FROM user_objects WHERE object_type IN ('TABLE','VIEW','PROCEDURE','FUNCTION','PACKAGE','SEQUENCE','TYPE','SYNONYM','MATERIALIZED VIEW') AND object_name NOT LIKE 'BIN$%' AND generated = 'N'")
+        rows = cur.fetchall()
+        if not rows:
+            break
+        for n, ty in rows:
+            try:
+                cur.execute('DROP %s "%s"%s' % (ty, n, " CASCADE CONSTRAINTS PURGE" if ty == "TABLE" else " FORCE" if ty == "TYPE" else ""))
+            except Exception:
+                pass
+    try:
+        cur.execute("PURGE RECYCLEBIN")
+    except Exception:
+        pass
+
+
+def _ora_tarih(v, ty):
+    if v is None or not isinstance(v, str) or not v.strip():
+        return None if isinstance(v, str) and not v.strip() else v
+    s = v.strip().replace("T", " ")
+    for f in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d"):
+        try:
+            return datetime.datetime.strptime(s, f)
+        except ValueError:
+            pass
+    return datetime.datetime.strptime(s[:10], "%Y-%m-%d")
+
+
+def load_ora(force):
+    cn = connect(auto=False)
+    cur = cn.cursor()
+    cur.execute("SELECT COUNT(*) FROM user_tables")
+    if cur.fetchone()[0] and not force:
+        return
+    ora_bosalt(cur)
+    ddl = json.load(open(os.path.join(HERE, "ddl_oracle.json"), encoding="utf-8"))
+    sq = sqlite3.connect(os.path.join(HERE, "base.sqlite"))
+    t0 = time.time()
+    for t, d in ddl.items():
+        cur.execute(d["ddl"])
+        types = [x.upper() for x in d["types"]]
+        rows = []
+        for r in sq.execute('SELECT * FROM "%s"' % t):
+            out = []
+            for v, ty in zip(r, types):
+                if ty == "DATE" or ty.startswith("TIMESTAMP"):
+                    v = _ora_tarih(v, ty)
+                elif isinstance(v, str) and v == "":
+                    v = None
+                out.append(v)
+            rows.append(out)
+        if rows:
+            sql = "INSERT INTO %s (%s) VALUES (%s)" % (qi(t), ",".join(qi(c) for c in d["cols"]), ",".join(":%d" % (i + 1) for i in range(len(d["cols"]))))
+            for i in range(0, len(rows), 2000):
+                cur.executemany(sql, rows[i:i + 2000])
+        print("yüklendi", t, len(rows))
+        if d.get("identity"):
+            cur.execute("ALTER TABLE %s MODIFY %s GENERATED BY DEFAULT AS IDENTITY (START WITH LIMIT VALUE)" % (qi(t), qi(d["cols"][0])))
+    cn.commit()
+    for q in ["orders(customer_id)", "order_items(order_id)", "lk_orders(customer_id)", "lk_order_lines(order_id)", "bank_txns(account_id)", "ik_salaries(emp_id)", "hv_flights(route_id)", "bk_trips(bike_id)", "bk_trips(user_id)", "bk_trips(start_station)"]:
+        t, c = q[:-1].split("(")
+        try:
+            cur.execute("CREATE INDEX ix_%s_%s ON %s(%s)" % (t, c, qi(t), qi(c)))
+        except Exception:
+            pass
+    for t in ddl:
+        cur.execute("GRANT SELECT ON %s TO KESIT_TMP" % qi(t))
+    cur.execute("BEGIN DBMS_STATS.GATHER_SCHEMA_STATS(USER); END;")
+    print("yükleme süresi", round(time.time() - t0), "sn")
+    cn.close()
+
+
 def load(force):
+    if D == "oracle":
+        return load_ora(force)
     cn = connect()
     cur = cn.cursor()
     if D == "pg":
@@ -194,6 +316,7 @@ def key(r):
 
 
 TABLES = []
+DDL = {}
 WRITE = re.compile(r"\b(INSERT|UPDATE|DELETE|MERGE|CREATE|DROP|ALTER|TRUNCATE|CALL|DO|INTO|REPLACE\s+INTO|BEGIN|START\s+TRANSACTION|COMMIT|ROLLBACK|SAVEPOINT|SET|LOAD|GRANT|REVOKE|LOCK|RENAME|ANALYZE|VACUUM|REFRESH|COPY)\b", re.I)
 
 
@@ -229,6 +352,76 @@ def run_pg(cn, it):
             cur.execute("ROLLBACK")
         except Exception:
             pass
+    return last, err
+
+
+ORA_YAZ = re.compile(r"\b(INSERT|UPDATE|DELETE|MERGE|CREATE|DROP|ALTER|TRUNCATE|CALL|EXEC|EXECUTE|BEGIN|DECLARE|COMMIT|ROLLBACK|SAVEPOINT|GRANT|REVOKE|LOCK|RENAME|COMMENT|FLASHBACK|PURGE)\b", re.I)
+ORA_TMP = None
+
+
+def _ora_cur(cn):
+    cur = cn.cursor()
+    return cur
+
+
+def _ora_calistir(cur, it):
+    last = None
+    for p in it["parts"]:
+        cur.execute(p)
+        if getattr(cur, "warning", None):
+            raise RuntimeError("derleme hatası: " + str(cur.warning)[:200])
+        if cur.description:
+            last = ([d[0] for d in cur.description], list(cur.fetchall()))
+    if it.get("check") and it["check"] != "__yapi__":
+        cur.execute(it["check"].strip().rstrip(";"))
+        last = ([d[0] for d in cur.description], list(cur.fetchall())) if cur.description else last
+    return last
+
+
+def run_ora(cn, it):
+    global ORA_TMP
+    sql = it["sql"]
+    temiz = re.sub(r"'(?:[^']|'')*'", "''", re.sub(r"--[^\n]*|/\*.*?\*/", " ", sql, flags=re.S))
+    last = err = None
+    if not ORA_YAZ.search(temiz):
+        cur = _ora_cur(cn)
+        try:
+            last = _ora_calistir(cur, it)
+        except Exception as e:
+            err = str(e).strip().splitlines()[0][:300]
+        finally:
+            try:
+                cn.rollback()
+            except Exception:
+                pass
+        return last, err
+    if ORA_TMP is None:
+        ORA_TMP = connect("KESIT_TMP", auto=False)
+    tc = ORA_TMP
+    cur = tc.cursor()
+    try:
+        ora_bosalt(cur)
+        low = temiz.lower()
+        for t in TABLES:
+            if re.search(r"\b%s\b" % re.escape(t.lower()), low):
+                d = DDL[t]
+                cur.execute(d["ddl"])
+                cur.execute("INSERT INTO %s SELECT * FROM KESIT.%s" % (qi(t), qi(t)))
+                if d.get("identity"):
+                    cur.execute("ALTER TABLE %s MODIFY %s GENERATED BY DEFAULT AS IDENTITY (START WITH LIMIT VALUE)" % (qi(t), qi(d["cols"][0])))
+        tc.commit()
+        last = _ora_calistir(cur, it)
+    except Exception as e:
+        err = str(e).strip().splitlines()[0][:300]
+    finally:
+        try:
+            tc.rollback(); ora_bosalt(tc.cursor())
+        except Exception:
+            try:
+                ORA_TMP.close()
+            except Exception:
+                pass
+            ORA_TMP = None
     return last, err
 
 
@@ -270,18 +463,27 @@ def run_my(cn, it):
 
 
 def main():
-    global TABLES
+    global TABLES, DDL
+    if D == "oracle" and "--kur" in sys.argv:
+        ora_kur()
+        load(True)
+        return
     load("--yukle" in sys.argv)
     bek = os.path.join(HERE, "beklenen_%s%s.json" % (D, SUF))
     items = json.load(open(bek, encoding="utf-8"))
-    TABLES = list(json.load(open(os.path.join(HERE, "ddl_%s.json" % D), encoding="utf-8")).keys())
-    cn = connect(DB, auto=True)
-    cur = cn.cursor(); cur.execute("SELECT version()"); ver = cur.fetchone()[0]
+    DDL = json.load(open(os.path.join(HERE, "ddl_%s.json" % D), encoding="utf-8"))
+    TABLES = list(DDL.keys())
+    if D == "oracle":
+        cn = connect(auto=False)
+        ver = "Oracle " + cn.version
+    else:
+        cn = connect(DB, auto=True)
+        cur = cn.cursor(); cur.execute("SELECT version()"); ver = cur.fetchone()[0]
     print(D, ver)
     res = []
     t0 = time.time()
     for i, it in enumerate(items, 1):
-        last, err = (run_pg if D == "pg" else run_my)(cn, it)
+        last, err = {"pg": run_pg, "mysql": run_my, "oracle": run_ora}[D](cn, it)
         rec = {"id": it["id"]}
         if re.search(r"\b(BEGIN|START\s+TRANSACTION|COMMIT|ROLLBACK|SAVEPOINT)\b", it["sql"], re.I):
             rec["tx"] = True
