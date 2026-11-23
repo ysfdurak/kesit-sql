@@ -34,7 +34,9 @@ jobs:
         working-directory: araclar/denetim
       - name: Beklenen sonuçları üret
         working-directory: araclar/denetim
-        run: node db_gen.js . oracle
+        run: |
+          node make_base.js
+          node db_gen.js . oracle
       - run: pip install oracledb==3.*
       - name: Oracle hazır olana kadar bekle
         run: |
