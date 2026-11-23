@@ -187,6 +187,13 @@ function pgRoundNeedsCast(x) {
 }
 function isDtExpr(x) { const m = String(x).trim().match(/(?:^|\.)"?(\w+)"?$/); return !!m && DT_COLS.has(m[1].toLowerCase()); }
 const bqFmtFn = v => isDtExpr(v) || isTsLit(String(v).trim()) ? 'FORMAT_DATETIME' : 'FORMAT_DATE';
+/* strftime biçimi -> Oracle TO_CHAR biçimi; harf ve rakam içeren düz metin çift tırnağa alınır ('HH24":00:00"'), yoksa ORA-01821 */
+function oraFmt(f) {
+  const M = { Y: 'YYYY', m: 'MM', d: 'DD', H: 'HH24', M: 'MI', S: 'SS', j: 'DDD', y: 'YY' }; let out = '', lit = '';
+  const flush = () => { if (lit) { out += /[A-Za-z0-9]/.test(lit) ? '"' + lit + '"' : lit; lit = ''; } };
+  for (let i = 0; i < f.length; i++) { if (f[i] === '%' && M[f[i + 1]]) { flush(); out += M[f[i + 1]]; i++; } else lit += f[i]; }
+  flush(); return out;
+}
 function fwdStrftime(a, d) {
   if (a.length !== 2 || !/^'.*'$/.test(a[0])) return null;
   const f = unq(a[0]), v = a[1];
@@ -195,7 +202,7 @@ function fwdStrftime(a, d) {
   if (d === 'pg' && f === '%Y-%m-%d %H:00:00') return `DATE_TRUNC('hour', CAST(${v} AS TIMESTAMP))`;
   if (d === 'pg') return PG_FMT[f] ? PG_FMT[f](v) : `TO_CHAR(${v}, '${f.replace('%Y', 'YYYY').replace('%m', 'MM').replace('%d', 'DD').replace('%H', 'HH24').replace('%M', 'MI')}')`;
   if (d === 'mysql') return MY_FMT[f] ? MY_FMT[f](v) : `DATE_FORMAT(${v}, '${f.replace('%M', '%i')}')`;
-  if (d === 'oracle') return ORA_FMT[f] ? ORA_FMT[f](v) : `TO_CHAR(${v}, '${f.replace('%Y', 'YYYY').replace('%m', 'MM').replace('%d', 'DD').replace('%H', 'HH24').replace('%M', 'MI')}')`;
+  if (d === 'oracle') return ORA_FMT[f] ? ORA_FMT[f](v) : `TO_CHAR(${v}, '${oraFmt(f)}')`;
   return null;
 }
 function dlit(v, d) { if (isDateLit(String(v).trim()) && (d === 'pg' || d === 'oracle' || d === 'bq')) return 'DATE ' + String(v).trim(); return v; }
@@ -295,7 +302,7 @@ function fwdCall(N, a, A, d) {
       const m1 = unq(a[1]).trim().toLowerCase().match(/^([+-]?\d+)\s+(hour|minute|second|day)s?$/);
       if (m1 && /^'/.test(a[1])) { const n = parseInt(m1[1], 10), u = m1[2]; return { tsql: `DATEADD(${u}, ${n}, ${a[0]})`, pg: `(CAST(${a[0]} AS TIMESTAMP) + INTERVAL '${n} ${u}')`, mysql: `DATE_ADD(${a[0]}, INTERVAL ${n} ${u.toUpperCase()})`, oracle: `(${a[0]} + INTERVAL '${n}' ${u.toUpperCase()})`, bq: `DATETIME_ADD(${a[0]}, INTERVAL ${n} ${u.toUpperCase()})` }[d] || null; }
       const m2 = a[1].match(/^([\s\S]*?)\s*\|\|\s*' (hour|minute|day)s?'$/);
-      if (m2) return { tsql: `DATEADD(${m2[2]}, ${m2[1]}, ${a[0]})`, pg: `(CAST(${a[0]} AS TIMESTAMP) + ${m2[1]} * INTERVAL '1 ${m2[2]}')`, mysql: `DATE_ADD(${a[0]}, INTERVAL ${m2[1]} ${m2[2].toUpperCase()})`, bq: `DATETIME_ADD(${a[0]}, INTERVAL ${m2[1]} ${m2[2].toUpperCase()})` }[d] || null;
+      if (m2) return { tsql: `DATEADD(${m2[2]}, ${m2[1]}, ${a[0]})`, pg: `(CAST(${a[0]} AS TIMESTAMP) + ${m2[1]} * INTERVAL '1 ${m2[2]}')`, mysql: `DATE_ADD(${a[0]}, INTERVAL ${m2[1]} ${m2[2].toUpperCase()})`, bq: `DATETIME_ADD(${a[0]}, INTERVAL ${m2[1]} ${m2[2].toUpperCase()})`, oracle: `(${a[0]} + ((${m2[1]})${{ hour: ' / 24', minute: ' / 1440', day: '' }[m2[2]]}))` }[d] || null;
       return null;
     }
     case 'LENGTH': return d === 'tsql' ? `LEN(${a[0]})` : d === 'mysql' ? `CHAR_LENGTH(${a[0]})` : null;
@@ -441,14 +448,59 @@ function fwdOracleMisc(sql) {
     for (let i = 0; i < T.length; i++) {
       if (!isW(T[i], 'SELECT')) continue;
       const dep = D[i]; let end = T.length, hasFrom = false;
-      for (let j = i + 1; j < T.length; j++) { if (D[j] < dep || (D[j] === dep && (isP(T[j], ';') || isW(T[j], 'UNION', 'INTERSECT', 'EXCEPT', 'MINUS', 'ORDER', 'FETCH')))) { end = j; break; } if (D[j] === dep && isW(T[j], 'FROM', 'INTO')) { hasFrom = true; break; } }
+      for (let j = i + 1; j < T.length; j++) { if (D[j] < dep || (D[j] === dep && (isP(T[j], ';') || isW(T[j], 'UNION', 'INTERSECT', 'EXCEPT', 'MINUS', 'ORDER', 'FETCH', 'WHERE', 'GROUP', 'HAVING')))) { end = j; break; } if (D[j] === dep && isW(T[j], 'FROM', 'INTO')) { hasFrom = true; break; } }
       if (!hasFrom) { let e2 = end; while (e2 > i && !sigk(T[e2 - 1])) e2--; T = rt(txt(T.slice(0, e2)) + ' FROM dual' + txt(T.slice(e2))); changed = true; break; }
     }
     if (!changed) break;
   }
+  T = rt(fwdOraScalarAgg(txt(T)));
+  T = rt(fwdOraRecCols(txt(T)));
+  /* Oracle'da ayrılmış sözcük olan sütun adları (örnek şemada comment, level, resource) tırnaklı BÜYÜK harfle yazılır; yoksa ORA-00936 / ORA-03050 */
+  { const connect = T.some(t => isW(t, 'CONNECT')); T = rt(T.map((t, i) => t.k === 'w' && (t.u === 'COMMENT' || t.u === 'RESOURCE' || (t.u === 'LEVEL' && !connect)) && !isP(T[nx(T, i)], '(') && !(t.u === 'COMMENT' && isW(T[nx(T, i)], 'ON')) ? '"' + t.u + '"' : tv(t)).join('')); }
   out = txt(T).replace(/\bEXCEPT\b/g, 'MINUS');
   return out;
 }
+/* Oracle: GROUP BY'sız toplama sorgusunda seçim listesindeki skaler alt sorgu ORA-00937 verir (gerçek Oracle 23 ile yoklandı);
+   alt sorgu MAX((...)) içine alınır, sonuç değişmez. */
+function fwdOraScalarAgg(sql) {
+  const T = rt(sql); const D = depthAt(T); const wrap = new Map();
+  for (let i = 0; i < T.length; i++) {
+    if (!isW(T[i], 'SELECT')) continue;
+    const dep = D[i]; let from = -1, end = T.length, group = false;
+    for (let j = i + 1; j < T.length; j++) { if (D[j] < dep) { end = j; break; } if (D[j] !== dep) continue; if (from < 0 && isW(T[j], 'FROM')) from = j; if (isW(T[j], 'GROUP')) group = true; if (isP(T[j], ';') || isW(T[j], 'UNION', 'INTERSECT', 'EXCEPT', 'MINUS')) { end = j; break; } }
+    if (from < 0 || group) continue;
+    let agg = false; const subs = [];
+    for (let j = i + 1; j < from; j++) {
+      if (D[j] !== dep) continue;
+      if (T[j].k === 'w' && AGG_FN.has(T[j].u) && isP(T[nx(T, j)], '(')) { const c = closeP(T, nx(T, j)); if (!isW(T[nx(T, c)], 'OVER')) agg = true; j = c; continue; }
+      if (isP(T[j], '(')) { const c = closeP(T, j); if (isW(T[nx(T, j)], 'SELECT', 'WITH')) subs.push([j, c]); else { for (let k = j + 1; k < c; k++) if (T[k].k === 'w' && AGG_FN.has(T[k].u) && isP(T[nx(T, k)], '(') && D[k] === dep + 1) { const c2 = closeP(T, nx(T, k)); if (!isW(T[nx(T, c2)], 'OVER')) agg = true; } for (let k = j + 1; k < c; k++) if (isP(T[k], '(') && isW(T[nx(T, k)], 'SELECT', 'WITH')) { const ck = closeP(T, k); if (!insideAgg(T, D, j, k)) subs.push([k, ck]); k = ck; } } j = c; }
+    }
+    if (agg) for (const [a, b] of subs) { wrap.set(a, 'MAX('); wrap.set(b, '))'); }
+  }
+  if (!wrap.size) return sql;
+  return T.map((t, i) => wrap.get(i) === 'MAX(' ? 'MAX(' + tv(t) : wrap.get(i) === '))' ? tv(t) + ')' : tv(t)).join('');
+}
+/* Oracle özyinelemeli WITH öğesinde sütun listesi zorunludur (ORA-32039); yoksa ilk SELECT'in çıktı adlarından eklenir */
+function fwdOraRecCols(sql) {
+  const T = rt(sql); const D = depthAt(T); const ins = new Map();
+  for (let i = 0; i < T.length; i++) {
+    if (!(T[i].k === 'w' || T[i].k === 'q')) continue;
+    const pvk = pv(T, i); if (!(isW(T[pvk], 'WITH') || (isP(T[pvk], ',') && T.slice(0, i).some(x => isW(x, 'WITH'))))) continue;
+    const a = nx(T, i); if (!isW(T[a], 'AS')) continue; const o = nx(T, a); if (!isP(T[o], '(')) continue; const c = closeP(T, o);
+    const nm = T[i].u; let rec = false; for (let k = o + 1; k < c; k++) if ((T[k].k === 'w' || T[k].k === 'q') && T[k].u === nm && isW(T[pv(T, k)], 'FROM', 'JOIN')) { rec = true; break; }
+    if (!rec) continue;
+    const sel = nx(T, o); if (!isW(T[sel], 'SELECT')) continue; const dep = D[sel];
+    let from = -1; for (let k = sel + 1; k < c; k++) if (D[k] === dep && isW(T[k], 'FROM', 'UNION')) { from = k; break; }
+    if (from < 0) continue;
+    const items = []; let cur = []; for (let k = nx(T, sel); k < from; k++) { if (!sigk(T[k])) continue; if (D[k] === dep && isP(T[k], ',')) { items.push(cur); cur = []; } else cur.push(T[k]); } items.push(cur);
+    const names = items.map(it => { const L = it[it.length - 1]; if (!L || !(L.k === 'w' || L.k === 'q')) return null; return L.v; });
+    if (names.some(n => !n || /^(DISTINCT|ALL)$/i.test(n))) continue;
+    ins.set(i, ' (' + names.join(', ') + ')');
+  }
+  if (!ins.size) return sql;
+  return T.map((t, i) => tv(t) + (ins.get(i) || '')).join('');
+}
+function insideAgg(T, D, from, k) { for (let j = from; j < k; j++) if (T[j].k === 'w' && AGG_FN.has(T[j].u) && isP(T[nx(T, j)], '(') && closeP(T, nx(T, j)) > k) return true; return false; }
 function fwdDdl(sql, d) {
   const T = rt(sql); const D = depthAt(T); let out = '';
   let inCreate = -1;
@@ -456,6 +508,8 @@ function fwdDdl(sql, d) {
     const t = T[i];
     if (isW(t, 'CREATE')) { const k = nx(T, i); if (isW(T[k], 'TABLE')) { const nm = nx(T, nx(T, k)); if (isP(T[nm], '(')) inCreate = nm; } }
     if (inCreate >= 0 && i === closeP(T, inCreate)) inCreate = -1;
+    /* ALTER TABLE t ADD [COLUMN] ad TEXT: Oracle'da TEXT türü yok (ORA-00902); INTEGER ve REAL Oracle'da geçerli, dokunulmaz */
+    if (d === 'oracle' && t.k === 'w' && t.u === 'TEXT') { const p = pv(T, i), pp = pv(T, p); if ((T[p] && (T[p].k === 'w' || T[p].k === 'q')) && (isW(T[pp], 'ADD', 'COLUMN') || (isP(T[pp], '(') && isW(T[pv(T, pp)], 'ADD'))) && T.some(x => isW(x, 'ALTER'))) { out += fwdDdlType(t.u, d); continue; } }
     if (inCreate >= 0 && t.k === 'w' && D[i] === D[inCreate] + 1) {
       const p = pv(T, i);
       if ((T[p].k === 'w' || T[p].k === 'q') && /^(TEXT|INTEGER|REAL)$/.test(t.u)) {
@@ -1159,7 +1213,7 @@ function revCall(N, a, A, d, ctx) {
     case 'NEWID': case 'UUID': case 'GEN_RANDOM_UUID': return `newid_()`;
     case 'SOUNDEX': if (d === 'tsql' && a.length === 1) return `tsoundex_(${a[0]})`; return null;
     case 'DIFFERENCE': if (d === 'tsql' && a.length === 2) return `tdifference_(${a[0]}, ${a[1]})`; return null;
-    case 'ROUND': if (d === 'oracle' && a.length === 2 && /^'/.test(a[1].trim())) return `round_date_(${a[0]}, ${a[1]})`; if ((d === 'pg' || d === 'mysql') && a.length >= 1 && a.length <= 2) return `tround_(${a[0]}, ${a[1] || 0})`; /* NUMERIC/DECIMAL yarıda yukarı tam yuvarlar (gerçek sunucuyla doğrulandı) */ if (d === 'tsql' && a.length >= 2) return `(CASE WHEN typeof(${a[0]}) = 'integer' THEN CAST(ROUND(${a[0]}, ${a[1]}) AS INTEGER) ELSE tround_(${a[0]}, ${a[1]}) END)`; return null;
+    case 'ROUND': if (d === 'oracle' && a.length === 2 && /^'/.test(a[1].trim())) return `round_date_(${a[0]}, ${a[1]})`; if ((d === 'pg' || d === 'mysql' || d === 'oracle') && a.length >= 1 && a.length <= 2) return `tround_(${a[0]}, ${a[1] || 0})`; /* NUMERIC/DECIMAL yarıda yukarı tam yuvarlar (gerçek sunucuyla doğrulandı) */ if (d === 'tsql' && a.length >= 2) return `(CASE WHEN typeof(${a[0]}) = 'integer' THEN CAST(ROUND(${a[0]}, ${a[1]}) AS INTEGER) ELSE tround_(${a[0]}, ${a[1]}) END)`; return null;
     case 'TRUNC': case 'TRUNCATE': return d === 'oracle' || d === 'pg' || d === 'mysql' ? `trunc_(${a.join(', ')})` : null;
     case 'ISNUMERIC': return `isnumeric_(${a[0]})`;
     case 'QUOTENAME': return `quotename_(${a.join(', ')})`;
@@ -1423,7 +1477,7 @@ function revDateArith(sql, d) { // oracle/pg: tarih_sütunu ± n  ve  tarih - ta
       const re = isW(T[rs], 'DATE') ? nx(T, rs) : primEndFwd(T, rs);
       const L = isDateExpr(ls, le), Rr = isDateExpr(rs, re);
       if (L && Rr && isP(T[i], '-')) { T = rt(txt(T.slice(0, ls)) + `(julianday(${txt(T.slice(ls, le + 1))}) - julianday(${txt(T.slice(rs, re + 1))}))` + txt(T.slice(re + 1))); changed = true; break; }
-      if (L && !Rr && T[rs] && (T[rs].k === 'n' || isP(T[rs], '('))) { const n = txt(T.slice(rs, re + 1)); T = rt(txt(T.slice(0, ls)) + `dateadd_('day', ${isP(T[i], '-') ? '-' : ''}(${n}), ${txt(T.slice(ls, le + 1))})` + txt(T.slice(re + 1))); changed = true; break; }
+      if (L && !Rr && T[rs] && (T[rs].k === 'n' || isP(T[rs], '('))) { const n = txt(T.slice(rs, re + 1)); T = rt(txt(T.slice(0, ls)) + `${d === 'oracle' ? 'dayaddf_(' : "dateadd_('day', "}${isP(T[i], '-') ? '-' : ''}(${n}), ${txt(T.slice(ls, le + 1))})` + txt(T.slice(re + 1))); changed = true; break; }
     }
     if (!changed) break;
   }
@@ -2278,6 +2332,8 @@ function revSimple(sql, d, ctx) {
   if (d === 'pg' || d === 'tsql') s = revGenSeries(s, d);
   if (d === 'oracle') s = s.replace(/\b(\w+)\s*\.\s*NEXTVAL\b/gi, "seq_next_('$1')").replace(/\b(\w+)\s*\.\s*CURRVAL\b/gi, "seq_curr_('$1')");
   if (d === 'mysql') { s = s.replace(/\bRLIKE\b/gi, 'REGEXP'); if (s.includes('\\')) s = rt(s).map(t => t.k === 's' && t.v.includes('\\') ? "'" + t.v.slice(1, -1).replace(/\\(.)/g, (m, c) => c === 'n' ? '\n' : c === 't' ? '\t' : c === "'" ? "''" : (c === '%' || c === '_') ? m : c) + "'" : tv(t)).join(''); }
+  /* Oracle UPPER/LOWER dilden bağımsızdır: i ve ı -> I, İ ve I -> i (gerçek Oracle 23 ile yoklandı); Türkçe kural NLS_UPPER ile */
+  if (d === 'oracle' && !ORA_TR_HARF) { const T = rt(s); s = T.map((t, i) => t.k === 'w' && (t.u === 'UPPER' || t.u === 'LOWER') && isP(T[nx(T, i)], '(') ? 'ora_' + t.u.toLowerCase() + '_' : tv(t)).join(''); }
   if (d === 'oracle') { s = s.replace(/\bFROM\s+dual\b/gi, '').replace(/\bMINUS\b/gi, 'EXCEPT'); s = revRownum(s); s = revOracleEmpty(s); s = s.replace(/\bSYSDATE\b(?!\s*\()/gi, 'SYSDATE()').replace(/\bSYSTIMESTAMP\b(?!\s*\()/gi, 'SYSDATE()').replace(/\bDBMS_RANDOM\s*\.\s*VALUE\b/gi, '((abs(random()) % 1000000) / 1000000.0)').replace(/\bROWID\b/g, 'rowid'); }
   if (d === 'mysql') { s = s.replace(/([\w.)]+)\s+DIV\s+([\w.(]+)/gi, 'CAST($1 / $2 AS INTEGER)'); s = revMysqlLimit(s).replace(/\bFROM\s+dual\b/gi, ''); s = s.replace(/\bON\s+DUPLICATE\s+KEY\s+UPDATE\b/gi, 'ON CONFLICT DO UPDATE SET').replace(/\bVALUES\s*\(\s*(\w+)\s*\)(?=\s*(,|;|$))/gi, 'excluded.$1'); s = s.replace(/\bINSERT\s+IGNORE\s+INTO\b/gi, 'INSERT OR IGNORE INTO'); }
   if (d === 'oracle') s = s.replace(/(ALTER\s+TABLE\s+\S+\s+ADD)\s*\(([\s\S]*)\)\s*$/i, '$1 COLUMN $2');
@@ -2382,10 +2438,18 @@ function reverse(sql, d, db, ctx) {
 /* ------------------------------------------------------------------ Çalıştırma */
 function splitSemis(sql) { const T = tokenize(sql); const parts = []; let cur = [], dd = 0, inTrig = false; for (let i = 0; i < T.length; i++) { const t = T[i]; if (isP(t, '(')) dd++; if (isP(t, ')')) dd--; if (isW(t, 'TRIGGER') && cur.some(x => isW(x, 'CREATE'))) inTrig = true; if (inTrig && isW(t, 'END')) { cur.push(t); const n = nx(T, i); if (isP(T[n], ';')) { i = n; cur.push(T[n]); } parts.push(cur); cur = []; inTrig = false; continue; } if (dd === 0 && !inTrig && isP(t, ';')) { parts.push(cur); cur = []; continue; } cur.push(t); } parts.push(cur); return parts.map(p => txt(p)).filter(p => tokenize(p).some(sigk)); }
 let lastFnError = null;
+/* UPDATE t ... (SELECT ... FROM t x ...): PostgreSQL ve Oracle alt sorguyu güncellemeden ÖNCEKİ veriye göre hesaplar; SQLite ise
+   satır satır güncellenmiş tabloyu görür. Alt sorgulardaki t, ifadeden önce alınan anlık kopyaya yönlendirilir (gerçek Oracle ile doğrulandı). */
+function updSnapshot(q) {
+  const m = q.match(/^\s*UPDATE\s+(?:"([^"]+)"|(\w+))/i); if (!m) return null; const tn = (m[1] || m[2]).toUpperCase();
+  const T = rt(q); const Dp = depthAt(T); let hit = false;
+  const out = T.map((t, i) => { if (Dp[i] > 0 && (t.k === 'w' || t.k === 'q') && t.u.replace(/"/g, '') === tn && isW(T[pv(T, i)], 'FROM', 'JOIN')) { hit = true; return 'temp.__kx_snap'; } return tv(t); }).join('');
+  return hit ? { pre: 'CREATE TEMP TABLE __kx_snap AS SELECT * FROM "' + (m[1] || m[2]) + '"', sql: out } : null;
+}
 function execOne(db, sql) {
   lastFnError = null;
   /* JS fonksiyonları indeks ifadesinde kullanılamaz; UPPER/LOWER indeksleri düz sütun indeksi olarak kurulur (sonucu etkilemez) */
-  if (/^\s*CREATE\s+(UNIQUE\s+)?INDEX\b/i.test(sql)) sql = sql.replace(/\b(UPPER|LOWER)\s*\(\s*([\w."]+)\s*\)/gi, '$2');
+  if (/^\s*CREATE\s+(UNIQUE\s+)?INDEX\b/i.test(sql)) sql = sql.replace(/\b(UPPER|LOWER|ora_upper_|ora_lower_)\s*\(\s*([\w."]+)\s*\)/gi, '$2');
   let st;
   try { st = db.prepare(sql); } catch (e) { if (lastFnError) throw new DErr(lastFnError); throw e; }
   try {
@@ -3177,7 +3241,9 @@ function runDialect(db, sql, d, opt) {
         const va = (d === 'pg' || d === 'mysql' || d === 'oracle') ? viewAyikla(p) : { sql: p, check: false };
         const q = reverse(va.sql, d, db); res.translated.push(q);
         const vm = d !== 'sqlite' && d !== 'bq' && viewMi(db, q); const on0 = vm ? toplamDegisen(db) : 0;
-        const r = execOne(db, (d === 'mysql' || d === 'pg') && COLL_D[d] ? collateSql(q, d) : q);
+        const snap = (d === 'pg' || d === 'oracle') ? updSnapshot(q) : null; if (snap) { try { db.exec('DROP TABLE IF EXISTS temp.__kx_snap'); db.exec(snap.pre); } catch (e) { /* yok say */ } }
+        const r = execOne(db, (d === 'mysql' || d === 'pg') && COLL_D[d] ? collateSql(snap ? snap.sql : q, d) : (snap ? snap.sql : q));
+        if (snap) { try { db.exec('DROP TABLE IF EXISTS temp.__kx_snap'); } catch (e) { /* yok say */ } }
         if (r) { if (d === 'mysql') Object.defineProperty(r, '_src', { value: va.sql, enumerable: false }); res.sets.push(r); }
         if ((d === 'pg' || d === 'mysql' || d === 'oracle') && /^\s*CREATE\s+VIEW\b/i.test(q)) viewTetik(db, q, va.check);
         if (vm) { const n = toplamDegisen(db) - on0; res.changes += n; res.messages.push(`(${n} satır etkilendi)`); }
@@ -3326,7 +3392,9 @@ function oraFormat(v, f) {
   if (!p && !isNaN(Number(v))) { const n = Number(v); const F = f.replace(/^FM/i, ''); const dec = (F.split(/[.D]/)[1] || '').length; const grp = /[,G]/.test(F.split(/[.D]/)[0]); let s = grp ? n.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec }) : n.toFixed(dec); return s; }
   if (!p) return String(v);
   const dt = D(p); const dow = dt.getUTCDay();
-  return f.replace(/YYYY|YY|Q|MONTH|Month|MON|Mon|MM|DDD|DD|DAY|Day|DY|Dy|D|HH24|HH12|HH|MI|SS|WW|IW|AM|PM/g, t => ({ YYYY: p.y, YY: String(p.y).slice(2), Q: Math.floor((p.mo - 1) / 3) + 1, MONTH: MONTHS_EN[p.mo - 1].toUpperCase().padEnd(9), Month: MONTHS_EN[p.mo - 1].padEnd(9), MON: MONTHS_EN[p.mo - 1].slice(0, 3).toUpperCase(), Mon: MONTHS_EN[p.mo - 1].slice(0, 3), MM: p2(p.mo), DDD: String(datepart('dayofyear', v)).padStart(3, '0'), DD: p2(p.d), DAY: DAYS_EN[dow].toUpperCase().padEnd(9), Day: DAYS_EN[dow].padEnd(9), DY: DAYS_EN[dow].slice(0, 3).toUpperCase(), Dy: DAYS_EN[dow].slice(0, 3), D: dow + 1, HH24: p2(p.H), HH12: p2((p.H % 12) || 12), HH: p2((p.H % 12) || 12), MI: p2(p.Mi), SS: p2(p.S), WW: p2(Math.floor((datepart('dayofyear', v) - 1) / 7) + 1), IW: p2(datepart('isoweek', v)), AM: p.H < 12 ? 'AM' : 'PM', PM: p.H < 12 ? 'AM' : 'PM' })[t]).replace(/^FM/, '');
+  /* Çift tırnak içindeki metin olduğu gibi yazılır ('YYYY-"Q"Q' -> 2024-Q1) */
+  const tek = f => f.replace(/YYYY|YY|Q|MONTH|Month|MON|Mon|MM|DDD|DD|DAY|Day|DY|Dy|D|HH24|HH12|HH|MI|SS|WW|IW|AM|PM/g, t => ({ YYYY: p.y, YY: String(p.y).slice(2), Q: Math.floor((p.mo - 1) / 3) + 1, MONTH: MONTHS_EN[p.mo - 1].toUpperCase().padEnd(9), Month: MONTHS_EN[p.mo - 1].padEnd(9), MON: MONTHS_EN[p.mo - 1].slice(0, 3).toUpperCase(), Mon: MONTHS_EN[p.mo - 1].slice(0, 3), MM: p2(p.mo), DDD: String(datepart('dayofyear', v)).padStart(3, '0'), DD: p2(p.d), DAY: DAYS_EN[dow].toUpperCase().padEnd(9), Day: DAYS_EN[dow].padEnd(9), DY: DAYS_EN[dow].slice(0, 3).toUpperCase(), Dy: DAYS_EN[dow].slice(0, 3), D: dow + 1, HH24: p2(p.H), HH12: p2((p.H % 12) || 12), HH: p2((p.H % 12) || 12), MI: p2(p.Mi), SS: p2(p.S), WW: p2(Math.floor((datepart('dayofyear', v) - 1) / 7) + 1), IW: p2(datepart('isoweek', v)), AM: p.H < 12 ? 'AM' : 'PM', PM: p.H < 12 ? 'AM' : 'PM' })[t]).replace(/^FM/, '');
+  return f.split(/("[^"]*")/).map(x => /^".*"$/.test(x) ? x.slice(1, -1) : tek(x)).join('');
 }
 function mysqlFormat(v, f) {
   const p = pd(v); if (!p || f === null) return null; const dt = D(p); const dow = dt.getUTCDay();
@@ -3352,6 +3420,7 @@ function trLower(s) { if (s === null || s === undefined) return s === undefined 
    1) birincil (harf; Türkçe'de ç ğ ı ö ş ü ayrı harf), 2) aksan, 3) büyük/küçük harf (yalnız _CS), 4) kelime sıralaması
    (kesme işareti ve kısa çizgi birincil düzeyde yok sayılır). Kurallar gerçek SQL Server 2019 ile karşılaştırılarak çıkarıldı. */
 let TSQL_COLL = 'Turkish_CI_AS';
+let ORA_TR_HARF = false; /* yalnız denetim için: Oracle UPPER/LOWER'ı Türkçe kuralla çalıştırıp farkın harf dönüşümünden geldiğini ayırmak */
 const COLL_D = { mysql: 'utf8mb4_0900_ai_ci', pg: 'C' }; // MySQL ve PostgreSQL için seçili harmanlama
 /* Birleştirme hızlandırması: iki temel tablo sütunu arasındaki = / <> karşılaştırmasında, iki sütunun değerleri
    harmanlamada çakışmıyorsa (farklı iki değer aynı anahtara düşmüyorsa) ikili karşılaştırma aynı sonucu verir.
@@ -3745,6 +3814,8 @@ function register(db) {
   F('upper', s => trUpper(s)); F('lower', s => trLower(s));
   F('ascii_upper_', s => s === null || s === undefined ? null : String(s).toUpperCase());
   F('dateadd_', (pt, n, v) => dateadd(part(pt), n, v));
+  /* Oracle DATE + kesirli gün: 0.5 = 12 saat (saat kısmı oluşursa yazılır) */
+  F('dayaddf_', (n, v) => { const p = pd(v); if (!p || n === null) return null; const r = new Date(D(p).getTime() + Math.round(Number(n) * 86400) * 1000); return fmtD(r, p.t || r.getUTCHours() + r.getUTCMinutes() + r.getUTCSeconds() > 0); });
   F('substring_index_', (str, delim, cnt) => { if (str === null || delim === null || cnt === null) return null; str = String(str); delim = String(delim); const n = Math.trunc(Number(cnt)); if (!delim || !n) return ''; const parts = str.split(delim); return n > 0 ? parts.slice(0, n).join(delim) : parts.slice(n).join(delim); });
   F('datediff_', (pt, a, b) => datediff(part(pt), a, b));
   F('myjson_sort_', s => { if (s === null || s === undefined) return null; try { const srt = v => Array.isArray(v) ? v.map(srt) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort((x, y) => { const u8 = z => unescape(encodeURIComponent(z)).length, bx = u8(x), by = u8(y); return bx - by || (x < y ? -1 : x > y ? 1 : 0); }).map(k => [k, srt(v[k])])) : v; return JSON.stringify(srt(JSON.parse(s))); } catch (e) { return s; } });
@@ -3771,6 +3842,8 @@ function register(db) {
   F('tinitcap_', function (x, c) { return collInitcap(x, c); }, true);
   F('tinstr_', function (s, sub, c) { return collCharIndex(sub, s, 1, c); }, true);
   F('tlocate_', function (...a) { const c = a.length && typeof a[a.length - 1] === 'string' && /^utf8mb4_/i.test(a[a.length - 1]) ? a.pop() : undefined; return collCharIndex(a[0], a[1], a[2] || 1, c); }, true);
+  F('ora_upper_', x => { if (x === null || x === undefined) return null; let o = ''; for (const c of String(x)) o += collUpperCh(c, false); return o; });
+  F('ora_lower_', x => { if (x === null || x === undefined) return null; let o = ''; for (const c of String(x)) o += collLowerCh(c, false); return o; });
   F('tupper_', function (x, c) { return collUpper(x, c); }, true);
   F('tlower_', function (x, c) { return collLower(x, c); }, true);
   F('treplace_', function (x, f, r, c) { return collReplace(x, f, r, c); }, true);
@@ -3996,6 +4069,7 @@ function planFail(e, db, res) {
 }
 root.SQLP_DIALECT = { DIALECTS, DNAME, mustFail, varyantFail, planFail, planOf, tokenize, forward, reverse, lint, runDialect, register, splitSemis, execOne, friendly,
   convert, isProcedural, forwardCanon,
+  setOraTrHarf(b) { ORA_TR_HARF = !!b; },
   setCollation(c, d) { if (!d || d === 'tsql') TSQL_COLL = c || null; else COLL_D[d] = c || null; ckCache.clear(); }, getCollation(d) { return !d || d === 'tsql' ? TSQL_COLL : COLL_D[d]; }, COLLATIONS: COLL_LIST, collKey, collateSql,
   setSchemaHints(dateCols, textCols, allCols, dtCols, decCols) { decCols = (decCols || []).map(c => { const m = String(c).match(/^(!?[^:]+):(\d+)$/); if (!m) return c; const k = m[1].toLowerCase(), v = +m[2]; DEC_SCALE.set(k, DEC_SCALE.has(k) && DEC_SCALE.get(k) !== v ? -1 : v); return m[1]; }); (decCols || []).forEach(c => { if (!/^!/.test(c)) DEC_COLS.add(String(c).toLowerCase()); }); (decCols || []).forEach(c => { if (/^!/.test(c)) DEC_COLS.delete(String(c).slice(1).toLowerCase()); }); (dtCols || []).forEach(c => DT_COLS.add(c)); dateCols.forEach(c => DATE_COLS.add(c)); textCols.forEach(c => TEXT_COLS.add(c)); (allCols || []).forEach(c => ALL_COLS.add(String(c).toLowerCase())); } };
 // T-SQL yolunda da önce denetim uygula
