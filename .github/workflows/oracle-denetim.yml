@@ -50,6 +50,20 @@ jobs:
           set -o pipefail
           python -u -X faulthandler db_karsilastir.py oracle --kur 2>&1 | tee kur.log
           python -u -X faulthandler db_karsilastir.py oracle 2>&1 | tee -a kur.log
+      - name: Farkları günlüğe yaz
+        if: always()
+        working-directory: araclar/denetim
+        run: |
+          python - <<'PY' || true
+          import json
+          for r in json.load(open("sonuc_oracle.json", encoding="utf-8")):
+              if r["st"] != "ayni":
+                  print("====", r["st"], r["id"], "|", (r.get("diff") or r.get("msg") or "")[:400])
+                  print("  SQL:", " ".join(r.get("sql", "").split())[:500])
+                  if r.get("ss") is not None:
+                      print("  sunucu:", json.dumps(r["ss"][:4], ensure_ascii=False)[:300])
+                      print("  motor :", json.dumps(r.get("emuRows", [])[:4], ensure_ascii=False)[:300])
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
