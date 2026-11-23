@@ -7,6 +7,7 @@ on:
     paths:
       - araclar/denetim/db_gen.js
       - araclar/denetim/db_karsilastir.py
+      - araclar/denetim/ora_yokla.*
       - .github/workflows/oracle-denetim.yml
 permissions:
   contents: read
@@ -50,6 +51,12 @@ jobs:
           set -o pipefail
           python -u -X faulthandler db_karsilastir.py oracle --kur 2>&1 | tee kur.log
           python -u -X faulthandler db_karsilastir.py oracle 2>&1 | tee -a kur.log
+      - name: Yoklama (ora_yokla.sql)
+        if: always()
+        working-directory: araclar/denetim
+        env:
+          LOCALAPPDATA: ${{ runner.temp }}
+        run: python ora_yokla.py || true
       - name: Farkları günlüğe yaz
         if: always()
         working-directory: araclar/denetim
