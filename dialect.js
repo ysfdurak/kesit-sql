@@ -2449,7 +2449,7 @@ function updSnapshot(q) {
 function execOne(db, sql) {
   lastFnError = null;
   /* JS fonksiyonları indeks ifadesinde kullanılamaz; UPPER/LOWER indeksleri düz sütun indeksi olarak kurulur (sonucu etkilemez) */
-  if (/^\s*CREATE\s+(UNIQUE\s+)?INDEX\b/i.test(sql)) sql = sql.replace(/\b(UPPER|LOWER)\s*\(\s*([\w."]+)\s*\)/gi, '$2');
+  if (/^\s*CREATE\s+(UNIQUE\s+)?INDEX\b/i.test(sql)) sql = sql.replace(/\b(UPPER|LOWER|ora_upper_|ora_lower_)\s*\(\s*([\w."]+)\s*\)/gi, '$2');
   let st;
   try { st = db.prepare(sql); } catch (e) { if (lastFnError) throw new DErr(lastFnError); throw e; }
   try {
