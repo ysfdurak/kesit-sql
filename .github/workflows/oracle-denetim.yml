@@ -1,0 +1,82 @@
+name: Gerçek Oracle denetimi
+# Taklit motorun Oracle sonuçlarını gerçek Oracle Database Free ile karşılaştırır (elle başlatılır).
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [kaynak]
+    paths:
+      - dialect.js
+      - araclar/denetim/db_gen.js
+      - araclar/denetim/db_karsilastir.py
+      - araclar/denetim/ora_yokla.*
+      - .github/workflows/oracle-denetim.yml
+permissions:
+  contents: read
+jobs:
+  oracle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Oracle Free kapsayıcısını başlat (parola her çalıştırmada rastgele)
+        run: |
+          P="K$(openssl rand -hex 12)x9"
+          echo "::add-mask::$P"
+          echo "KESIT_ORA_SYSTEM=$P" >> "$GITHUB_ENV"
+          docker run -d --name ora -p 1521:1521 -e ORACLE_PASSWORD="$P" gvenzl/oracle-free:23-slim-faststart
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: araclar/denetim/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+        working-directory: araclar/denetim
+      - name: Beklenen sonuçları üret
+        working-directory: araclar/denetim
+        run: |
+          node make_base.js
+          node db_gen.js . oracle
+      - run: pip install oracledb==3.*
+      - name: Oracle hazır olana kadar bekle
+        run: |
+          for i in $(seq 1 90); do docker logs ora 2>&1 | grep -q "DATABASE IS READY TO USE" && exit 0; sleep 5; done
+          docker logs ora | tail -40; exit 1
+      - name: Kullanıcıları kur, veriyi yükle, karşılaştır
+        working-directory: araclar/denetim
+        env:
+          LOCALAPPDATA: ${{ runner.temp }}
+        run: |
+          set -o pipefail
+          python -u -X faulthandler db_karsilastir.py oracle --kur 2>&1 | tee kur.log
+          python -u -X faulthandler db_karsilastir.py oracle 2>&1 | tee -a kur.log
+      - name: Yoklama (ora_yokla.sql)
+        if: always()
+        working-directory: araclar/denetim
+        env:
+          LOCALAPPDATA: ${{ runner.temp }}
+        run: python ora_yokla.py || true
+      - name: Farkları günlüğe yaz
+        if: always()
+        working-directory: araclar/denetim
+        run: |
+          python - <<'PY' || true
+          import json
+          for r in json.load(open("sonuc_oracle.json", encoding="utf-8")):
+              if r["st"] != "ayni":
+                  print("====", r["st"], r["id"], "|", (r.get("diff") or r.get("msg") or "")[:400])
+                  print("  SQL:", " ".join(r.get("sql", "").split())[:500])
+                  if r.get("ss") is not None:
+                      print("  sunucu:", json.dumps(r["ss"][:4], ensure_ascii=False)[:300])
+                      print("  motor :", json.dumps(r.get("emuRows", [])[:4], ensure_ascii=False)[:300])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: oracle-sonuc
+          path: |
+            araclar/denetim/sonuc_oracle.json
+            araclar/denetim/sonuc_oracle.txt
+            araclar/denetim/kur.log

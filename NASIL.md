@@ -211,6 +211,22 @@ node db_gen.js /tmp/dbk mysql tr    # beklenen_mysql_tr.json (utf8mb4_tr_0900_ai
 - T-SQL: `||` zinciri SQL Server'a çevrilirken metin olduğu kesin olmayan parçalar `CAST(... AS NVARCHAR(4000))` ile sarılır; öğrencinin `metin + sayı` ifadesi gerçek sunucudaki gibi Msg 245 verir. `mssql_kontrol.py` de eşit değer sırasını `keyCols` ile kabul eder.
 - Bilinen farklar: eşit değerlerin sırası (uygulama kabul eder).
 
+### 5a-3. Gerçek Oracle denetimi (CI ya da Windows bilgisayar)
+Oracle Database Free (26ai, 23.26) ile karşılaştırma. En kolayı GitHub Actions: **Gerçek Oracle denetimi** iş akışı (`.github/workflows/oracle-denetim.yml`) `gvenzl/oracle-free` kapsayıcısını açar, `db_gen.js` ve `db_karsilastir.py`'yi çalıştırır, farkları günlüğe yazar. `dialect.js`, `db_gen.js`, `db_karsilastir.py` ya da `ora_yokla.*` değişen PR'de kendiliğinden, istenince **Run workflow** ile çalışır (yaklaşık 6 dakika).
+```bash
+node db_gen.js /tmp/dbk oracle      # ddl_oracle.json + beklenen_oracle.json
+pip install oracledb                # ince kip: Oracle istemcisi gerekmez
+python db_karsilastir.py oracle --kur   # SYSTEM parolasını sorar, KESIT ve KESIT_TMP kullanıcılarını açar, veriyi yükler
+python db_karsilastir.py oracle     # karşılaştırma -> sonuc_oracle.txt/json
+python ora_yokla.py                 # ora_yokla.sql'deki ifadeleri (';;' ile ayrılır) tek tek dener
+```
+- Bağlantı: `KESIT_ORA_DSN` (varsayılan `127.0.0.1:1521/FREEPDB1`). KESIT/KESIT_TMP parolası `--kur`'da rastgele üretilir ve `%LOCALAPPDATA%\kesit_ora.json` dosyasında durur (depoya girmez). CI'da SYSTEM parolası her çalıştırmada rastgeledir.
+- Tablo ve sütun adları tırnaklı BÜYÜK harfle kurulur (tırnaksız sorgu adlarıyla aynı, ayrılmış sözcükler de kurulabilir). Oracle DDL işlemi kapattığı için veri ya da nesne değiştiren çözüm KESIT_TMP şemasında, kullandığı tabloların kopyasında çalışır; sonra o şemadaki her nesne silinir.
+- Oturum varsayımları: `NLS_LENGTH_SEMANTICS = CHAR` (Türkçe harfler UTF-8'de 2 bayt; bayt anlamında `VARCHAR2(10)`'a 'İstifa...' sığmıyor, ORA-12899) ve ISO tarih biçimi (`NLS_DATE_FORMAT = 'YYYY-MM-DD'`). Uygulamanın Oracle kipi tarihleri ISO gösterir; varsayılan `DD-MON-RR` oturumda tarih-metin karşılaştırmaları farklı davranır.
+- Taklit motor Oracle'da boş metni ('') NULL sayar; bu dönüşüm `db_gen.js`'te taban için bir kez yapılır (madde başına ~1 sn kazanç).
+- İlk tur (23.11.2026, Oracle 23.26.4): 1.726/1.773 aynı. Bulunup giderilenler: `ROUND` NUMBER'da tam ondalık (4,225 → 4,23); `UPPER`/`LOWER` dilden bağımsız (i ve ı → I, İ ve I → i; Türkçe kural `NLS_UPPER`); `TO_CHAR` biçimindeki çift tırnaklı metin (`'YYYY-"Q"Q'`) ve strftime çevirisinde düz metnin tırnaklanması (`'HH24":00:00"'`, yoksa ORA-01821); GROUP BY'sız toplama sorgusunda skaler alt sorgu ORA-00937 verir, çeviri `MAX((...))` içine alır; özyinelemeli WITH'e sütun listesi (ORA-32039); `comment`/`level`/`resource` sütunları tırnaklanır (ORA-00936/03050); `INSERT ... SELECT ... WHERE`'de `FROM dual` WHERE'den önce; `ALTER TABLE ADD (x TEXT)` tür eşlemesi; `datetime(x, n || ' hours')` → `x + n / 24` ve DATE + kesirli gün; `UPDATE t ... (SELECT ... FROM t x ...)` alt sorgusu güncelleme öncesi veriyi görür (SQLite satır satır güncellenmiş tabloyu görüyordu; PostgreSQL için de geçerli).
+- Son tur: 1.772/1.773 aynı (`z071-nesneler#7`'de indeks ifadesindeki `UPPER` de giderildi). Kalan `ai-ml#3` gerçek Oracle'ın yanlış sonucu: `WITH m AS (... GROUP BY customer_id HAVING MIN(order_date) < ...) SELECT 1 - sonra, COUNT(*) FROM m GROUP BY 1 - sonra` 114 müşterinin hepsini `sonra = 0` sayıyor, oysa aynı veride 91 müşterinin Temmuz sonrası siparişi var (yoklamayla doğrulandı). CTE'ye `/*+ MATERIALIZE */` ipucu verilince Oracle da doğru sonucu (91/23) veriyor; HAVING'li gruplamanın dış gruplamayla birleştirilmesindeki iyileştirici hatası. Taklit motor doğru sonucu veriyor.
+
 ### 5b. SQL Server harmanlama (collation) taklidi
 sql.js'te `create_collation` olmadığı için T-SQL kipinde metin karşılaştırmaları `dialect.js` içindeki `collateSql` geçişiyle yeniden yazılır:
 - `=`, `<>`, `<`, `IN (...)`, `BETWEEN`, basit `CASE x WHEN`, `ORDER BY`, `GROUP BY`, `PARTITION BY`, `COUNT(DISTINCT ...)` ve `SELECT DISTINCT` noktalarında metin `ck_(x)` anahtar işlevinden geçer. `MIN`/`MAX(metin)` → `tmin_`/`tmax_`, `LIKE` → `tlike_`, `UPPER`/`LOWER`/`REPLACE`/`CHARINDEX` harmanlamaya göre çalışır.

@@ -1,0 +1,6 @@
+WITH m AS (SELECT customer_id, MAX(CASE WHEN order_date >= DATE '2024-07-01' THEN 1 ELSE 0 END) AS sonra FROM orders GROUP BY customer_id HAVING MIN(order_date) < DATE '2024-07-01') SELECT sonra, COUNT(*) FROM m GROUP BY sonra;;
+WITH m AS (SELECT /*+ MATERIALIZE */ customer_id, MAX(CASE WHEN order_date >= DATE '2024-07-01' THEN 1 ELSE 0 END) AS sonra FROM orders GROUP BY customer_id HAVING MIN(order_date) < DATE '2024-07-01') SELECT sonra, COUNT(*) FROM m GROUP BY sonra;;
+SELECT sonra, COUNT(*) FROM (SELECT /*+ NO_MERGE */ customer_id, MAX(CASE WHEN order_date >= DATE '2024-07-01' THEN 1 ELSE 0 END) AS sonra FROM orders GROUP BY customer_id HAVING MIN(order_date) < DATE '2024-07-01') GROUP BY sonra;;
+SELECT sonra, COUNT(*) FROM (SELECT customer_id, MAX(CASE WHEN order_date >= DATE '2024-07-01' THEN 1 ELSE 0 END) AS sonra FROM orders GROUP BY customer_id HAVING MIN(order_date) < DATE '2024-07-01') GROUP BY sonra;;
+SELECT sonra, COUNT(*) FROM (SELECT customer_id, MAX(CASE WHEN order_date >= DATE '2024-07-01' THEN 1 ELSE 0 END) AS sonra FROM orders GROUP BY customer_id) GROUP BY sonra;;
+SELECT /*+ OPT_PARAM('_optimizer_aggr_groupby_elim' 'false') */ sonra, COUNT(*) FROM (SELECT customer_id, MAX(CASE WHEN order_date >= DATE '2024-07-01' THEN 1 ELSE 0 END) AS sonra FROM orders GROUP BY customer_id HAVING MIN(order_date) < DATE '2024-07-01') GROUP BY sonra

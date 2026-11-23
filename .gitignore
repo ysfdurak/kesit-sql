@@ -17,3 +17,8 @@ araclar/denetim/pg_parca.jsonl
 araclar/denetim/pg_cur.txt
 
 /araclar/denetim/sabit_regresyon.json
+araclar/denetim/__pycache__/
+araclar/denetim/ddl_*.json
+araclar/denetim/beklenen_*.json
+araclar/denetim/sonuc_*.json
+araclar/denetim/sonuc_*.txt

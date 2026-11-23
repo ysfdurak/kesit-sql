@@ -10,7 +10,7 @@ function norm(v){ if(v===null||v===undefined) return '∅'; if(typeof v==='numbe
 function yuvarlamaFarki(u,s){ if(!u||!s||u.values.length!==s.values.length||u.columns.length!==s.columns.length) return false; const k=r=>r.map(v=>typeof v==='number'?'#':String(v)).join('␟'); const A=[...u.values].sort((x,y)=>k(x)<k(y)?-1:1), B=[...s.values].sort((x,y)=>k(x)<k(y)?-1:1); let fark=0; for(let i=0;i<A.length;i++) for(let j=0;j<A[i].length;j++){ const x=A[i][j], y=B[i][j]; if(x===y) continue; if(typeof x!=='number'||typeof y!=='number') return false; const dec=Math.max(...[x,y].map(v=>(String(v).split('.')[1]||'').length)); if(Math.abs(x-y)>Math.pow(10,-dec)+1e-9) return false; fark++; } return fark>0; }
 function same(u,s,ord){ if(!u&&!s) return true; if(!u||!s) return false; if(u.columns.length!==s.columns.length||u.values.length!==s.values.length) return false; const A=u.values.map(r=>r.map(norm).join('␟')),B=s.values.map(r=>r.map(norm).join('␟')); if(ord) return A.every((x,i)=>x===B[i]) || [...A].sort().join('\n')===[...B].sort().join('\n'); return [...A].sort().join('\n')===[...B].sort().join('\n'); }
 // Arayüzle aynı yöntem kuralı: tek kaynak dialect.js
-const mustFail=DX.mustFail;
+const mustFail=DX.mustFail; process.setMaxListeners(0);
 initSqlJs().then(SQL=>{
   const BASE=require("./base.js")(SQL,c);
   const fresh=()=>{ const db=new SQL.Database(BASE); c.SQLP_REGISTER(db); DX.register(db); return db; };
@@ -39,7 +39,10 @@ initSqlJs().then(SQL=>{
         if(['tsql','mysql','pg'].includes(d)){ const k0=DX.getCollation(d); DX.setCollation(null,d); let r0; try{ r0=runOne(t,d,e); } finally { DX.setCollation(k0,d); }
           if(!r0.error && same(r0.set,ref.set,e.ord)) kind='harmanlama'; // fark yalnız harmanlama taklidinden (gerçek sunucularla doğrulandı: sonuclar/mssql*.txt, pg.txt, mysql.txt)
           else if(yuvarlamaFarki(r.set,ref.set)) kind=d+'Yuvarlama';
-          else if(d==='mysql' && /\b(TIMESTAMPDIFF|JSON_OBJECT)\s*\(/i.test(t)) kind='mysqlSemantik'; } // MySQL TIMESTAMPDIFF tam birime keser, JSON_OBJECT anahtarları sıralar (gerçek sunucuyla doğrulandı: sonuclar/mysql_gercek_*.txt)
+          else if(d==='mysql' && /\b(TIMESTAMPDIFF|JSON_OBJECT)\s*\(/i.test(t)) kind='mysqlSemantik'; }
+        if(d==='oracle'){ // Oracle NUMBER tam ondalık yuvarlar, UPPER/LOWER dilden bağımsızdır (gerçek Oracle 23 ile doğrulandı: NASIL.md 5a-3)
+          if(yuvarlamaFarki(r.set,ref.set)) kind='oracleYuvarlama';
+          else if(/\b(UPPER|LOWER)\s*\(/i.test(t)){ DX.setOraTrHarf(true); let r0; try{ r0=runOne(t,d,e); } finally { DX.setOraTrHarf(false); } if(!r0.error && same(r0.set,ref.set,e.ord)) kind='oracleHarf'; } } // MySQL TIMESTAMPDIFF tam birime keser, JSON_OBJECT anahtarları sıralar (gerçek sunucuyla doğrulandı: sonuclar/mysql_gercek_*.txt)
         out.push({id:it.id,src:it.src,kind,d,sql:t.slice(0,300)}); }
     } }
   if(process.env.PROG) console.error('items done'); fs.writeFileSync('sql_audit.json',JSON.stringify(out,null,1));
