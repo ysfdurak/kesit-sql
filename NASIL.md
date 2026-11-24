@@ -342,7 +342,7 @@ Yayın paketi kurulduktan sonra paket klasörü sunulurken çalıştır: `BASE=h
 - `explainResult`: son ifadenin gerçekten EXPLAIN QUERY PLAN olmasını ister. `plan.index`, gereken indeksin sütunlarını da katalogdan doğrular.
 - `node sabit_regresyon.js`: kayıtlı 70 hedefin izinli lehçelerdeki örnek ve alternatif çözümleri, sabit ve hesap görünümlü sahte cevaplar, sarmalayıcılar ve eksik indeks denetlenir. Veriye bağlı her hedefte en az bir özel senaryonun referans sonucunu değiştirmesi zorunludur. Ana yayında henüz olmayan üç hedef otomatik atlanır.
 - `node sabit_tara.js`: bulunan sahte geçişte çıkış kodu 1. Taramanın kapsam sınırları (check, boş sonuç, 300 satır üstü vb.) devam eder; sıfır bulgu bütün olası yanlış cevapların yokluğu anlamına gelmez.
-- `npm test`: regresyon, alternatifler, tam sabit taraması ve çözüm çalıştırması. GitHub Actions kaynak dalı ve ona açılan PR'larda bu kapıyı çalıştırır.
+- `npm test`: regresyon, alternatifler, tam sabit taraması ve çözüm çalıştırması. GitHub Actions kaynak dalı ve ona açılan PR'larda bu dört betiği **ayrı, paralel işlerde** çalıştırır (`sql-kontrol.yml` matrisi). Neden: sırayla 36–45 dk sürüyor ve 45 dk sınırında iş iptal oluyordu; paralelde en uzun betik kadar sürer ve hangi betiğin düştüğü iş adından görünür.
 
 Sonuçlar `araclar/denetim/sonuclar/` içinde saklanır.
 

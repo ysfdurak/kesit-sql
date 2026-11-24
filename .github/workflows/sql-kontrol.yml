@@ -8,8 +8,14 @@ permissions:
   contents: read
 jobs:
   kontrol:
+    # Dört denetim sırayla 36–45 dk sürüyor ve 45 dk sınırına takılıyordu; ayrı işlerde paralel koşar.
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        betik: [sabit_regresyon, alternatif, sabit_tara, run]
+    name: kontrol (${{ matrix.betik }})
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -19,12 +25,13 @@ jobs:
           cache-dependency-path: araclar/denetim/package-lock.json
       - run: npm ci
         working-directory: araclar/denetim
-      - run: npm test
+      - run: node ${{ matrix.betik }}.js
         working-directory: araclar/denetim
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: sql-denetim
+          name: sql-denetim-${{ matrix.betik }}
+          if-no-files-found: ignore
           path: |
             araclar/denetim/sabit_regresyon.json
             araclar/denetim/sql_audit.json
