@@ -100,7 +100,7 @@
       },
       "home": {
         "t": "Kesit SQL",
-        "p": "295 lessons, 1,944 exercises and 578 practice tasks, from the first SELECT to window functions, query optimisation and data warehousing. A real SQLite database runs in the browser (sql.js); every query is checked instantly.",
+        "p": "296 lessons, 2,006 exercises and 602 practice tasks, from the first SELECT to window functions, query optimisation and data warehousing. A real SQLite database runs in the browser (sql.js); every query is checked instantly. Each lesson has a downloadable task sheet, and 7 dataset packs install the same data in your own SQL Server, PostgreSQL, MySQL or Oracle.",
         "try": "Open “Dersler” (Lessons) and start “1 dakikada ilk sorgun” — your first query in one minute."
       },
       "curr": {
@@ -109,7 +109,7 @@
       },
       "pratik": {
         "t": "Practice",
-        "p": "578 practice tasks on the shared datasets, grouped by topic and difficulty."
+        "p": "602 practice tasks on the shared datasets, grouped by topic and difficulty."
       },
       "play": {
         "t": "SQL Arena",
