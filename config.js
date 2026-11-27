@@ -20,6 +20,7 @@ window.KESIT_CONFIG = {
   pbiUrl: 'https://ysfdurak.github.io/kesit-powerbi/',
   pythonUrl: 'https://ysfdurak.github.io/kesit-python/',
   statUrl: 'https://ysfdurak.github.io/kesit-istatistik/',
+  excelUrl: 'https://ysfdurak.github.io/kesit-excel/',
   license: '',           // boşsa: kod ve içerik PolyForm Shield 1.0.0
 
   /* Geri bildirim: boşsa bağlantılar GitHub Issues'u açar (author.repo). Google Forms ya da Tally kullanılacaksa adresi buraya yaz; {ders} yerine ders adı gelir. */
