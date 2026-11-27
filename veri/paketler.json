@@ -1,0 +1,58 @@
+[
+  {
+    "id": "anadolu-market",
+    "ad": "Anadolu Market (e-ticaret)",
+    "tablo": 10,
+    "satir": 7643,
+    "boyut": 343522,
+    "fkKurulmayan": 0
+  },
+  {
+    "id": "ilgaz-bank",
+    "ad": "Ilgaz Bank",
+    "tablo": 5,
+    "satir": 44169,
+    "boyut": 3754559,
+    "fkKurulmayan": 0
+  },
+  {
+    "id": "kanat-havayollari",
+    "ad": "Kanat Havayolları",
+    "tablo": 8,
+    "satir": 10965,
+    "boyut": 986394,
+    "fkKurulmayan": 0
+  },
+  {
+    "id": "lezzet-kurye",
+    "ad": "Lezzet Kurye (yemek teslimatı)",
+    "tablo": 7,
+    "satir": 27598,
+    "boyut": 1711706,
+    "fkKurulmayan": 0
+  },
+  {
+    "id": "pusula-ik",
+    "ad": "Pusula A.Ş. (insan kaynakları)",
+    "tablo": 11,
+    "satir": 59987,
+    "boyut": 2688991,
+    "fkKurulmayan": 0
+  },
+  {
+    "id": "pedal-izmir",
+    "ad": "Pedal İzmir (bisiklet paylaşımı)",
+    "tablo": 7,
+    "satir": 155067,
+    "boyut": 15939875,
+    "fkKurulmayan": 0
+  },
+  {
+    "id": "operasyon",
+    "ad": "Operasyon, sistem görünümleri ve ETL",
+    "tablo": 33,
+    "satir": 12586,
+    "boyut": 814336,
+    "fkKurulmayan": 1
+  }
+]

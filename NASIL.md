@@ -9,7 +9,7 @@ Bu dal (`kaynak`), yayındaki sitenin (`main` dalı) bütün dosyalarını ve bu
 | `index.html` | Uygulama: arayüz, yönlendirme, ilerleme kaydı. Betikleri sırayla yükler. |
 | `db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js`, `ops.js`, `sis.js` | Veri setleri: e-ticaret ve banka, havayolu, yemek teslimatı, İK, bisiklet paylaşımı. `ops.js` kurgusal operasyon günlüğüdür (`ops_` tabloları), `sis.js` sistem görünümü kopyaları ve ETL senaryosudur (`sys_`, `msdb_`, `etl_`); ikisi yalnız bu uygulamada vardır, kendi tohumlu üretecini kullanır. |
 | `dialect.js` | SQL Server, PostgreSQL, MySQL, Oracle ve BigQuery yazımını SQLite'a çeviren katman. |
-| `c1.js` … `c43.js`, `cx.js` | Dersler, öğrenme yolları, pratik görevleri, sınavlar. Sonra yüklenen dosya öncekileri yerinde değiştirebilir. `c35.js` son düzeltme katmanıdır: yol sırası, seviye testi, yöntem kuralları, yeni dersler. `c36.js` BT İş Analisti yolu ve onun on bir dersidir; metindeki sayılar `SQLP_BA_SAYI` nesnesinden gelir, `ba_sayilar.js` denetler. `c37.js` Sorgu Optimizasyonu dersleri, `c38.js` mevcut performans derslerinin genişletilmesi, yeni bitirme projeleri (`opt-proje`, `bv-proje`, `ai-proje`), `op*` pratik görevleri, sözlük ve yol bağlantılarıdır. `c39.js` SQL Server Operasyon ve Güvenlik yolu (`ops-*` dersleri, `sg*` pratik görevleri). |
+| `c1.js` … `c44.js`, `cx.js` | Dersler, öğrenme yolları, pratik görevleri, sınavlar. Sonra yüklenen dosya öncekileri yerinde değiştirebilir. `c35.js` son düzeltme katmanıdır: yol sırası, seviye testi, yöntem kuralları, yeni dersler. `c36.js` BT İş Analisti yolu ve onun on bir dersidir; metindeki sayılar `SQLP_BA_SAYI` nesnesinden gelir, `ba_sayilar.js` denetler. `c37.js` Sorgu Optimizasyonu dersleri, `c38.js` mevcut performans derslerinin genişletilmesi, yeni bitirme projeleri (`opt-proje`, `bv-proje`, `ai-proje`), `op*` pratik görevleri, sözlük ve yol bağlantılarıdır. `c39.js` SQL Server Operasyon ve Güvenlik yolu (`ops-*` dersleri, `sg*` pratik görevleri). |
 | `plan-ciktilari.js` | Derslerdeki PostgreSQL plan çıktıları. Üretilen dosya: `araclar/denetim/opt_cikti.mjs` PGlite ile çalıştırır, sorgular `opt_sorgular.json` içinde. Elle düzenlenmez. |
 | `ipuclari.js` | Alıştırma ipuçları. `araclar/denetim/ipucu_uret.js` üretir; elle yazılanlar `araclar/denetim/ipucu_elle.json` içinde. |
 | `bilinen-sinirlar.js` | Veri setleri sayfasındaki “Bilerek bırakılanlar ve bilinen sınırlamalar” metinleri. |
@@ -293,13 +293,13 @@ Ders ve yol süreleri `index.html` içindeki `sureDk`, `dkAralik`, `saatAralik` 
 ## Yayına alma
 Site `main` dalından sunulur. `main` dalına **yalnız aşağıdaki dosyalar** gider; `araclar/` ve `NASIL.md` gitmez.
 
-Site dosyaları (tam liste): `index.html`, `db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js`, `ops.js`, `sis.js`, `dialect.js`, `c1.js` … `c43.js`, `cx.js`, `plan-ciktilari.js`, `ipuclari.js`, `arena-data.js`, `config.js`, `bilinen-sinirlar.js`, `belge.js`, `sw.js`, `base-<özet>.b64.txt`, `manifest.webmanifest`, `favicon.svg`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, `og.png`, `vendor/`, `ekran/`, `README.md`, `LICENSE`, `LICENSE-ICERIK.md`, `.nojekyll`.
+Site dosyaları (tam liste): `index.html`, `db.js`, `hv.js`, `lk.js`, `ik.js`, `bk.js`, `ops.js`, `sis.js`, `dialect.js`, `c1.js` … `c44.js`, `cx.js`, `plan-ciktilari.js`, `ipuclari.js`, `arena-data.js`, `config.js`, `bilinen-sinirlar.js`, `belge.js`, `sw.js`, `base-<özet>.b64.txt`, `manifest.webmanifest`, `favicon.svg`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, `og.png`, `vendor/`, `ekran/`, `README.md`, `LICENSE`, `LICENSE-ICERIK.md`, `.nojekyll`.
 
 Eski sürümden kaldırılacaklar: `hesap.js`, `hesap-secenegi/`, `YAYIN.md`.
 
 ```bash
 git checkout main
-git checkout kaynak -- index.html db.js hv.js lk.js ik.js bk.js ops.js sis.js dialect.js c[0-9]*.js cx.js plan-ciktilari.js ipuclari.js arena-data.js config.js bilinen-sinirlar.js belge.js sw.js manifest.webmanifest favicon.svg apple-touch-icon.png icon-192.png icon-512.png icon-512-maskable.png og.png vendor ekran README.md LICENSE LICENSE-ICERIK.md .nojekyll base-*.b64.txt
+git checkout kaynak -- veri index.html db.js hv.js lk.js ik.js bk.js ops.js sis.js dialect.js c[0-9]*.js cx.js plan-ciktilari.js ipuclari.js arena-data.js config.js bilinen-sinirlar.js belge.js sw.js manifest.webmanifest favicon.svg apple-touch-icon.png icon-192.png icon-512.png icon-512-maskable.png og.png vendor ekran README.md LICENSE LICENSE-ICERIK.md .nojekyll base-*.b64.txt
 git rm -r --ignore-unmatch hesap.js hesap-secenegi YAYIN.md
 git rm --cached --ignore-unmatch base-<eski-özet>.b64.txt   # veritabanı yenilendiyse eskisini kaldır
 git commit -m "..." && git push origin main
@@ -308,6 +308,22 @@ git checkout kaynak
 GitHub Pages bir iki dakika içinde güncellenir.
 
 `sw.js` ağ öncelikli çalışır; ziyaretçiler yeni sürümü bir sonraki açılışta alır. Önbellek biçimini değiştirirsen `CACHE` sabitinin sürümünü artır; eski önbellek etkinleşmede silinir. Yeni `base-*.b64.txt` alınınca eskisi önbellekten çıkar.
+
+## Kendi veritabanında çalış paketleri (veri/)
+```bash
+cd araclar/denetim && npm install && node make_base.js   # base.sqlite
+node ../paket/paket.js                                 # kökte veri/kesit-sql-<set>.zip ve veri/paketler.json
+```
+- Yedi paket: anadolu-market, ilgaz-bank, kanat-havayollari, lezzet-kurye, pusula-ik, pedal-izmir, operasyon. Tablo → paket eşlemesi `paket.js` › `SETLER`; yeni bir tablo hiçbir pakete düşmezse betik durur.
+- Her pakette SQL Server, PostgreSQL, MySQL, Oracle betiği, hazır `.sqlite`, `BENIOKU.md`, `DOGRULAMA.md`. Türler `SQLP_COLMETA` + `SQLP_TYPE` (Veri setleri sayfasındaki CREATE TABLE ile aynı). Yabancı anahtarlar veriye uyuyorsa sonda `ALTER TABLE` ile eklenir; uymayanlar BENIOKU'da listelenir.
+- Zip içi belirlenimcidir (sabit tarih); veri değişmedikçe aynı dosya çıkar. Büyük paketin (pedal-izmir ~16 MB) boyutu `index.html` › `PAKET_MB` içinde elle yazılıdır; veri değişirse güncelle.
+- Doğrulama (27 Kasım 2026): PostgreSQL betikleri PGlite'ta, MySQL betikleri MariaDB 10.11'de yedi paketin hepsinde hatasız kuruldu; satır sayıları ve kontrol toplamları tuttu. SQL Server ve Oracle betikleri gerçek sunucuda denenmedi (Windows bilgisayarda 5a ve 5a-3'teki gibi denenmeli).
+- Görev kâğıdı tarayıcıda üretilir (`index.html` › `gorevKagidi`): dersin SQL görevleri, seçili türde beklenen sonuç (`solResult`) ve çözümler. 296 dersin hepsinin kâğıdı hatasız üretiliyor (yaklaşık 2,5 dakikada bütün dersler).
+
+## Az uygulamalı dersler ve şema tasarlama (c44.js)
+- DBA, köprü, sertifika ve genel derslere 57 SQL görevi; 3'ten az uygulamalı görevli ders 24 → 1 (`opt-plan`, plan görevleri var).
+- T-SQL görevleri `sys.*`, `msdb.dbo.*` yazımıyla; motor kopyalara yönlendirir (4e). Şema tasarlama görevleri `check` ile `pragma_table_info` ve `pragma_foreign_key_list` okur.
+- Denetim: `run.js`, `sabit_tara.js` (SABIT_GECEN 0), `sabit_regresyon.js` (HATA 0), `pg_denetim.mjs` (1.766 çözüm, BILINMEYEN 0).
 
 ## Ortak veri setleri
 Ilgaz Bank, Kanat Havayolları, Lezzet Kurye, Pusula İK ve Pedal İzmir üç uygulamada satır satır aynıdır (`ops_` tabloları yalnız Kesit SQL'dedir); SQL'in Anadolu Market `web_events` tablosu Python `anadolu_market` ile aynıdır (Power BI `WebOlaylari` ayrı veridir). Kaynak bu depodaki üreteçlerdir (`db.js` içindeki banka bölümü, `hv.js`, `lk.js`, `ik.js`, `bk.js`); diğer iki depo bunlardan türer:

@@ -7,9 +7,10 @@
 ![Alıştırma ekranı](ekran/alistirma.png)
 
 ## Neler var?
-- **296 ders, 1.949 alıştırma, 602 pratik görevi.** İlk sorgudan pencere fonksiyonlarına, sorgu optimizasyonuna, veri ambarına ve mülakat kalıplarına kadar.
+- **296 ders, 2.006 alıştırma, 602 pratik görevi.** İlk sorgudan pencere fonksiyonlarına, sorgu optimizasyonuna, veri ambarına ve mülakat kalıplarına kadar.
 - **Beş SQL türü ve BigQuery modülü:** SQL Server, PostgreSQL, MySQL, Oracle ve SQLite. Her sorgu seçtiğin türün yazımıyla gösterilir, alıştırmalar o türün kurallarına göre (harmanlama dahil) denetlenir. BigQuery kendi modülünde ve Google Data Analytics hazırlığında alıştırılır; diğer derslerde yazılışı okunmak için gösterilir.
 - **Altı hayali veri seti:** e-ticaret, banka, havayolu, yemek teslimatı, insan kaynakları ve 116.517 yolculukluk bisiklet paylaşımı. Ayrıca operasyon ve güvenlik dersleri için kurgusal bir sorgu ve erişim günlüğü.
+- **Kendi veritabanında çalış:** her veri seti SQL Server, PostgreSQL, MySQL ve Oracle kurulum betiği ile hazır SQLite dosyası olarak indirilir (`veri/`). Her dersin konu sayfasında o dersin görev kâğıdı (beklenen sonuç tablolarıyla) seçtiğin SQL türünde iner.
 - **21 öğrenme yolu:** 9 rol yolu (veri analisti, BT iş analisti, veri mühendisi, veri bilimci, iş zekâsı, DBA, backend, SQL Server, SQL temelleri), 9 konu yolu (Sorgu Optimizasyonu, SQL Server Operasyon ve Güvenlik dahil) ve 3 sertifika hazırlık yolu.
 - **SQL Arena:** gizli testli meydan okumalar, SQL dedektif vakaları, sonuç tahmini, sorgu bulmacaları ve haftalık turnuva.
 - Seviye testi, sınavlar, aralıklı tekrar, sorgu editörü ve tamamlama belgesi.
