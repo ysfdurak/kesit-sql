@@ -7,9 +7,10 @@
 ![Alıştırma ekranı](ekran/alistirma.png)
 
 ## Neler var?
-- **296 ders, 1.949 alıştırma, 602 pratik görevi.** İlk sorgudan pencere fonksiyonlarına, sorgu optimizasyonuna, veri ambarına ve mülakat kalıplarına kadar.
+- **296 ders, 2.006 alıştırma, 602 pratik görevi.** İlk sorgudan pencere fonksiyonlarına, sorgu optimizasyonuna, veri ambarına ve mülakat kalıplarına kadar.
 - **Beş SQL türü ve BigQuery modülü:** SQL Server, PostgreSQL, MySQL, Oracle ve SQLite. Her sorgu seçtiğin türün yazımıyla gösterilir, alıştırmalar o türün kurallarına göre (harmanlama dahil) denetlenir. BigQuery kendi modülünde ve Google Data Analytics hazırlığında alıştırılır; diğer derslerde yazılışı okunmak için gösterilir.
 - **Altı hayali veri seti:** e-ticaret, banka, havayolu, yemek teslimatı, insan kaynakları ve 116.517 yolculukluk bisiklet paylaşımı. Ayrıca operasyon ve güvenlik dersleri için kurgusal bir sorgu ve erişim günlüğü.
+- **Kendi veritabanında çalış:** her veri seti SQL Server, PostgreSQL, MySQL ve Oracle kurulum betiği ile hazır SQLite dosyası olarak indirilir (`veri/`). Her dersin konu sayfasında o dersin görev kâğıdı (beklenen sonuç tablolarıyla) seçtiğin SQL türünde iner.
 - **21 öğrenme yolu:** 9 rol yolu (veri analisti, BT iş analisti, veri mühendisi, veri bilimci, iş zekâsı, DBA, backend, SQL Server, SQL temelleri), 9 konu yolu (Sorgu Optimizasyonu, SQL Server Operasyon ve Güvenlik dahil) ve 3 sertifika hazırlık yolu.
 - **SQL Arena:** gizli testli meydan okumalar, SQL dedektif vakaları, sonuç tahmini, sorgu bulmacaları ve haftalık turnuva.
 - Seviye testi, sınavlar, aralıklı tekrar, sorgu editörü ve tamamlama belgesi.
@@ -29,8 +30,8 @@
 - Alıştırma ve Arena çözümleri otomatik denetimle **taklit katmanında** her SQL türünde çalıştırılıyor.
 - **PostgreSQL için gerçek motorda** (PGlite, WASM) ayrıca çalıştırılıyor; veri değiştiren görevler ve bisiklet tabloları dahil.
 - Sorgu Optimizasyonu derslerindeki PostgreSQL plan çıktıları PGlite ile üretildi, alıştırmaların plan denetimi SQLite planına bakar. Yavaş cevap, sonuç doğru olsa da reddedilir.
-- **Gerçek sunucu karşılaştırması:** bütün çözümler SQL Server 2019 (Turkish_CI_AS ve SQL_Latin1_General_CP1_CI_AS), PostgreSQL 15 (C ve Turkish) ve MySQL 9.7 (utf8mb4_0900_ai_ci ve utf8mb4_tr_0900_ai_ci) üzerinde çalıştırılıp taklit katmanıyla karşılaştırıldı. PostgreSQL 1.738/1.738, MySQL 1.726/1.726 aynı; SQL Server'da 1.917 çözümden 1.865'i aynı, kalanlar sunucu ortamı (sistem görünümleri, yedek geçmişi), sürüm (2019'da olmayan REGEXP işlevleri) ve test düzeneğinden kaynaklanıyor.
-- Oracle ve BigQuery gerçek sunucuda henüz sınanmadı; bu türlerle ilgili anlatımlar belgelere ve taklit katmanına dayanıyor.
+- **Gerçek sunucu karşılaştırması:** bütün çözümler SQL Server 2019 (Turkish_CI_AS ve SQL_Latin1_General_CP1_CI_AS), PostgreSQL 15 (C ve Turkish), MySQL 9.7 (utf8mb4_0900_ai_ci ve utf8mb4_tr_0900_ai_ci) ve Oracle Database 23.26 Free üzerinde çalıştırılıp taklit katmanıyla karşılaştırıldı. PostgreSQL 1.738/1.738, MySQL 1.726/1.726, Oracle 1.772/1.773 aynı (kalan tek madde Oracle'ın kendi iyileştirici hatası, NASIL.md 5a-3); SQL Server'da 1.917 çözümden 1.865'i aynı, kalanlar sunucu ortamı (sistem görünümleri, yedek geçmişi), sürüm (2019'da olmayan REGEXP işlevleri) ve test düzeneğinden kaynaklanıyor.
+- BigQuery gerçek sunucuda henüz sınanmadı; bu türle ilgili anlatımlar belgelere ve taklit katmanına dayanıyor. Oracle karşılaştırması GitHub Actions'taki **Gerçek Oracle denetimi** iş akışıyla yeniden çalıştırılabilir.
 - Denetim betikleri ve komutları `kaynak` dalındaki `araclar/denetim/` ile `NASIL.md` içinde.
 
 ## Nasıl yapıldı?

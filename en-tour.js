@@ -105,7 +105,7 @@
       },
       "curr": {
         "t": "Lessons",
-        "p": "All lessons by level. Six SQL dialects — SQL Server, PostgreSQL, MySQL, Oracle, BigQuery and SQLite: examples are shown in the dialect you choose and exercises are checked against its rules (the other five are emulated on top of SQLite)."
+        "p": "All lessons by level. Five SQL dialects — SQL Server, PostgreSQL, MySQL, Oracle and SQLite: examples are shown in the dialect you choose and exercises are checked against its rules (the others are emulated on top of SQLite). BigQuery has its own module."
       },
       "pratik": {
         "t": "Practice",
