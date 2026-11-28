@@ -71,11 +71,12 @@ Sunucu yok. `kaynak` dalında değişiklik → PR → `main`'e yalnız site dosy
 | `pg_denetim.mjs` (gerçek PostgreSQL) | BILINMEYEN 0 | 1.766 çözüm, BILINMEYEN 0 | ✓ |
 | `static.js` | Bilinen uyarı sayıları aynı | Aynı | ✓ |
 | Paketler PostgreSQL'de (PGlite) ve MariaDB 10.11'de | 7 paket hatasız, satır sayıları tutar | Tuttu; Türkçe harfler doğru | ✓ |
-| Paketler SQL Server ve Oracle'da | Hatasız kurulum | Denenmedi | **[doğrulanacak]** |
+| Anadolu Market paketi SQL Server'da (Windows, SSMS 18, 28 Kasım 2026) | Hatasız kurulum, DOGRULAMA.md tutar | 10 tablonun satır sayısı ve kontrol toplamları tuttu | ✓ |
+| Diğer paketler SQL Server'da, paketler Oracle'da | Hatasız kurulum | Denenmedi | **[doğrulanacak]** |
 | 296 dersin görev kâğıdı | Hesaplanamayan görev yok | 0 | ✓ |
 | Tarayıcı 390 / 1350 px: ders paneli, Veri setleri | Taşma ve hata yok | Yok | ✓ |
 
-> **Burada bir test daha yapalım:** Windows bilgisayarda SQL Server'a `sqlserver.sql`'i `sqlcmd -i` ile kur (özellikle pedal-izmir, 116 bin satır) ve DOGRULAMA.md'yi karşılaştır. Oracle için de bir paket yeter (ayrılmış sözcük sütunu olan operasyon paketi).
+> **Burada bir test daha yapalım:** Anadolu Market SQL Server'da doğrulandı. Sıradaki örneklem: pedal-izmir (116 bin satır, SSMS yerine `sqlcmd -i` ile) ve DOGRULAMA.md'yi karşılaştır. Oracle için de bir paket yeter (ayrılmış sözcük sütunu olan operasyon paketi).
 
 ## 8. Bilinen sınırlar ve sonraki adımlar
 
@@ -112,6 +113,7 @@ Sunucu yok. `kaynak` dalında değişiklik → PR → `main`'e yalnız site dosy
 | 2026-11-08 | Sabit sonuç düzeltmesi (c43.js) |
 | 2026-11-21 | Gerçek SQL Server 2019 denetimi |
 | 2026-11-27 | Kendi veritabanında çalış paketleri ve görev kâğıdı; c44.js ile 57 görev ve şema tasarlama; bu rehber |
+| 2026-11-28 | Anadolu Market paketi Windows SQL Server'da (SSMS 18) kuruldu ve doğrulandı; DOGRULAMA.md'ye durum satırı (`paket.js` › `DOGRULANDI`) |
 
 ## 13. Kendi veritabanında çalış ve uygulamalı görev turu (Kasım 2026)
 
