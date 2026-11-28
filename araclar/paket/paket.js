@@ -23,6 +23,10 @@ const SETLER = [
   { id: 'pedal-izmir', ad: 'Pedal İzmir (bisiklet paylaşımı)', tablo: t => t.startsWith('bk_') },
   { id: 'operasyon', ad: 'Operasyon, sistem görünümleri ve ETL', tablo: t => /^(ops|sys|msdb|etl)_/.test(t) },
 ];
+// Gerçek veritabanında elle doğrulanan paketler (DOGRULAMA.md'ye yazılır). Yeni doğrulama yapıldıkça buraya ekle.
+const DOGRULANDI = {
+  'anadolu-market': 'Windows\'ta doğrulandı (28 Kasım 2026, SQL Server, SSMS 18): `sqlserver.sql` hatasız kuruldu; aşağıdaki satır sayıları ve kontrol toplamlarının hepsi tuttu.',
+};
 const DL = [
   { id: 'tsql', dosya: 'sqlserver.sql', ad: 'SQL Server' },
   { id: 'pg', dosya: 'postgresql.sql', ad: 'PostgreSQL' },
@@ -119,7 +123,7 @@ function lit(v, tip, d) {
     idx.filter(r => tablolar.includes(r[1])).forEach(r => { try { sq.run(r[2]); } catch (e) {} });
     fs.writeFileSync(path.join(kok, 'kesit-sql-' + S.id + '.sqlite'), Buffer.from(sq.export())); sq.close();
     const ilk = t => { const m = M[t].find(x => ['money', 'int', 'real', 'dec', 'bigint'].includes(x[1]) && x[3] !== 'pk' && !(x[3] || '').startsWith('fk:')); if (!m) return null; const v = db.exec(`SELECT ROUND(SUM("${m[0]}"), 2) FROM "${t}"`)[0].values[0][0]; return { c: m[0], v }; };
-    fs.writeFileSync(path.join(kok, 'DOGRULAMA.md'), `# ${S.ad}: kontrol değerleri\n\nKurulumdan sonra her betiğin sonundaki satır sayısı sorgusunu çalıştır ve bu tabloyla karşılaştır. Toplam sütunu ondalık türlerin doğru yüklendiğini gösterir.\n\n| Tablo | Satır | Kontrol toplamı |\n|---|---:|---|\n` + tablolar.map(t => { const k = ilk(t); return '| ' + t + ' | ' + satir[t] + ' | ' + (k ? '`SUM(' + k.c + ')` = ' + k.v : '') + ' |'; }).join('\n') + '\n');
+    fs.writeFileSync(path.join(kok, 'DOGRULAMA.md'), `# ${S.ad}: kontrol değerleri\n\n${DOGRULANDI[S.id] ? '**Doğrulama durumu:** ' + DOGRULANDI[S.id] + '\n\n' : ''}Kurulumdan sonra her betiğin sonundaki satır sayısı sorgusunu çalıştır ve bu tabloyla karşılaştır. Toplam sütunu ondalık türlerin doğru yüklendiğini gösterir.\n\n| Tablo | Satır | Kontrol toplamı |\n|---|---:|---|\n` + tablolar.map(t => { const k = ilk(t); return '| ' + t + ' | ' + satir[t] + ' | ' + (k ? '`SUM(' + k.c + ')` = ' + k.v : '') + ' |'; }).join('\n') + '\n');
     const oraAyr = []; tablolar.forEach(t => M[t].forEach(x => { if (ORA_AYRILMIS.has(x[0].toUpperCase())) oraAyr.push(t + '.' + x[0]); }));
     const fkMetin = fkUymayan.length ? fkUymayan.map(f => '- `' + f.t + '.' + f.c + '` → `' + f.ht + '.' + f.hc + '`: ' + f.neden).join('\n') : '- Yok: bütün ilişkiler yabancı anahtar olarak kuruldu.';
     fs.writeFileSync(path.join(kok, 'BENIOKU.md'), `# ${S.ad} · Kesit SQL veri paketi
